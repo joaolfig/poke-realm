@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poké Realm</title>
+<style>
+  :root { --bg: #0f0b1a; --panel: #17122a; --line: #2e2650; --text: #e7e3f5; --dim: #9a93b8; --gold: #fcd34d; --accent: #8b5cf6; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; overflow: hidden; }
+  #game { display: flex; height: 100vh; }
+  #c { display: block; cursor: crosshair; image-rendering: pixelated; }
+  #panel { width: 280px; flex: none; background: var(--panel); border-left: 2px solid var(--line); padding: 12px; overflow-y: auto; user-select: none; }
+  h4 { margin: 12px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); display: flex; justify-content: space-between; }
+  .pname { font: bold 20px Georgia, serif; color: var(--gold); }
+  .pcls { color: var(--dim); margin-bottom: 8px; }
+  .bar { position: relative; height: 18px; background: #0b0816; border: 1px solid var(--line); border-radius: 4px; margin: 4px 0; overflow: hidden; }
+  .bar > div { height: 100%; transition: width .1s; }
+  .bar span { position: absolute; inset: 0; text-align: center; font-size: 11px; font-weight: bold; line-height: 16px; text-shadow: 0 1px 2px #000; }
+  .hp > div { background: linear-gradient(#22c55e, #15803d); }
+  .mp > div { background: linear-gradient(#3b82f6, #1d4ed8); }
+  .xp > div { background: linear-gradient(#eab308, #a16207); }
+  #p-derived { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: 13px; }
+  .attr { display: grid; grid-template-columns: 40px 1fr 36px 26px; align-items: center; padding: 2px 4px; border-radius: 4px; }
+  .attr:hover { background: #221a3d; }
+  .an { font-weight: bold; color: var(--dim); }
+  .an.prim, .roll.prim span { color: var(--gold); }
+  .av i { font-size: 11px; color: #86efac; font-style: normal; margin-left: 3px; }
+  .am { color: #c4b5fd; text-align: right; padding-right: 4px; }
+  .pts { color: #fde047; text-transform: none; letter-spacing: 0; animation: pulse 1s infinite alternate; }
+  @keyframes pulse { to { opacity: .5; } }
+  .attr button { width: 22px; height: 20px; padding: 0; background: #16a34a; border: 0; border-radius: 4px; color: #fff; font-weight: bold; cursor: pointer; }
+  .eqrow, .inv { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .eqrow { grid-template-columns: repeat(4, 1fr); }
+  .slot { position: relative; aspect-ratio: 1; background: #0b0816; border: 2px solid var(--line); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; }
+  .slot:hover { background: #221a3d; }
+  .slot .empty { font-size: 10px; color: var(--dim); }
+  .slot .up { position: absolute; top: 1px; right: 3px; font-size: 10px; color: #4ade80; font-style: normal; }
+  #p-pots { margin-top: 10px; }
+  .potrow { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .potrow button { flex: 1; padding: 5px 4px; }
+  .potrow.balls button.sel { border-color: #fde047; background: #3a3214; }
+  .pxp { width: 90%; height: 4px; background: #222; border-radius: 2px; overflow: hidden; }
+  .pxp div { height: 100%; background: #60a5fa; }
+  .pet i { font-style: normal; font-size: 10px; color: var(--dim); }
+  .pet b { color: #86efac; }
+  .candy, .savebtn { width: 100%; margin-top: 6px; }
+  button { background: #2a2147; color: var(--text); border: 1px solid #3f3570; border-radius: 6px; padding: 6px 10px; cursor: pointer; font: inherit; }
+  button:hover:not(:disabled) { background: #3a2d63; }
+  button:disabled { opacity: .45; cursor: default; }
+  button small { color: var(--dim); }
+  .abil { margin-top: 10px; padding: 8px; background: #221a3d; border: 1px solid #3f3570; border-radius: 6px; }
+  .abil.off { opacity: .55; }
+  .abil span { float: right; color: #93c5fd; font-size: 12px; }
+  .small { font-size: 12px; color: var(--dim); margin-top: 3px; }
+  .dim { opacity: .8; }
+  .room b { color: #86efac; font-size: 18px; letter-spacing: .1em; }
+  .room button { padding: 2px 8px; font-size: 12px; }
+  .help { margin-top: 14px; font-size: 11.5px; color: var(--dim); border-top: 1px solid var(--line); padding-top: 8px; }
+  .help kbd { background: #2a2147; border: 1px solid #3f3570; border-radius: 3px; padding: 0 4px; font-size: 11px; color: var(--text); }
+
+  .overlay { position: fixed; inset: 0; background: radial-gradient(ellipse at top, #2a1b4a, #0a0712 70%); display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; z-index: 10; padding: 24px 16px; }
+  #death, #lost { background: rgba(10, 5, 15, .82); align-items: center; }
+  .hidden { display: none !important; }
+  .menu-box { width: min(880px, 100%); background: rgba(23, 18, 42, .95); border: 2px solid var(--line); border-radius: 14px; padding: 22px 26px; box-shadow: 0 20px 60px #000a; }
+  h1 { margin: 0; font: bold 44px Georgia, serif; color: var(--gold); text-shadow: 0 3px 0 #7c2d12; letter-spacing: .02em; }
+  h2 { font: bold 28px Georgia, serif; color: #f87171; margin: 0 0 8px; }
+  h3 { margin: 18px 0 8px; font-size: 15px; color: #c4b5fd; }
+  .sub { margin: 2px 0 12px; color: var(--dim); }
+  #load { font-size: 13px; color: var(--dim); }
+  .lbar { height: 6px; background: #0b0816; border-radius: 3px; margin-top: 4px; overflow: hidden; }
+  #load-b { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  #classes { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+  .ccard { display: flex; gap: 10px; align-items: center; padding: 8px 10px; background: #0f0b1d; border: 2px solid var(--line); border-radius: 10px; cursor: pointer; }
+  .ccard:hover { border-color: #5b4b99; }
+  .ccard.sel { border-color: var(--gold); background: #231a3c; }
+  .ccard canvas { image-rendering: pixelated; flex: none; }
+  #rolls { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 8px; }
+  .roll { background: #0f0b1d; border: 1px solid var(--line); border-radius: 8px; text-align: center; padding: 6px 0; }
+  .roll span { display: block; font-size: 11px; color: var(--dim); font-weight: bold; }
+  .roll b { font-size: 22px; }
+  .roll i { display: block; font-style: normal; font-size: 12px; color: #c4b5fd; }
+  input[type=text], #name, #join-code { background: #0b0816; border: 1px solid #3f3570; color: var(--text); border-radius: 6px; padding: 8px 10px; font: inherit; }
+  #join-code { width: 120px; text-transform: uppercase; letter-spacing: .1em; }
+  #join-code:disabled { opacity: .4; }
+  .modes { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .modes label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .big { display: block; width: 100%; margin-top: 18px; padding: 12px; font-size: 18px; font-weight: bold; background: linear-gradient(#7c3aed, #5b21b6); border-color: #a78bfa; }
+  .big.alt { margin-top: 10px; background: linear-gradient(#15803d, #14532d); border-color: #4ade80; }
+  #menu-err { margin-top: 8px; color: #fca5a5; min-height: 1.2em; }
+  #hall ol { margin: 0; padding-left: 20px; color: var(--dim); font-size: 13px; }
+  .dstats { display: flex; gap: 10px; margin: 14px 0; }
+  .dstats div { flex: 1; background: #0f0b1d; border: 1px solid var(--line); border-radius: 8px; padding: 10px; text-align: center; }
+  .dstats span { display: block; font-size: 12px; color: var(--dim); }
+  .dstats b { font-size: 24px; color: var(--gold); }
+  #chat-in { position: fixed; left: 12px; bottom: 150px; width: min(420px, 60vw); z-index: 5; background: rgba(11, 8, 22, .92); border: 1px solid var(--accent); color: var(--text); border-radius: 6px; padding: 8px 10px; font: inherit; }
+  .tbadge { display: inline-block; padding: 0 7px; border-radius: 9px; font-size: 11px; font-weight: bold; color: #111; text-shadow: none; vertical-align: middle; }
+  .ptype { width: 100%; margin-top: 2px; }
+  .gem { display: block; width: 18px; height: 22px; clip-path: polygon(50% 0, 100% 35%, 80% 100%, 20% 100%, 0 35%); box-shadow: inset 0 0 6px #fff8; }
+  #races { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+  .rcard { padding: 8px 10px; background: #0f0b1d; border: 2px solid var(--line); border-radius: 10px; cursor: pointer; }
+  .rcard:hover { border-color: #5b4b99; }
+  .rcard.sel { border-color: var(--gold); background: #231a3c; }
+  .roll em { font-style: normal; color: #86efac; font-size: 10px; }
+  .tal { display: block; width: 100%; text-align: left; margin-bottom: 6px; border-color: #7c3aed; background: #2a1b4a; }
+  .tal span { display: block; font-size: 12px; color: var(--dim); }
+  .tchips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tchips span { font-size: 11px; background: #221a3d; border: 1px solid #3f3570; border-radius: 10px; padding: 1px 7px; }
+  .credit { margin-top: 16px; font-size: 11px; color: #6b6489; }
+  #hero { display: flex; gap: 14px; align-items: center; padding: 12px; background: #0f0b1d; border: 2px solid var(--gold); border-radius: 12px; margin-bottom: 8px; }
+  #hero canvas { image-rendering: pixelated; flex: none; }
+  .hero-line { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+  .hchip { background: #231a3c; border: 1px solid #3f3570; border-radius: 8px; padding: 2px 8px; font-weight: bold; }
+  .hero-stats { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 6px 0 2px; font-size: 13px; }
+  .attr { grid-template-columns: 80px 1fr 40px 26px; }
+  .pips { color: var(--gold); font-size: 9px; letter-spacing: 1px; overflow: hidden; white-space: nowrap; }
+  .subchip { border-color: var(--gold) !important; color: var(--gold); }
+  .tal.sub { border-color: var(--gold); }
+  .pets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .pet { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; background: #0b0816; border: 2px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 11px; }
+  .pet.on { border-color: #4ade80; background: #12261a; }
+  .pet img { height: 32px; image-rendering: pixelated; }
+  #p-pots button { font-size: 13px; }
+  #npc { position: fixed; left: calc((100vw - 280px) / 2); bottom: 24px; transform: translateX(-50%); width: min(460px, 90vw); max-height: 70vh; overflow-y: auto; overflow-x: hidden; z-index: 6;
+    background: rgba(23, 18, 42, .97); border: 2px solid var(--gold); border-radius: 12px; padding: 12px 14px; box-shadow: 0 10px 40px #000c; }
+  .npc-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 15px; }
+  .npc-head button { padding: 2px 8px; }
+  .fala { color: var(--dim); font-style: italic; margin: 6px 0 10px; }
+  #npc > button { display: block; width: 100%; margin-bottom: 6px; text-align: left; }
+  .shoprow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .shoprow i { font-size: 11px; font-style: normal; color: var(--dim); }
+  .sell { display: inline-block; margin: 2px; font-size: 12px; padding: 3px 7px; }
+  .sell .gem, .shoprow .gem { display: inline-block; width: 12px; height: 14px; vertical-align: middle; }
+  .quest { padding: 8px; margin-bottom: 6px; background: #0f0b1d; border: 1px solid var(--line); border-radius: 8px; }
+  .quest button { margin-top: 6px; }
+  .quest.cur { border-color: var(--gold); }
+  .qbar { height: 8px; background: #0b0816; border-radius: 4px; overflow: hidden; margin: 6px 0 2px; }
+  .qbar div { height: 100%; background: #4ade80; }
+  #ptip { position: fixed; z-index: 8; width: 300px; background: rgba(15, 11, 26, .97); border: 2px solid #4ade80; border-radius: 10px; padding: 8px 10px; font-size: 12px; pointer-events: none; box-shadow: 0 8px 30px #000a; }
+  #ptip > div { margin: 2px 0; }
+  #ptip .tip-h { font-size: 14px; margin-bottom: 4px; }
+  #ptip .tip-hm { margin-top: 6px; border-top: 1px solid var(--line); padding-top: 4px; }
+  #ptip .ok { color: #86efac; } #ptip .no { color: #6b6489; }
+  .phm { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 4px; }
+  .phm .hmk { font-size: 12px; }
+  .phm .hmt { padding: 0 4px; font-size: 11px; border-color: #60a5fa; background: #172554; }
+  .keyit span { display: inline-block; margin: 2px 6px 0 0; color: #93c5fd; }
+  .qtier { font-size: 11px; padding: 0 6px; border-radius: 8px; margin-right: 4px; }
+  .qtier.t0 { background: #14532d; } .qtier.t1 { background: #713f12; } .qtier.t2 { background: #7f1d1d; }
+  button.good { background: linear-gradient(#15803d, #14532d); border-color: #4ade80; }
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="c"></canvas>
+  <aside id="panel">
+    <div id="p-head"></div>
+    <div class="bar hp"><div id="b-hp"></div><span id="t-hp"></span></div>
+    <div class="bar xp"><div id="b-xp"></div><span id="t-xp"></span></div>
+    <div id="p-derived"></div>
+    <div id="p-talents"></div>
+    <div id="p-attrs"></div>
+    <div id="p-equip"></div>
+    <div id="p-inv"></div>
+    <div id="p-pots"></div>
+    <div id="p-pets"></div>
+    <div id="p-abil"></div>
+    <div id="p-room"></div>
+    <div class="help">
+      <kbd>WASD</kbd> mover · <kbd>Mouse</kbd> mirar/atirar · <kbd>Espaço</kbd> habilidade<br>
+      <kbd>E</kbd> falar / portal / MO · <kbd>F</kbd> Pokébola · <kbd>Q</kbd> poção · <kbd>X</kbd> montar · <kbd>V</kbd> voar (montaria voadora)<br><kbd>2</kbd> elixir · <kbd>3</kbd> cristal · <kbd>R</kbd> vila · <kbd>T</kbd> tiro automático<br>
+      <kbd>Enter</kbd> chat · <kbd>M</kbd> mapa · <kbd>N</kbd> som · <kbd>Ctrl+S</kbd> salvar arquivo<br>
+      Clique num item para equipar (cristais: usar). <b>Botão direito solta o item no chão</b> (fica 3 min, seus amigos podem pegar). Mate um Pokémon Alfa para abrir um portal de masmorra. Fale com Sildo na vila para seguir a história. Passe o mouse num companheiro para ver habilidade e MOs; MOs compradas na loja só podem ser ensinadas a quem as aprende nos jogos.
+    </div>
+  </aside>
+</div>
+
+<div id="npc" class="hidden"></div>
+<div id="ptip" class="hidden"></div>
+<input id="chat-in" class="hidden" maxlength="120" placeholder="Mensagem (Enter envia, Esc cancela)" autocomplete="off">
+
+<div id="menu" class="overlay">
+  <div class="menu-box">
+    <h1>Poké Realm</h1>
+    <p class="sub">Tiro frenético, dados de 20 lados e Pokémon selvagens. Encontre a Mina Perdida de Pedrafunda e fique lendário.</p>
+    <div id="load">Invocando Pokémon da PokeAPI... <span id="load-n"></span><div class="lbar"><div id="load-b"></div></div></div>
+    <div id="continue-box"></div>
+    <button id="btn-import" title="Carrega um arquivo .json salvo pelo botão 💾 do jogo">📂 Carregar save de arquivo</button> <span id="import-msg" class="small"></span>
+    <input type="file" id="file-import" accept=".json,application/json" class="hidden">
+
+    <h3>1. Seu herói (raça, classe e tipo são sorteados)</h3>
+    <div id="hero"></div>
+    <button id="btn-roll">🎲 Rolar outro herói</button>
+
+    <h3>2. Nome do herói</h3>
+    <input id="name" maxlength="14" autocomplete="off">
+
+    <div id="mode-box">
+      <h3>3. Modo de jogo</h3>
+      <div class="modes">
+        <label><input type="radio" name="mode" value="solo" checked> Solo</label>
+        <label><input type="radio" name="mode" value="host"> Criar sala (host)</label>
+        <label><input type="radio" name="mode" value="join"> Entrar em sala:</label>
+        <input id="join-code" maxlength="5" placeholder="CÓDIGO" disabled autocomplete="off">
+      </div>
+    </div>
+
+    <button id="btn-start" class="big" disabled>⚔️ Começar aventura</button>
+    <div id="menu-err"></div>
+    <div id="hall"></div>
+    <div class="credit">Sprites e dados: PokeAPI (pokeapi.co). Pokémon © Nintendo/Game Freak — projeto de fã, sem fins comerciais.</div>
+  </div>
+</div>
+
+<div id="death" class="overlay hidden">
+  <div class="menu-box" style="max-width:520px">
+    <h2>☠ Você morreu</h2>
+    <div id="death-info"></div>
+    <button id="btn-again" class="big">Criar novo personagem</button>
+  </div>
+</div>
+
+<div id="lost" class="overlay hidden">
+  <div class="menu-box" style="max-width:480px">
+    <h2>Conexão perdida</h2>
+    <p>O host saiu ou a conexão caiu. Seu personagem foi salvo neste navegador.</p>
+    <button class="big" onclick="location.reload()">Voltar ao menu</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/items.js"></script>
+<script src="js/dungeon.js"></script>
+<script src="js/net.js"></script>
+<script src="js/map.js"></script>
+<script src="js/world.js"></script>
+<script src="js/story.js"></script>
+<script src="js/hm.js"></script>
+<script src="js/allies.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
