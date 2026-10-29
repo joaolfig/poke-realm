@@ -242,7 +242,7 @@ function genQuests(P) {
       q.desc = `Descubra o ponto de voo "${l.nome}" (🎯 no mapa)`;
     }
     q.desc = `<span class="qtier t${idx}">${T.n}</span> ${q.desc}<div class="small"><i>${who}: "${why}."</i></div>`;
-    q.xp = Math.round(xpNeed(P.lvl) * (0.035 + 0.02 * diff) * T.r);
+    q.xp = Math.round(xpNeed(P.lvl) * (0.1 + 0.06 * diff) * T.r);
     q.gold = Math.round((30 + z * 25) * diff * T.r);
     q.bonus = idx === 2 ? (Math.random() < 0.5 ? 'statpot' : 'item') : idx === 1 ? pick(['stone', 'item', 'ball']) : pick(['ball', 'stone', null]);
     return q;
@@ -385,7 +385,7 @@ function startEvent() {
     announce(`✨ Um ${e.p.name} raro foi avistado! Ele foge — enfraqueça e capture (é fácil de pegar).`, '#67e8f9');
   } else {
     G.event = { kind, x: 0, y: 0, ttl: 120, zone: pz, label: 'Noite Sombria' };
-    announce('🌙 A noite caiu: Pokémon Fantasma e Sombrio surgem, e todo XP vale +25%.', '#a78bfa');
+    announce('🌙 A noite caiu: Pokémon Fantasma e Sombrio surgem, e todo XP vale +50%.', '#a78bfa');
   }
 }
 
@@ -431,7 +431,7 @@ function hostEventTargetGone(e) {
 function onEventDone(m) {
   const P = G.P;
   if (!P || inDungeonArea(P.x) || (!m.global && Math.hypot(P.x - m.x, P.y - m.y) > 1500)) return;
-  const xp = Math.round(xpNeed(P.lvl) * 0.04), gold = 25 * (m.zone || 1);
+  const xp = Math.round(xpNeed(P.lvl) * 0.08), gold = 25 * (m.zone || 1);
   P.gold += gold; P.balls++;
   G.toasts.push({ text: `🎉 Evento concluído: ${m.label}! +${xp} XP, +${gold} 🪙, +1 Pokébola`, color: '#facc15', t: 4, big: 1 });
   gainXP(xp, true);

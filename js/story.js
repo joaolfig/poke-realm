@@ -136,7 +136,7 @@ function storyAct(P, arg) {
     G.toasts.push({ text: `📖 Capítulo 1: ${STORY[1].titulo}`, color: '#fde047', t: 4, big: 1 });
   } else if (arg === 'next' && st.done) {
     const ch = st.ch;
-    const xp = Math.round(xpNeed(P.lvl) * 0.2), gold = 80 * ch;
+    const xp = Math.round(xpNeed(P.lvl) * 0.35), gold = 80 * ch;
     P.gold += gold;
     const it = ch === 4 ? { slot: 'amuleto', tier: 6, name: 'Coração da Forja', relic: 1, mods: { hp: 0.15, dmg: 2, cd: 0.15, regen: 0.5 } } : genItem(clamp(ch + 2, 0, 6));
     const i = P.inv.indexOf(null);
