@@ -11,6 +11,15 @@ const NET = {
   relayS: [], // tiros cosméticos de clientes para repassar
 };
 const ROOM_PREFIX = 'pokerealm-v1-';
+// servidores para atravessar roteadores (STUN) e um relay público de reserva (TURN) para redes mais fechadas
+const PEER_OPTS = {
+  config: {
+    iceServers: [
+      { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] },
+      { urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'], username: 'openrelayproject', credential: 'openrelayproject' },
+    ],
+  },
+};
 const isHost = () => NET.mode !== 'client';
 const netActive = () => NET.mode === 'host' ? NET.conns.size > 0 : NET.mode === 'client';
 
@@ -25,7 +34,7 @@ function netHost() {
   return new Promise((res, rej) => {
     if (typeof Peer === 'undefined') return rej(new Error('PeerJS não carregou (verifique a internet).'));
     const code = randCode();
-    const peer = new Peer(ROOM_PREFIX + code);
+    const peer = new Peer(ROOM_PREFIX + code, PEER_OPTS);
     let opened = false, failed = false;
     const fail = e => { if (opened || failed) return; failed = true; try { peer.destroy(); } catch (x) { /* ignora */ } rej(e); };
     peer.on('open', id => {
@@ -52,7 +61,7 @@ function netJoin(code) {
     if (typeof Peer === 'undefined') return rej(new Error('PeerJS não carregou (verifique a internet).'));
     code = code.trim().toUpperCase();
     if (!code) return rej(new Error('Digite o código da sala.'));
-    const peer = new Peer();
+    const peer = new Peer(PEER_OPTS);
     let done = false, failed = false;
     const fail = e => { if (done || failed) return; failed = true; try { peer.destroy(); } catch (x) { /* ignora */ } rej(e); };
     peer.on('open', id => {
