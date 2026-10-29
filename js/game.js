@@ -181,7 +181,7 @@ const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (P.invis > 0 ? 1.3 : 1) * (hasT
 const fireRate = P => CLASSES[P.cls].wpn.rate * (1 + 0.05 * A(P, 'AGI')) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (P.elixT > 0 ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => CLASSES[P.cls].abil.cd * (hasT(P, 'foco') ? 0.7 : 1) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.15 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
-const xpNeed = l => Math.round(110 * Math.pow(l, 2.2));
+const xpNeed = l => Math.round(180 * Math.pow(l, 2.2));
 
 // raça, classe e tipo são sorteados
 function rollHero() {
@@ -559,7 +559,7 @@ function onKill(m) {
 /* ---------- Jogador ---------- */
 function gainXP(n, raw) {
   const P = G.P;
-  if (!raw && isNight()) n = Math.round(n * 1.5);
+  if (!raw && isNight()) n = Math.round(n * 1.25);
   P.fame += n;
   if (P.lvl >= 20) return;
   P.xp += n;
