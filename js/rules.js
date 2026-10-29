@@ -16,7 +16,7 @@ const TYPE_PT = {
   dragon: 'Dragão', dark: 'Sombrio', steel: 'Aço', fairy: 'Fada',
 };
 const TYPES = Object.keys(TYPE_PT);
-// s = super efetivo (×2), w = pouco efetivo (×½), i = imune (aqui ×¼ para não travar o jogo)
+// tabela oficial (Gen 6+): s = super efetivo (×2), w = pouco efetivo (×½), i = imune (×0)
 const TYPE_CHART = {
   normal: { s: [], w: ['rock', 'steel'], i: ['ghost'] },
   fire: { s: ['grass', 'ice', 'bug', 'steel'], w: ['fire', 'water', 'rock', 'dragon'], i: [] },
@@ -44,9 +44,9 @@ function typeEff(atk, defs) {
   for (const t of defs) {
     if (c.s.includes(t)) m *= 2;
     else if (c.w.includes(t)) m *= 0.5;
-    else if (c.i.includes(t)) m *= 0.25;
+    else if (c.i.includes(t)) m = 0;
   }
-  return Math.max(0.25, Math.min(4, m));
+  return m;
 }
 
 /* ============ Raças ============ */
@@ -100,7 +100,7 @@ const TALENTS = {
   tesouro: { nome: 'Caçador de Tesouros', icon: '💰', desc: '+15% de chance de saque e +50% de ouro.' },
   olho: { nome: 'Olho de Águia', icon: '🦅', desc: 'Seus tiros vão 25% mais longe.' },
   alquimista: { nome: 'Alquimista', icon: '⚗️', desc: 'Poções 50% mais fortes e +1 Poção de Cura a cada 10 abates.' },
-  afinidade: { nome: 'Afinidade Elemental', icon: '💎', desc: 'Cristais de tipo duram o dobro (180s).' },
+  afinidade: { nome: 'Afinidade Elemental', icon: '💎', desc: 'Cristais de tipo duram o dobro (60s).' },
   domador: { nome: 'Domador', icon: '⚪', desc: '+4 nas rolagens de captura e +1 Pokébola a cada 15 abates.' },
 };
 

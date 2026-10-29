@@ -184,7 +184,7 @@ function itemDesc(it) {
   if (it.slot === 'arma') s = `${it.dice[0]}d${it.dice[1]}${it.bonus ? ' +' + it.bonus : ''} de dano`;
   else if (it.slot === 'armadura') s = `CA +${it.ac}`;
   else if (it.slot === 'anel') s = `+${it.bonus} ${ATTR_NAMES[it.attr]}`;
-  else if (it.slot === 'pedra') return `Você vira tipo ${TYPE_PT[it.type]} por 90s (ataque e defesa) e causa +1d4 de dano`;
+  else if (it.slot === 'pedra') return `Você vira tipo ${TYPE_PT[it.type]} por 30s (ataque e defesa) e causa +1d4 de dano`;
   else if (it.slot === 'cons') return CONS[it.k].nome;
   const m = modsDesc(it.mods);
   return s && m ? `${s} · ${m}` : s || m;

@@ -266,7 +266,7 @@ function useStone(i) {
   const P = G.P, it = P.inv[i];
   P.inv[i] = null;
   P.tempType = it.type;
-  P.tempTypeT = hasT(P, 'afinidade') ? 180 : 90;
+  P.tempTypeT = hasT(P, 'afinidade') ? 60 : 30;
   burst(P.x, P.y, TYPE_COLORS[it.type], 30);
   G.fx.push({ k: 'ring', x: P.x, y: P.y, r: 0, R: 90, life: 0.6, max: 0.6, color: TYPE_COLORS[it.type] });
   G.toasts.push({ text: `💎 Você agora é do tipo ${TYPE_PT[it.type]}!`, color: TYPE_COLORS[it.type], t: 3 });
@@ -627,14 +627,14 @@ function playerShoot() {
 function typed(P, e, dmg, atkType) {
   let eff = typeEff(atkType, e.p.types);
   if (eff > 1 && hasT(P, 'adepto')) eff *= 1.5;
-  return { dmg: Math.max(1, Math.round(dmg * eff)), eff };
+  return { dmg: eff === 0 ? 0 : Math.max(1, Math.round(dmg * eff)), eff };
 }
 function hitText(e, dmg, eff, crit, hit, extra = '') {
   const col = crit ? '#facc15' : eff > 1 ? '#fb923c' : eff < 1 ? '#8aa0b8' : hit ? '#ffffff' : '#9ca3af';
   text(e.x + rand(-8, 8), e.y - e.h / 2, `${dmg}${crit ? '!' : ''}${extra}`, col, crit ? 18 : eff > 1 ? 16 : hit ? 14 : 11);
   if (eff !== 1 && G.time - (e.effT || -9) > 1.5) {
     e.effT = G.time;
-    text(e.x, e.y - e.h / 2 - 18, eff > 1 ? 'Super efetivo!' : 'Pouco efetivo...', eff > 1 ? '#fb923c' : '#8aa0b8', 12);
+    text(e.x, e.y - e.h / 2 - 18, eff > 1 ? 'Super efetivo!' : eff === 0 ? 'Não tem efeito...' : 'Pouco efetivo...', eff > 1 ? '#fb923c' : '#8aa0b8', 12);
   }
 }
 
@@ -741,6 +741,7 @@ function enemyAttack(b) {
   if (r === 1 || Math.random() < M(P, 'dodge')) { text(P.x, P.y - 34, 'Esquiva!', '#93c5fd', 12); return; }
   const graze = !crit && r + b.atk < AC(P);
   let eff = typeEff(b.type, [pType(P)]);
+  if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
   if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type)) eff *= 0.5;
   if (graze) eff *= 0.34;
   if (P.furia > 0 && hasS(P, 'barbaro')) eff *= 0.5;
