@@ -45,21 +45,22 @@
   #p-derived .st { padding: 3px 12px 2px; text-align: center; border-right: 1px solid var(--line); }
   #p-derived .st span { display: block; font: 600 10px var(--px); color: var(--faint); text-transform: uppercase; letter-spacing: .08em; }
   #p-derived .st b { font: 700 17px var(--px); }
-  #hud-bot { bottom: 12px; width: min(600px, calc(100vw - 284px - 24px)); background: rgba(13, 14, 16, .85); border: 2px solid #000; box-shadow: 0 0 0 1px var(--line-hi), 0 6px 20px rgba(0,0,0,.5); padding: 8px 10px 8px; }
+  #hud-bot { left: 12px; transform: none; bottom: 12px; width: 300px; background: rgba(13, 14, 16, .85); border: 2px solid #000; box-shadow: 0 0 0 1px var(--line-hi), 0 6px 20px rgba(0,0,0,.5); padding: 6px 8px; }
   #hud-bot .bar { margin: 0 0 4px; }
-  #hud-bot .hp { height: 22px; } #hud-bot .hp span { line-height: 18px; font-size: 13px; }
-  #hud-bot .xp { height: 10px; } #hud-bot .xp span { font-size: 9px; line-height: 7px; }
-  .hotbar { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: stretch; margin-top: 6px; }
+  #hud-bot .hp { height: 18px; } #hud-bot .hp span { line-height: 14px; font-size: 12px; }
+  #hud-bot .xp { height: 8px; } #hud-bot .xp span { display: none; }
+  .hotbar { display: flex; flex-direction: column; gap: 5px; margin-top: 5px; }
   .hotbar .abil { margin: 0; padding: 5px 8px; font-size: 13px; }
-  .hotbar .abil { position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 10px; }
+  .hotbar .abil { position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 8px; }
   .hotbar .abil > * { position: relative; }
   .hotbar .abil .cd { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,.45); }
   .hotbar .abil span { float: none; }
   #p-derived .ptype { margin: 0; padding: 3px 12px; display: flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
   .hotbar .abil + .small, .hotbar #p-abil > .small { font-size: 11.5px; margin-top: 2px; }
-  .hotbar #p-pots { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+  .hotbar #p-pots { margin: 0; display: flex; gap: 4px; align-items: center; }
+  .hotbar .potrow { display: contents; }
   .hotbar .potrow { margin: 0; }
-  .hotbar .potrow button { padding: 3px 7px 4px; white-space: nowrap; }
+  .hotbar .potrow button { flex: 1; padding: 3px 4px 4px; white-space: nowrap; font-size: 12.5px; }
   .help-hint { margin-top: 16px; font-size: 12.5px; color: var(--dim); border-top: 2px solid var(--line); padding-top: 10px; }
   #help { position: fixed; z-index: 7; left: calc((100vw - 284px) / 2); top: 50%; transform: translate(-50%, -50%); width: min(520px, 92vw); background: rgba(20, 21, 24, .97); border: 3px solid #000; box-shadow: 0 0 0 2px var(--line-hi), 0 0 0 5px #000, 0 14px 40px rgba(0,0,0,.7); padding: 14px 16px; }
   #help .help { margin: 0; border: 0; padding: 0; font-size: 14px; line-height: 1.7; }
@@ -173,7 +174,7 @@
   .dstats div { background: var(--well); border: 2px solid #000; box-shadow: 0 0 0 1px var(--line); padding: 10px; text-align: center; }
   .dstats span { display: block; font: 600 11px var(--px); color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
   .dstats b { font: 700 28px var(--px); color: var(--gold); }
-  #chat-in { position: fixed; left: 12px; bottom: 150px; width: min(420px, 60vw); z-index: 5; background: rgba(11, 12, 14, .94); border: 2px solid #000; box-shadow: 0 0 0 1px var(--gold); color: var(--text); padding: 8px 10px; font: inherit; outline: none; }
+  #chat-in { position: fixed; left: 12px; bottom: 150px; width: 300px; z-index: 5; background: rgba(11, 12, 14, .94); border: 2px solid #000; box-shadow: 0 0 0 1px var(--gold); color: var(--text); padding: 8px 10px; font: inherit; outline: none; }
   .tbadge { display: inline-block; padding: 0 6px; font: 600 12px/17px var(--px); color: #111; text-shadow: none; vertical-align: middle; border: 1px solid #000; box-shadow: inset 0 -2px 0 rgba(0,0,0,.25); }
   .ptype { grid-column: 1 / -1; margin-top: 4px; font-size: 13px; color: var(--dim); }
   .gem { display: block; width: 18px; height: 22px; clip-path: polygon(50% 0, 100% 35%, 80% 100%, 20% 100%, 0 35%); box-shadow: inset 0 0 6px #fff8; }
@@ -319,18 +320,18 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=2"></script>
-<script src="js/data.js?v=2"></script>
-<script src="js/rules.js?v=2"></script>
-<script src="js/items.js?v=2"></script>
-<script src="js/dungeon.js?v=2"></script>
-<script src="js/net.js?v=2"></script>
-<script src="js/map.js?v=2"></script>
-<script src="js/world.js?v=2"></script>
-<script src="js/story.js?v=2"></script>
-<script src="js/hm.js?v=2"></script>
-<script src="js/allies.js?v=2"></script>
-<script src="js/audio.js?v=2"></script>
-<script src="js/game.js?v=2"></script>
+<script src="js/pokedex.js?v=3"></script>
+<script src="js/data.js?v=3"></script>
+<script src="js/rules.js?v=3"></script>
+<script src="js/items.js?v=3"></script>
+<script src="js/dungeon.js?v=3"></script>
+<script src="js/net.js?v=3"></script>
+<script src="js/map.js?v=3"></script>
+<script src="js/world.js?v=3"></script>
+<script src="js/story.js?v=3"></script>
+<script src="js/hm.js?v=3"></script>
+<script src="js/allies.js?v=3"></script>
+<script src="js/audio.js?v=3"></script>
+<script src="js/game.js?v=3"></script>
 </body>
 </html>

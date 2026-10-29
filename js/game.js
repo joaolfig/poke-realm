@@ -1388,7 +1388,7 @@ function drawHUD(ox, oy) {
   G.chat.forEach((c, i) => {
     const age = G.time - c.t;
     ctx.globalAlpha = age > 20 ? Math.max(0.25, 1 - (age - 20) / 5) : 1;
-    const y = H - 168 - (G.chat.length - 1 - i) * 18;
+    const y = H - 160 - (G.chat.length - 1 - i) * 18;
     ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = c.sys ? '#fcd34d' : '#e5e7eb';
     outlined(c.sys ? c.text : `${c.name}: ${c.text}`, 12, y);
   });
@@ -1447,9 +1447,9 @@ function updatePanel() {
     return `<div class="slot" data-inv="${i}" style="border-color:${itemColor(it)}" title="${esc(it.name)} — ${itemDesc(it)}${it.slot === 'pedra' ? '' : ` (${TIER_NAMES[it.tier]})`}\n${hint} · Botão direito: soltar no chão">${itemIcon(it)}${better ? '<i class="up">▲</i>' : ''}</div>`;
   }).join('') + '</div>';
   const bsel = P.ballSel || 'poke';
-  $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Botão direito: soltar uma no chão">❤️ Cura ×${P.pots.hp} <small>[Q]</small></button>
-    <button data-elix="1" ${P.bag.elixir ? '' : 'disabled'} title="+2 de dano e +20% de cadência por 30s">🧪 Elixir ×${P.bag.elixir} <small>[2]</small></button></div>
-    <div class="potrow balls">${Object.keys(BALLS).map(k => `<button data-ball="${k}" class="${bsel === k ? 'sel' : ''}" title="${BALLS[k].nome} (+${BALLS[k].bonus} na captura). Clique para escolher qual o F joga.">${BALLS[k].icon} ×${ballCount(P, k)}</button>`).join('')}<small>[F]</small></div>`;
+  $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}</button>
+    <button data-elix="1" ${P.bag.elixir ? '' : 'disabled'} title="Elixir [2]: +2 de dano e +20% de cadência por 30s">🧪 ×${P.bag.elixir}</button></div>
+    <div class="potrow balls">${Object.keys(BALLS).map(k => `<button data-ball="${k}" class="${bsel === k ? 'sel' : ''}" title="${BALLS[k].nome} (+${BALLS[k].bonus} na captura). Clique para escolher qual o F joga.">${BALLS[k].icon} ×${ballCount(P, k)}</button>`).join('')}</div>`;
   $('p-pets').innerHTML = `<h4>Companheiros <span class="small">${P.pets.length}/${MAX_PETS}</span></h4>` + (P.pets.length
     ? `<div class="pets">${P.pets.map((pt, i) => {
       const ev = evoLevel(pt.pid);

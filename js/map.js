@@ -304,11 +304,12 @@ function tileImg(kind, z, v) {
         px('#cfc7b5', 3, 23, 5, 2); px('#cfc7b5', 24, 23, 5, 2);
         break;
       }
-      default: { // GRASS e FLOWER
-        px(base, 0, 0, 32, 32);
-        const dk = shade(base, 0.85);
-        for (let k = 0; k < 3; k++) { const x = Math.floor(R(k) * 26) + 2, y = Math.floor(R(k + 3) * 26) + 2; px(dk, x, y, 1, 3); px(dk, x + 2, y + 1, 1, 2); }
-        if (kind === TK.FLOWER) {
+      default: { // GRASS e FLOWER (a flor é só sobreposição; o chão vem do groundChunk)
+        if (kind !== TK.FLOWER) {
+          px(base, 0, 0, 32, 32);
+          const dk = shade(base, 0.85);
+          for (let k = 0; k < 3; k++) { const x = Math.floor(R(k) * 26) + 2, y = Math.floor(R(k + 3) * 26) + 2; px(dk, x, y, 1, 3); px(dk, x + 2, y + 1, 1, 2); }
+        } else {
           for (let k = 0; k < 3; k++) {
             const x = Math.floor(R(k + 20) * 22) + 4, y = Math.floor(R(k + 30) * 22) + 4;
             if (zz === 2) { px('#f2e8d5', x + 2, y + 4, 2, 3); px('#d9433b', x, y + 1, 6, 3); px('#fff', x + 1, y + 1, 1, 1); }
@@ -370,16 +371,135 @@ function tileImg(kind, z, v) {
   return c;
 }
 
+/* ---------- Chão contínuo ----------
+ * Em vez de um quadrado de cor por tile, o chão é pintado em pedaços de 256px
+ * com pixels de 4px. A consulta do tile é deslocada por ruído, então as bordas
+ * entre grama, caminho e areia (e entre zonas) ficam orgânicas.
+ */
+const GCH = 256, GRES = 4, GCACHE = new Map(), RGBC = {};
+const rgbOf = h => RGBC[h] || (RGBC[h] = [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+const HARDK = new Set([TK.PLAZA, TK.FENCE, TK.CLIFF, TK.WATERFALL, TK.BRIDGE]);
+const WETK = new Set([TK.WATER, TK.SEA, TK.DIVE, TK.POND]);
+function groundCol(k, z, wx, wy, hx, hy) {
+  const zz = Math.max(0, z), fine = hash(hx, hy);
+  let col, f = 1;
+  if (k === TK.TALL) { col = rgbOf((TALLC[zz] || TALLC[1])[0]); f = 0.94 + vnoise(wx / 90, wy / 90) * 0.12; }
+  else if (k === TK.PATH || (zz === 4 && WETK.has(k))) { col = rgbOf(PATHC[zz]); f = 0.95 + vnoise(wx / 70, wy / 70) * 0.08 - (fine < 0.07 ? 0.08 : 0); }
+  else if (k === TK.SAND || WETK.has(k)) { col = rgbOf('#eadb9f'); f = 0.96 + vnoise(wx / 60, wy / 60) * 0.06 - (fine < 0.05 ? 0.07 : 0); }
+  else if (k === TK.SNOW) { col = rgbOf('#eef3f8'); f = 0.97 + vnoise(wx / 60, wy / 60) * 0.04 - (fine < 0.04 ? 0.05 : 0); }
+  else if (k === TK.PLAZA) col = rgbOf('#d6cdb8');
+  else if (k === TK.CLIFF || k === TK.WATERFALL) col = rgbOf(zz === 4 ? '#4a3a5a' : zz === 2 ? '#6d6a55' : '#8d7b64');
+  else {
+    // grama: manchas grandes claras/escuras + pontinhos de capim
+    const pal = ZONES[zz].cols, a = rgbOf(pal[0]), b = rgbOf(pal[pal.length - 1]), t = vnoise(wx / 130 + 17, wy / 130);
+    col = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+    f = 0.9 + vnoise(wx / 260, wy / 260) * 0.16 + (vnoise(wx / 40, wy / 40) - 0.5) * 0.05;
+    if (fine < 0.05) f -= 0.1; else if (fine > 0.975) f += 0.08;
+  }
+  return [col[0] * f, col[1] * f, col[2] * f];
+}
+function groundChunk(cx, cy) {
+  const key = cx + ',' + cy;
+  let c = GCACHE.get(key);
+  if (c) return c;
+  const x0 = cx * GCH, y0 = cy * GCH, n = GCH / GRES;
+  c = document.createElement('canvas');
+  c.width = c.height = n;
+  const g = c.getContext('2d'), img = g.createImageData(n, n), D = img.data;
+  for (let py = 0; py < n; py++) for (let px = 0; px < n; px++) {
+    const wx = x0 + (px + 0.5) * GRES, wy = y0 + (py + 0.5) * GRES;
+    let k = tileKind(wx, wy), sx = wx, sy = wy;
+    if (!HARDK.has(k)) {
+      const ax = wx + (vnoise(wx / 22, wy / 22) - 0.5) * 22, ay = wy + (vnoise(wx / 22 + 91, wy / 22) - 0.5) * 22, k2 = tileKind(ax, ay);
+      if (!HARDK.has(k2)) { k = k2; sx = ax; sy = ay; }
+    }
+    const col = groundCol(k, zoneAt(sx, sy), wx, wy, px + cx * 977, py + cy * 613), o = (py * n + px) * 4;
+    D[o] = col[0]; D[o + 1] = col[1]; D[o + 2] = col[2]; D[o + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  GCACHE.set(key, c);
+  return c;
+}
+
+/* ---------- Grama que balança ---------- */
+const SWAYC = {};
+// mato alto: 3 fileiras de touceiras, 5 quadros de inclinação (f = 0..4, 2 = reto).
+// edge: bits N=1 L=2 S=4 O=8 dos vizinhos que não são mato; as touceiras desse lado ficam ralas
+function tallImg(z, v, f, edge) {
+  const key = 't' + z + v + f + '_' + edge;
+  if (SWAYC[key]) return SWAYC[key];
+  const c = document.createElement('canvas');
+  c.width = 32; c.height = 42;
+  const g = c.getContext('2d'), zz = Math.max(0, z);
+  const [dk, lt] = TALLC[zz] || TALLC[1], mid = shade(lt, 0.8), tip = shade(lt, 1.18), sway = (f - 2) * 1.5;
+  for (let r = 0; r < 3; r++) for (let q = 0; q < 5; q++) {
+    const R = k => hash(v * 131 + r * 17 + q * 5 + k, zz + 7);
+    const out = (r === 0 && edge & 1) || (q === 4 && edge & 2) || (r === 2 && edge & 4) || (q === 0 && edge & 8);
+    const near = !out && ((r === 1 && edge & 5) || (q === 3 && edge & 2) || (q === 1 && edge & 8));
+    if (out ? R(9) < 0.75 : near && R(9) < 0.3) continue;
+    const bx = q * 7 + (r % 2) * 3 - 2 + Math.floor(R(1) * 3), by = 10 + r * 11 + 9 + Math.floor(R(2) * 3) - 1;
+    g.fillStyle = shade(dk, 0.7); g.fillRect(bx - 1, by - 1, 7, 2);
+    for (let b = 0; b < 3; b++) {
+      const h = (7 + Math.floor(R(b + 3) * 6) + (b === 1 ? 3 : 0)) * (out ? 0.6 : near ? 0.8 : 1) | 0, x = bx + b * 2;
+      for (let j = 0; j < h; j++) {
+        const t = j / h, xo = Math.round(sway * t * t * (b === 1 ? 1.4 : 1) + (b - 1) * t * 1.5);
+        g.fillStyle = t > 0.75 ? tip : t > 0.35 ? lt : mid;
+        g.fillRect(x + xo, by - j - 1, t < 0.5 ? 2 : 1, 1);
+      }
+    }
+  }
+  return (SWAYC[key] = c);
+}
+// tufinhos espalhados na grama baixa
+function tuftImg(z, v, f) {
+  const key = 'g' + z + v + f;
+  if (SWAYC[key]) return SWAYC[key];
+  const c = document.createElement('canvas');
+  c.width = 32; c.height = 36;
+  const g = c.getContext('2d'), zz = Math.max(0, z), base = ZONES[zz].cols[0];
+  const lt = shade(base, 1.32), md = shade(base, 1.12), dk = shade(base, 0.7), sway = (f - 2) * 0.7;
+  for (let k = 0; k < 3; k++) {
+    const R = q => hash(v * 71 + k * 13 + q, zz + 3);
+    const bx = 4 + Math.floor(R(1) * 22), by = 10 + Math.floor(R(2) * 22);
+    for (let b = 0; b < 4; b++) {
+      const h = 3 + Math.floor(R(b + 4) * 4), x = bx + b * 2 - 3;
+      for (let j = 0; j < h; j++) {
+        const t = j / h;
+        g.fillStyle = j === 0 ? dk : b % 2 ? lt : md;
+        g.fillRect(x + Math.round(sway * t * 2 + (b - 1.5) * t), by - j, 1, 1);
+      }
+    }
+  }
+  return (SWAYC[key] = c);
+}
+// vento: ondas que atravessam o campo na diagonal
+function windFrame(tx, ty) {
+  const ph = G.time * 1.7 - tx * 0.33 - ty * 0.18;
+  const s = Math.sin(ph) * 0.75 + Math.sin(ph * 0.37 + 1.3) * 0.35;
+  return clamp(Math.round(s * 1.5 + 2), 0, 4);
+}
+
 function renderOverworld(ox, oy) {
   const cam = G.cam;
   const tx0 = Math.floor((cam.x - W / 2) / TILE) - 1, tx1 = Math.ceil((cam.x + W / 2) / TILE) + 1;
   const ty0 = Math.floor((cam.y - H / 2) / TILE) - 1, ty1 = Math.ceil((cam.y + H / 2) / TILE) + 2;
+  const gc0 = Math.floor((cam.x - W / 2) / GCH), gc1 = Math.floor((cam.x + W / 2) / GCH);
+  const gr0 = Math.floor((cam.y - H / 2) / GCH), gr1 = Math.floor((cam.y + H / 2) / GCH);
+  for (let cy = gr0; cy <= gr1; cy++) for (let cx = gc0; cx <= gc1; cx++) ctx.drawImage(groundChunk(cx, cy), cx * GCH + ox, cy * GCH + oy, GCH, GCH);
   for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
     const i = tIdx(tx + OX, ty + OY), sx = tx * TILE + ox, sy = ty * TILE + oy;
-    if (i < 0) { ctx.drawImage(tileImg(TK.SEA, -1, (tx + ty) & 3), sx, sy); continue; }
+    if (i < 0) continue;
     const k = TT[i], z = TZ[i];
-    const gk = OBJK[k] || k === TK.CHEST ? TK.GRASS : k === TK.WATER || k === TK.SEA || k === TK.DIVE || k === TK.POND ? (z === 4 ? TK.PATH : TK.SAND) : k === TK.WATERFALL ? TK.CLIFF : k;
-    ctx.drawImage(tileImg(gk, gk === TK.SAND ? 0 : z, TV[i]), sx, sy);
+    if (k === TK.TALL) {
+      const nt = (a, b) => { const j = tIdx(a + OX, b + OY); return j < 0 || TT[j] !== TK.TALL; };
+      const edge = (nt(tx, ty - 1) ? 1 : 0) | (nt(tx + 1, ty) ? 2 : 0) | (nt(tx, ty + 1) ? 4 : 0) | (nt(tx - 1, ty) ? 8 : 0);
+      ctx.drawImage(tallImg(z, TV[i] & 3, windFrame(tx, ty), edge), sx, sy - 10);
+      continue;
+    }
+    if (k === TK.GRASS) { if (hash(tx, ty) < 0.45) ctx.drawImage(tuftImg(z, TV[i] & 3, windFrame(tx, ty)), sx, sy - 4); continue; }
+    if (k === TK.FLOWER) { ctx.drawImage(tileImg(k, z, TV[i]), sx, sy); continue; }
+    if (!HARDK.has(k) || k === TK.WATERFALL) continue;
+    ctx.drawImage(tileImg(k, z, TV[i]), sx, sy);
     if (k === TK.CLIFF) {
       const n = tIdx(tx + OX, ty + OY + 1);
       if (n >= 0 && TT[n] !== TK.CLIFF) { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(sx, sy + TILE - 6, TILE, 6); }
