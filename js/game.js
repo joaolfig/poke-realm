@@ -181,7 +181,11 @@ const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (P.invis > 0 ? 1.3 : 1) * (hasT
 const fireRate = P => CLASSES[P.cls].wpn.rate * (1 + 0.05 * A(P, 'AGI')) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (P.elixT > 0 ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => CLASSES[P.cls].abil.cd * (hasT(P, 'foco') ? 0.7 : 1) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.15 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
-const xpNeed = l => Math.round(100 * Math.pow(l, 2.2));
+// XP por nível = abates desejados × XP médio de um abate na zona recomendada para aquele nível.
+// Assim o ritmo cresce suave e não trava na troca de zona (Nv 1-4 Campos, 5-9 Floresta, 10-14 Montanhas, 15+ Sombrias).
+const XP_KILLS = [4, 8, 14, 20, 32, 40, 48, 56, 64, 70, 76, 82, 88, 94, 95, 100, 105, 110, 115];
+const XP_PER_KILL = [38, 73, 200, 400];
+const xpNeed = l => { const i = clamp(l, 1, 19); return Math.round(XP_KILLS[i - 1] * XP_PER_KILL[i < 5 ? 0 : i < 10 ? 1 : i < 15 ? 2 : 3]); };
 
 // raça, classe e tipo são sorteados
 function rollHero() {
