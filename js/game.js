@@ -75,6 +75,7 @@ function loadImg(p) {
 let pokeCache = null;
 async function loadPokedex(ids, onProg) {
   if (!pokeCache) { try { pokeCache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch (e) { pokeCache = {}; } }
+  if (typeof POKEDEX_PRELOAD !== 'undefined') for (const k in POKEDEX_PRELOAD) if (!pokeCache[k]) pokeCache[k] = POKEDEX_PRELOAD[k];
   const q = ids.filter(id => !POKE[id]);
   const total = q.length;
   let done = 0;
