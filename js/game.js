@@ -371,7 +371,7 @@ function updateEnemiesHost(dt) {
     e.t += dt; e.flash = Math.max(0, e.flash - dt);
     if (e.stT > 0) {
       e.stT -= dt;
-      if (e.st === 3 || e.st === 4) { e.dotT -= dt; if (e.dotT <= 0) { e.dotT = 1; applyHit(e, (e.st === 3 ? d(4) : d(3)) + e.zone); if (e.dead) continue; } }
+      if (e.st === 3 || e.st === 4) { e.dotT -= dt; if (e.dotT <= 0) { e.dotT = 1; applyHit(e, (e.st === 3 ? d(4) : d(3)) + e.zone, e.stBy || null); if (e.dead) continue; } }
       if (e.stT <= 0) e.st = 0;
       else if (e.st === 1 || e.st === 5) { e.moving = false; continue; } // dormindo/congelado: não age
     }
@@ -512,12 +512,14 @@ function hostBoss(dt) {
   emitEvent({ t: 'toast', text: `⚠ ${POKE[pid].name} lendário surgiu nas Terras Sombrias!`, color: '#f87171', big: 1 });
 }
 
-function applyHit(e, dmg) {
+// from = id do jogador que causou o dano (null para meteoros, veneno etc.)
+function applyHit(e, dmg, from = NET.myId) {
   if (e.dead) return;
+  if (from) { e.dmgBy = e.dmgBy || {}; e.dmgBy[from] = (e.dmgBy[from] || 0) + Math.max(0, Math.min(dmg, e.hp)); }
   e.hp -= dmg; e.flash = 0.1; e.hitT = G.time;
   if (e.hp <= 0) {
     e.dead = true;
-    emitEvent({ t: 'k', id: e.id, pid: e.pid, x: Math.round(e.x), y: Math.round(e.y), xp: e.xp, zone: e.zone, kind: e.kind, name: e.name, type: e.type, st: e.story || (e.bountyT !== undefined ? 10 + e.bountyT : 0) });
+    emitEvent({ t: 'k', id: e.id, pid: e.pid, x: Math.round(e.x), y: Math.round(e.y), xp: e.xp, zone: e.zone, kind: e.kind, name: e.name, type: e.type, st: e.story || (e.bountyT !== undefined ? 10 + e.bountyT : 0), by: e.dmgBy || {} });
     if (e.bkey) G.bountyCd[e.bkey] = G.time + 20;
     if (e.story) G.storyCd[e.story] = G.time + 30;
     hostOnKill(e);
@@ -536,27 +538,32 @@ function onKill(m) {
   if (m.kind === 2) G.toasts.push({ text: `🏆 ${m.name} foi derrotado!`, color: '#facc15', t: 4, big: 1 });
   const P = G.P;
   if (!P || Math.hypot(P.x - m.x, P.y - m.y) > 900) return;
+  // cada jogador ganha só pelo que fez: XP e ouro proporcionais ao dano que causou
+  const by = m.by || {}, total = Object.values(by).reduce((a, b) => a + b, 0);
+  const share = total > 0 ? (by[NET.myId] || 0) / total : 0;
+  // chefes, caçadas e história contam para quem estava junto (cooperação)
+  if (m.kind === 3) questProgress('masmorra');
+  if (m.st >= 10) questProgress('caca', { pid: m.pid });
+  storyKill(m);
+  rollLoot(m); // saque: cada jogador perto rola o seu, mesmo sem ter acertado
+  if (share <= 0) { G.dirty = true; return; }
   P.kills++;
   P.killsPot = (P.killsPot || 0) + 1;
   if (hasT(P, 'alquimista') && P.killsPot % 10 === 0) { P.pots.hp++; text(P.x, P.y - 60, '+1 Poção (Alquimista)', '#fca5a5', 12); }
   if (hasT(P, 'domador') && P.killsPot % 15 === 0) { P.balls++; text(P.x, P.y - 70, '+1 Pokébola (Domador)', '#e5e7eb', 12); }
-  const gold = Math.round(m.zone * randi(1, 3) * ([1, 4, 25, 12, 6][m.kind] || 1) * (hasT(P, 'tesouro') ? 1.5 : 1) * (1 + M(P, 'gold')));
+  const gold = Math.max(1, Math.round(m.zone * randi(1, 3) * ([1, 4, 25, 12, 6][m.kind] || 1) * (hasT(P, 'tesouro') ? 1.5 : 1) * (1 + M(P, 'gold')) * share));
   P.gold += gold;
   text(m.x + 12, m.y - 10, `+${gold}🪙`, '#fde047', 11);
   if (mine && hasS(P, 'necromante') && Math.random() < 0.3 && !m.kind) addSpirit(m.pid);
   const p = POKE[m.pid];
   questProgress('tipo', { types: p ? p.types : [m.type] });
   questProgress('coleta', { types: p ? p.types : [m.type] });
-  if (m.st >= 10) questProgress('caca', { pid: m.pid });
   questProgress('especie', { pid: m.pid });
   if (!inDungeonArea(m.x)) questProgress('zona', { zone: m.zone });
   if (m.kind === 1) questProgress('alfa');
-  if (m.kind === 3) questProgress('masmorra');
-  const xp = Math.round(m.xp * (1 + M(P, 'xp')));
+  const xp = Math.max(1, Math.round(m.xp * share * (1 + M(P, 'xp'))));
   gainXP(xp);
   petGainXP(xp * (isNight() ? 1.5 : 1));
-  storyKill(m);
-  rollLoot(m);
   G.dirty = true;
 }
 

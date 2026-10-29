@@ -254,11 +254,11 @@ function petAbility(pid) {
   return null;
 }
 // host: aplica o status (chefes não dormem, não congelam nem ficam confusos)
-function applyStatus(e, st) {
+function applyStatus(e, st, from = NET.myId) {
   if (!e || e.dead || !STATUS[st]) return;
   if (e.boss && (st === 1 || st === 5 || st === 6)) return;
   if (e.st === 1 || e.st === 5) return;
-  e.st = st; e.stT = STATUS[st].dur; e.dotT = 1;
+  e.st = st; e.stT = STATUS[st].dur; e.dotT = 1; e.stBy = from; // dano do veneno/queimadura conta para quem aplicou
 }
 function inflict(e, st) {
   text(e.x, e.y - e.h / 2 - 22, STATUS[st].label, STATUS[st].color, 13);

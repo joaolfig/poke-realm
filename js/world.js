@@ -461,7 +461,7 @@ function updateMeteors(dt) {
       text(P.x, P.y - 34, `-${dmg} meteoro`, '#f87171', 16);
       if (P.hp <= 0) playerDie('uma chuva de meteoros');
     }
-    if (isHost()) for (const e of G.enemies) if (e.hp > 0 && Math.hypot(e.x - m.x, e.y - m.y) < m.r + e.r) applyHit(e, Math.max(1, Math.round(e.maxHp * (e.boss ? 0.05 : 0.35))));
+    if (isHost()) for (const e of G.enemies) if (e.hp > 0 && Math.hypot(e.x - m.x, e.y - m.y) < m.r + e.r) applyHit(e, Math.max(1, Math.round(e.maxHp * (e.boss ? 0.05 : 0.35))), null);
     if (G.P && Math.hypot(G.P.x - m.x, G.P.y - m.y) < 700 && Math.random() < 0.3) G.bags.push({ x: m.x, y: m.y, items: [stone(pick(TYPES))], life: 60 });
   }
   G.meteors = G.meteors.filter(m => !m.dead);

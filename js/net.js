@@ -52,7 +52,7 @@ function netHost() {
     });
     peer.on('error', e => { if (!opened) fail(e); else console.warn('PeerJS:', e); });
     peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) { /* ignora */ } });
-    setTimeout(() => fail(new Error('Tempo esgotado ao contatar o servidor do PeerJS.')), 12000);
+    setTimeout(() => fail(new Error('Tempo esgotado ao contatar o servidor do PeerJS. Tente de novo.')), 20000);
   });
 }
 
@@ -82,7 +82,7 @@ function netJoin(code) {
       if (!done) fail(e.type === 'peer-unavailable' ? new Error('Sala não encontrada. Confira o código.') : e);
       else console.warn('PeerJS:', e);
     });
-    setTimeout(() => fail(new Error('Não foi possível conectar à sala (tempo esgotado).')), 15000);
+    setTimeout(() => fail(new Error('Não foi possível conectar à sala (tempo esgotado). Tente de novo.')), 30000);
   });
 }
 
@@ -135,11 +135,11 @@ function hostOnData(from, m) {
       hostBounty(m);
       break;
     case 'st':
-      applyStatus(G.emap.get(m.id), m.st);
+      applyStatus(G.emap.get(m.id), m.st, from);
       break;
     case 'h': {
       const e = G.emap.get(m.id);
-      if (e && !e.dead) { if (m.slow) e.slowT = m.slow; applyHit(e, m.dmg); }
+      if (e && !e.dead) { if (m.slow) e.slowT = m.slow; applyHit(e, m.dmg, from); }
       break;
     }
     case 'chat': case 'heal': case 'fx': case 'drop': case 'bag': case 'buff': case 'cut':
