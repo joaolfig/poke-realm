@@ -149,7 +149,7 @@ let W = 800, H = 600;
 let G = null, state = 'menu'; // menu | play | lost
 const K = {};
 const mouse = { x: 0, y: 0, down: false };
-let autofire = false, showMap = true, soundOn = true;
+let autofire = false, showMap = true;
 
 function newWorld() {
   G = {
@@ -532,6 +532,7 @@ function onKill(m) {
   const mine = e && G.time - (e.mineT || -9) < 1.5;
   if (e) {
     burst(e.x, e.y, e.color, e.boss ? 60 : 16);
+    if (mine) sfx('kill');
     G.emap.delete(m.id);
     G.enemies = G.enemies.filter(x => x.id !== m.id);
   }
@@ -713,6 +714,7 @@ function playerHit(e, b) {
   const res = typed(P, e, dmg, pType(P));
   dealDamage(e, res.dmg, sp === 2 ? 3 : 0);
   hitText(e, res.dmg, res.eff, crit, hit);
+  if (!crit) sfx(res.eff > 1 ? 'hitSE' : 'hit');
   // dano elemental extra das armas encantadas
   for (const et of MA(P, 'etype')) {
     const x = typed(P, e, d(6), et);
@@ -773,6 +775,7 @@ function heroLabel(P) {
 function playerDie(src) {
   const P = G.P;
   burst(P.x, P.y, '#ef4444', 40);
+  sfx('die');
   try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignora */ }
   let hall = [];
   try { hall = JSON.parse(localStorage.getItem(HALL_KEY) || '[]'); } catch (e) { /* ignora */ }
@@ -983,29 +986,6 @@ function handleEvent(m, local) {
   }
 }
 
-/* ---------- Som ---------- */
-let AC_ = null;
-function sfx(k) {
-  if (!soundOn) return;
-  try {
-    if (!AC_) AC_ = new (window.AudioContext || window.webkitAudioContext)();
-    const o = AC_.createOscillator(), g = AC_.createGain(), t = AC_.currentTime;
-    const S = {
-      shoot: [520, 300, 0.05, 'square', 0.015], hurt: [180, 80, 0.15, 'sawtooth', 0.06], crit: [880, 1320, 0.08, 'triangle', 0.05],
-      lvl: [440, 990, 0.4, 'triangle', 0.08], boom: [120, 40, 0.35, 'sawtooth', 0.08], pot: [600, 900, 0.12, 'sine', 0.06],
-      pick: [700, 1000, 0.08, 'sine', 0.05], boss: [90, 60, 0.9, 'sawtooth', 0.08],
-    }[k];
-    if (!S) return;
-    o.type = S[3];
-    o.frequency.setValueAtTime(S[0], t);
-    o.frequency.exponentialRampToValueAtTime(S[1], t + S[2]);
-    g.gain.setValueAtTime(S[4], t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + S[2]);
-    o.connect(g); g.connect(AC_.destination);
-    o.start(t); o.stop(t + S[2] + 0.02);
-  } catch (e) { /* sem áudio */ }
-}
-
 /* ---------- Atualização ---------- */
 function moveShot(b, dt) {
   b.t += dt;
@@ -1112,7 +1092,7 @@ function drawPlayerSprite(cls, x, y, face, frame, alpha, aim, ptype) {
 }
 
 function drawBubble(x, y, s) {
-  ctx.font = '12px system-ui, sans-serif';
+  ctx.font = '12px Barlow Semi Condensed, system-ui, sans-serif';
   const w = Math.min(220, ctx.measureText(s).width + 14);
   ctx.fillStyle = 'rgba(255,255,255,.92)';
   roundRect(x - w / 2, y - 22, w, 20, 6); ctx.fill();
@@ -1169,7 +1149,7 @@ function render() {
     ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x - 5, y - 11, 10, 4);
     const P = G.P;
     if (b.shared || (P && Math.hypot(P.x - b.x, P.y - b.y) < 90)) {
-      ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000';
+      ctx.font = 'bold 10px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000';
       if (P && Math.hypot(P.x - b.x, P.y - b.y) < 90) b.items.slice(0, 3).forEach((it, i) => { ctx.fillStyle = itemColor(it); outlined(it.name, x, y - 16 - i * 12); });
       if (b.shared) { ctx.fillStyle = '#e5e7eb'; outlined(`${Math.ceil(b.life)}s`, x, y + 22); }
     }
@@ -1205,7 +1185,7 @@ function render() {
       let lift = 0;
       if (r.mount) lift = drawMount(r.mount, r.x, r.y, x, y, r.face || 1, r.moving, G.time); else waterOver(r.x, r.y + 16, x, y + 16, 30);
       drawPlayerSprite(r.cls, x, y - lift, r.face || 1, r.mount ? 0 : r.moving ? Math.floor(r.walk * 8) % 2 : 0, r.invis ? 0.4 : 1, r.aim || 0, r.ptype);
-      ctx.font = 'bold 11px system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.textAlign = 'center';
+      ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.textAlign = 'center';
       outlined(`${r.name} · Nv ${r.lvl}`, x, y - 26);
       grassOver(r.x, r.y + 14, x, y + 18, 28);
       bar(x - 16, y + 22, 32, 4, r.hp / r.maxHp, '#22c55e');
@@ -1259,7 +1239,7 @@ function render() {
   drawPetHover(ox, oy);
   for (const t of G.texts) {
     ctx.globalAlpha = 1 - t.t / t.life;
-    ctx.font = `bold ${t.size}px system-ui, sans-serif`;
+    ctx.font = `bold ${t.size}px Barlow Semi Condensed, system-ui, sans-serif`;
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)'; ctx.fillStyle = t.color; ctx.textAlign = 'center';
     outlined(t.s, t.x + ox, t.y + oy);
   }
@@ -1283,7 +1263,7 @@ function drawEnemy(e, ox, oy) {
   drawStatus(e, x, y);
   if (!e.boss && (e.hp < e.maxHp || e.alfa || e.rare)) {
     bar(x - 20, y - e.h / 2 - 12, 40, 4, e.hp / e.maxHp, e.rare ? '#67e8f9' : e.alfa ? '#facc15' : '#ef4444');
-    if (e.alfa || e.rare) { ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = e.rare ? '#a5f3fc' : '#fde047'; ctx.fillText(e.name, x, y - e.h / 2 - 16); }
+    if (e.alfa || e.rare) { ctx.font = 'bold 10px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = e.rare ? '#a5f3fc' : '#fde047'; ctx.fillText(e.name, x, y - e.h / 2 - 16); }
   }
 }
 
@@ -1292,39 +1272,39 @@ function drawHUD(ox, oy) {
   const cx = P ? P.x : G.cam.x, cy = P ? P.y : G.cam.y;
   const dg = inDungeonArea(cx) ? dungeonAt(cx) : null;
   const name = areaName(cx, cy);
-  ctx.textAlign = 'left'; ctx.font = 'bold 14px system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+  ctx.textAlign = 'left'; ctx.font = 'bold 14px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
   let hy = 22;
   if (dg) outlined(`${name} · Masmorra  Perigo ${dg.zone}/4`, 12, hy);
   else {
     const z = zoneAt(cx, cy);
     if (z >= 0) outlined(`${name}  ${z ? `Perigo ${z}/4 · Nv ${ZONES[z].lvl}+` : '(área segura)'}`, 12, hy);
   }
-  ctx.font = '12px system-ui';
+  ctx.font = '12px Barlow Semi Condensed, system-ui';
   if (NET.mode !== 'solo') { hy += 18; outlined(`Sala ${NET.room} · ${G.remotes.size + 1} jogador(es)${NET.mode === 'host' ? ' · você é o host' : ''}`, 12, hy); }
   const ev = evView();
   if (ev) {
-    hy += 20; ctx.font = 'bold 13px system-ui'; ctx.fillStyle = '#fdba74';
+    hy += 20; ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fdba74';
     const extra = ev.total ? ` — ${ev.left}/${ev.total} restantes` : '';
     const dist = P && ev.kind !== 'noite' && ev.kind !== 'meteoros' ? ` · ${Math.round(Math.hypot(ev.x - P.x, ev.y - P.y) / 32)}m` : '';
     outlined(`${EVENT_ICONS[ev.kind]} ${ev.label}${extra} · ${ev.ttl}s${dist}`, 12, hy);
   }
   if (P) hy = drawStoryHUD(hy, ox, oy);
   if (P) hy = drawQuestHUD(hy, ox, oy);
-  if (P && P.elixT > 0) { hy += 20; ctx.font = 'bold 13px system-ui'; ctx.fillStyle = '#f0abfc'; outlined(`🧪 Elixir: ${Math.ceil(P.elixT)}s`, 12, hy); }
+  if (P && P.elixT > 0) { hy += 20; ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#f0abfc'; outlined(`🧪 Elixir: ${Math.ceil(P.elixT)}s`, 12, hy); }
   if (P && P.tempTypeT > 0) {
-    hy += 20; ctx.font = 'bold 13px system-ui'; ctx.fillStyle = TYPE_COLORS[P.tempType];
+    hy += 20; ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = TYPE_COLORS[P.tempType];
     outlined(`💎 Tipo ${TYPE_PT[P.tempType]}: ${Math.ceil(P.tempTypeT)}s`, 12, hy);
   }
-  if (autofire) { hy += 18; ctx.font = 'bold 12px system-ui'; ctx.fillStyle = '#fde047'; outlined('TIRO AUTOMÁTICO (T)', 12, hy); }
+  if (autofire) { hy += 18; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fde047'; outlined('TIRO AUTOMÁTICO (T)', 12, hy); }
 
   if (G.banner > 0 && name) {
     ctx.globalAlpha = Math.min(1, G.banner);
-    ctx.textAlign = 'center'; ctx.font = 'bold 34px Georgia, serif'; ctx.lineWidth = 5; ctx.fillStyle = dg ? THEMES[dg.theme].accent : '#fef3c7';
+    ctx.textAlign = 'center'; ctx.font = 'bold 36px Pixelify Sans, sans-serif'; ctx.lineWidth = 5; ctx.fillStyle = dg ? THEMES[dg.theme].accent : '#fef3c7';
     outlined(name, W / 2, H * 0.28);
     const z = dg ? dg.zone : zoneAt(cx, cy);
     if (z > 0 && P) {
       const rec = ZONES[z].lvl, low = P.lvl < rec - 1;
-      ctx.font = 'bold 16px system-ui'; ctx.lineWidth = 4; ctx.fillStyle = low ? '#fca5a5' : '#e5e7eb';
+      ctx.font = 'bold 16px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 4; ctx.fillStyle = low ? '#fca5a5' : '#e5e7eb';
       outlined(low ? `⚠ Perigoso para o seu nível (recomendado ${rec}+)` : `Nível recomendado ${rec}+`, W / 2, H * 0.28 + 26);
     }
     ctx.globalAlpha = 1;
@@ -1335,14 +1315,14 @@ function drawHUD(ox, oy) {
     if (G.nearPortal) { const p = G.nearPortal; hint = p.exit ? '[E] Sair da masmorra' : `[E] Entrar: ${THEMES[p.theme].nome}`; col = p.exit ? '#facc15' : THEMES[p.theme].accent; }
     else if (G.nearNPC) hint = `[E] Falar com ${G.nearNPC.nome}`;
     else if (G.nearHM) { hint = hmHint(P, G.nearHM); col = G.nearHM.k === 'chest' || petKnows(P, G.nearHM.k) ? '#86efac' : '#cbd5e1'; }
-    if (hint) { ctx.textAlign = 'center'; ctx.font = 'bold 16px system-ui'; ctx.lineWidth = 4; ctx.fillStyle = col; outlined(hint, W / 2, H / 2 + 70); }
+    if (hint) { ctx.textAlign = 'center'; ctx.font = 'bold 16px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 4; ctx.fillStyle = col; outlined(hint, W / 2, H / 2 + 70); }
   }
 
   ctx.textAlign = 'center';
   G.toasts.slice(-4).forEach((t, i) => {
     ctx.globalAlpha = Math.min(1, t.t);
-    ctx.font = `bold ${t.big ? 20 : 15}px system-ui`; ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.fillStyle = t.color;
-    outlined(t.text, W / 2, 80 + i * 28);
+    ctx.font = `bold ${t.big ? 20 : 15}px Barlow Semi Condensed, system-ui`; ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.fillStyle = t.color;
+    outlined(t.text, W / 2, 112 + i * 28);
   });
   ctx.globalAlpha = 1;
 
@@ -1350,9 +1330,9 @@ function drawHUD(ox, oy) {
   for (const e of G.enemies) if (e.boss && P) { const dd = Math.hypot(e.x - P.x, e.y - P.y); if (dd < bd) { bd = dd; boss = e; } }
   if (boss) {
     const w = Math.min(420, W - 260);
-    bar(W / 2 - w / 2, H - 34, w, 12, boss.hp / boss.maxHp, boss.legend ? '#dc2626' : '#a855f7');
-    ctx.font = 'bold 13px system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
-    outlined(`${boss.name} — ${Math.max(0, Math.ceil(boss.hp))}/${boss.maxHp}`, W / 2, H - 40);
+    bar(W / 2 - w / 2, 74, w, 12, boss.hp / boss.maxHp, boss.legend ? '#dc2626' : '#a855f7');
+    ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+    outlined(`${boss.name} — ${Math.max(0, Math.ceil(boss.hp))}/${boss.maxHp}`, W / 2, 68);
   }
   const legend = G.enemies.find(e => e.legend);
   if (legend && !dg) {
@@ -1363,7 +1343,7 @@ function drawHUD(ox, oy) {
       ctx.save(); ctx.translate(ex, ey); ctx.rotate(a);
       ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-8, -10); ctx.lineTo(-8, 10); ctx.closePath(); ctx.fill();
       ctx.restore();
-      ctx.font = 'bold 11px system-ui'; ctx.fillStyle = '#fca5a5'; ctx.strokeStyle = '#000';
+      ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fca5a5'; ctx.strokeStyle = '#000';
       outlined(`${legend.name} ${P ? Math.round(Math.hypot(legend.x - P.x, legend.y - P.y) / 32) + 'm' : ''}`, ex, ey + 24);
     }
   }
@@ -1390,13 +1370,13 @@ function drawHUD(ox, oy) {
       }
       if (ev && ev.kind !== 'noite' && same(ev.x)) {
         const [a, b] = toM(ev.x, ev.y);
-        ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fdba74'; ctx.strokeStyle = '#000';
+        ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fdba74'; ctx.strokeStyle = '#000';
         outlined(EVENT_ICONS[ev.kind], a, b + 5);
       }
       const qt = !dg && questTarget(P);
-      if (qt) { const [a, b] = toM(qt.x, qt.y); ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center'; outlined('🎯', a, b + 4); }
+      if (qt) { const [a, b] = toM(qt.x, qt.y); ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; outlined('🎯', a, b + 4); }
       const stt = !dg && storyTarget(P);
-      if (stt) { const [a, b] = toM(stt.x, stt.y); ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fde047'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; outlined('★', a, b + 5); }
+      if (stt) { const [a, b] = toM(stt.x, stt.y); ctx.font = 'bold 14px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fde047'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; outlined('★', a, b + 5); }
       for (const p of G.portals) if (same(p.x)) { const [a, b] = toM(p.x, p.y); ctx.fillStyle = p.exit ? '#facc15' : THEMES[p.theme].accent; ctx.beginPath(); ctx.arc(a, b, 4, 0, 7); ctx.fill(); }
       for (const r of G.remotes.values()) if (!r.dead && r.tx !== undefined && same(r.x)) { const [a, b] = toM(r.x, r.y); ctx.fillStyle = '#38bdf8'; ctx.fillRect(a - 2, b - 2, 5, 5); }
       for (const e of G.enemies) if (e.boss && same(e.x)) { const [a, b] = toM(e.x, e.y); ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(a, b, 5, 0, 7); ctx.fill(); }
@@ -1404,11 +1384,11 @@ function drawHUD(ox, oy) {
     }
   }
 
-  ctx.textAlign = 'left'; ctx.font = '13px system-ui';
+  ctx.textAlign = 'left'; ctx.font = '13px Barlow Semi Condensed, system-ui';
   G.chat.forEach((c, i) => {
     const age = G.time - c.t;
     ctx.globalAlpha = age > 20 ? Math.max(0.25, 1 - (age - 20) / 5) : 1;
-    const y = H - 20 - (G.chat.length - 1 - i) * 18;
+    const y = H - 168 - (G.chat.length - 1 - i) * 18;
     ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = c.sys ? '#fcd34d' : '#e5e7eb';
     outlined(c.sys ? c.text : `${c.name}: ${c.text}`, 12, y);
   });
@@ -1424,18 +1404,17 @@ function updatePanel() {
   const mh = maxHP(P), need = xpNeed(P.lvl);
   $('b-hp').style.width = (P.hp / mh * 100) + '%'; $('t-hp').textContent = `PV ${Math.ceil(P.hp)} / ${mh}`;
   $('b-xp').style.width = (P.lvl >= 20 ? 100 : P.xp / need * 100) + '%'; $('t-xp').textContent = P.lvl >= 20 ? 'NÍVEL MÁXIMO' : `XP ${P.xp} / ${need}`;
-  $('p-derived').innerHTML = `<span title="Classe de Armadura: o d20 inimigo + bônus precisa igualar ou superar">🛡️ CA <b>${AC(P)}</b></span>
-    <span title="Bônus de acerto (d20 + isto contra a CA do inimigo)">🎯 <b>+${toHit(P)}</b></span>
-    <span title="Ouro">🪙 <b>${P.gold}</b></span><span title="Fama acumulada">🏆 <b>${P.fame}</b></span>
+  $('p-derived').innerHTML = `<div class="st" title="Classe de Armadura: o d20 inimigo + bônus precisa igualar ou superar"><span>CA</span><b>${AC(P)}</b></div>
+    <div class="st" title="Bônus de acerto (d20 + isto contra a CA do inimigo)"><span>Acerto</span><b>+${toHit(P)}</b></div>
+    <div class="st" title="Ouro"><span>Ouro</span><b style="color:var(--gold)">${P.gold}</b></div><div class="st" title="Fama acumulada"><span>Fama</span><b>${P.fame}</b></div>
     <div class="ptype" title="Seu tipo define o que é super efetivo nos seus ataques e quais ataques te acertam forte">Tipo: ${typeBadge(pType(P))}${P.tempTypeT > 0 ? ` <span class="small">cristal ${Math.ceil(P.tempTypeT)}s (natural: ${TYPE_PT[P.ptype]})</span>` : ''}</div>`;
   const ab = c.abil, cd = abilCd(P);
-  $('p-abil').innerHTML = `<div class="abil ${P.abilCd > 0 ? 'off' : ''}"><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : `pronto · ${cd.toFixed(1)}s`}</span><div class="small">${ab.desc}</div></div>
-    <div class="small">[R] Voltar à vila (fique parado 1,5s): ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}</div>
-    ${ridingFlyer(P) ? `<div class="small">[V] Voar: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} · ${P.fly.length} destino(s)</div>` : ''}`;
+  $('p-abil').innerHTML = `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>
+    <div class="small" title="Voltar à vila: fique parado 1,5s">[R] Vila: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${ridingFlyer(P) ? ` · [V] Voar: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
   if (!G.dirty) return;
   G.dirty = false;
   const rc = race(P), sub = P.subclass ? subInfo(P.subclass) : null;
-  $('p-head').innerHTML = `<div class="pname">${esc(P.name)}</div><div class="pcls" title="${rc.traco}">${rc.icon} ${rc.nome} · ${c.icon} ${c.nome}${sub ? ` (${sub.icon} ${sub.nome})` : ''} · Nível ${P.lvl}</div>`;
+  $('p-head').innerHTML = `<div class="pname">${esc(P.name)}</div><div class="pcls" title="${rc.traco}">${rc.nome} ${c.nome}${sub ? ` (${sub.nome})` : ''} · Nível ${P.lvl}</div>`;
   let choose = '';
   if (P.lvl >= 10 && !P.subclass) {
     choose += `<h4>Escolha sua subclasse <span class="pts">nível 10!</span></h4>` + SUBCLASSES[P.cls].map(s =>
@@ -1486,7 +1465,7 @@ function updatePanel() {
   if (NET.mode === 'host') $('p-room').innerHTML = `<h4>Multiplayer</h4><div class="room">Código da sala: <b>${NET.room}</b> <button data-copy="1">Copiar</button></div><div class="small">Seus amigos escolhem "Entrar em sala" e digitam este código.</div>`;
   else if (NET.mode === 'client') $('p-room').innerHTML = `<h4>Multiplayer</h4><div class="room">Conectado à sala <b>${NET.room}</b></div>`;
   else $('p-room').innerHTML = '';
-  $('p-room').innerHTML += '<button data-save="1" class="savebtn" title="Baixa um arquivo .json com seu personagem (Ctrl+S)">💾 Salvar em arquivo</button>';
+  $('p-room').innerHTML += '<button data-save="1" class="savebtn" title="Baixa um arquivo .json com seu personagem (Ctrl+S)">Salvar em arquivo <small>Ctrl+S</small></button>';
 }
 
 $('panel').addEventListener('click', ev => {
@@ -1573,7 +1552,7 @@ window.addEventListener('keydown', ev => {
     return;
   }
   if (typing()) return;
-  if (state !== 'play' || !G || !G.P) return;
+  if (state !== 'play' || !G || !G.P) { if (ev.code === 'KeyN') $('menu-err').textContent = cycleSound(); return; }
   K[ev.code] = true;
   const P = G.P;
   if (ev.code === 'Escape' && G.npcOpen) closeNPC();
@@ -1592,7 +1571,8 @@ window.addEventListener('keydown', ev => {
   } else if (ev.code === 'Digit3') { const i = P.inv.findIndex(it => it && it.slot === 'pedra'); if (i >= 0) { useStone(i); G.dirty = true; } }
   else if (ev.code === 'KeyT') autofire = !autofire;
   else if (ev.code === 'KeyM') showMap = !showMap;
-  else if (ev.code === 'KeyN') { soundOn = !soundOn; G.toasts.push({ text: soundOn ? 'Som ligado' : 'Som desligado', color: '#e5e7eb', t: 1.5 }); }
+  else if (ev.code === 'KeyH') $('help').classList.toggle('hidden');
+  else if (ev.code === 'KeyN') G.toasts.push({ text: cycleSound(), color: '#e5e7eb', t: 1.8 });
   else if (ev.code === 'KeyR') {
     if (P.recallCd <= 0 && !G.recall && !inTown(P.x, P.y)) { G.recall = { t: 1.5 }; text(P.x, P.y - 40, 'Voltando à vila... fique parado', '#fde68a', 12); }
     else if (P.recallCd > 0) text(P.x, P.y - 40, `Retorno em ${Math.ceil(P.recallCd)}s`, '#cbd5e1', 12);
@@ -1620,27 +1600,27 @@ const menuSel = { hero: null, mode: 'solo', loaded: false };
 function renderHero() {
   const h = menuSel.hero, c = CLASSES[h.cls], rc = RACES[h.race];
   const fake = { cls: h.cls, race: h.race, lvl: 1, attrs: h.attrs, talents: [], subclass: null, equip: { arma: startWeapon(h.cls), armadura: { ac: 0 }, anel: null } };
-  $('hero').innerHTML = `<canvas width="72" height="72" id="hero-spr"></canvas>
+  $('hero').innerHTML = `<div class="hero-pic"><canvas width="96" height="96" id="hero-spr"></canvas></div>
     <div class="hero-info">
-      <div class="hero-line"><span class="hchip">${rc.icon} ${rc.nome}</span><span class="hchip">${c.icon} ${c.nome}</span>${typeBadge(h.type)}</div>
+      <div class="hero-line"><span class="hchip">${rc.nome}</span><span class="hchip">${c.nome}</span>${typeBadge(h.type)}</div>
       <div class="small">${c.desc} ${rc.traco}</div>
       <div class="small">Habilidade: <b>${c.abil.nome}</b> — ${c.abil.desc}</div>
-      <div class="hero-stats">${ATTRS.map(k => `<span title="${ATTR_DESC[k]}">${ATTR_NAMES[k]} <b>${h.attrs[k]}</b></span>`).join('')}
-        <span>❤️ <b>${maxHP(fake)}</b> PV</span><span>🛡️ CA <b>${AC(fake)}</b></span>${h.points ? `<span>+${h.points} pontos livres</span>` : ''}</div>
-      <div class="small">Tipo ${TYPE_PT[h.type]}: forte contra ${TYPE_CHART[h.type].s.map(t => TYPE_PT[t]).join(', ') || 'nada'}.</div>
-    </div>`;
+    </div>
+    <div class="hero-stats" style="grid-column:1/-1">${ATTRS.map(k => `<span title="${ATTR_DESC[k]}">${ATTR_NAMES[k]} <b>${h.attrs[k]}</b></span>`).join('')}
+      <span>PV <b>${maxHP(fake)}</b></span><span>CA <b>${AC(fake)}</b></span>${h.points ? `<span class="free">Pontos livres <b>+${h.points}</b></span>` : ''}</div>
+    <div class="small" style="grid-column:1/-1">Tipo ${TYPE_PT[h.type]}: forte contra ${TYPE_CHART[h.type].s.map(t => TYPE_PT[t]).join(', ') || 'nada'}.</div>`;
   const x = $('hero-spr').getContext('2d');
   x.imageSmoothingEnabled = false;
-  x.drawImage(CLS_SPR[h.cls][0], 0, 0, 72, 72);
+  x.drawImage(CLS_SPR[h.cls][0], 0, 0, 96, 96);
 }
 function renderHall() {
   let hall = [];
   try { hall = JSON.parse(localStorage.getItem(HALL_KEY) || '[]'); } catch (e) { /* ignora */ }
-  $('hall').innerHTML = hall.length ? `<h3>🪦 Salão dos Caídos</h3><ol>${hall.slice(0, 5).map(h => `<li><b>${esc(h.name)}</b> — ${esc(h.cls)} Nv ${h.lvl} · ${h.fame} fama · morto por ${esc(h.src)}</li>`).join('')}</ol>` : '';
+  $('hall').innerHTML = hall.length ? `<h3>Salão dos Caídos</h3><ol>${hall.slice(0, 5).map(h => `<li><b>${esc(h.name)}</b> — ${esc(h.cls)} Nv ${h.lvl} · ${h.fame} fama · morto por ${esc(h.src)}</li>`).join('')}</ol>` : '';
 }
 function renderContinue() {
   const s = loadSave();
-  $('continue-box').innerHTML = s && CLASSES[s.cls] ? `<button id="btn-cont" class="big alt" ${menuSel.loaded ? '' : 'disabled'}>▶ Continuar: ${esc(s.name)} (${(RACES[s.race] || RACES.humano).nome} ${CLASSES[s.cls].nome} Nv ${s.lvl})</button>` : '';
+  $('continue-box').innerHTML = s && CLASSES[s.cls] ? `<button id="btn-cont" class="big alt" ${menuSel.loaded ? '' : 'disabled'}>Continuar<small>${esc(s.name)} · ${(RACES[s.race] || RACES.humano).nome} ${CLASSES[s.cls].nome} · Nível ${s.lvl}</small></button>` : '';
   const b = $('btn-cont');
   if (b) b.onclick = () => startGame(s);
 }
@@ -1658,8 +1638,8 @@ $('file-import').onchange = async ev => {
     localStorage.setItem(SAVE_KEY, JSON.stringify(s));
     renderContinue();
     $('menu-err').textContent = '';
-    $('import-msg').textContent = `✅ Save de ${s.name} (nível ${s.lvl}) carregado. Clique em Continuar.`;
-  } catch (e) { $('import-msg').textContent = '❌ Não consegui ler esse arquivo: ' + e.message; }
+    $('import-msg').textContent = `Save de ${s.name} (nível ${s.lvl}) carregado. Clique em Continuar.`;
+  } catch (e) { $('import-msg').textContent = 'Não consegui ler esse arquivo: ' + e.message; }
 };
 document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', () => {
   menuSel.mode = r.value;
@@ -1729,11 +1709,69 @@ let last = performance.now();
 function step(now, draw) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
+  musicTick(musicKey(), dt);
   if (G && state !== 'lost') { update(dt); if (draw) render(); }
   else if (!G && draw) { ctx.fillStyle = '#0f0b1a'; ctx.fillRect(0, 0, W, H); }
 }
+function musicKey() {
+  const P = G && G.P;
+  if (!P || state !== 'play') return 'menu';
+  if (G.enemies.some(e => e.boss && e.hp > 0 && Math.hypot(e.x - P.x, e.y - P.y) < 650)) return 'chefe';
+  if (inDungeonArea(P.x)) return 'masmorra';
+  if (inTown(P.x, P.y)) return 'vila';
+  return ['vila', 'campo', 'floresta', 'montanha', 'sombra'][zoneAt(P.x, P.y)] || 'campo';
+}
+/* ---------- Fundo do menu: paisagem em pixel art de baixa resolução ---------- */
+const MBG = { cv: $('menu-bg'), stars: [], flies: [], ridges: [] };
+(function initMenuBg() {
+  const R = mulberry32(7);
+  for (let i = 0; i < 90; i++) MBG.stars.push([R(), R() * 0.55, R() * 6, R() < 0.15]);
+  for (let i = 0; i < 18; i++) MBG.flies.push([R(), 0.62 + R() * 0.35, R() * 6, 0.3 + R() * 0.7]);
+  // três cordilheiras: altura base, amplitude, cor, velocidade
+  [[0.5, 0.16, '#2a2238', 2], [0.62, 0.12, '#1b1726', 5], [0.76, 0.08, '#0e0d14', 10]].forEach(([b, a, c, v], k) => {
+    const pts = [];
+    for (let i = 0; i < 64; i++) pts.push(b - a * (0.5 + 0.5 * Math.sin(i * 0.9 + k * 3) * Math.cos(i * 0.37 + k)) - (R() < 0.2 ? R() * a * 0.5 : 0));
+    MBG.ridges.push({ pts, c, v });
+  });
+})();
+function drawMenuBg(now) {
+  const cv = MBG.cv, h = 150, w = Math.round(h * innerWidth / Math.max(1, innerHeight));
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  const x = cv.getContext('2d'), t = now / 1000;
+  // céu em faixas (sem degradê suave, combina com o pixel art)
+  const bands = ['#0b0b14', '#0f0f1c', '#141325', '#1a172d', '#221b33', '#2c2036', '#382636'];
+  bands.forEach((c, i) => { x.fillStyle = c; x.fillRect(0, Math.floor(i * h * 0.1), w, Math.ceil(h * 0.1) + 1); });
+  x.fillStyle = bands[6]; x.fillRect(0, h * 0.7, w, h * 0.3);
+  for (const [sx, sy, ph, big] of MBG.stars) {
+    const a = 0.35 + 0.65 * Math.max(0, Math.sin(t * 1.3 + ph));
+    x.fillStyle = `rgba(236,229,214,${a.toFixed(2)})`;
+    x.fillRect(Math.floor(sx * w), Math.floor(sy * h), big ? 2 : 1, big ? 2 : 1);
+  }
+  // lua
+  const mx = Math.floor(w * 0.78), my = Math.floor(h * 0.2);
+  x.fillStyle = '#3a2f3a'; x.beginPath(); x.arc(mx, my, 14, 0, 7); x.fill();
+  x.fillStyle = '#e8d9b0'; x.beginPath(); x.arc(mx, my, 10, 0, 7); x.fill();
+  x.fillStyle = '#cbb98f'; x.fillRect(mx - 4, my - 3, 3, 2); x.fillRect(mx + 2, my + 3, 2, 2);
+  for (const r of MBG.ridges) {
+    x.fillStyle = r.c; x.beginPath(); x.moveTo(0, h);
+    const seg = w / 24, off = (t * r.v) % (seg * r.pts.length);
+    for (let i = 0; i <= 26; i++) {
+      const gx = i * seg - (off % seg), k = (Math.floor(off / seg) + i) % r.pts.length;
+      x.lineTo(Math.round(gx), Math.round(r.pts[k] * h));
+    }
+    x.lineTo(w, h); x.fill();
+  }
+  for (const [fx, fy, ph, sp] of MBG.flies) {
+    const px = ((fx * w + t * 4 * sp + Math.sin(t * sp + ph) * 6) % w + w) % w, py = fy * h + Math.sin(t * 1.7 * sp + ph) * 4;
+    const a = Math.max(0, Math.sin(t * 2 * sp + ph));
+    x.fillStyle = `rgba(232,176,74,${(a * 0.9).toFixed(2)})`;
+    x.fillRect(Math.floor(px), Math.floor(py), 1, 1);
+    if (a > 0.7) { x.fillStyle = `rgba(232,176,74,${((a - 0.7) * 0.8).toFixed(2)})`; x.fillRect(Math.floor(px) - 1, Math.floor(py) - 1, 3, 3); }
+  }
+}
 function frame() {
   if (!document.hidden) step(performance.now(), true);
+  if (!document.hidden && !$('menu').classList.contains('hidden')) drawMenuBg(performance.now());
   requestAnimationFrame(frame);
 }
 // Com a aba em segundo plano o navegador pausa o requestAnimationFrame;
@@ -1757,7 +1795,7 @@ function boot() {
     $('load-b').style.width = (n / t * 100) + '%';
   }).then(() => {
     menuSel.loaded = true;
-    $('load').innerHTML = '✅ Pokémon prontos para a batalha!';
+    $('load').innerHTML = 'Pokémon prontos para a batalha.';
     $('btn-start').disabled = false;
     renderContinue();
     // Pokémon das masmorras e da noite carregam em segundo plano

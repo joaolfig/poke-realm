@@ -226,7 +226,7 @@ function drawPortals(ox, oy) {
       ctx.beginPath(); ctx.ellipse(0, 0, 26 - i * 7, 34 - i * 9, 0, G.time * (2 + i) + i, G.time * (2 + i) + i + 4.2); ctx.stroke();
     }
     ctx.restore();
-    ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = col;
+    ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = col;
     const s = `${p.exit ? 'Saída' : THEMES[p.theme].nome} · ${Math.ceil(p.ttl)}s`;
     ctx.strokeText(s, x, y - 46); ctx.fillText(s, x, y - 46);
   }

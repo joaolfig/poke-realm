@@ -30,21 +30,21 @@ function drawNPC(n, ox, oy) {
   const x = n.x + ox, y = n.y + oy + Math.sin(G.time * 2 + n.x) * 1;
   ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y + 17, 12, 4, 0, 0, 7); ctx.fill();
   ctx.drawImage(NPC_SPR[n.id], x - 18, y - 18, 36, 36);
-  ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = '#fef3c7';
+  ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = '#fef3c7';
   outlined(`${n.icon} ${n.nome}`, x, y - 26);
   const P = G.P;
   if (n.id === 'guilda' && P && (!P.quest || P.quest.done)) {
-    ctx.font = 'bold 20px system-ui'; ctx.fillStyle = P.quest && P.quest.done ? '#4ade80' : '#facc15';
+    ctx.font = 'bold 20px Barlow Semi Condensed, system-ui'; ctx.fillStyle = P.quest && P.quest.done ? '#4ade80' : '#facc15';
     outlined(P.quest && P.quest.done ? '?' : '!', x, y - 40 + Math.sin(G.time * 5) * 3);
   }
   if (n.id === 'sildo' && P && P.story && !storyOver(P) && (P.story.ch === 0 || P.story.done)) {
-    ctx.font = 'bold 22px system-ui'; ctx.fillStyle = '#fde047';
+    ctx.font = 'bold 22px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fde047';
     outlined('!', x, y - 40 + Math.sin(G.time * 5) * 3);
   }
 }
 
 /* ---------- Diálogo ---------- */
-function openNPC(id) { G.npcOpen = id; $('npc').classList.remove('hidden'); renderNPC(); }
+function openNPC(id) { G.npcOpen = id; $('npc').classList.remove('hidden'); renderNPC(); sfx('open'); }
 function closeNPC() { G.npcOpen = null; $('npc').classList.add('hidden'); }
 
 function shopList(P) {

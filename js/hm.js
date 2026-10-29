@@ -82,9 +82,9 @@ function drawLandmarks(ox, oy) {
     ctx.fillStyle = '#7c2d12'; ctx.beginPath(); ctx.moveTo(x - 5, y + 14); ctx.lineTo(x, y - 4); ctx.lineTo(x + 5, y + 14); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#6b4423'; ctx.fillRect(x - 40, y - 2, 4, 18);
     ctx.fillStyle = '#a16207'; ctx.fillRect(x - 50, y - 10, 24, 12);
-    ctx.font = '9px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.fillText('🪶', x - 38, y - 1);
+    ctx.font = '9px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.fillText('🪶', x - 38, y - 1);
     const known = G.P && G.P.fly.includes(l.id);
-    ctx.font = 'bold 10px system-ui'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = known ? '#93c5fd' : '#cbd5e1';
+    ctx.font = 'bold 10px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = known ? '#93c5fd' : '#cbd5e1';
     outlined(l.nome, x, y - 24);
   }
 }
@@ -271,10 +271,10 @@ function drawStatus(e, x, y) {
   if (!st) return;
   const top = y - e.h / 2;
   if (st === 1) {
-    ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#1e3a8a'; ctx.fillStyle = '#e0f2fe';
+    ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#1e3a8a'; ctx.fillStyle = '#e0f2fe';
     for (let k = 0; k < 3; k++) {
       const ph = (G.time * 0.8 + k / 3) % 1;
-      ctx.globalAlpha = 1 - ph; ctx.font = `bold ${10 + k * 3}px system-ui`;
+      ctx.globalAlpha = 1 - ph; ctx.font = `bold ${10 + k * 3}px Barlow Semi Condensed, system-ui`;
       outlined('z', x + 8 + ph * 16 + k * 4, top - 4 - ph * 26 - k * 6);
     }
     ctx.globalAlpha = 1;
@@ -282,7 +282,7 @@ function drawStatus(e, x, y) {
     ctx.fillStyle = 'rgba(165,243,252,.35)'; ctx.strokeStyle = 'rgba(224,242,254,.8)'; ctx.lineWidth = 2;
     ctx.fillRect(x - e.w * 0.4, y - e.h * 0.45, e.w * 0.8, e.h * 0.85); ctx.strokeRect(x - e.w * 0.4, y - e.h * 0.45, e.w * 0.8, e.h * 0.85);
   } else if (st === 6) {
-    ctx.font = '12px system-ui'; ctx.textAlign = 'center';
+    ctx.font = '12px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center';
     for (let k = 0; k < 3; k++) { const a = G.time * 4 + k * 2.09; ctx.fillText('⭐', x + Math.cos(a) * 14, top - 6 + Math.sin(a) * 4); }
   } else if (Math.random() < 0.35) {
     const col = st === 2 ? '#fde047' : st === 3 ? '#fb923c' : '#c084fc';
@@ -324,7 +324,7 @@ function drawPetHover(ox, oy) {
   const ab = petAbility(pt.pid);
   const lines = [`${pt.name} · Nv ${pt.lvl} · ${TYPE_PT[pt.type]}`, `Especial: ${MOVES[pt.type] || 'Investida'}`, ab ? `Habilidade: ${ab.nome}` : 'Sem habilidade',
     'MOs: ' + (HM_KEYS.filter(k => pt.hms && pt.hms.includes(k)).map(k => HMS[k].icon + ' ' + HMS[k].nome).join(', ') || 'nenhuma')];
-  ctx.font = '12px system-ui';
+  ctx.font = '12px Barlow Semi Condensed, system-ui';
   const w = Math.max(...lines.map(s => ctx.measureText(s).width)) + 16, x = a.x + ox + 20, y = a.y + oy - 70;
   ctx.fillStyle = 'rgba(15,11,26,.92)'; ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1.5;
   roundRect(x, y, w, lines.length * 16 + 10, 6); ctx.fill(); ctx.stroke();

@@ -159,7 +159,7 @@ function drawQuestHUD(hy, ox, oy) {
   const P = G.P, q = P.quest;
   if (!q || inDungeonArea(P.x)) return hy;
   hy += 18;
-  ctx.textAlign = 'left'; ctx.font = 'bold 12px system-ui'; ctx.fillStyle = q.done ? '#86efac' : '#e5e7eb'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+  ctx.textAlign = 'left'; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = q.done ? '#86efac' : '#e5e7eb'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
   const plain = q.desc.replace(/<div[\s\S]*$/, '').replace(/<[^>]+>/g, '');
   const t = questTarget(P), dist = t ? ` · ${Math.round(Math.hypot(t.x - P.x, t.y - P.y) / 32)}m` : '';
   outlined(q.done ? '📜 Contrato cumprido! Volte ao Mestre da Guilda' : `📜 ${plain} (${q.have}/${q.need})${dist}`, 12, hy);
@@ -168,8 +168,8 @@ function drawQuestHUD(hy, ox, oy) {
     if (bx < 0 || by < 0 || bx > W || by > H) {
       const a = Math.atan2(by - H / 2, bx - W / 2);
       const ex = clamp(W / 2 + Math.cos(a) * (W / 2 - 60), 40, W - 40), ey = clamp(H / 2 + Math.sin(a) * (H / 2 - 60), 40, H - 40);
-      ctx.font = '18px system-ui'; ctx.textAlign = 'center'; ctx.fillText('🎯', ex, ey + 6);
-    } else { ctx.font = '22px system-ui'; ctx.textAlign = 'center'; ctx.fillText('🎯', bx, by - 30 + Math.sin(G.time * 4) * 3); }
+      ctx.font = '18px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillText('🎯', ex, ey + 6);
+    } else { ctx.font = '22px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillText('🎯', bx, by - 30 + Math.sin(G.time * 4) * 3); }
   }
   return hy;
 }
@@ -184,7 +184,7 @@ function drawStoryHUD(hy, ox, oy) {
   const P = G.P, t = storyTarget(P);
   if (!t || inDungeonArea(P.x)) return hy;
   hy += 20;
-  ctx.textAlign = 'left'; ctx.font = 'bold 13px system-ui'; ctx.fillStyle = '#fde68a'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+  ctx.textAlign = 'left'; ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fde68a'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
   const dist = Math.round(Math.hypot(t.x - P.x, t.y - P.y) / 32);
   outlined(`📖 ${t.titulo} — ${t.label} · ${dist}m${t.lvl && P.lvl < t.lvl ? ` (Nv ${t.lvl}+)` : ''}`, 12, hy);
   // seta na borda da tela
@@ -197,7 +197,7 @@ function drawStoryHUD(hy, ox, oy) {
     ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-7, -9); ctx.lineTo(-7, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.restore();
   } else {
-    ctx.font = 'bold 22px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fde047';
+    ctx.font = 'bold 22px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fde047';
     outlined('★', bx, by - 40 + Math.sin(G.time * 4) * 4);
   }
   return hy;

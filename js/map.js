@@ -532,6 +532,6 @@ function drawBuilding(b, ox, oy) {
   ctx.fillStyle = '#93c5fd';
   ctx.fillRect(x + 14, y + h - wallH + 8, 16, 12); ctx.fillRect(x + w - 30, y + h - wallH + 8, 16, 12);
   ctx.fillStyle = '#fff'; ctx.fillRect(x + 14, y + h - wallH + 8, 6, 4); ctx.fillRect(x + w - 30, y + h - wallH + 8, 6, 4);
-  ctx.font = '18px system-ui'; ctx.textAlign = 'center';
+  ctx.font = '18px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center';
   ctx.fillText(b.sign, x + w / 2, y + (h - wallH) / 2 + 6);
 }

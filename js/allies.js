@@ -318,7 +318,7 @@ function drawAlly(pid, wx, wy, ox, oy, ghost, t, face, moving, evolving, lvl) {
   const img = ghost ? ghostImg(p) : evolving && Math.floor(G.time * 8) % 2 ? whiteImg(p) : p.img;
   drawMon(img, p, x, y, w, h, face, t, moving, wx, wy, ghost || petIsFlyer(pid), ghost ? 0.55 : 1);
   if (!ghost) {
-    ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#f87171';
+    ctx.font = 'bold 10px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#f87171';
     ctx.fillText(lvl ? `♥ ${lvl}` : '♥', x, y - h / 2 - 4);
   }
 }
