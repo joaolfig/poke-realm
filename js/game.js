@@ -295,14 +295,14 @@ function enemyStats(pid, zone, kind) {
   return {
     p, pid, zone, kind, boss: kind === 2 || kind === 3, legend, alfa, rare, type, color: TYPE_COLORS[type] || '#fff',
     name: (alfa ? 'Alfa ' : '') + p.name + (rare ? ' ✨' : ''),
-    maxHp: Math.round(((st.hp || 50) * 0.35 + 8) * zh * (legend ? 70 : dboss ? 8 : alfa ? 3 : rare ? 2.5 : 1)),
+    maxHp: Math.round(((st.hp || 50) * 0.35 + 8) * zh * (legend ? 70 : dboss ? (zone >= 4 ? 10 : 8) : alfa ? 3 : rare ? 2.5 : 1)),
     ac: 9 + Math.floor((st.defense || 50) / 30) + zone + (legend ? 6 : dboss ? 2 : alfa ? 1 : 0),
     atk: 2 + Math.floor(atk / 35) + Math.round(zone * 2.5) + (legend ? 8 : dboss ? 2 : alfa ? 1 : 0),
     dice: [legend ? 10 : dboss ? nd + 2 : nd + (alfa ? 1 : 0), legend ? 10 : 4 + 2 * Math.min(3, Math.floor(atk / 40)), zone * 2 + (legend ? 15 : dboss ? 3 : 0)],
     speed: (35 + (st.speed || 50) * 0.55) * (legend || dboss ? 0.6 : rare ? 1.5 : 1),
     scale: legend ? 4.2 : dboss ? 3.3 : clamp(1.7 + (p.height || 10) / 35, 1.7, 2.8) * (alfa || rare ? 1.3 : 1),
     xp: Math.round((p.exp || 100) * (0.4 + zone * 0.35) * (zone >= 4 ? 1.3 : 1) * (legend ? 45 : dboss ? 8 : alfa ? 3 : rare ? 4 : 1)),
-    cdMul: 1 / (1 + (zone - 1) * 0.2),
+    cdMul: 1 / (1 + (zone - 1) * 0.2 + Math.max(0, zone - 2) * 0.1), // atacam mais rápido nas zonas altas
     cdBoss: legend ? 0.7 : undefined, // lendários atacam mais rápido
   };
 }
@@ -509,11 +509,12 @@ function hostSpawning(dt) {
   const night = !water && isNight() && Math.random() < 0.5 ? NIGHT_POOL.filter(id => POKE[id]) : [];
   const pid = water ? pick(WATER_POOLS[z]) : night.length ? pick(night) : pick(ZONE_POOLS[z]);
   if (!POKE[pid]) return;
-  const n = randi(z >= 2 ? 2 : 1, z >= 3 ? 4 : 3);
+  // bandos maiores e mais Alfas no meio e no fim do jogo
+  const n = randi(z >= 4 ? 3 : z >= 2 ? 2 : 1, z >= 4 ? 6 : z >= 3 ? 4 : 3);
   for (let i = 0; i < n; i++) {
     const ex = x + rand(-50, 50), ey = y + rand(-50, 50);
     if (water && !isWater(ex, ey)) continue;
-    const e = hostSpawn(pid, z, Math.random() < 0.04 ? 1 : 0, ex, ey);
+    const e = hostSpawn(pid, z, Math.random() < (z >= 4 ? 0.07 : z >= 3 ? 0.055 : 0.04) ? 1 : 0, ex, ey);
     if (water && !e.fly) e.aqua = true;
   }
 }
@@ -725,6 +726,7 @@ function useAbility() {
     case 'assassino': { // Frasco de Veneno (Assassino): nuvem que corrói
       const t = aimPoint(P, 330);
       G.zones.push({ k: 'veneno', x: t.x, y: t.y, r: 100, t: 4.4, wait: 0.4, every: 0.5, tick: 0 });
+      if (P.pvp) emitEvent({ t: 'pvpaoe', x: Math.round(t.x), y: Math.round(t.y), r: 100, dur: 4, wait: 0.4, dmg: Math.max(1, Math.round((roll(1 + Math.floor(lv / 6), 6)) * 0.6)), name: P.name });
       fxAt(t.x, t.y, 100, '#a3e635'); sfx('pot'); break;
     }
     case 'trapaceiro': { // Prisma Ilusório (Trapaceiro): teleporte + ilusão que atrai os inimigos
@@ -889,6 +891,7 @@ function enemyAttack(b) {
 
 function usePotion() {
   const P = G.P;
+  if (P && P.pvp) { text(P.x, P.y - 40, 'Sem poções na arena!', '#fca5a5', 12); return; }
   if (!P || P.pots.hp <= 0 || P.hp >= maxHP(P)) return;
   const h = Math.round(Math.max(roll(2, 4) + 2, maxHP(P) * 0.3) * (hasT(P, 'alquimista') ? 1.5 : 1));
   P.hp = Math.min(maxHP(P), P.hp + h);
@@ -1038,6 +1041,7 @@ function updatePlayer(dt) {
 
 function useElixir() {
   const P = G.P;
+  if (P && P.pvp) { text(P.x, P.y - 40, 'Sem elixir na arena!', '#fca5a5', 12); return; }
   if (!P || !P.bag.elixir) return;
   P.bag.elixir--; P.elixT = 30;
   text(P.x, P.y - 40, '🧪 Elixir de Poder!', '#f0abfc', 14);
@@ -1089,6 +1093,7 @@ function handleEvent(m, local) {
       break;
     case 'heal': {
       const P = G.P;
+      if (P && P.pvp && !local) break; // na arena só a sua própria cura vale
       if (P && Math.hypot(P.x - m.x, P.y - m.y) < (m.r || 220)) {
         const before = P.hp;
         P.hp = Math.min(maxHP(P), P.hp + m.amt);
@@ -1109,13 +1114,14 @@ function handleEvent(m, local) {
     case 'cut': cutTile(m.i); break;
     case 'buff': {
       const P = G.P;
+      if (P && P.pvp && !local) break;
       if (P && Math.hypot(P.x - m.x, P.y - m.y) < 240) {
         if (m.k === 'furia') P.furia = Math.max(P.furia, m.dur); else if (m.k === 'selo') P.seloT = Math.max(P.seloT || 0, m.dur); else P.hasteT = Math.max(P.hasteT || 0, m.dur);
         if (!local) text(P.x, P.y - 44, m.k === 'furia' ? `Berserk! (${m.name})` : m.k === 'selo' ? `Selo Sagrado! (${m.name})` : `Pressa! (${m.name})`, '#fca5a5', 12);
       }
       break;
     }
-    case 'pvpinv': case 'pvpok': case 'pvpout': pvpEvent(m); break;
+    case 'pvpinv': case 'pvpok': case 'pvpout': case 'pvpaoe': pvpEvent(m); break;
     case 'decoy': G.decoys.push({ x: m.x, y: m.y, t: m.dur, cls: m.cls, ptype: m.ptype }); break;
     case 'met': G.meteors.push({ x: m.x, y: m.y, r: m.r, t: m.delay, max: m.delay, zone: m.zone || 1 }); break;
     case 'evdone': onEventDone(m); break;
@@ -1336,7 +1342,7 @@ function render() {
       const r = it.r, x = r.x + ox, y = r.y + oy;
       let lift = 0;
       if (r.mount) lift = drawMount(r.mount, r.x, r.y, x, y, r.face || 1, r.moving, G.time); else waterOver(r.x, r.y + 16, x, y + 16, 30);
-      drawPlayerSprite(r.cls, x, y - lift, r.face || 1, r.mount ? 0 : r.moving ? Math.floor(r.walk * 8) % 2 : 0, r.invis ? 0.4 : 1, r.aim || 0, r.ptype);
+      drawPlayerSprite(r.cls, x, y - lift, r.face || 1, r.mount ? 0 : r.moving ? Math.floor(r.walk * 8) % 2 : 0, r.invis ? (G.P && G.P.pvp ? 0.07 : 0.4) : 1, r.aim || 0, r.ptype);
       ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.textAlign = 'center';
       outlined(`${r.name} · Nv ${r.lvl}`, x, y - 26);
       grassOver(r.x, r.y + 14, x, y + 18, 28);

@@ -143,7 +143,7 @@ function hostOnData(from, m) {
       if (e && !e.dead) { if (m.slow) e.slowT = m.slow; applyHit(e, m.dmg, from); }
       break;
     }
-    case 'chat': case 'heal': case 'fx': case 'drop': case 'bag': case 'buff': case 'cut': case 'decoy': case 'pvpinv': case 'pvpok': case 'pvpout':
+    case 'chat': case 'heal': case 'fx': case 'drop': case 'bag': case 'buff': case 'cut': case 'decoy': case 'pvpinv': case 'pvpok': case 'pvpout': case 'pvpaoe':
       m.from = from;
       handleEvent(m, false);
       netBroadcastExcept(m, from);

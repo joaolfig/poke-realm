@@ -87,7 +87,9 @@ function pvpShotDmg(P, o) {
   const base = sp === 1 ? roll(1 + Math.floor(P.lvl / 6), 6) + A(P, 'POD') / 2
     : sp ? roll(2 + Math.floor(P.lvl / 4), 8) + A(P, 'POD')
       : roll(w.dice[0], w.dice[1]) + A(P, 'POD') + w.bonus + M(P, 'dmg');
-  return Math.max(1, Math.round(base * 0.6));
+  let dmg = Math.max(1, Math.round(base * 0.6));
+  if (P.nextCrit && !sp) { dmg *= 2; P.nextCrit = false; } // Manto do Ladino: o próximo ataque é crítico também no rival
+  return dmg;
 }
 function pvpHitCheck(b) {
   const P = G.P;
@@ -104,8 +106,26 @@ function pvpHitCheck(b) {
   if (P.hp <= 0) { const who = G.remotes.get(b.own); pvpLeave(true, who ? who.name : 'um rival'); }
   return true;
 }
+// áreas de dano do rival (ex.: veneno do Assassino): quem está dentro calcula o próprio dano
+function pvpAoeTick(dt) {
+  const P = G.P;
+  if (!PVP.aoe) return;
+  for (const a of PVP.aoe) {
+    a.dur -= dt;
+    if ((a.wait -= dt) > 0) continue;
+    if ((a.tick -= dt) > 0) continue;
+    a.tick = 0.5;
+    if (!P || !P.pvp || P.pvp.t > 0 || P.dodgeT > 0 || Math.hypot(P.x - a.x, P.y - a.y) > a.r) continue;
+    const dmg = Math.round(a.dmg * clamp(1 - (AC(P) - 12) * 0.03, 0.5, 1));
+    P.hp -= dmg; P.sinceHit = 0;
+    text(P.x, P.y - 34, `-${dmg} ☠`, '#a3e635', 13);
+    if (P.hp <= 0) { PVP.aoe = []; pvpLeave(true, a.name); return; }
+  }
+  PVP.aoe = PVP.aoe.filter(a => a.dur > 0);
+}
 function pvpTick(dt) {
   const P = G.P;
+  pvpAoeTick(dt);
   if (!P) return;
   if (P.pvp) {
     P.pvp.t -= dt;
@@ -125,6 +145,10 @@ function pvpEvent(m) {
     if (!P) return;
     if (m.a === NET.myId) pvpEnter(0, m.name);
     else if (m.b === NET.myId) { const r = G.remotes.get(m.a); pvpEnter(1, r ? r.name : 'o rival'); }
+  } else if (m.t === 'pvpaoe') {
+    if (m.from === NET.myId || !P || !P.pvp) return;
+    (PVP.aoe = PVP.aoe || []).push({ x: m.x, y: m.y, r: m.r, dur: m.dur, wait: m.wait || 0, dmg: m.dmg, tick: 0, name: m.name });
+    G.zones.push({ k: 'veneno', x: m.x, y: m.y, r: m.r, t: m.dur + (m.wait || 0), wait: 99, every: 99, tick: 99, fx: 1 }); // só o desenho da nuvem
   } else if (m.t === 'pvpout') {
     G.toasts.push({ text: m.by ? `🏆 ${m.by} derrotou ${m.name} na arena!` : `${m.name} saiu da arena.`, color: '#facc15', t: 5, big: 1 });
     if (P && P.pvp && m.by === P.name) G.toasts.push({ text: 'Vitória! Use [R] para voltar à vila ou espere outro desafio.', color: '#86efac', t: 5 });

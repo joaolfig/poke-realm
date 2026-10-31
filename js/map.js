@@ -236,6 +236,7 @@ function buildWorld() {
   }
   // pontos de mergulho no meio de águas fundas
   for (let i = 0; i < NX * NY; i++) if (WET[i] === 1 && (TT[i] === TK.SEA || TT[i] === TK.WATER) && hash(i * 3 + 1, 77) < 0.0022) TT[i] = TK.DIVE;
+  enforceProgression();
   for (let iy = 0; iy < NY; iy += 3) for (let ix = 0; ix < NX; ix += 3) {
     const i = iy * NX + ix, z = TZ[i], x = (ix - OX + 0.5) * TILE, y = (iy - OY + 0.5) * TILE;
     if (z >= 1 && z <= 5 && !solidAt(x, y) && !isWater(x, y)) ZPTS[z].push([x, y]);
@@ -732,4 +733,28 @@ function rebuildWorld() {
   for (const sc of SECRETS) { sc.base = sc.base || sc.id; sc.id = REGION_ID + '_' + sc.base; }
   buildWorld();
   if (typeof rebuildTownDecor === 'function') rebuildTownDecor();
+}
+
+// progressão: o perigo de cada lugar é no mínimo o maior perigo do caminho mais fácil até ele a partir da vila
+// (nenhuma área mais fraca fica "atrás" de uma mais forte). Roda depois de gerar o mapa.
+function enforceProgression() {
+  const pass = i => !SOLIDK[TT[i]] && !(WET[i] > 0.55 && (TT[i] === TK.WATER || TT[i] === TK.SEA || TT[i] === TK.DIVE));
+  const req = new Uint8Array(NX * NY).fill(99), B = [[], [], [], [], [], []];
+  const s0 = tileIdx(0, 60);
+  req[s0] = 1; B[1].push(s0);
+  for (let z = 1; z <= 5; z++) {
+    const L = B[z];
+    while (L.length) {
+      const i = L.pop();
+      if (req[i] !== z) continue;
+      const x = i % NX, y = (i / NX) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const j = tIdx(x + dx, y + dy);
+        if (j < 0 || !pass(j)) continue;
+        const zz = Math.max(z, TZ[j] >= 1 && TZ[j] <= 5 ? TZ[j] : 0);
+        if (zz < req[j]) { req[j] = zz; B[zz].push(j); }
+      }
+    }
+  }
+  for (let i = 0; i < NX * NY; i++) if (TZ[i] >= 1 && TZ[i] <= 5 && req[i] <= 5 && req[i] > TZ[i]) TZ[i] = req[i];
 }

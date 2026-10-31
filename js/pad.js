@@ -215,7 +215,7 @@ function padAimTarget(ang, cone) {
   if (!cone || !P) return null;
   let best = null, bs = 1e9;
   const pool = G.enemies.filter(e => e.hp > 0 && !e.dead);
-  for (const r of G.remotes.values()) if (P.pvp && r.name && !r.dead) pool.push({ x: r.x, y: r.y, r: 12, remote: 1 });
+  for (const r of G.remotes.values()) if (P.pvp && r.name && !r.dead && !r.invis) pool.push({ x: r.x, y: r.y, r: 12, remote: 1 });
   for (const e of pool) {
     const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy);
     if (d > 520 || d < 1) continue;
