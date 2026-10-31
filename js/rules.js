@@ -3,11 +3,12 @@
 const ATTRS = ['POD', 'AGI', 'VIG'];
 const ATTR_NAMES = { POD: 'Poder', AGI: 'Agilidade', VIG: 'Vigor' };
 const ATTR_DESC = {
-  POD: '+1 de dano por ponto e +½ no acerto. Fortalece as habilidades.',
-  AGI: '+½ CA por ponto, mais velocidade e cadência de tiro.',
-  VIG: '+1 PV por nível para cada ponto e mais regeneração.',
+  POD: 'A cada 2 pontos: +1 de dano e +½ no acerto. Fortalece as habilidades.',
+  AGI: 'A cada 2 pontos: +½ CA, mais velocidade e cadência de tiro.',
+  VIG: 'A cada 2 pontos: +1 PV por nível e mais regeneração.',
 };
-const ATTR_MAX = 10;
+// teto 20 e 1 ponto por nível; cada ponto vale metade (o poder máximo é o mesmo de antes, mas a progressão vai até o nível 30)
+const ATTR_MAX = 20;
 
 /* ============ Tipos ============ */
 const TYPE_PT = {

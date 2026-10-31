@@ -20,6 +20,7 @@ const BIOMES = {
   pantano: { cols: ['#4f6b45', '#56724a', '#4a6541'], tall: ['#2f4a2c', '#5d7d4a'], path: '#6b5e46', cliff: '#5a5a48', tree: 'escuro', flower: 'cogumelo', swamp: 1 },
 };
 const ZONE_LVL = [1, 1, 7, 14, 21, 26];
+const ZONE_LVL_MAX = [30, 6, 13, 20, 25, 30]; // faixa recomendada de cada zona (mínimo a máximo)
 const lvlZone = l => (l < 7 ? 1 : l < 14 ? 2 : l < 21 ? 3 : l < 26 ? 4 : 5);
 
 const GYM_LVL = [4, 7, 10, 13, 16, 20, 23, 26, 29];
@@ -290,7 +291,7 @@ function setRegion(id) {
   const R = REGIONS[id] || REGIONS.kanto;
   REGION_ID = REGIONS[id] ? id : 'kanto'; REGION = R;
   // zonas e Pokémon
-  replaceArr(ZONES, [{ nome: R.vila, bio: 'vila', ...BIOMES.vila, lvl: 1 }, ...R.zonas.map(([nome, bio], i) => ({ nome, bio, ...BIOMES[bio], lvl: ZONE_LVL[i + 1] })),
+  replaceArr(ZONES, [{ nome: R.vila, bio: 'vila', ...BIOMES.vila, lvl: 1 }, ...R.zonas.map(([nome, bio], i) => ({ nome, bio, ...BIOMES[bio], lvl: ZONE_LVL[i + 1], lvlMax: ZONE_LVL_MAX[i + 1] })),
     { nome: 'Arena PvP', bio: 'campo', ...BIOMES.campo, lvl: 1 }]);
   replaceObj(ZONE_POOLS, R.pools); replaceObj(WATER_POOLS, R.water);
   replaceArr(BOSSES, R.lendas); replaceArr(RARE_POOL, R.rare); replaceArr(NIGHT_POOL, R.night); replaceArr(MIGRATION_POOL, R.migra);

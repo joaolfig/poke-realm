@@ -172,7 +172,10 @@ const petSlots = P => Math.min(4, 1 + tRank(P, 'equipe'));
 const hasS = (P, id) => P.subclass === id;
 const race = P => RACES[P.race] || RACES.humano;
 const pType = P => (P.tempTypeT > 0 ? P.tempType : P.ptype);
-const A = (P, k) => P.attrs[k] + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus : 0);
+// valor efetivo usado nas regras: cada 2 pontos de atributo valem 1 (o anel soma direto no efetivo)
+const A = (P, k) => P.attrs[k] / 2 + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus : 0);
+// valor mostrado no painel (pontos)
+const Araw = (P, k) => P.attrs[k] + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus * 2 : 0);
 const maxHP = P => {
   const c = CLASSES[P.cls];
   let h = 15 + (c.hd / 2 + A(P, 'VIG')) * P.lvl + (P.race === 'anao' ? P.lvl : 0) + (hasT(P, 'robusto') ? 2 * P.lvl : 0);
@@ -199,7 +202,8 @@ function rollHero() {
   const attrs = { ...CLASSES[cls].attrs };
   for (const k in RACES[rc].bonus) attrs[k] += RACES[rc].bonus[k];
   attrs[pick(ATTRS)]++;
-  return { cls, race: rc, type, attrs, points: RACES[rc].points };
+  for (const k in attrs) attrs[k] *= 2; // escala de pontos (cada ponto vale metade)
+  return { cls, race: rc, type, attrs, points: RACES[rc].points * 2 };
 }
 
 function startWeapon(cls) {
@@ -210,7 +214,7 @@ function startWeapon(cls) {
 function createPlayer(name, h) {
   const P = {
     name, cls: h.cls, race: h.race, ptype: h.type, subclass: null, lvl: 1, xp: 0, fame: 0, kills: 0, gold: 20,
-    attrs: { ...h.attrs }, points: h.points || 0, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
+    attrs: { ...h.attrs }, points: h.points || 0, attrV2: 1, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
     equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: null, amuleto: null },
     inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0, elixir: 1 }, ballSel: 'poke', story: { ch: 0, done: false },
     pets: [], petIdx: -1, petAct: [], stories: {}, hmsR: {}, quest: null, questOffer: null, elixT: 0, hasteT: 0, slowCd: 0, hms: [], fly: ['vila'], chests: [], flyCd: 0,
@@ -222,7 +226,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'fame', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -290,15 +294,15 @@ function enemyStats(pid, zone, kind) {
   if (!PAT[type]) type = 'normal';
   // a força cresce mais rápido que linear com a zona, acompanhando o poder do herói do nível 1 ao 30
   // (só a zona 1 fica como antes). Lendários são feitos para 2 heróis de nível 30.
-  const zh = 1 + (zone - 1) * 1.6 + (zone - 1) ** 2 * 0.4; // vida: 1 · 3 · 5,8 · 9,4 · 13,8
+  const zh = (1 + (zone - 1) * 1.6 + (zone - 1) ** 2 * 0.4) * (zone >= 3 ? 1.15 : 1); // vida: 1 · 3 · 6,7 · 10,8 · 15,9
   const nd = Math.max(1, Math.round(zone * 1.75 - 0.9));    // dados de dano: 1 · 3 · 4 · 6 · 8
   return {
     p, pid, zone, kind, boss: kind === 2 || kind === 3, legend, alfa, rare, type, color: TYPE_COLORS[type] || '#fff',
     name: (alfa ? 'Alfa ' : '') + p.name + (rare ? ' ✨' : ''),
-    maxHp: Math.round(((st.hp || 50) * 0.35 + 8) * zh * (legend ? 220 : dboss ? (zone >= 4 ? 10 : 8) : alfa ? 3 : rare ? 2.5 : 1)),
+    maxHp: Math.round(((st.hp || 50) * 0.35 + 8) * zh * (legend ? 190 : dboss ? (zone >= 4 ? 10 : 8) : alfa ? 3 : rare ? 2.5 : 1)),
     ac: 9 + Math.floor((st.defense || 50) / 30) + zone + (legend ? 6 : dboss ? 2 : alfa ? 1 : 0),
     atk: 2 + Math.floor(atk / 35) + Math.round(zone * 2.5) + (legend ? 8 : dboss ? 2 : alfa ? 1 : 0),
-    dice: [legend ? 10 : dboss ? nd + 2 : nd + (alfa ? 1 : 0), legend ? 10 : 4 + 2 * Math.min(3, Math.floor(atk / 40)), zone * 2 + (legend ? 15 : dboss ? 3 : 0)],
+    dice: [legend ? 10 : dboss ? nd + 2 : nd + (alfa ? 1 : 0), legend ? 10 : 4 + 2 * Math.min(3, Math.floor(atk / 40)), zone * 2 + (zone >= 3 ? 2 : 0) + (legend ? 13 : dboss ? 3 : 0)],
     speed: (35 + (st.speed || 50) * 0.55) * (legend || dboss ? 0.6 : rare ? 1.5 : 1),
     scale: legend ? 4.2 : dboss ? 3.3 : clamp(1.7 + (p.height || 10) / 35, 1.7, 2.8) * (alfa || rare ? 1.3 : 1),
     xp: Math.round((p.exp || 100) * (0.4 + zone * 0.35) * (1 + (zone - 1) * 0.1) * (legend ? 45 : dboss ? 8 : alfa ? 3 : rare ? 4 : 1)),
@@ -494,7 +498,7 @@ function hostSpawning(dt) {
   let near = 0;
   for (const e of G.enemies) if (!e.boss && !e.dg && !e.ev && Math.hypot(e.x - pl.x, e.y - pl.y) < 1100) near++;
   const zp = Math.max(1, zoneAt(pl.x, pl.y));
-  if (near >= 14 + zp * 4 + (pls.length > 1 ? 5 : 0)) return;
+  if (near >= 14 + zp * 4 + Math.max(0, zp - 2) * 4 + (pls.length > 1 ? 5 : 0)) return; // mais Pokémon por perto nas zonas 3-5
   let x = 0, y = 0, water = false;
   for (let k = 0; k < 4; k++) {
     const a = Math.random() * 6.28, dist = rand(600, 950);
@@ -510,7 +514,7 @@ function hostSpawning(dt) {
   const pid = water ? pick(WATER_POOLS[z]) : night.length ? pick(night) : pick(ZONE_POOLS[z]);
   if (!POKE[pid]) return;
   // bandos maiores e mais Alfas no meio e no fim do jogo
-  const n = randi(z >= 4 ? 3 : z >= 2 ? 2 : 1, z >= 4 ? 6 : z >= 3 ? 4 : 3);
+  const n = randi(z >= 4 ? 4 : z >= 3 ? 3 : z >= 2 ? 2 : 1, z >= 4 ? 7 : z >= 3 ? 5 : 3);
   for (let i = 0; i < n; i++) {
     const ex = x + rand(-50, 50), ey = y + rand(-50, 50);
     if (water && !isWater(ex, ey)) continue;
@@ -601,7 +605,7 @@ function gainXP(n, raw) {
   while (P.lvl < MAX_LVL && P.xp >= xpNeed(P.lvl)) {
     P.xp -= xpNeed(P.lvl);
     P.lvl++;
-    if (P.lvl % 2 === 0) P.points++;
+    P.points++; // 1 ponto de atributo por nível
     if (P.lvl % 4 === 0) P.talentPending++;
     P.hp = maxHP(P);
     G.toasts.push({ text: `⭐ Nível ${P.lvl}!${P.lvl % 2 === 0 ? ' +1 ponto de atributo' : ''}`, color: '#fde047', t: 3 });
@@ -1500,7 +1504,7 @@ function drawHUD(ox, oy) {
   if (dg) outlined(`${name} · Perigo ${dg.zone}/5`, 12, hy);
   else {
     const z = zoneAt(cx, cy);
-    if (z >= 0) outlined(`${REGION.nome} · ${name}  ${z === ARENA_Z ? '(duelo entre jogadores)' : z ? `Perigo ${z}/5 · Nv ${ZONES[z].lvl}+` : '(área segura)'}`, 12, hy);
+    if (z >= 0) outlined(`${REGION.nome} · ${name}  ${z === ARENA_Z ? '(duelo entre jogadores)' : z ? `Perigo ${z}/5 · Nv ${ZONES[z].lvl}–${ZONES[z].lvlMax}` : '(área segura)'}`, 12, hy);
   }
   ctx.font = '12px Barlow Semi Condensed, system-ui';
   if (NET.mode !== 'solo') { hy += 18; outlined(`Sala ${NET.room} · ${G.remotes.size + 1} jogador(es)${NET.mode === 'host' ? ' · você é o host' : ''}`, 12, hy); }
@@ -1528,9 +1532,9 @@ function drawHUD(ox, oy) {
     outlined(name, W / 2, H * 0.28);
     const z = dg ? dg.zone : zoneAt(cx, cy);
     if (z > 0 && P) {
-      const rec = ZONES[z].lvl, low = P.lvl < rec - 1;
-      ctx.font = 'bold 16px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 4; ctx.fillStyle = low ? '#fca5a5' : '#e5e7eb';
-      outlined(low ? `⚠ Perigoso para o seu nível (recomendado ${rec}+)` : `Nível recomendado ${rec}+`, W / 2, H * 0.28 + 26);
+      const Z = ZONES[Math.min(z, 5)], rec = Z.lvl, top = Z.lvlMax || 30, low = P.lvl < rec - 1, high = P.lvl > top + 1;
+      ctx.font = 'bold 16px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 4; ctx.fillStyle = low ? '#fca5a5' : high ? '#9ca3af' : '#e5e7eb';
+      outlined(low ? `⚠ Perigoso para o seu nível (recomendado ${rec}–${top})` : high ? `Fácil para o seu nível (recomendado ${rec}–${top})` : `Nível recomendado ${rec}–${top}`, W / 2, H * 0.28 + 26);
     }
     ctx.globalAlpha = 1;
   }
@@ -1666,9 +1670,9 @@ function updatePanel() {
     choose += `<h4>Talentos</h4><div class="tchips">${sub ? `<span class="subchip" title="${sub.desc}">${sub.icon} ${sub.nome}</span>` : ''}${[...new Set(P.talents)].map(id => `<span title="${TALENTS[id].desc}">${TALENTS[id].icon} ${TALENTS[id].nome}${tRank(P, id) > 1 ? ' ×' + tRank(P, id) : ''}</span>`).join('')}</div>`;
   }
   $('p-talents').innerHTML = choose;
-  $('p-attrs').innerHTML = `<h4>Atributos <span class="small" title="Ganhe +1 ponto a cada 2 níveis. Poções de Poder/Agilidade/Vigor (Alfas, chefes, lendários, baús) sobem o atributo para sempre.">máx ${ATTR_MAX}</span>${P.points ? `<span class="pts">${P.points} ponto(s)!</span>` : ''}</h4>` + ATTRS.map(k => {
-    const v = A(P, k), bonus = v - P.attrs[k];
-    return `<div class="attr" title="${ATTR_DESC[k]}"><span class="an">${ATTR_NAMES[k]}</span><span class="pips">${'●'.repeat(Math.min(v, 13))}</span><span class="av">${v}${bonus ? `<i>(+${bonus})</i>` : ''}</span>
+  $('p-attrs').innerHTML = `<h4>Atributos <span class="small" title="Ganhe +1 ponto por nível. A cada 2 pontos o atributo rende +1. Poções de Poder/Agilidade/Vigor (Alfas, chefes, lendários, baús) dão +2 para sempre.">máx ${ATTR_MAX}</span>${P.points ? `<span class="pts">${P.points} ponto(s)!</span>` : ''}</h4>` + ATTRS.map(k => {
+    const v = Araw(P, k), bonus = v - P.attrs[k];
+    return `<div class="attr" title="${ATTR_DESC[k]}"><span class="an">${ATTR_NAMES[k]}</span><span><span class="pips" style="width:${Math.min(100, P.attrs[k] / ATTR_MAX * 100)}%"></span></span><span class="av">${v}${bonus ? `<i>(+${bonus})</i>` : ''}</span>
       ${P.points && P.attrs[k] < ATTR_MAX ? `<button data-attr="${k}">+</button>` : '<span></span>'}</div>`;
   }).join('');
   const slot = (s, label) => {
@@ -1966,6 +1970,9 @@ async function startGame(saved) {
     if (!saved.stories) P.stories = {};
     if (!saved.hmsR) P.hmsR = {};
     if (!Array.isArray(P.petAct)) P.petAct = P.petIdx >= 0 ? [P.petIdx] : [];
+    // saves antigos: atributos e pontos guardados passam para a escala nova (o dobro, mesmo poder)
+    if (!saved.attrV2) { for (const k of ATTRS) P.attrs[k] = Math.min(ATTR_MAX, (P.attrs[k] || 0) * 2); P.points = (P.points || 0) * 2; }
+    P.attrV2 = 1;
     P.petCap = Math.max(petCap(P), P.pets.length); // saves antigos tinham 4 vagas: ninguém perde companheiro
     if (!RACES[P.race]) P.race = 'humano';
     if (!TYPE_PT[P.ptype]) P.ptype = 'normal';

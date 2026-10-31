@@ -88,9 +88,9 @@ function drinkStat(P, a) {
     P.gold += 80;
     G.toasts.push({ text: `${ATTR_NAMES[a]} já está no máximo: a poção virou +80 🪙`, color: '#fde68a', t: 3 });
   } else {
-    P.attrs[a]++;
+    P.attrs[a] = Math.min(ATTR_MAX, P.attrs[a] + 2);
     P.hp += Math.max(0, maxHP(P) - old);
-    G.toasts.push({ text: `⬆ ${ATTR_NAMES[a]} +1 permanente! (${P.attrs[a]}/${ATTR_MAX})`, color: '#fde047', t: 3.5, big: 1 });
+    G.toasts.push({ text: `⬆ ${ATTR_NAMES[a]} +2 permanente! (${P.attrs[a]}/${ATTR_MAX})`, color: '#fde047', t: 3.5, big: 1 });
     sfx('lvl');
   }
   G.dirty = true;
