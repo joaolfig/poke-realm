@@ -565,7 +565,7 @@ function onKill(m) {
   P.kills++;
   P.killsPot = (P.killsPot || 0) + 1;
   if (hasT(P, 'alquimista') && P.killsPot % 10 === 0) { P.pots.hp++; text(P.x, P.y - 60, '+1 Poção (Alquimista)', '#fca5a5', 12); }
-  if (hasT(P, 'domador') && P.killsPot % 15 === 0) { P.balls++; text(P.x, P.y - 70, '+1 Pokébola (Domador)', '#e5e7eb', 12); }
+  if (hasT(P, 'domador') && P.killsPot % 15 === 0) { P.balls++; text(P.x, P.y - 70, '+1 Poké Ball (Domador)', '#e5e7eb', 12); }
   const gold = Math.max(1, Math.round(m.zone * randi(1, 3) * ([1, 4, 25, 12, 6][m.kind] || 1) * (hasT(P, 'tesouro') ? 1.5 : 1) * (1 + M(P, 'gold')) * share));
   P.gold += gold;
   text(m.x + 12, m.y - 10, `+${gold}🪙`, '#fde047', 11);
@@ -1011,7 +1011,7 @@ function updatePlayer(dt) {
     const left = [];
     for (let it of bag.items) {
       if (it.slot === 'pot') { P.pots.hp++; text(P.x, P.y - 50, '+1 Poção de Cura', '#fca5a5', 12); continue; }
-      if (it.slot === 'ball') { P.balls++; text(P.x, P.y - 50, '+1 Pokébola', '#e5e7eb', 12); continue; }
+      if (it.slot === 'ball') { P.balls++; text(P.x, P.y - 50, '+1 Poké Ball', '#e5e7eb', 12); continue; }
       if (it.slot === 'cons' && CONS[it.k].stat) { drinkStat(P, CONS[it.k].stat); continue; }
       if (it.slot === 'cons') { P.bag[it.k] = (P.bag[it.k] || 0) + 1; text(P.x, P.y - 50, `+1 ${CONS[it.k].nome}`, '#f9a8d4', 12); continue; }
       const i = P.inv.indexOf(null);
@@ -1617,7 +1617,7 @@ function updatePanel() {
         <div class="phm">${HM_KEYS.map(k => (pt.hms || []).includes(k) ? `<span class="hmk" title="${HMS[k].nome}">${HMS[k].icon}</span>`
           : P.hms.includes(k) && canLearn(pt.pid, k) ? `<button class="hmt" data-teach="${i}:${k}" title="Ensinar ${HMS[k].mo} ${HMS[k].nome}">+${HMS[k].icon}</button>` : '').join('')}</div></div>`;
     }).join('')}</div>${P.bag.doce && P.petIdx >= 0 ? `<button data-candy="1" class="candy">🍬 Dar Doce Raro ao ativo (×${P.bag.doce})</button>` : ''}`
-    : '<div class="small">Enfraqueça um Pokémon, mire nele e aperte <b>[F]</b> para jogar uma Pokébola. Companheiros sobem de nível e evoluem!</div>')
+    : '<div class="small">Enfraqueça um Pokémon, mire nele e aperte <b>[F]</b> para jogar uma Poké Ball. Companheiros sobem de nível e evoluem!</div>')
     + (P.hms.length ? `<div class="small keyit">Itens-chave: ${P.hms.map(k => `<span title="${HMS[k].desc}">${HMS[k].icon} ${HMS[k].mo} ${HMS[k].nome}</span>`).join(' ')}</div>` : '');
   if (NET.mode === 'host') $('p-room').innerHTML = `<h4>Multiplayer</h4><div class="room">Código da sala: <b>${NET.room}</b> <button data-copy="1">Copiar</button></div><div class="small">Seus amigos escolhem "Entrar em sala" e digitam este código.</div>`;
   else if (NET.mode === 'client') $('p-room').innerHTML = `<h4>Multiplayer</h4><div class="room">Conectado à sala <b>${NET.room}</b></div>`;

@@ -7,7 +7,7 @@
  * evolução da PokeAPI. Em tempo de jogo, G.allies tem o ativo e os espíritos do Necromante.
  */
 const PET_MAX = 30;
-// vagas de companheiro: começa com 2 e compra mais na loja (Cinto de Pokébolas), até 6
+// vagas de companheiro: começa com 2 e compra mais com a Vendedora de Poké Balls (Cinto), até 6
 const PET_CAP_MAX = 6, CINTO_PRECO = { 2: 350, 3: 750, 4: 1300, 5: 2000 };
 const petCap = P => clamp(P.petCap || 2, 2, PET_CAP_MAX);
 const petNeed = l => Math.round(55 * Math.pow(l, 1.75));
@@ -262,13 +262,13 @@ function allyHit(e, a, sp) {
 }
 
 /* ---------- Captura ---------- */
-const BALLS = { poke: { nome: 'Pokébola', icon: '⚪', bonus: 0 }, grande: CONS.grande, ultra: CONS.ultra };
+const BALLS = { poke: { nome: 'Poké Ball', icon: '⚪', bonus: 0 }, grande: CONS.grande, ultra: CONS.ultra };
 const ballCount = (P, k) => (k === 'poke' ? P.balls : P.bag[k] || 0);
 function throwBall() {
   const P = G.P;
   let k = P.ballSel || 'poke';
   if (ballCount(P, k) <= 0) k = ['ultra', 'grande', 'poke'].find(b => ballCount(P, b) > 0);
-  if (!k) { text(P.x, P.y - 40, 'Sem Pokébolas!', '#fca5a5', 13); return; }
+  if (!k) { text(P.x, P.y - 40, 'Sem Poké Balls!', '#fca5a5', 13); return; }
   const mw = mouseWorld();
   let e = null, bd = 1e9;
   for (const o of G.enemies) {
@@ -278,7 +278,7 @@ function throwBall() {
   }
   if (!e) { text(P.x, P.y - 40, 'Mire num Pokémon próximo', '#cbd5e1', 12); return; }
   if (e.boss) { text(e.x, e.y - e.h / 2, 'Não pode ser capturado!', '#fca5a5', 13); return; }
-  if (P.pets.length >= petCap(P)) { G.toasts.push({ text: `Você já tem ${petCap(P)} companheiros. Compre mais vagas na loja (Cinto de Pokébolas) ou solte um no painel (botão direito duas vezes).`, color: '#fca5a5', t: 4 }); return; }
+  if (P.pets.length >= petCap(P)) { G.toasts.push({ text: `Você já tem ${petCap(P)} companheiros. Compre mais vagas com a Vendedora de Poké Balls ou solte um no painel (botão direito duas vezes).`, color: '#fca5a5', t: 4 }); return; }
   if (k === 'poke') P.balls--; else P.bag[k]--;
   G.dirty = true;
   // rolagem de captura: d20 + nível/2 + bônus da bola contra uma CD que cai com a vida do alvo
@@ -298,7 +298,7 @@ function updateThrows(dt) {
     if (b.t < b.dur) continue;
     b.done = true;
     const e = b.e;
-    if (e.dead || e.hp <= 0 || !G.emap.has(e.id)) { text(e.x, e.y - 20, 'A Pokébola caiu no chão...', '#cbd5e1', 12); continue; }
+    if (e.dead || e.hp <= 0 || !G.emap.has(e.id)) { text(e.x, e.y - 20, 'A Poké Ball caiu no chão...', '#cbd5e1', 12); continue; }
     G.fx.push({ k: 'ring', x: e.x, y: e.y, r: 0, R: e.r + 20, life: 0.5, max: 0.5, color: b.k === 'ultra' ? '#facc15' : b.k === 'grande' ? '#60a5fa' : '#f87171' });
     if (b.ok && G.P && G.P.pets.length < petCap(G.P)) capture(e, b.rollTxt);
     else { text(e.x, e.y - e.h / 2 - 10, `Escapou! (${b.rollTxt.replace(/^\S+ /, '')})`, '#fca5a5', 13); e.flash = 0.2; burst(e.x, e.y, '#f87171', 10); sfx('pick'); }

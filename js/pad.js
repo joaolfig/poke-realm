@@ -14,7 +14,7 @@ try { PAD.on = localStorage.getItem(PAD_KEY) === '1'; } catch (e) { /* ignora */
 const PAD_KEYS = { 0: 'KeyE', 2: 'KeyQ', 3: 'KeyF', 4: 'Digit2', 5: 'Space', 6: 'ShiftLeft', 12: 'Digit3', 13: 'KeyX', 14: 'KeyR', 15: 'KeyV', 10: 'KeyM', 11: 'KeyT', 8: 'KeyH' };
 const PAD_HELP = [
   ['Analógico esquerdo', 'Andar'], ['Analógico direito', 'Mirar (empurrar já atira)'], ['RT', 'Atirar'], ['RB', 'Especial'], ['LT', 'Rolamento (talento)'],
-  ['A', 'Falar / portal / MO'], ['B', 'Fechar janela'], ['X', 'Poção'], ['Y', 'Pokébola'], ['LB', 'Elixir'],
+  ['A', 'Falar / portal / MO'], ['B', 'Fechar janela'], ['X', 'Poção'], ['Y', 'Poké Ball'], ['LB', 'Elixir'],
   ['↑ direcional', 'Usar cristal'], ['↓ direcional', 'Montar'], ['← direcional', 'Voltar à vila'], ['→ direcional', 'Voar (montaria voadora)'],
   ['L3', 'Mapa'], ['R3', 'Tiro automático'], ['View', 'Controles'], ['Menu (Start)', 'Modo menu: painel, inventário, talentos'],
 ];

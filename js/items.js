@@ -72,8 +72,8 @@ const relic = pid => { const r = RELICS[pid]; return r ? { slot: 'amuleto', tier
 
 // consumíveis de bolso (não ocupam a mochila)
 const CONS = {
-  grande: { nome: 'Grande Bola', icon: '🔵', bonus: 3 },
-  ultra: { nome: 'Ultra Bola', icon: '🟡', bonus: 6 },
+  grande: { nome: 'Great Ball', icon: '🔵', bonus: 3 },
+  ultra: { nome: 'Ultra Ball', icon: '🟡', bonus: 6 },
   doce: { nome: 'Doce Raro', icon: '🍬' },
   elixir: { nome: 'Elixir de Poder', icon: '🧪' },
   pPOD: { nome: 'Poção de Poder', icon: '🟥', stat: 'POD' },
@@ -98,7 +98,7 @@ function drinkStat(P, a) {
 }
 const consItem = k => ({ slot: 'cons', k, tier: CONS[k].stat ? 5 : k === 'ultra' || k === 'doce' ? 3 : 1, name: CONS[k].nome });
 const potion = () => ({ slot: 'pot', tier: 0, name: 'Poção de Cura' });
-const ballItem = () => ({ slot: 'ball', tier: 0, name: 'Pokébola' });
+const ballItem = () => ({ slot: 'ball', tier: 0, name: 'Poké Ball' });
 const stone = type => ({ slot: 'pedra', tier: 3, type: TYPE_PT[type] ? type : 'normal', name: `Cristal de ${TYPE_PT[type] || 'Normal'}` });
 
 function scaleMods(mod, k) {

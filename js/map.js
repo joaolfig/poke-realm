@@ -61,7 +61,7 @@ const ROUTES = [
 
 // Prédios da vila (x, y = centro)
 const BUILDINGS = [
-  { id: 'cura', x: -140, y: -128, w: 120, h: 76, roof: '#9e3b32', wall: '#efe3c8', sign: '❤️' },
+  { id: 'cura', x: -140, y: -128, w: 120, h: 76, roof: '#b23a33', wall: '#efe3c8', sign: '⚪' },
   { id: 'loja', x: 140, y: -128, w: 120, h: 76, roof: '#46607a', wall: '#efe3c8', sign: '🛒' },
   { id: 'ferreiro', x: -140, y: 78, w: 120, h: 76, roof: '#4f4a45', wall: '#e3d3b4', sign: '🔨', chimney: 1 },
   { id: 'guilda', x: 140, y: 78, w: 132, h: 80, roof: '#5b3f6e', wall: '#efe6d6', sign: '📜' },

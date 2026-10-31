@@ -114,7 +114,7 @@ const TALENTS = {
   mentor: { nome: 'Mentor', icon: '📘', desc: 'Companheiros ganham 50% mais XP e usam o golpe especial 30% mais vezes.' },
   vampirico: { nome: 'Toque Vampírico', icon: '🩸', desc: 'Críticos curam 30% do dano causado.' },
   adepto: { nome: 'Adepto Elemental', icon: '🌈', desc: 'Golpes super efetivos causam +50% de dano.' },
-  domador: { nome: 'Domador', icon: '⚪', desc: '+4 nas rolagens de captura e +1 Pokébola a cada 15 abates.' },
+  domador: { nome: 'Domador', icon: '⚪', desc: '+4 nas rolagens de captura e +1 Poké Ball a cada 15 abates.' },
   alquimista: { nome: 'Alquimista', icon: '⚗️', desc: 'Poções 50% mais fortes e +1 Poção de Cura a cada 10 abates.' },
   tesouro: { nome: 'Caçador de Tesouros', icon: '💰', desc: '+15% de chance de saque e +50% de ouro.' },
   mobilidade: { nome: 'Mobilidade', icon: '👟', desc: '+20% de velocidade de movimento.' },

@@ -1,7 +1,7 @@
 'use strict';
 /* ============ Vila: NPCs, loja, ferreiro e missões ============ */
 const NPCS = [
-  { id: 'cura', nome: 'Curandeira Íris', icon: '💗', x: -140, y: -68, spr: { h: '#fde68a', b: '#f472b6', d: '#be185d' }, fala: 'Descanse, aventureiro. Ninguém sai daqui ferido.' },
+  { id: 'cura', nome: 'Vendedora de Poké Balls', icon: '⚪', x: -140, y: -68, spr: { h: '#fde68a', b: '#ef4444', d: '#991b1b' }, fala: 'Poké Balls fresquinhas! E cintos para levar mais companheiros.' },
   { id: 'loja', nome: 'Mercador Bento', icon: '🛒', x: 140, y: -68, spr: { h: '#3f2a14', b: '#a16207', d: '#713f12' }, fala: 'Tenho de tudo, se você tiver ouro!' },
   { id: 'ferreiro', nome: 'Ferreira Duna', icon: '🔨', x: -140, y: 136, spr: { h: '#ea580c', b: '#57534e', d: '#292524' }, fala: 'Traga ouro e eu deixo seu equipamento mais forte.' },
   { id: 'guilda', nome: 'Mestre da Guilda', icon: '📜', x: 140, y: 140, spr: { h: '#e5e7eb', b: '#1d4ed8', d: '#1e3a8a' }, fala: 'O reino precisa de heróis. Escolha um contrato.' },
@@ -47,14 +47,20 @@ function drawNPC(n, ox, oy) {
 function openNPC(id) { G.npcOpen = id; $('npc').classList.remove('hidden'); renderNPC(); sfx('open'); }
 function closeNPC() { G.npcOpen = null; $('npc').classList.add('hidden'); }
 
+// loja de Poké Balls (a antiga curandeira): bolas e vagas extras de companheiro
+function ballShop(P) {
+  return [
+    { id: 'ball', nome: 'Poké Ball', icon: '⚪', preco: 30 },
+    { id: 'grande', nome: 'Great Ball (+3 na captura)', icon: '🔵', preco: 70 },
+    { id: 'ultra', nome: 'Ultra Ball (+6 na captura)', icon: '🟡', preco: 150, lock: P.lvl < 8 },
+    ...(petCap(P) < PET_CAP_MAX ? [{ id: 'cinto', nome: `Cinto de Poké Balls: +1 vaga de companheiro (${petCap(P)} → ${petCap(P) + 1})`, icon: '🎒', preco: CINTO_PRECO[petCap(P)] }] : []),
+  ];
+}
 function shopList(P) {
   // a loja só vende até Muito Raro: os melhores itens vêm de chefes e masmorras
   const tier = clamp(Math.floor(P.lvl / 4), 0, 3);
   return [
     { id: 'pot', nome: 'Poção de Cura', icon: '❤️', preco: 25 },
-    { id: 'ball', nome: 'Pokébola', icon: '⚪', preco: 30 },
-    { id: 'grande', nome: 'Grande Bola (+3 captura)', icon: '🔵', preco: 70 },
-    ...(P.lvl >= 8 ? [{ id: 'ultra', nome: 'Ultra Bola (+6 captura)', icon: '🟡', preco: 150 }] : []),
     { id: 'doce', nome: 'Doce Raro (+1 nível do companheiro)', icon: '🍬', preco: 140 },
     { id: 'elixir', nome: 'Elixir de Poder (30s)', icon: '🧪', preco: 40 },
     { id: 'stone', nome: 'Cristal de tipo aleatório', icon: '💎', preco: 50 },
@@ -62,7 +68,6 @@ function shopList(P) {
     { id: 'armadura', nome: ARMORS[tier], icon: '🛡️', preco: 50 + tier * 40, tier },
     { id: 'anel', nome: 'Anel aleatório', icon: '💍', preco: 70 + tier * 30, tier },
     { id: 'amuleto', nome: 'Amuleto aleatório', icon: '📿', preco: 90 + tier * 40, tier },
-    ...(petCap(P) < PET_CAP_MAX ? [{ id: 'cinto', nome: `Cinto de Pokébolas: +1 vaga de companheiro (${petCap(P)} → ${petCap(P) + 1})`, icon: '🎒', preco: CINTO_PRECO[petCap(P)] }] : []),
   ];
 }
 const sellPrice = it => 8 + it.tier * 12 + (it.upg || 0) * 10;
@@ -75,8 +80,9 @@ function renderNPC() {
   if (!P || !n) { closeNPC(); return; }
   let body = n.fala ? `<p class="fala">"${n.fala}"</p>` : '';
   if (n.id === 'cura') {
-    body += `<button data-act="heal" ${P.hp >= maxHP(P) ? 'disabled' : ''}>💗 Curar completamente (grátis)</button>
-      <button data-act="gift" ${P.giftT > 0 || P.pots.hp >= 2 ? 'disabled' : ''}>❤️ Receber poções até ter 2${P.giftT > 0 ? ` — volte em ${Math.ceil(P.giftT)}s` : ''}</button>`;
+    body += '<h4>Poké Balls</h4>' + ballShop(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}</span>
+      <button data-act="buy:${s.id}" ${s.lock || P.gold < s.preco ? 'disabled' : ''}>${s.lock ? 'a partir do Nv 8' : s.preco + ' 🪙'}</button></div>`).join('')
+      + `<div class="small">Você tem ${P.balls} Poké Ball, ${P.bag.grande} Great Ball e ${P.bag.ultra} Ultra Ball · ${P.pets.length}/${petCap(P)} companheiros${petCap(P) >= PET_CAP_MAX ? ' (máximo)' : ''}.</div>`;
   } else if (n.id === 'loja') {
     body += '<h4>Comprar</h4>' + shopList(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}${s.tier !== undefined ? ` <i style="color:${TIER_COLORS[s.tier]}">${TIER_NAMES[s.tier]}</i>` : ''}</span>
       <button data-act="buy:${s.id}" ${P.gold < s.preco ? 'disabled' : ''}>${s.preco} 🪙</button></div>`).join('');
@@ -148,8 +154,8 @@ $('npc').addEventListener('click', ev => {
 });
 
 function buyItem(P, id) {
-  const s = shopList(P).find(x => x.id === id);
-  if (!s || P.gold < s.preco) return;
+  const s = shopList(P).concat(ballShop(P)).find(x => x.id === id);
+  if (!s || s.lock || P.gold < s.preco) return;
   let it = null;
   if (id === 'stone') it = stone(pick(TYPES));
   else if (id === 'arma' || id === 'armadura' || id === 'anel' || id === 'amuleto') it = genItem(s.tier, id);
@@ -169,7 +175,7 @@ function buyItem(P, id) {
  * O Mestre da Guilda oferece 3 contratos (fácil, médio, difícil) de tipos variados,
  * cada um pedido por um morador com um motivo. Evita repetir os últimos tipos feitos.
  */
-const BONUS_NAMES = { ball: '2 Pokébolas', stone: 'um Cristal', item: 'um item raro', statpot: 'uma Poção de Atributo' };
+const BONUS_NAMES = { ball: '2 Poké Balls', stone: 'um Cristal', item: 'um item raro', statpot: 'uma Poção de Atributo' };
 const QTIERS = [{ n: '★ Fácil', m: 1, r: 1 }, { n: '★★ Médio', m: 1.6, r: 1.9 }, { n: '★★★ Difícil', m: 2.3, r: 3 }];
 const QPEOPLE = {
   tipo: [['Fazendeira Lia', 'estão destruindo minha plantação'], ['Guarda Tomé', 'atacaram a patrulha ontem à noite'], ['Vendedor Caco', 'assustam meus clientes na estrada']],
@@ -434,7 +440,7 @@ function onEventDone(m) {
   if (!P || inDungeonArea(P.x) || (!m.global && Math.hypot(P.x - m.x, P.y - m.y) > 1500)) return;
   const xp = Math.round(xpNeed(P.lvl) * 0.08), gold = 25 * (m.zone || 1);
   P.gold += gold; P.balls++;
-  G.toasts.push({ text: `🎉 Evento concluído: ${m.label}! +${xp} XP, +${gold} 🪙, +1 Pokébola`, color: '#facc15', t: 4, big: 1 });
+  G.toasts.push({ text: `🎉 Evento concluído: ${m.label}! +${xp} XP, +${gold} 🪙, +1 Poké Ball`, color: '#facc15', t: 4, big: 1 });
   gainXP(xp, true);
   questProgress('evento');
   G.dirty = true;
