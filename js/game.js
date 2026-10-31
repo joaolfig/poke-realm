@@ -553,14 +553,20 @@ function onKill(m) {
   if (m.kind === 2) G.toasts.push({ text: `🏆 ${m.name} foi derrotado!`, color: '#facc15', t: 4, big: 1 });
   const P = G.P;
   if (!P || Math.hypot(P.x - m.x, P.y - m.y) > 900) return;
-  // cada jogador ganha só pelo que fez: XP e ouro proporcionais ao dano que causou
+  // ouro proporcional ao dano que cada um causou. XP: metade dividida igualmente entre os jogadores
+  // perto do abate e metade proporcional ao dano (o total por abate continua o mesmo)
   const by = m.by || {}, total = Object.values(by).reduce((a, b) => a + b, 0);
   const share = total > 0 ? (by[NET.myId] || 0) / total : 0;
+  const nNear = Math.max(1, allPlayers().filter(p => Math.hypot(p.x - m.x, p.y - m.y) <= 900).length);
+  const xpShare = 0.5 / nNear + 0.5 * share;
   // chefes, caçadas e história contam para quem estava junto (cooperação)
   if (m.kind === 3) questProgress('masmorra');
   if (m.st >= 10) questProgress('caca', { pid: m.pid });
   storyKill(m);
   rollLoot(m); // saque: cada jogador perto rola o seu, mesmo sem ter acertado
+  const xp = Math.max(1, Math.round(m.xp * xpShare * (1 + M(P, 'xp'))));
+  gainXP(xp);
+  petGainXP(xp * (isNight() ? 1.5 : 1));
   if (share <= 0) { G.dirty = true; return; }
   P.kills++;
   P.killsPot = (P.killsPot || 0) + 1;
@@ -576,9 +582,6 @@ function onKill(m) {
   questProgress('especie', { pid: m.pid });
   if (!inDungeonArea(m.x)) questProgress('zona', { zone: m.zone });
   if (m.kind === 1) questProgress('alfa');
-  const xp = Math.max(1, Math.round(m.xp * share * (1 + M(P, 'xp'))));
-  gainXP(xp);
-  petGainXP(xp * (isNight() ? 1.5 : 1));
   G.dirty = true;
 }
 
