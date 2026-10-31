@@ -54,7 +54,8 @@ function hostStory(ch) {
       if (!G.portals.some(p => p.dg === open.id && !p.exit)) G.portals.push({ id: ++G.poNext, x: Math.round(x), y: Math.round(y), theme: s.theme, ttl: 600, dg: open.id, exit: 0 });
       return;
     }
-    createDungeon(x, y, null, s.zone, { theme: s.theme, ttl: 600, force: true, quiet: true });
+    // o ginásio nunca é mais fácil que a zona onde fica
+    createDungeon(x, y, null, Math.max(s.zone, zoneAt(x, y)), { theme: s.theme, ttl: 600, force: true, quiet: true });
   }
 }
 

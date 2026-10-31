@@ -98,6 +98,7 @@ function spawnRoom(dg, r) {
     const c = roomCenter(dg, r);
     const b = hostSpawn(POKE[th.boss] ? th.boss : pick(fallback), dg.zone, 3, c.x + 120, c.y);
     b.dg = dg.id; dg.bossId = b.id;
+    b.maxHp = Math.round(b.maxHp * 1.2); b.hp = b.maxHp; // reforço de masmorra
     if (th.story) storyMod(b, th.story);
     for (let i = 0; i < 2 + Math.floor(dg.zone / 2); i++) {
       const p = roomPos(dg, r);
@@ -110,6 +111,7 @@ function spawnRoom(dg, r) {
       const p = roomPos(dg, r);
       const e = hostSpawn(pick(pool.length ? pool : fallback), dg.zone, Math.random() < 0.04 ? 1 : 0, p.x, p.y);
       e.dg = dg.id;
+      e.maxHp = Math.round(e.maxHp * 1.3); e.hp = e.maxHp; // reforço de masmorra
       e.cd = rand(1.5, 2.8); // tempo para o grupo reagir ao entrar na sala
     }
   }
