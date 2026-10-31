@@ -227,7 +227,8 @@ function buildWorld() {
       const j = tIdx(ix + dx, iy + dy);
       if (j < 0) continue;
       if (TT[j] === TK.SEA) sea = true;
-      if (TZ[j] >= 1 && TZ[j] !== z && (TZ[j] === 4 || z === 4)) river = true; // rio largo em volta das Terras Sombrias
+      // rio largo em volta da zona 4 (só Surfar atravessa); a divisa com a zona 5 é de penhasco (Portão da Liga)
+      if (TZ[j] >= 1 && TZ[j] <= 4 && z <= 4 && TZ[j] !== z && (TZ[j] === 4 || z === 4)) river = true;
       if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1 && TZ[j] >= 1 && TZ[j] !== z) bz = Math.max(bz, TZ[j], z);
     }
     // progressão pelas MOs: zona 2 = Corte, zona 3 = Esmaga-Rocha, zona 4 = Surfar (rio), zona 5 = Portão da Liga (7 insígnias)
