@@ -175,6 +175,10 @@
   .big:hover:not(:disabled) { background: #f1c060; }
   .big.alt { margin: 0 0 10px; background: var(--green); color: #08150a; font-size: 16px; }
   .big.alt:hover:not(:disabled) { background: #79cd78; }
+  .newchar { padding-right: 22px; border-right: 2px solid var(--line); }
+  @media (max-width: 760px) { .newchar { padding-right: 0; border-right: 0; } }
+  .warn { color: #f0b46a; margin-top: 6px; }
+  .saved-empty { padding: 12px; background: var(--well); border: 2px dashed var(--line-hi); color: var(--dim); font-size: 13.5px; }
   .big.alt small { display: block; font: 600 13px var(--ui); color: #133417; text-transform: none; letter-spacing: 0; margin-top: 2px; }
   #btn-import { width: 100%; margin-top: 10px; font-size: 13px; }
   #import-msg { display: block; }
@@ -286,21 +290,22 @@
     <div class="menu-box">
       <div id="load">Invocando Pokémon da PokeAPI... <span id="load-n"></span><div class="lbar"><div id="load-b"></div></div></div>
       <div class="menu-grid">
-        <div>
-          <h3>Seu herói</h3>
+        <div class="newchar">
+          <h3>Novo personagem</h3>
           <div id="hero"></div>
-          <button id="btn-roll" title="Raça, classe e tipo são sorteados">Rolar outro herói</button>
+          <button id="btn-roll" title="Raça, classe e tipo são sorteados">🎲 Sortear outro herói</button>
+          <div class="field" style="margin-top:12px">
+            <h3>Nome do novo herói</h3>
+            <input id="name" maxlength="14" autocomplete="off" spellcheck="false">
+          </div>
+          <div id="new-warn" class="small warn hidden"></div>
+          <button id="btn-start" class="big" disabled>Criar e jogar</button>
           <div id="hall"></div>
         </div>
         <div>
           <div id="map-box" class="field">
             <h3>Mapa <span class="small" id="map-sub"></span></h3>
             <div id="maps"></div>
-          </div>
-          <div id="continue-box"></div>
-          <div class="field">
-            <h3>Nome</h3>
-            <input id="name" maxlength="14" autocomplete="off" spellcheck="false">
           </div>
           <div id="mode-box" class="field">
             <h3>Modo</h3>
@@ -311,7 +316,7 @@
             </div>
             <input id="join-code" maxlength="5" placeholder="CÓDIGO" disabled autocomplete="off">
           </div>
-          <button id="btn-start" class="big" disabled>Começar aventura</button>
+          <div id="continue-box" class="field"></div>
           <div id="menu-err"></div>
           <button data-padtoggle id="btn-pad" style="width:100%;margin-top:10px">🎮 Controle: desligado</button>
           <button id="btn-import" title="Carrega um arquivo .json salvo pelo botão de salvar do jogo">Carregar save de arquivo (.json)</button>
@@ -342,23 +347,23 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=20"></script>
-<script src="js/data.js?v=20"></script>
-<script src="js/rules.js?v=20"></script>
-<script src="js/items.js?v=20"></script>
-<script src="js/dungeon.js?v=20"></script>
-<script src="js/net.js?v=20"></script>
-<script src="js/map.js?v=20"></script>
-<script src="js/world.js?v=20"></script>
-<script src="js/story.js?v=20"></script>
-<script src="js/hm.js?v=20"></script>
-<script src="js/allies.js?v=20"></script>
-<script src="js/town.js?v=20"></script>
-<script src="js/geo.js?v=20"></script>
-<script src="js/regions.js?v=20"></script>
-<script src="js/audio.js?v=20"></script>
-<script src="js/pad.js?v=20"></script>
-<script src="js/pvp.js?v=20"></script>
-<script src="js/game.js?v=20"></script>
+<script src="js/pokedex.js?v=21"></script>
+<script src="js/data.js?v=21"></script>
+<script src="js/rules.js?v=21"></script>
+<script src="js/items.js?v=21"></script>
+<script src="js/dungeon.js?v=21"></script>
+<script src="js/net.js?v=21"></script>
+<script src="js/map.js?v=21"></script>
+<script src="js/world.js?v=21"></script>
+<script src="js/story.js?v=21"></script>
+<script src="js/hm.js?v=21"></script>
+<script src="js/allies.js?v=21"></script>
+<script src="js/town.js?v=21"></script>
+<script src="js/geo.js?v=21"></script>
+<script src="js/regions.js?v=21"></script>
+<script src="js/audio.js?v=21"></script>
+<script src="js/pad.js?v=21"></script>
+<script src="js/pvp.js?v=21"></script>
+<script src="js/game.js?v=21"></script>
 </body>
 </html>

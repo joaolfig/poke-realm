@@ -1844,12 +1844,25 @@ function renderHall() {
   try { hall = JSON.parse(localStorage.getItem(HALL_KEY) || '[]'); } catch (e) { /* ignora */ }
   $('hall').innerHTML = hall.length ? `<h3>Salão dos Caídos</h3><ol>${hall.slice(0, 5).map(h => `<li><b>${esc(h.name)}</b> — ${esc(h.cls)} Nv ${h.lvl} · ${h.fame} fama · morto por ${esc(h.src)}</li>`).join('')}</ol>` : '';
 }
+// dois caminhos bem separados: jogar com o personagem salvo (direita) ou criar um novo (esquerda)
 function renderContinue() {
-  const s = loadSave();
-  $('continue-box').innerHTML = s && CLASSES[s.cls] ? `<button id="btn-cont" class="big alt" ${menuSel.loaded ? '' : 'disabled'}>Continuar<small>${esc(s.name)} · ${(RACES[s.race] || RACES.humano).nome} ${CLASSES[s.cls].nome} · Nível ${s.lvl}</small></button>` : '';
+  const s = loadSave(), ok = s && CLASSES[s.cls];
+  $('continue-box').innerHTML = '<h3>Personagem salvo</h3>' + (ok
+    ? `<button id="btn-cont" class="big alt" style="margin-top:0" ${menuSel.loaded ? '' : 'disabled'}>▶ Jogar com ${esc(s.name)}<small>${(RACES[s.race] || RACES.humano).nome} ${CLASSES[s.cls].nome} · Nível ${s.lvl} · ${s.gold || 0} 🪙 · ${(s.pets || []).length} companheiro(s)</small></button>`
+    : '<div class="saved-empty">Nenhum personagem salvo neste navegador. Crie um novo ao lado, ou carregue um save de arquivo abaixo.</div>');
   const b = $('btn-cont');
   if (b) b.onclick = () => startGame(s);
+  renderNewWarn();
 }
+function renderNewWarn() {
+  const s = loadSave(), w = $('new-warn'), nm = ($('name').value.trim() || 'Aventureiro').slice(0, 14);
+  $('btn-start').textContent = `✚ Criar e jogar com ${nm}`;
+  if (s && CLASSES[s.cls] && !G) {
+    w.innerHTML = `⚠ Criar um personagem novo <b>substitui ${esc(s.name)} (Nível ${s.lvl})</b>. Para guardá-lo, use "Salvar em arquivo" dentro do jogo antes.`;
+    w.classList.remove('hidden');
+  } else w.classList.add('hidden');
+}
+$('name').addEventListener('input', renderNewWarn);
 
 $('btn-roll').onclick = () => { menuSel.hero = rollHero(); renderHero(); };
 $('btn-import').onclick = () => $('file-import').click();
