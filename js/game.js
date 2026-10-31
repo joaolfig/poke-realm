@@ -798,16 +798,25 @@ function doDash() {
   const P = G.P;
   if (!P || !hasT(P, 'esquiva') || P.dashCd > 0) return;
   const mx = (K.KeyD || K.ArrowRight ? 1 : 0) - (K.KeyA || K.ArrowLeft ? 1 : 0), my = (K.KeyS || K.ArrowDown ? 1 : 0) - (K.KeyW || K.ArrowUp ? 1 : 0);
-  const a = mx || my ? Math.atan2(my, mx) : P.aim, inDg = inDungeonArea(P.x), sw = swimFlags(P);
-  burst(P.x, P.y, '#e5e7eb', 10);
-  for (let i = 0; i < 12; i++) {
-    const nx = P.x + Math.cos(a) * 12, ny = P.y + Math.sin(a) * 12;
-    if (inDg ? !walkableR(nx, ny, 10) : solidR(nx, ny, 9, sw)) break;
+  const a = mx || my ? Math.atan2(my, mx) : P.aim;
+  // desliza rápido por um instante (o movimento acontece em updateDash, quadro a quadro)
+  P.dash = { a, t: 0.18, trailT: 0 };
+  P.dashCd = 3; P.dodgeT = 0.3;
+  P.face = Math.cos(a) >= 0 ? 1 : -1;
+  sfx('ui');
+}
+function updateDash(dt) {
+  const P = G.P, d = P.dash;
+  const inDg = inDungeonArea(P.x), sw = swimFlags(P), step = 820 * dt / 4;
+  for (let k = 0; k < 4; k++) {
+    const nx = P.x + Math.cos(d.a) * step, ny = P.y + Math.sin(d.a) * step;
+    if (inDg ? !walkableR(nx, ny, 10) : solidR(nx, ny, 9, sw)) { d.t = 0; break; }
     P.x = nx; P.y = ny;
   }
-  P.dashCd = 3; P.dodgeT = 0.3;
-  burst(P.x, P.y, '#e5e7eb', 10);
-  sfx('ui');
+  // rastro de imagens fantasma e poeira no chão
+  if ((d.trailT -= dt) <= 0) { d.trailT = 0.035; (G.trail = G.trail || []).push({ x: P.x, y: P.y, face: P.face, cls: P.cls, ptype: pType(P), t: 0.28 }); }
+  if (Math.random() < 0.6) G.parts.push({ x: P.x + rand(-6, 6), y: P.y + 18, vx: -Math.cos(d.a) * 40 + rand(-15, 15), vy: rand(-20, 0), life: 0.35, color: '#d6cdb8', size: 3 });
+  if ((d.t -= dt) <= 0) P.dash = null;
 }
 
 function dealDamage(e, dmg, slow) {
@@ -942,7 +951,8 @@ function updatePlayer(dt) {
     G.toasts.push({ text: 'A masmorra desmoronou! Você foi levado de volta à vila.', color: '#fca5a5', t: 3 });
     return;
   }
-  P.moving = !!(mx || my);
+  if (P.dash) { updateDash(dt); P.walk += dt; } // durante o rolamento o movimento normal fica de fora
+  P.moving = !P.dash && !!(mx || my);
   if (P.moving) {
     const mp = activePet(P), fl = P.riding && mp && rideFlies(mp.pid);
     const l = Math.hypot(mx, my), sp = moveSpeed(P) * (P.riding ? (fl ? 1.6 : 1.45) : P.wading ? 0.65 : 1);
@@ -1200,6 +1210,7 @@ function update(dt) {
   G.bags = G.bags.filter(b => b.life > 0 && b.items.length);
   for (const p of G.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.92; p.vy *= 0.92; p.life -= dt; }
   G.parts = G.parts.filter(p => p.life > 0);
+  if (G.trail) { for (const g of G.trail) g.t -= dt; G.trail = G.trail.filter(g => g.t > 0); }
   for (const t of G.texts) { t.t += dt; t.y -= 40 * dt; }
   G.texts = G.texts.filter(t => t.t < t.life);
   for (const f of G.fx) { f.life -= dt; f.r = f.R * (1 - f.life / f.max); }
@@ -1350,6 +1361,7 @@ function render() {
       if (r.bubble) drawBubble(x, y - 32, r.bubble.text);
     } else {
       const P = it.me, x = P.x + ox, y = P.y + oy;
+      for (const g of G.trail || []) drawPlayerSprite(g.cls, g.x + ox, g.y + oy, g.face, 1, Math.max(0, g.t / 0.28) * 0.45, P.aim, g.ptype);
       if (P.shield > 0) { ctx.strokeStyle = 'rgba(147,197,253,.85)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.stroke(); }
       if (P.seloT > 0) { ctx.strokeStyle = 'rgba(253,230,138,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 30 + Math.sin(G.time * 8) * 2, 0, 7); ctx.stroke(); }
       if (P.furia > 0) { ctx.fillStyle = 'rgba(239,68,68,.25)'; ctx.beginPath(); ctx.arc(x, y, 24 + Math.sin(G.time * 15) * 3, 0, 7); ctx.fill(); }
