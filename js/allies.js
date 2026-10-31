@@ -272,13 +272,14 @@ function throwBall() {
   const mw = mouseWorld();
   let e = null, bd = 1e9;
   if (typeof PAD !== 'undefined' && PAD.on) {
-    // no controle a bola vai no Pokémon mais alinhado com a direção da mira (até ~35°), com o mesmo alcance do mouse
+    // no controle a bola usa a mesma faixa da mira assistida dos ataques, com o mesmo alcance do mouse
+    const cone = padCone(PAD.rm || 0, true);
     for (const o of G.enemies) {
       const dx = o.x - P.x, dy = o.y - P.y, dist = Math.hypot(dx, dy);
       if (o.hp <= 0 || o.dead || dist > 360) continue;
       const da = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - PAD.aim), Math.cos(Math.atan2(dy, dx) - PAD.aim)));
       const sc = da * 300 + dist * 0.3;
-      if (da < 0.6 && sc < bd) { bd = sc; e = o; }
+      if (da < cone && sc < bd) { bd = sc; e = o; }
     }
   } else for (const o of G.enemies) {
     if (o.hp <= 0) continue;

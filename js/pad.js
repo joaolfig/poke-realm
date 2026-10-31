@@ -181,12 +181,13 @@ function padTick(dt) {
     for (const k in mk) { K[k] = mk[k]; PAD.moveK[k] = 1; }
     // mirar: o cursor vira um ponto em volta do herói
     const rx = ax(2), ry = ax(3), rm = Math.hypot(rx, ry), shooting = btn(7) || rm > 0.55;
+    PAD.rm = rm;
     if (rm > 0.3) { PAD.aim = Math.atan2(ry, rx); PAD.aimR = 140 + rm * 180; }
     else if ((lx || ly) && !btn(7)) PAD.aim = Math.atan2(ly, lx);
     // mira semi-assistida: se há um Pokémon perto da direção apontada (cone de ~20°, até 520px),
     // a mira é puxada 75% do caminho até ele. Ajuda bastante, mas ainda é preciso apontar.
     // Atirando sem mexer o analógico direito, vale a direção em que você anda (cone mais aberto).
-    PAD.lock = padAimTarget(PAD.aim, rm > 0.3 ? 0.35 : shooting ? 0.6 : 0);
+    PAD.lock = padAimTarget(PAD.aim, padCone(rm, shooting));
     let fa = PAD.aim, fr = PAD.aimR;
     if (PAD.lock) {
       const dx = PAD.lock.x - G.P.x, dy = PAD.lock.y - G.P.y, ta = Math.atan2(dy, dx);
@@ -202,6 +203,10 @@ function padTick(dt) {
   }
   PAD.prev = gp.buttons.map(b => b.pressed || b.value > 0.5);
 }
+
+// tamanho da faixa da mira assistida: estreita com o analógico direito, mais aberta atirando só com RT.
+// A Poké Ball usa a mesma regra (como se estivesse atirando), para ter a mesma dificuldade de mirar.
+const padCone = (rm, shooting) => (rm > 0.3 ? 0.35 : shooting ? 0.6 : 0);
 
 // alvo da mira assistida: o inimigo com melhor equilíbrio entre ângulo e distância dentro do cone
 function padAimTarget(ang, cone) {
