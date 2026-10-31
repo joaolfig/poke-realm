@@ -1687,7 +1687,7 @@ function updatePanel() {
   }).join('') + '</div>';
   const bsel = P.ballSel || 'poke';
   $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}</button></div>
-    <div class="potrow balls">${Object.keys(BALLS).map(k => `<button data-ball="${k}" class="${bsel === k ? 'sel' : ''}" title="${BALLS[k].nome} (+${BALLS[k].bonus} na captura). Clique para escolher qual o F joga.">${BALLS[k].icon} ×${ballCount(P, k)}</button>`).join('')}</div>`;
+    <div class="potrow balls">${Object.keys(BALLS).map(k => `<button data-ball="${k}" class="${bsel === k ? 'sel' : ''}" title="${BALLS[k].nome} (+${BALLS[k].bonus} na captura). Clique (ou [G]) para escolher qual o F joga.">${BALLS[k].icon} ×${ballCount(P, k)}</button>`).join('')}</div>`;
   $('p-pets').innerHTML = `<h4>Companheiros <span class="small" title="Fora da Pokébola / máximo ao mesmo tempo">${P.petAct.length}/${petSlots(P)} fora · ${P.pets.length}/${petCap(P)}</span></h4>` + (P.pets.length
     ? `<div class="pets">${P.pets.map((pt, i) => {
       const ev = evoLevel(pt.pid);
@@ -1803,6 +1803,7 @@ window.addEventListener('keydown', ev => {
   else if (ev.code === 'KeyX') toggleRide();
   else if (ev.code === 'KeyV') { if (G.npcOpen === 'fly') closeNPC(); else openFly(); }
   else if (ev.code === 'KeyF') throwBall();
+  else if (ev.code === 'KeyG') cycleBall();
   else if (ev.code === 'KeyS' && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); K.KeyS = false; exportSave(); }
   else if (ev.code === 'KeyE') {
     if (G.npcOpen) closeNPC();

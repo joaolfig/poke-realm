@@ -278,6 +278,17 @@ function allyHit(e, a, sp) {
 
 /* ---------- Captura ---------- */
 const BALLS = { poke: { nome: 'Poké Ball', icon: '⚪', bonus: 0 }, grande: CONS.grande, ultra: CONS.ultra };
+// [G] / LB: troca a bola que o F joga (pula as que estão em falta)
+function cycleBall() {
+  const P = G.P, ks = Object.keys(BALLS), cur = ks.indexOf(P.ballSel || 'poke');
+  let k = ks[cur];
+  for (let n = 1; n <= ks.length; n++) { const c = ks[(cur + n) % ks.length]; if (ballCount(P, c) > 0) { k = c; break; } }
+  if (k === (P.ballSel || 'poke') && ballCount(P, k) <= 0) return G.toasts.push({ text: 'Você está sem Poké Balls.', color: '#fca5a5', t: 2 });
+  P.ballSel = k;
+  G.toasts.push({ text: `${BALLS[k].icon} F agora joga: ${BALLS[k].nome} (×${ballCount(P, k)})`, color: '#e5e7eb', t: 2 });
+  sfx('pick');
+  G.dirty = true;
+}
 const ballCount = (P, k) => (k === 'poke' ? P.balls : P.bag[k] || 0);
 function throwBall() {
   const P = G.P;
