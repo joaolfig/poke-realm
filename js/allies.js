@@ -1,6 +1,8 @@
 'use strict';
 /* ============ Companheiros ============
- * P.pets guarda até 4 Pokémon capturados ({ pid, name, type, lvl, xp }); P.petIdx é o ativo.
+ * P.pets guarda até 4 Pokémon capturados ({ pid, name, type, lvl, xp }).
+ * P.petAct lista os que estão fora da Pokébola (o talento Batalha em Equipe libera até 4);
+ * o primeiro (P.petIdx) é o líder: usa MOs e serve de montaria.
  * O ativo ganha XP com os abates, sobe de nível e evolui seguindo a cadeia de
  * evolução da PokeAPI. Em tempo de jogo, G.allies tem o ativo e os espíritos do Necromante.
  */
@@ -56,18 +58,26 @@ function evoLevel(pid) {
 }
 
 function petGainXP(n) {
-  const P = G.P, pt = P.pets[P.petIdx];
-  if (!pt || pt.lvl >= PET_MAX || !G.allies.some(a => a.pet)) return;
-  pt.xp += Math.round(n);
-  let up = false;
-  while (pt.lvl < PET_MAX && pt.xp >= petNeed(pt.lvl)) { pt.xp -= petNeed(pt.lvl); pt.lvl++; up = true; }
-  if (up) {
-    const a = G.allies.find(x => x.pet);
-    if (a) text(a.x, a.y - 30, `${pt.name} subiu para o Nv ${pt.lvl}!`, '#86efac', 13);
-    sfx('pick');
-    G.dirty = true;
+  const P = G.P, act = G.allies.filter(a => a.pet);
+  const k = (hasT(P, 'mentor') ? 1.5 : 1) * (act.length > 1 ? 0.75 : 1);
+  for (const a of act) {
+    const pt = P.pets[a.slot];
+    if (!pt || pt.lvl >= PET_MAX) continue;
+    pt.xp += Math.round(n * k);
+    let up = false;
+    while (pt.lvl < PET_MAX && pt.xp >= petNeed(pt.lvl)) { pt.xp -= petNeed(pt.lvl); pt.lvl++; up = true; }
+    if (up) { text(a.x, a.y - 30, `${pt.name} subiu para o Nv ${pt.lvl}!`, '#86efac', 13); sfx('pick'); G.dirty = true; }
+    checkEvolve(pt);
   }
-  checkEvolve(pt);
+}
+// chama/guarda um companheiro; com o talento Batalha em Equipe vários ficam fora ao mesmo tempo
+function togglePet(P, i) {
+  if (!P.pets[i]) return;
+  if (P.petAct.includes(i)) P.petAct = P.petAct.filter(j => j !== i);
+  else if (P.petAct.length < petSlots(P)) P.petAct.push(i);
+  else P.petAct[P.petAct.length - 1] = i;
+  P.petIdx = P.petAct.length ? P.petAct[0] : -1;
+  G.dirty = true;
 }
 function giveCandy() {
   const P = G.P, pt = P.pets[P.petIdx];
@@ -96,7 +106,7 @@ function updateEvo(dt) {
   const ev = G.evo, P = G.P;
   if (!ev || !P) return;
   ev.t -= dt;
-  const a = G.allies.find(x => x.pet);
+  const a = G.allies.find(x => x.pet && P.pets[x.slot] === ev.pt);
   if (a && Math.random() < 0.4) G.parts.push({ x: a.x + rand(-20, 20), y: a.y + rand(-20, 20), vx: 0, vy: -50, life: 0.6, color: '#fef9c3', size: 3 });
   if (ev.t > 0 || !ev.ready) return;
   G.evo = null;
@@ -150,14 +160,16 @@ function drawMount(pid, wx, wy, x, y, face, moving, t) {
 /* ---------- Comportamento em jogo ---------- */
 function syncPet() {
   const P = G.P;
-  const want = P.petIdx >= 0 && P.pets[P.petIdx] ? P.pets[P.petIdx] : null;
-  const cur = G.allies.find(a => a.pet);
-  if (cur && (!want || cur.pid !== want.pid || cur.slot !== P.petIdx)) G.allies = G.allies.filter(a => a !== cur);
-  if (want && !G.allies.some(a => a.pet) && POKE[want.pid]) {
-    G.allies.unshift({ pet: true, slot: P.petIdx, pid: want.pid, type: want.type, lvl: want.lvl, x: P.x - 30, y: P.y + 20, cd: 1, spT: 4, t: 0, face: 1 });
-  }
-  const a = G.allies.find(x => x.pet);
-  if (a && want) a.lvl = want.lvl;
+  const slots = P.petAct.filter(i => P.pets[i]).slice(0, petSlots(P));
+  G.allies = G.allies.filter(a => !a.pet || (slots.includes(a.slot) && P.pets[a.slot].pid === a.pid));
+  slots.forEach((i, n) => {
+    const pt = P.pets[i];
+    let a = G.allies.find(x => x.pet && x.slot === i);
+    if (!a && POKE[pt.pid]) { a = { pet: true, slot: i, pid: pt.pid, type: pt.type, lvl: pt.lvl, x: P.x - 30, y: P.y + 20, cd: 1 + n * 0.3, spT: 4 + n, t: 0, face: 1 }; G.allies.push(a); }
+    if (a) a.lvl = pt.lvl;
+  });
+  // o líder vai na frente da lista (montaria e MOs)
+  G.allies.sort((a, b) => (b.pet && b.slot === P.petIdx) - (a.pet && a.slot === P.petIdx));
 }
 
 function addSpirit(pid) {
@@ -174,18 +186,22 @@ function updateAllies(dt) {
   syncPet();
   updateEvo(dt);
   G.allies = G.allies.filter(a => a.ttl === undefined || (a.ttl -= dt) > 0);
-  const n = G.allies.length, feras = P.subclass === 'feras';
+  const n = G.allies.length;
   G.allies.forEach((a, i) => {
     a.t += dt;
-    const ang = P.aim + Math.PI + (i - (n - 1) / 2) * 0.8;
-    const tx = P.x + Math.cos(ang) * 46, ty = P.y + Math.sin(ang) * 46;
-    const k = Math.min(1, dt * 6);
-    const ox = a.x;
-    a.x += (tx - a.x) * k; a.y += (ty - a.y) * k;
+    // fica atrás do herói em relação à mira, mas o ângulo gira devagar e a velocidade é limitada
+    // (antes, mirar perto do herói fazia o ponto pular para o outro lado e o Pokémon atravessar a tela)
+    const want = P.aim + Math.PI + (i - (n - 1) / 2) * 0.8;
+    if (a.ang === undefined) a.ang = want;
+    a.ang += clamp(Math.atan2(Math.sin(want - a.ang), Math.cos(want - a.ang)), -3 * dt, 3 * dt);
+    const tx = P.x + Math.cos(a.ang) * 46, ty = P.y + Math.sin(a.ang) * 46;
+    const ox = a.x, dd = Math.hypot(tx - a.x, ty - a.y), step = Math.min(dd, Math.max(moveSpeed(P) * 1.3, dd * 6) * dt);
+    if (dd > 0.01) { a.x += (tx - a.x) / dd * step; a.y += (ty - a.y) / dd * step; }
     if (Math.hypot(a.x - P.x, a.y - P.y) > 400 || !walkable(a.x, a.y)) { a.x = P.x; a.y = P.y; }
     a.moving = Math.abs(a.x - ox) > 0.3;
     if (a.pet && a.pid === 132) dittoLook(a, dt);
-    if (a.pet && (P.riding || P.surfing)) { a.x = P.x; a.y = P.y; return; } // está carregando o jogador
+    if (a.pet && a.slot === P.petIdx && (P.riding || P.surfing)) { a.x = P.x; a.y = P.y; return; } // está carregando o jogador
+    if (a.rageT > 0) a.rageT -= dt;
     a.cd -= dt;
     if (a.pet) a.spT -= dt;
     if (a.cd > 0 || (G.evo && a.pet)) return;
@@ -205,9 +221,9 @@ function updateAllies(dt) {
       const shots = 3 + Math.floor(a.lvl / 10) * 2;
       for (let s = 0; s < shots; s++) spawnPB({ x: a.x, y: a.y, a: shotAng + (s - (shots - 1) / 2) * 0.16, spd: 420, life: 1.1, r: 8, color: col, shape: 'orb', ally: a, sp: 1 });
       text(a.x, a.y - 34, `${POKE[a.pid] ? POKE[a.pid].name : ''} usou ${MOVES[a.type] || 'Investida'}!`, col, 13);
-      a.spT = a.lvl >= 15 ? 5 : 6.5;
+      a.spT = (a.lvl >= 15 ? 5 : 6.5) * (hasT(P, 'mentor') ? 0.7 : 1);
     } else spawnPB({ x: a.x, y: a.y, a: shotAng, spd: 380, life: 1.1, r: 5, color: col, shape: 'orb', ally: a });
-    a.cd = (a.ghost ? 1.2 : 0.9) / (feras ? 1.5 : 1);
+    a.cd = (a.ghost ? 1.2 : 0.9) / (a.rageT > 0 ? 1.6 : 1);
   });
 }
 
@@ -230,8 +246,10 @@ function petDmg(a) {
 }
 function allyHit(e, a, sp) {
   const P = G.P;
-  let dmg = petDmg(a) * (1 + M(P, 'pet')) * (sp ? 1.5 : 1);
-  if (P.subclass === 'feras') dmg *= 2;
+  // com vários companheiros fora, cada um bate menos (4 juntos ≈ 2,5× um sozinho)
+  const nPets = G.allies.filter(x => x.pet).length;
+  let dmg = petDmg(a) * (1 + M(P, 'pet')) * (sp ? 1.5 : 1) * (a.ghost ? 1 : [1, 0.8, 0.7, 0.62][Math.max(0, nPets - 1)] || 0.62);
+  if (P.subclass === 'feras') dmg *= 1.5;
   const r = typed(P, e, Math.max(1, Math.round(dmg)), a.type);
   dealDamage(e, r.dmg);
   hitText(e, r.dmg, r.eff, false, true);
@@ -275,9 +293,9 @@ function throwBall() {
 function capture(e, rollTxt) {
   const P = G.P;
   e.hp = 0; e.dead = true;
-  const lvl = clamp(e.zone * 4 - 3 + randi(0, 2) + (e.alfa ? 3 : 0) + (e.kind === 4 ? 2 : 0), 1, 25);
+  const lvl = clamp(e.zone * 5 - 4 + randi(0, 2) + (e.alfa ? 3 : 0) + (e.kind === 4 ? 2 : 0), 1, 28);
   P.pets.push({ pid: e.pid, name: e.p.name, type: e.type, lvl, xp: 0 });
-  if (P.petIdx < 0) P.petIdx = P.pets.length - 1;
+  if (P.petAct.length < petSlots(P)) { P.petAct.push(P.pets.length - 1); P.petIdx = P.petAct[0]; }
   loadEvo(e.pid);
   burst(e.x, e.y, '#f87171', 30);
   burst(e.x, e.y, '#ffffff', 20);
@@ -301,7 +319,7 @@ function hostRemoveCaptured(id) {
 }
 
 /* ---------- Desenho e rede ---------- */
-const alliesToNet = () => G.allies.filter(a => !(a.pet && mountPid(G.P))).map(a => [a.look || a.pid, Math.round(a.x), Math.round(a.y), a.ghost ? 1 : 0]);
+const alliesToNet = () => G.allies.filter(a => !(a.pet && a.slot === G.P.petIdx && mountPid(G.P))).map(a => [a.look || a.pid, Math.round(a.x), Math.round(a.y), a.ghost ? 1 : 0]);
 const pokeLoading = new Set();
 function ensurePoke(id) {
   if (POKE[id] || pokeLoading.has(id)) return;

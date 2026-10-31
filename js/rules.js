@@ -59,49 +59,73 @@ const RACES = {
   draconato: { nome: 'Draconato', icon: '🐲', bonus: { POD: 1 }, points: 0, resist: ['dragon', 'fire'], traco: 'Escamas: +1 CA. Resiste a Dragão e Fogo.' },
 };
 
-/* ============ Subclasses (nível 10) ============ */
+/* ============ Subclasses (nível 16) ============
+ * Cada subclasse troca o especial ([Espaço]) por outro, inspirado nos itens de
+ * habilidade das classes de Realm of the Mad God, sempre ligado à classe de origem.
+ */
+const SUB_LVL = 16;
 const SUBCLASSES = {
   guerreiro: [
-    { id: 'barbaro', nome: 'Bárbaro', icon: '🪓', desc: '+25% PV máximos. Berserk dura 7s e corta pela metade o dano recebido.' },
-    { id: 'paladino', nome: 'Paladino', icon: '🛡️', desc: '+2 CA. Berserk também cura você e aliados próximos em 2d8 + nível.' },
+    { id: 'barbaro', nome: 'Bárbaro', icon: '🪓', desc: '+25% PV máximos e dano recebido pela metade enquanto em fúria.',
+      abil: { nome: 'Escudo de Impacto', cd: 6, desc: 'Escudo: golpeia à frente com 7 estilhaços pesados ((2 + nível/4)d8 + Poder) que podem paralisar, e entra em fúria por 3s.' } },
+    { id: 'paladino', nome: 'Paladino', icon: '🛡️', desc: '+2 CA.',
+      abil: { nome: 'Selo Sagrado', cd: 10, desc: 'Selo: por 6s você e os aliados próximos causam +1d6 de dano e recebem 25% menos dano, e todos são curados em 2d8 + nível.' } },
   ],
   mago: [
-    { id: 'evocador', nome: 'Evocador', icon: '🔥', desc: 'Bomba Arcana com 28 projéteis (em vez de 20) e +1d8 de dano em cada.' },
-    { id: 'necromante', nome: 'Necromante', icon: '💀', desc: 'Pokémon que você derrota têm 30% de chance de voltar como espírito aliado por 15s (máx. 3).' },
+    { id: 'evocador', nome: 'Evocador', icon: '⚡', desc: '+15% de cadência de tiro.',
+      abil: { nome: 'Cetro Relampejante', cd: 3, desc: 'Cetro: um raio atinge o inimigo mais perto do cursor e salta para até 5 outros ((2 + nível/5)d8 + Poder/2, perde 15% por salto).' } },
+    { id: 'necromante', nome: 'Necromante', icon: '💀', desc: 'Pokémon derrotados podem voltar como espírito aliado por 15s (30%, máx. 3).',
+      abil: { nome: 'Crânio Ceifador', cd: 4.5, desc: 'Crânio: explosão no cursor que causa (1 + nível/5)d10 + Poder/2 em área e cura você em 20% do dano causado.' } },
   ],
   ladino: [
-    { id: 'assassino', nome: 'Assassino', icon: '🗡️', desc: 'Margem de crítico +1 e críticos causam +50% de dano.' },
-    { id: 'trapaceiro', nome: 'Trapaceiro', icon: '🎭', desc: 'O Manto te teleporta até o cursor e a invisibilidade dura 5s.' },
+    { id: 'assassino', nome: 'Assassino', icon: '🗡️', desc: 'Margem de crítico +1 e críticos causam +50% de dano.',
+      abil: { nome: 'Frasco de Veneno', cd: 5, desc: 'Veneno: arremessa um frasco no cursor; a nuvem causa (1 + nível/6)d6 a cada 0,5s por 4s em quem estiver dentro.' } },
+    { id: 'trapaceiro', nome: 'Trapaceiro', icon: '🎭', desc: '10% de chance de esquivar de qualquer ataque.',
+      abil: { nome: 'Prisma Ilusório', cd: 7, desc: 'Prisma: você se teleporta até o cursor e deixa uma ilusão que atrai os inimigos por 4s. Fica invisível por 2s e o próximo ataque é crítico.' } },
   ],
   clerigo: [
-    { id: 'vida', nome: 'Domínio da Vida', icon: '💖', desc: 'Curas 50% mais fortes e aliados perto de você regeneram PV.' },
-    { id: 'guerra', nome: 'Domínio da Guerra', icon: '⚔️', desc: '+2 CA e seus tiros causam +1d6 de dano. O Tomo também deixa você e aliados 30% mais rápidos por 4s.' },
+    { id: 'vida', nome: 'Domínio da Vida', icon: '💖', desc: 'Curas 50% mais fortes e aliados perto de você regeneram PV.',
+      abil: { nome: 'Santuário', cd: 10, desc: 'Tomo da Vida: cria um santuário por 6s que cura (1 + nível/6)d6 + Vigor/2 por segundo quem estiver dentro e deixa os inimigos lentos.' } },
+    { id: 'guerra', nome: 'Domínio da Guerra', icon: '⚔️', desc: '+2 CA e seus tiros causam +1d6 de dano.',
+      abil: { nome: 'Hino de Batalha', cd: 9, desc: 'Hino: você e os aliados próximos entram em fúria por 5s, são curados em 1d8 + nível/2 e os inimigos em volta ficam paralisados.' } },
   ],
   patrulheiro: [
-    { id: 'feras', nome: 'Mestre das Feras', icon: '🐾', desc: 'Seus companheiros causam o dobro de dano e atiram 50% mais rápido.' },
-    { id: 'arcano', nome: 'Atirador Arcano', icon: '✴️', desc: 'Flechas explodem ao acertar, causando metade do dano em volta.' },
+    { id: 'feras', nome: 'Mestre das Feras', icon: '🐾', desc: 'Seus companheiros causam +50% de dano.',
+      abil: { nome: 'Armadilha da Caçadora', cd: 5, desc: 'Armadilha: arma no cursor e explode quando um inimigo chega perto ((2 + nível/4)d8 + Poder em área, deixa lentos) e agita seus companheiros.' } },
+    { id: 'arcano', nome: 'Atirador Arcano', icon: '✴️', desc: 'Flechas explodem ao acertar, causando metade do dano em volta.',
+      abil: { nome: 'Aljava Arcana', cd: 4, desc: 'Aljava: dispara 5 flechas arcanas perfurantes em leque ((2 + nível/4)d8 + Poder) que podem paralisar.' } },
   ],
 };
 const subInfo = id => Object.values(SUBCLASSES).flat().find(s => s.id === id);
 
-/* ============ Talentos (níveis 4, 8, 12, 16 e 20) ============ */
+/* ============ Talentos (níveis 4, 8, 12 ... 28) ============
+ * max = quantas vezes dá para pegar (cada vez soma um nível do talento). off = só para saves antigos.
+ */
 const TALENTS = {
+  equipe: { nome: 'Batalha em Equipe', icon: '🤝', max: 3, desc: '+1 companheiro fora da Pokébola ao mesmo tempo (até 4). Com mais companheiros, cada um bate um pouco menos.' },
+  afinidade: { nome: 'Afinidade Elemental', icon: '💎', max: 3, desc: 'Cristais de tipo duram +15s (base 30s).' },
+  esquiva: { nome: 'Rolamento', icon: '💨', desc: '[Shift] avança rápido na direção em que você anda e fica intocável por um instante (recarga 3s).' },
+  ricochete: { nome: 'Ricochete', icon: '↩', desc: 'Seus tiros que acertam quicam uma vez para o inimigo mais próximo.' },
+  perfurante: { nome: 'Perfuração', icon: '📌', desc: 'Seus tiros atravessam um inimigo a mais.' },
   atirador: { nome: 'Atirador Certeiro', icon: '🎯', desc: '+1 projétil em cada ataque.' },
-  robusto: { nome: 'Robusto', icon: '💪', desc: '+2 PV máximos por nível.' },
-  sortudo: { nome: 'Sortudo', icon: '🎲', desc: 'Seus ataques rolam 2d20 e ficam com o maior.' },
+  eco: { nome: 'Eco Arcano', icon: '🔁', desc: '25% de chance de o especial não gastar a recarga.' },
+  barreira: { nome: 'Barreira', icon: '🔰', desc: 'Usar o especial cria um escudo que absorve 15% da sua vida máxima por 4s.' },
+  foco: { nome: 'Foco', icon: '🔮', max: 2, desc: 'O especial recarrega 15% mais rápido.' },
+  mentor: { nome: 'Mentor', icon: '📘', desc: 'Companheiros ganham 50% mais XP e usam o golpe especial 30% mais vezes.' },
   vampirico: { nome: 'Toque Vampírico', icon: '🩸', desc: 'Críticos curam 30% do dano causado.' },
-  mobilidade: { nome: 'Mobilidade', icon: '👟', desc: '+20% de velocidade de movimento.' },
-  maos: { nome: 'Mãos Ligeiras', icon: '⚡', desc: '+20% de cadência de tiro.' },
-  critico: { nome: 'Crítico Aprimorado', icon: '💥', desc: 'Margem de crítico +1 (ex.: 19-20).' },
-  defensor: { nome: 'Defensor', icon: '🛡️', desc: '+2 na CA.' },
   adepto: { nome: 'Adepto Elemental', icon: '🌈', desc: 'Golpes super efetivos causam +50% de dano.' },
-  foco: { nome: 'Foco', icon: '🔮', desc: 'Seu especial recarrega 30% mais rápido.' },
-  regeneracao: { nome: 'Regeneração', icon: '💚', desc: 'Regeneração de PV 2,5× maior.' },
-  tesouro: { nome: 'Caçador de Tesouros', icon: '💰', desc: '+15% de chance de saque e +50% de ouro.' },
-  olho: { nome: 'Olho de Águia', icon: '🦅', desc: 'Seus tiros vão 25% mais longe.' },
-  alquimista: { nome: 'Alquimista', icon: '⚗️', desc: 'Poções 50% mais fortes e +1 Poção de Cura a cada 10 abates.' },
-  afinidade: { nome: 'Afinidade Elemental', icon: '💎', desc: 'Cristais de tipo duram o dobro (60s).' },
   domador: { nome: 'Domador', icon: '⚪', desc: '+4 nas rolagens de captura e +1 Pokébola a cada 15 abates.' },
+  alquimista: { nome: 'Alquimista', icon: '⚗️', desc: 'Poções 50% mais fortes e +1 Poção de Cura a cada 10 abates.' },
+  tesouro: { nome: 'Caçador de Tesouros', icon: '💰', desc: '+15% de chance de saque e +50% de ouro.' },
+  mobilidade: { nome: 'Mobilidade', icon: '👟', desc: '+20% de velocidade de movimento.' },
+  sortudo: { nome: 'Sortudo', icon: '🎲', desc: 'Seus ataques rolam 2d20 e ficam com o maior.' },
+  regeneracao: { nome: 'Regeneração', icon: '💚', desc: 'Regeneração de PV 2,5× maior.' },
+  // antigos: continuam funcionando em saves velhos, mas não são mais oferecidos
+  robusto: { nome: 'Robusto', icon: '💪', off: 1, desc: '+2 PV máximos por nível.' },
+  maos: { nome: 'Mãos Ligeiras', icon: '⚡', off: 1, desc: '+20% de cadência de tiro.' },
+  critico: { nome: 'Crítico Aprimorado', icon: '💥', off: 1, desc: 'Margem de crítico +1 (ex.: 19-20).' },
+  defensor: { nome: 'Defensor', icon: '🛡️', off: 1, desc: '+2 na CA.' },
+  olho: { nome: 'Olho de Águia', icon: '🦅', off: 1, desc: 'Seus tiros vão 25% mais longe.' },
 };
 
 /* ============ Temas de masmorra ============ */
@@ -114,9 +138,6 @@ const THEMES = {
   psychic: { nome: 'Templo Psíquico', floor: ['#3d2436', '#45293d'], wall: '#1a0f17', top: '#7a4a6b', accent: '#ff6fa8', pool: [63, 64, 79, 96, 122, 177, 203, 280, 325, 517], boss: 65 },
   ice: { nome: 'Caverna Congelada', floor: ['#2c4652', '#324e5b'], wall: '#101d23', top: '#7fb3c7', accent: '#9ff0ff', pool: [86, 87, 124, 215, 220, 225, 361, 459, 363, 582], boss: 473 },
   mine: { nome: 'Mina Profunda', floor: ['#3b3128', '#43382d'], wall: '#16110c', top: '#6e5c48', accent: '#e3c46d', pool: [27, 50, 66, 74, 95, 104, 111, 246, 299, 524], boss: 464 },
-  // masmorras da história
-  capas: { nome: 'Esconderijo dos Capas Vermelhas', floor: ['#3a2622', '#422b26'], wall: '#140c0a', top: '#6b2a22', accent: '#ef4444', pool: [19, 20, 52, 53, 56, 57, 96, 97], boss: 65, story: 2 },
-  eco: { nome: 'Caverna do Eco', floor: ['#1e1b2e', '#24203a'], wall: '#09070f', top: '#3d3560', accent: '#a3e635', pool: [167, 168, 595, 48, 49, 41, 42, 93], boss: 596, story: 4 },
   dragon: { nome: 'Ninho do Dragão', floor: ['#2a2440', '#30294a'], wall: '#0f0c1a', top: '#4e4380', accent: '#8a6cff', pool: [147, 148, 371, 372, 443, 444, 610, 611, 333, 334], boss: 635 },
 };
 const TYPE_THEME = {
@@ -124,7 +145,7 @@ const TYPE_THEME = {
   poison: 'ghost', psychic: 'psychic', fairy: 'psychic', ice: 'ice', rock: 'mine', ground: 'mine', steel: 'mine', fighting: 'mine',
   dragon: 'dragon', flying: 'dragon',
 };
-const DARK_THEMES = ['ghost', 'eco', 'mine']; // masmorras escuras (Lampejo ilumina)
+const DARK_THEMES = ['ghost', 'mine']; // masmorras escuras (Lampejo ilumina)
 const THEME_IDS = [...new Set(Object.values(THEMES).flatMap(t => [...t.pool, t.boss]))];
 
 /* ============ Eventos do mundo ============ */

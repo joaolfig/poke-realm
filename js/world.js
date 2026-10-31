@@ -6,7 +6,7 @@ const NPCS = [
   { id: 'ferreiro', nome: 'Ferreira Duna', icon: '🔨', x: -140, y: 136, spr: { h: '#ea580c', b: '#57534e', d: '#292524' }, fala: 'Traga ouro e eu deixo seu equipamento mais forte.' },
   { id: 'guilda', nome: 'Mestre da Guilda', icon: '📜', x: 140, y: 140, spr: { h: '#e5e7eb', b: '#1d4ed8', d: '#1e3a8a' }, fala: 'O reino precisa de heróis. Escolha um contrato.' },
   { id: 'sildo', nome: 'Sildo Invernal', icon: '🛡️', x: 0, y: -205, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
-  { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '', show: P => P.story && P.story.ch >= 4 },
+  { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '', show: P => storyOver(P) },
 ];
 const NPC_SPR = {};
 function buildNPCSprites() {
@@ -62,7 +62,6 @@ function shopList(P) {
     { id: 'armadura', nome: ARMORS[tier], icon: '🛡️', preco: 50 + tier * 40, tier },
     { id: 'anel', nome: 'Anel aleatório', icon: '💍', preco: 70 + tier * 30, tier },
     { id: 'amuleto', nome: 'Amuleto aleatório', icon: '📿', preco: 90 + tier * 40, tier },
-    ...HM_KEYS.filter(k => !P.hms.includes(k) && P.story.ch >= HMS[k].ch).map(k => ({ id: 'hm_' + k, nome: `${HMS[k].mo} ${HMS[k].nome} (MO, reutilizável)`, icon: '📀', preco: HMS[k].preco })),
   ];
 }
 const sellPrice = it => 8 + it.tier * 12 + (it.upg || 0) * 10;
@@ -159,7 +158,6 @@ function buyItem(P, id) {
   } else if (id === 'pot') P.pots.hp++;
   else if (id === 'ball') P.balls++;
   else if (CONS[id]) P.bag[id]++;
-  else if (id.startsWith('hm_')) giveHM(P, id.slice(3));
   P.gold -= s.preco;
   sfx('pick');
 }
@@ -187,7 +185,7 @@ const MATERIAL = { flying: 'Penas', fire: 'Cinzas', water: 'Escamas', grass: 'Fo
   ground: 'Torrões', rock: 'Pedrinhas raras', ghost: 'Ectoplasma', psychic: 'Cristais mentais', fighting: 'Faixas', normal: 'Pelos', ice: 'Gelo eterno',
   dragon: 'Escamas de dragão', dark: 'Garras sombrias', steel: 'Parafusos', fairy: 'Pó de fada' };
 function genQuests(P) {
-  const z = clamp(Math.ceil(P.lvl / 5), 1, 4);
+  const z = lvlZone(P.lvl);
   const recent = P.recentQ || [];
   const unknown = LANDMARKS.filter(l => !P.fly.includes(l.id) && zoneAt(l.x, l.y) <= z + 1);
   let kinds = ['tipo', 'zona', 'alfa', 'masmorra', 'captura', 'evento', 'caca', 'caca', 'coleta', 'coleta', 'especie', 'especie', 'pegar', 'pegar', ...(unknown.length ? ['explorar'] : [])];
@@ -349,7 +347,7 @@ function evSpot(pl) {
 function startEvent() {
   const pls = allPlayers().filter(p => !inDungeonArea(p.x));
   if (!pls.length) return;
-  const pl = pick(pls), pz = clamp(zoneAt(pl.x, pl.y), 1, 4);
+  const pl = pick(pls), pz = clamp(zoneAt(pl.x, pl.y), 1, 5);
   const kind = pick(['horda', 'migracao', 'meteoros', 'raro', 'noite']);
   const announce = (text, color) => emitEvent({ t: 'toast', text, color, big: 1 });
   if (kind === 'horda') {

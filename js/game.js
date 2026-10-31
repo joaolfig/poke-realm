@@ -14,7 +14,7 @@ const SAVE_KEY = 'pkr_save_v2', HALL_KEY = 'pkr_hall_v1', CACHE_KEY = 'pkr_poke_
 
 /* ---------- Pokédex (PokeAPI) ---------- */
 const POKE = {};
-const coreIds = () => [...new Set([...Object.values(ZONE_POOLS).flat(), ...BOSSES, ...RARE_POOL, ...STORY_IDS, ...Object.values(WATER_POOLS).flat()])];
+const coreIds = () => regionIds(REGION);
 
 async function fetchPoke(id, cache) {
   // o cache guarda só os dados; imagens são recriadas a cada sessão
@@ -157,12 +157,18 @@ function newWorld() {
     remotes: new Map(), dungeons: new Map(), portals: [], dgNext: 0, poNext: 0, dgT: 0, allies: [], meteors: [],
     event: null, evInfo: null, evT: 70, npcOpen: null, nearNPC: null, evo: null, bountyCd: {}, dropN: 0, recall: null, storyCd: {}, relT: 0, relIdx: -1, cuts: [], usedDive: new Set(), nearHM: null,
     time: 0, nextId: 0, spawnT: 0, bossT: 75, shake: 0, area: null, banner: 0, dirty: true,
-    saveT: 0, panelT: 0, cam: { x: 0, y: 0 }, fullWarn: 0, nearPortal: null,
+    saveT: 0, panelT: 0, cam: { x: 0, y: 0 }, fullWarn: 0, nearPortal: null, zones: [], decoys: [],
   };
 }
 
 /* ---------- Regras (D&D simplificado) ---------- */
 const hasT = (P, id) => P.talents.includes(id);
+const tRank = (P, id) => P.talents.filter(t => t === id).length;
+const MAX_LVL = 30;
+// especial atual: o da subclasse (nível 16) ou o da classe
+const curAbil = P => (P.subclass && subInfo(P.subclass) && subInfo(P.subclass).abil) || CLASSES[P.cls].abil;
+// quantos companheiros podem ficar fora da Pokébola
+const petSlots = P => Math.min(4, 1 + tRank(P, 'equipe'));
 const hasS = (P, id) => P.subclass === id;
 const race = P => RACES[P.race] || RACES.humano;
 const pType = P => (P.tempTypeT > 0 ? P.tempType : P.ptype);
@@ -178,14 +184,14 @@ const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armad
 const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
 const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
-const fireRate = P => CLASSES[P.cls].wpn.rate * (1 + 0.05 * A(P, 'AGI')) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (P.elixT > 0 ? 1.2 : 1) * (1 + M(P, 'rate'));
-const abilCd = P => CLASSES[P.cls].abil.cd * (hasT(P, 'foco') ? 0.7 : 1) * Math.max(0.5, 1 - M(P, 'cd'));
+const fireRate = P => CLASSES[P.cls].wpn.rate * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (P.elixT > 0 ? 1.2 : 1) * (1 + M(P, 'rate'));
+const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.15 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
 // XP por nível = abates desejados × XP médio de um abate na zona recomendada para aquele nível.
-// Assim o ritmo cresce suave e não trava na troca de zona (Nv 1-4 Campos, 5-9 Floresta, 10-14 Montanhas, 15+ Sombrias).
-const XP_KILLS = [4, 8, 14, 20, 32, 40, 48, 56, 64, 70, 76, 82, 88, 94, 95, 100, 105, 110, 115];
-const XP_PER_KILL = [38, 73, 200, 400];
-const xpNeed = l => { const i = clamp(l, 1, 19); return Math.round(XP_KILLS[i - 1] * XP_PER_KILL[i < 5 ? 0 : i < 10 ? 1 : i < 15 ? 2 : 3]); };
+// Assim o ritmo cresce suave e não trava na troca de zona (Nv 1-6 zona 1, 7-13 zona 2, 14-20 zona 3, 21-25 zona 4, 26+ zona 5).
+const XP_KILLS = [4, 8, 12, 16, 20, 26, 32, 38, 44, 50, 56, 62, 66, 70, 74, 78, 82, 86, 90, 94, 96, 98, 100, 102, 104, 106, 108, 110, 112];
+const XP_PER_KILL = [38, 73, 200, 400, 650];
+const xpNeed = l => { const i = clamp(l, 1, MAX_LVL - 1); return Math.round(XP_KILLS[i - 1] * XP_PER_KILL[lvlZone(i) - 1]); };
 
 // raça, classe e tipo são sorteados
 function rollHero() {
@@ -207,16 +213,16 @@ function createPlayer(name, h) {
     attrs: { ...h.attrs }, points: h.points || 0, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
     equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: null, amuleto: null },
     inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0, elixir: 1 }, ballSel: 'poke', story: { ch: 0, done: false },
-    pets: [], petIdx: -1, quest: null, questOffer: null, elixT: 0, hasteT: 0, slowCd: 0, hms: [], fly: ['vila'], chests: [], flyCd: 0,
+    pets: [], petIdx: -1, petAct: [], stories: {}, hmsR: {}, quest: null, questOffer: null, elixT: 0, hasteT: 0, slowCd: 0, hms: [], fly: ['vila'], chests: [], flyCd: 0,
     x: rand(-40, 40), y: rand(10, 50), hp: 1, shootCd: 0, abilCd: 0, breathCd: 0, furia: 0, invis: 0, nextCrit: false,
-    recallCd: 0, sinceHit: 10, face: 1, walk: 0, moving: false, aim: 0, tempType: null, tempTypeT: 0, alt: 0.14, auraT: 0, giftT: 0,
+    recallCd: 0, dashCd: 0, dodgeT: 0, shield: 0, shieldT: 0, seloT: 0, sinceHit: 10, face: 1, walk: 0, moving: false, aim: 0, tempType: null, tempTypeT: 0, alt: 0.14, auraT: 0, giftT: 0,
   };
   P.hp = maxHP(P);
   return P;
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'fame', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'story', 'hms', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'quest', 'questOffer', 'hp'];
+  'talentPending', 'killsPot', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'quest', 'questOffer', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -230,7 +236,7 @@ function loadSave() {
 /* ---------- Talentos e subclasses ---------- */
 function ensureTalentOffer(P) {
   if (P.talentOffer || P.talentPending <= 0) return;
-  const pool = Object.keys(TALENTS).filter(k => !P.talents.includes(k)).sort(() => Math.random() - 0.5);
+  const pool = Object.keys(TALENTS).filter(k => !TALENTS[k].off && tRank(P, k) < (TALENTS[k].max || 1)).sort(() => Math.random() - 0.5);
   if (!pool.length) { P.talentPending = 0; return; }
   P.talentOffer = pool.slice(0, 3);
   G.toasts.push({ text: '✨ Talento disponível! Escolha no painel ao lado.', color: '#c4b5fd', t: 4 });
@@ -250,12 +256,12 @@ function chooseTalent(id) {
 }
 function chooseSubclass(id) {
   const P = G.P;
-  if (P.subclass || P.lvl < 10 || !SUBCLASSES[P.cls].some(s => s.id === id)) return;
+  if (P.subclass || P.lvl < SUB_LVL || !SUBCLASSES[P.cls].some(s => s.id === id)) return;
   const oldMax = maxHP(P);
   P.subclass = id;
   P.hp += Math.max(0, maxHP(P) - oldMax);
   const s = subInfo(id);
-  G.toasts.push({ text: `${s.icon} Você agora é ${s.nome}!`, color: '#fde047', t: 3.5, big: 1 });
+  G.toasts.push({ text: `${s.icon} Você agora é ${s.nome}! Novo especial: ${s.abil.nome}`, color: '#fde047', t: 4.5, big: 1 });
   G.fx.push({ k: 'ring', x: P.x, y: P.y, r: 0, R: 140, life: 0.9, max: 0.9, color: '#fde047' });
   sfx('lvl');
   saveGame();
@@ -266,7 +272,7 @@ function useStone(i) {
   const P = G.P, it = P.inv[i];
   P.inv[i] = null;
   P.tempType = it.type;
-  P.tempTypeT = hasT(P, 'afinidade') ? 60 : 30;
+  P.tempTypeT = 30 + 15 * tRank(P, 'afinidade');
   burst(P.x, P.y, TYPE_COLORS[it.type], 30);
   G.fx.push({ k: 'ring', x: P.x, y: P.y, r: 0, R: 90, life: 0.6, max: 0.6, color: TYPE_COLORS[it.type] });
   G.toasts.push({ text: `💎 Você agora é do tipo ${TYPE_PT[it.type]}!`, color: TYPE_COLORS[it.type], t: 3 });
@@ -366,7 +372,7 @@ function allPlayers() {
 }
 
 function updateEnemiesHost(dt) {
-  const T = allPlayers().filter(t => !t.invis && zoneAt(t.x, t.y) !== 0);
+  const T = allPlayers().filter(t => !t.invis && zoneAt(t.x, t.y) !== 0).concat(G.decoys.map(d => ({ x: d.x, y: d.y })));
   for (const e of G.enemies) {
     e.t += dt; e.flash = Math.max(0, e.flash - dt);
     if (e.stT > 0) {
@@ -439,13 +445,21 @@ function updateEnemiesHost(dt) {
       // cada Pokémon fica na própria zona (não invade áreas mais fáceis)
       // aquáticos só nadam; voadores passam por cima da água
       const zn = zoneAt(nx, ny);
-      const ok = e.mig || e.boss || (e.aqua ? isWater(nx, ny) && (zn < 1 || zn >= e.zone) : (zn >= e.zone || (e.fly && zn < 0)) && !solidAt(nx, ny, e.fly ? 1 : 0));
-      if (ok) { e.x = nx; e.y = ny; } else { vx = vy = 0; e.wanderA += Math.PI; e.orbit *= -1; }
+      const can = (x, y) => { const z = zoneAt(x, y); return e.mig || e.boss || (e.aqua ? isWater(x, y) && (z < 1 || z >= e.zone) : (z >= e.zone || (e.fly && z < 0)) && !solidAt(x, y, e.fly ? 1 : 0)); };
+      // bloqueado: tenta deslizar por um dos eixos; só inverte a direção de novo depois de um tempo
+      // (antes invertia a cada quadro e o Pokémon ficava tremendo de um lado para o outro)
+      if (can(nx, ny)) { e.x = nx; e.y = ny; }
+      else if (vx && can(nx, e.y)) { e.x = nx; vy = 0; }
+      else if (vy && can(e.x, ny)) { e.y = ny; vx = 0; }
+      else {
+        vx = vy = 0;
+        if (G.time - (e.turnT || -9) > 0.8) { e.turnT = G.time; e.wanderA += Math.PI; e.orbit *= -1; e.wanderT = rand(0.8, 1.6); }
+      }
       pushOutTown(e);
       clampWorld(e);
     }
     e.moving = Math.abs(vx) + Math.abs(vy) > 1;
-    if (Math.abs(vx) > 5) e.face = vx > 0 ? 1 : -1;
+    if (Math.abs(vx) > 12 && G.time - (e.faceT || -9) > 0.25) { const f = vx > 0 ? 1 : -1; if (f !== e.face) { e.face = f; e.faceT = G.time; } }
   }
 }
 
@@ -456,7 +470,7 @@ function updateEnemiesClient(dt) {
     if (Math.abs(dx) > 400 || Math.abs(dy) > 400) { e.x = e.tx; e.y = e.ty; }
     else { const k = Math.min(1, dt * 10); e.x += dx * k; e.y += dy * k; }
     e.moving = Math.abs(dx) + Math.abs(dy) > 2;
-    if (Math.abs(dx) > 1) e.face = dx > 0 ? 1 : -1;
+    if (Math.abs(dx) > 3 && G.time - (e.faceT || -9) > 0.25) { const f = dx > 0 ? 1 : -1; if (f !== e.face) { e.face = f; e.faceT = G.time; } }
   }
 }
 
@@ -507,9 +521,9 @@ function hostBoss(dt) {
   if (G.enemies.some(e => e.legend) || !allPlayers().some(p => !inDungeonArea(p.x))) return;
   const pid = pick(BOSSES);
   if (!POKE[pid]) return;
-  const [bx, by] = randomZonePoint(4);
-  hostSpawn(pid, 4, 2, bx, by);
-  emitEvent({ t: 'toast', text: `⚠ ${POKE[pid].name} lendário surgiu nas Terras Sombrias!`, color: '#f87171', big: 1 });
+  const [bx, by] = randomZonePoint(5);
+  hostSpawn(pid, 5, 2, bx, by);
+  emitEvent({ t: 'toast', text: `⚠ ${POKE[pid].name} lendário surgiu em ${ZONES[5].nome}!`, color: '#f87171', big: 1 });
 }
 
 // from = id do jogador que causou o dano (null para meteoros, veneno etc.)
@@ -573,10 +587,10 @@ function gainXP(n, raw) {
   const P = G.P;
   if (!raw && isNight()) n = Math.round(n * 1.5);
   P.fame += n;
-  if (P.lvl >= 20) return;
+  if (P.lvl >= MAX_LVL) return;
   P.xp += n;
   text(P.x, P.y - 46, `+${n} XP`, '#a7f3d0', 12);
-  while (P.lvl < 20 && P.xp >= xpNeed(P.lvl)) {
+  while (P.lvl < MAX_LVL && P.xp >= xpNeed(P.lvl)) {
     P.xp -= xpNeed(P.lvl);
     P.lvl++;
     if (P.lvl % 2 === 0) P.points++;
@@ -590,7 +604,7 @@ function gainXP(n, raw) {
     ensureTalentOffer(P);
     saveGame();
   }
-  if (P.lvl >= 20) P.xp = 0;
+  if (P.lvl >= MAX_LVL) P.xp = 0;
 }
 
 function mouseWorld() { return { x: mouse.x - W / 2 + G.cam.x, y: mouse.y - H / 2 + G.cam.y }; }
@@ -599,7 +613,8 @@ function mouseWorld() { return { x: mouse.x - W / 2 + G.cam.x, y: mouse.y - H / 
 function spawnPB(o) {
   const b = {
     ox: o.x, oy: o.y, x: o.x, y: o.y, dx: Math.cos(o.a), dy: Math.sin(o.a), a: o.a, spd: o.spd, t: 0, life: o.life,
-    amp: o.amp || 0, ph: o.ph || 0, r: o.r, color: o.color, shape: o.shape, pierce: !!o.pierce, hit: o.pierce ? new Set() : null, ally: o.ally || null, sp: o.sp || 0, spell: o.spell || 0,
+    amp: o.amp || 0, ph: o.ph || 0, r: o.r, color: o.color, shape: o.shape, pierce: !!o.pierce || !!o.left, hit: o.pierce || o.left || o.skip ? new Set(o.skip ? [o.skip] : []) : null, ally: o.ally || null, sp: o.sp || 0, spell: o.spell || 0,
+    left: o.left || 0, rico: !!o.rico,
   };
   G.pb.push(b);
   if (netActive()) NET.outS.push([Math.round(b.ox), Math.round(b.oy), +o.a.toFixed(3), b.spd, +b.life.toFixed(2), b.amp, +b.ph.toFixed(2), b.r, b.shape, b.color]);
@@ -610,6 +625,7 @@ function shootBullet(a, o = {}) {
   spawnPB({
     a, spd: o.spd || w.speed, life: (o.life || w.life) * rangeMul(P), amp: w.wave ? 14 : 0, ph: o.ph || 0,
     r: o.r || w.size, color: o.color || (P.tempTypeT > 0 ? TYPE_COLORS[P.tempType] : w.color), shape: o.shape || w.shape, pierce: o.pierce || w.pierce || M(P, 'pierce') > 0, spell: o.spell, x: o.x !== undefined ? o.x : P.x, y: o.y !== undefined ? o.y : P.y,
+    left: !(o.pierce || w.pierce) && hasT(P, 'perfurante') ? 2 : 0, rico: o.rico, skip: o.skip,
   });
 }
 function addCosmetic(s) {
@@ -639,48 +655,150 @@ function hitText(e, dmg, eff, crit, hit, extra = '') {
   }
 }
 
+// dano de especial: aplica tipo, mostra o número e devolve o dano causado
+function abilHit(e, dmg, type, slow) {
+  const P = G.P, r = typed(P, e, Math.max(1, Math.round(dmg)), type || pType(P));
+  dealDamage(e, r.dmg, slow || 0);
+  hitText(e, r.dmg, r.eff, false, true);
+  return r.dmg;
+}
+const aimPoint = (P, max) => { const mw = mouseWorld(); let dx = mw.x - P.x, dy = mw.y - P.y; const dd = Math.hypot(dx, dy); if (dd > max) { dx *= max / dd; dy *= max / dd; } return { x: P.x + dx, y: P.y + dy }; };
+const enemiesNear = (x, y, r) => G.enemies.filter(e => e.hp > 0 && !e.dead && Math.hypot(e.x - x, e.y - y) < r + e.r);
+
 function useAbility() {
   const P = G.P;
   if (P.abilCd > 0) return;
-  if ((P.cls === 'mago' || P.cls === 'patrulheiro') && !inDungeonArea(P.x) && inTown(P.x, P.y)) { text(P.x, P.y - 40, '🕊️ Não dá para atacar de dentro da vila', '#fef3c7', 12); return; }
+  if (!inDungeonArea(P.x) && inTown(P.x, P.y)) { text(P.x, P.y - 40, '🕊️ A vila é zona de paz', '#fef3c7', 12); return; }
   P.abilCd = abilCd(P);
-  const mw = mouseWorld(), tp = pType(P);
-  if (P.cls === 'guerreiro') {
-    // Elmo: Berserk para você e quem estiver perto
-    emitEvent({ t: 'buff', k: 'furia', x: Math.round(P.x), y: Math.round(P.y), dur: hasS(P, 'barbaro') ? 7 : 5, name: P.name });
-    emitEvent({ t: 'fx', x: P.x, y: P.y, r: 160, color: '#ef4444' });
-    if (hasS(P, 'paladino')) emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: roll(2, 8) + P.lvl, name: P.name });
-    sfx('boom');
-  } else if (P.cls === 'mago') {
-    // Feitiço: bomba de projéteis no cursor
-    let dx = mw.x - P.x, dy = mw.y - P.y;
-    const dd = Math.hypot(dx, dy);
-    if (dd > 380) { dx *= 380 / dd; dy *= 380 / dd; }
-    const tx = P.x + dx, ty = P.y + dy, n = hasS(P, 'evocador') ? 28 : 20;
-    for (let i = 0; i < n; i++) shootBullet(i * Math.PI * 2 / n, { x: tx, y: ty, spd: 330, life: 0.55, r: 6, color: TYPE_COLORS[tp], shape: 'orb', spell: 1 });
-    emitEvent({ t: 'fx', x: tx, y: ty, r: 50, color: TYPE_COLORS[tp] });
-    sfx('boom');
-  } else if (P.cls === 'ladino') {
-    // Manto: invisibilidade
-    if (hasS(P, 'trapaceiro')) {
-      let dx = mw.x - P.x, dy = mw.y - P.y;
-      const dd = Math.hypot(dx, dy);
-      if (dd > 250) { dx *= 250 / dd; dy *= 250 / dd; }
-      burst(P.x, P.y, '#6b7280', 16);
-      if (walkableR(P.x + dx, P.y + dy, 10) && !solidR(P.x + dx, P.y + dy, 10)) { P.x += dx; P.y += dy; }
+  const mw = mouseWorld(), tp = pType(P), lv = P.lvl, pod = A(P, 'POD');
+  const fxAt = (x, y, r, color) => emitEvent({ t: 'fx', x: Math.round(x), y: Math.round(y), r, color });
+  switch (P.subclass || P.cls) {
+    case 'guerreiro': // Elmo: Berserk para você e quem estiver perto
+      emitEvent({ t: 'buff', k: 'furia', x: Math.round(P.x), y: Math.round(P.y), dur: 5, name: P.name });
+      fxAt(P.x, P.y, 160, '#ef4444'); sfx('boom'); break;
+    case 'barbaro': { // Escudo de Impacto (Cavaleiro): leque curto de estilhaços que paralisam
+      for (let i = 0; i < 7; i++) shootBullet(P.aim + (i - 3) * 0.13, { spd: 520, life: 0.38, r: 10, color: '#e5e7eb', shape: 'blade', spell: 3 });
+      P.furia = Math.max(P.furia, 3);
+      fxAt(P.x + Math.cos(P.aim) * 60, P.y + Math.sin(P.aim) * 60, 70, '#e5e7eb'); sfx('boom'); break;
     }
-    P.invis = hasS(P, 'trapaceiro') ? 5 : 3; P.nextCrit = true;
-    burst(P.x, P.y, '#6b7280', 20);
-  } else if (P.cls === 'clerigo') {
-    // Tomo: cura em área
-    const amt = Math.round((roll(2 + Math.floor(P.lvl / 3), 8) + A(P, 'VIG')) * (hasS(P, 'vida') ? 1.5 : 1));
-    emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.max(1, amt), name: P.name });
-    if (hasS(P, 'guerra')) emitEvent({ t: 'buff', k: 'pressa', x: Math.round(P.x), y: Math.round(P.y), dur: 4, name: P.name });
-  } else if (P.cls === 'patrulheiro') {
-    // Aljava: flechada pesada que perfura e deixa lento
-    shootBullet(P.aim, { spd: 600, life: 0.9, r: 12, color: '#fde047', shape: 'arrow', pierce: true, spell: 2 });
-    sfx('crit');
+    case 'paladino': // Selo Sagrado (Paladino): dano extra e proteção para o grupo
+      emitEvent({ t: 'buff', k: 'selo', x: Math.round(P.x), y: Math.round(P.y), dur: 6, name: P.name });
+      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: roll(2, 8) + lv, name: P.name });
+      fxAt(P.x, P.y, 200, '#fde68a'); sfx('lvl'); break;
+    case 'mago': { // Feitiço: bomba de projéteis no cursor
+      const t = aimPoint(P, 380);
+      for (let i = 0; i < 20; i++) shootBullet(i * Math.PI / 10, { x: t.x, y: t.y, spd: 330, life: 0.55, r: 6, color: TYPE_COLORS[tp], shape: 'orb', spell: 1 });
+      fxAt(t.x, t.y, 50, TYPE_COLORS[tp]); sfx('boom'); break;
+    }
+    case 'evocador': { // Cetro Relampejante (Feiticeiro): raio em cadeia
+      const t = aimPoint(P, 420);
+      let cur = enemiesNear(t.x, t.y, 160).sort((a, b) => Math.hypot(a.x - t.x, a.y - t.y) - Math.hypot(b.x - t.x, b.y - t.y))[0];
+      if (!cur) { text(P.x, P.y - 40, 'Nenhum alvo perto do cursor', '#cbd5e1', 12); P.abilCd = 0.4; return; }
+      const hit = new Set(), pts = [[P.x, P.y]];
+      let k = 1;
+      for (let j = 0; j < 6 && cur; j++) {
+        hit.add(cur.id); pts.push([cur.x, cur.y]);
+        abilHit(cur, (roll(2 + Math.floor(lv / 5), 8) + Math.floor(pod / 2)) * k, tp);
+        k *= 0.85;
+        const from = cur;
+        cur = enemiesNear(from.x, from.y, 220).filter(e => !hit.has(e.id)).sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y))[0];
+      }
+      G.fx.push({ k: 'bolt', pts, life: 0.3, max: 0.3, R: 0, r: 0, color: TYPE_COLORS[tp] });
+      sfx('crit'); break;
+    }
+    case 'necromante': { // Crânio Ceifador (Necromante): explosão que drena vida
+      const t = aimPoint(P, 360);
+      let tot = 0;
+      for (const e of enemiesNear(t.x, t.y, 110)) tot += abilHit(e, roll(1 + Math.floor(lv / 5), 10) + Math.floor(pod / 2), tp);
+      if (tot) { const h = Math.ceil(tot * 0.2); P.hp = Math.min(maxHP(P), P.hp + h); text(P.x, P.y - 34, `+${h}`, '#86efac', 14); }
+      fxAt(t.x, t.y, 110, '#a78bfa'); sfx('boom'); break;
+    }
+    case 'ladino': // Manto: invisibilidade
+      P.invis = 3; P.nextCrit = true; burst(P.x, P.y, '#6b7280', 20); break;
+    case 'assassino': { // Frasco de Veneno (Assassino): nuvem que corrói
+      const t = aimPoint(P, 330);
+      G.zones.push({ k: 'veneno', x: t.x, y: t.y, r: 100, t: 4.4, wait: 0.4, every: 0.5, tick: 0 });
+      fxAt(t.x, t.y, 100, '#a3e635'); sfx('pot'); break;
+    }
+    case 'trapaceiro': { // Prisma Ilusório (Trapaceiro): teleporte + ilusão que atrai os inimigos
+      const t = aimPoint(P, 280);
+      emitEvent({ t: 'decoy', x: Math.round(P.x), y: Math.round(P.y), dur: 4, cls: P.cls, ptype: pType(P) });
+      burst(P.x, P.y, '#c084fc', 16);
+      if (walkableR(t.x, t.y, 10) && !solidR(t.x, t.y, 10)) { P.x = t.x; P.y = t.y; }
+      P.invis = 2; P.nextCrit = true; burst(P.x, P.y, '#c084fc', 20); sfx('pot'); break;
+    }
+    case 'clerigo': { // Tomo: cura em área
+      const amt = roll(2 + Math.floor(lv / 3), 8) + A(P, 'VIG');
+      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.max(1, amt), name: P.name }); break;
+    }
+    case 'vida': // Santuário (Sacerdote): área de cura contínua
+      G.zones.push({ k: 'santuario', x: P.x, y: P.y, r: 150, t: 6, wait: 0, every: 1, tick: 0 });
+      fxAt(P.x, P.y, 150, '#fde68a'); sfx('pot'); break;
+    case 'guerra': // Hino de Batalha (Bardo): fúria para o grupo e paralisia em volta
+      emitEvent({ t: 'buff', k: 'furia', x: Math.round(P.x), y: Math.round(P.y), dur: 5, name: P.name });
+      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: d(8) + Math.floor(lv / 2), name: P.name, quiet: 1 });
+      for (const e of enemiesNear(P.x, P.y, 170)) if (!e.boss || Math.random() < 0.5) inflict(e, 2);
+      fxAt(P.x, P.y, 170, '#f97316'); sfx('boom'); break;
+    case 'patrulheiro': // Aljava: flechada pesada que perfura e deixa lento
+      shootBullet(P.aim, { spd: 600, life: 0.9, r: 12, color: '#fde047', shape: 'arrow', pierce: true, spell: 2 });
+      sfx('crit'); break;
+    case 'feras': { // Armadilha da Caçadora (Caçadora)
+      const t = aimPoint(P, 300);
+      G.zones.push({ k: 'armadilha', x: t.x, y: t.y, r: 120, t: 6, wait: 0.5, every: 0.1, tick: 0 });
+      sfx('pick'); break;
+    }
+    case 'arcano': // Aljava Arcana: leque de flechas perfurantes
+      for (let i = 0; i < 5; i++) shootBullet(P.aim + (i - 2) * 0.12, { spd: 620, life: 0.85, r: 9, color: '#c084fc', shape: 'arrow', pierce: true, spell: 4 });
+      sfx('crit'); break;
   }
+  if (hasT(P, 'barreira')) { P.shield = Math.round(maxHP(P) * 0.15); P.shieldT = 4; }
+  if (hasT(P, 'eco') && Math.random() < 0.25) { P.abilCd = 0.3; text(P.x, P.y - 50, '🔁 Eco!', '#c4b5fd', 13); }
+}
+
+// áreas dos especiais (veneno, santuário, armadilha): só quem lançou calcula o efeito
+function updateZones(dt) {
+  const P = G.P;
+  for (const z of G.zones) {
+    z.t -= dt;
+    if (z.wait > 0) { z.wait -= dt; continue; }
+    z.tick -= dt;
+    if (z.tick > 0) continue;
+    z.tick = z.every;
+    if (!P) continue;
+    if (z.k === 'veneno') {
+      for (const e of enemiesNear(z.x, z.y, z.r)) abilHit(e, roll(1 + Math.floor(P.lvl / 6), 6), 'poison');
+    } else if (z.k === 'santuario') {
+      emitEvent({ t: 'heal', x: Math.round(z.x), y: Math.round(z.y), amt: Math.round((roll(1 + Math.floor(P.lvl / 6), 6) + Math.floor(A(P, 'VIG') / 2)) * 1.5), name: P.name, quiet: 1, r: z.r });
+      for (const e of enemiesNear(z.x, z.y, z.r)) e.slowT = Math.max(e.slowT || 0, 1.2);
+    } else if (z.k === 'armadilha') {
+      if (!enemiesNear(z.x, z.y, 60).length && z.t > 0) continue;
+      for (const e of enemiesNear(z.x, z.y, z.r)) abilHit(e, roll(2 + Math.floor(P.lvl / 4), 8) + A(P, 'POD'), pType(P), 3);
+      for (const a of G.allies) if (a.pet) { a.cd = 0; a.spT = Math.min(a.spT, 0.5); a.rageT = 4; }
+      emitEvent({ t: 'fx', x: Math.round(z.x), y: Math.round(z.y), r: z.r, color: '#fbbf24' });
+      sfx('boom');
+      z.t = 0;
+    }
+  }
+  G.zones = G.zones.filter(z => z.t > 0);
+  for (const d of G.decoys) d.t -= dt;
+  G.decoys = G.decoys.filter(d => d.t > 0);
+}
+
+// Rolamento (talento): avanço curto e intocável
+function doDash() {
+  const P = G.P;
+  if (!P || !hasT(P, 'esquiva') || P.dashCd > 0) return;
+  const mx = (K.KeyD || K.ArrowRight ? 1 : 0) - (K.KeyA || K.ArrowLeft ? 1 : 0), my = (K.KeyS || K.ArrowDown ? 1 : 0) - (K.KeyW || K.ArrowUp ? 1 : 0);
+  const a = mx || my ? Math.atan2(my, mx) : P.aim, inDg = inDungeonArea(P.x), sw = swimFlags(P);
+  burst(P.x, P.y, '#e5e7eb', 10);
+  for (let i = 0; i < 12; i++) {
+    const nx = P.x + Math.cos(a) * 12, ny = P.y + Math.sin(a) * 12;
+    if (inDg ? !walkableR(nx, ny, 10) : solidR(nx, ny, 9, sw)) break;
+    P.x = nx; P.y = ny;
+  }
+  P.dashCd = 3; P.dodgeT = 0.3;
+  burst(P.x, P.y, '#e5e7eb', 10);
+  sfx('ui');
 }
 
 function dealDamage(e, dmg, slow) {
@@ -700,10 +818,12 @@ function playerHit(e, b) {
   P.nextCrit = false;
   const hit = crit || (r !== 1 && r + toHit(P) >= e.ac);
   const sp = b ? b.spell : 0;
-  let dmg = sp === 1 ? roll((1 + Math.floor(P.lvl / 6)) * (crit ? 2 : 1), 6) + Math.floor(A(P, 'POD') / 2) + (hasS(P, 'evocador') ? d(8) : 0)
+  let dmg = sp === 1 ? roll((1 + Math.floor(P.lvl / 6)) * (crit ? 2 : 1), 6) + Math.floor(A(P, 'POD') / 2)
     : sp === 2 ? roll((3 + Math.floor(P.lvl / 3)) * (crit ? 2 : 1), 8) + A(P, 'POD')
+      : sp === 3 || sp === 4 ? roll((2 + Math.floor(P.lvl / 4)) * (crit ? 2 : 1), 8) + A(P, 'POD')
       : roll(w.dice[0] * (crit ? 2 : 1), w.dice[1]) + A(P, 'POD') + w.bonus + M(P, 'dmg');
   if (P.furia > 0) dmg += d(6);
+  if (P.seloT > 0) dmg += d(6);
   if (P.elixT > 0) dmg += 2;
   if (P.tempTypeT > 0) dmg += d(4);
   if (hasS(P, 'guerra')) dmg += d(6);
@@ -715,6 +835,7 @@ function playerHit(e, b) {
   dealDamage(e, res.dmg, sp === 2 ? 3 : 0);
   hitText(e, res.dmg, res.eff, crit, hit);
   if (!crit) sfx(res.eff > 1 ? 'hitSE' : 'hit');
+  if ((sp === 3 && Math.random() < 0.35) || (sp === 4 && Math.random() < 0.4)) inflict(e, 2);
   // dano elemental extra das armas encantadas
   for (const et of MA(P, 'etype')) {
     const x = typed(P, e, d(6), et);
@@ -740,14 +861,17 @@ function playerHit(e, b) {
 function enemyAttack(b) {
   const P = G.P;
   const r = d(20), crit = r === 20;
-  if (r === 1 || Math.random() < M(P, 'dodge')) { text(P.x, P.y - 34, 'Esquiva!', '#93c5fd', 12); return; }
+  if (P.dodgeT > 0) return;
+  if (r === 1 || Math.random() < M(P, 'dodge') + (hasS(P, 'trapaceiro') ? 0.1 : 0)) { text(P.x, P.y - 34, 'Esquiva!', '#93c5fd', 12); return; }
   const graze = !crit && r + b.atk < AC(P);
   let eff = typeEff(b.type, [pType(P)]);
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
   if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type)) eff *= 0.5;
   if (graze) eff *= 0.34;
   if (P.furia > 0 && hasS(P, 'barbaro')) eff *= 0.5;
-  const dmg = Math.max(1, Math.round((roll(b.dice[0] * (crit ? 2 : 1), b.dice[1]) + b.dice[2]) * eff));
+  if (P.seloT > 0) eff *= 0.75;
+  let dmg = Math.max(1, Math.round((roll(b.dice[0] * (crit ? 2 : 1), b.dice[1]) + b.dice[2]) * eff));
+  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (!dmg) { text(P.x, P.y - 34, 'Escudo!', '#93c5fd', 12); return; } }
   P.hp -= dmg; P.sinceHit = 0;
   G.shake = Math.min(8, G.shake + 2 + dmg * 0.3);
   const tag = graze ? ' (bloqueado)' : crit ? ' CRÍTICO' : eff > 1 ? ' super efetivo' : eff < 1 ? ' resistido' : '';
@@ -820,7 +944,7 @@ function updatePlayer(dt) {
       if (stuck || !solidR(P.x, ny, 9, sw)) P.y = ny; else blocked = true;
       if (blocked && !(sw & 1) && isDeep(P.x + mx * 16, P.y + my * 16) && G.time - (G.deepWarn || -9) > 5) {
         G.deepWarn = G.time;
-        G.toasts.push({ text: '🌊 A água é funda demais. Um companheiro com Surfar (MO03) leva você.', color: '#93c5fd', t: 3 });
+        G.toasts.push({ text: '🌊 A água é funda demais. Um companheiro com Surfar (MO02, do 4º ginásio) leva você.', color: '#93c5fd', t: 3 });
       }
       clampWorld(P);
     }
@@ -841,6 +965,8 @@ function updatePlayer(dt) {
   P.face = Math.cos(P.aim) >= 0 ? 1 : -1;
 
   P.abilCd = Math.max(0, P.abilCd - dt);
+  P.dashCd = Math.max(0, (P.dashCd || 0) - dt); P.dodgeT = Math.max(0, (P.dodgeT || 0) - dt); P.seloT = Math.max(0, (P.seloT || 0) - dt);
+  if ((P.shieldT = Math.max(0, (P.shieldT || 0) - dt)) <= 0) P.shield = 0;
   P.breathCd = Math.max(0, P.breathCd - dt);
   P.furia = Math.max(0, P.furia - dt);
   P.elixT = Math.max(0, (P.elixT || 0) - dt);
@@ -955,7 +1081,7 @@ function handleEvent(m, local) {
       break;
     case 'heal': {
       const P = G.P;
-      if (P && Math.hypot(P.x - m.x, P.y - m.y) < 220) {
+      if (P && Math.hypot(P.x - m.x, P.y - m.y) < (m.r || 220)) {
         const before = P.hp;
         P.hp = Math.min(maxHP(P), P.hp + m.amt);
         const h = Math.round(P.hp - before);
@@ -976,11 +1102,12 @@ function handleEvent(m, local) {
     case 'buff': {
       const P = G.P;
       if (P && Math.hypot(P.x - m.x, P.y - m.y) < 240) {
-        if (m.k === 'furia') P.furia = Math.max(P.furia, m.dur); else P.hasteT = Math.max(P.hasteT || 0, m.dur);
-        if (!local) text(P.x, P.y - 44, m.k === 'furia' ? `Berserk! (${m.name})` : `Pressa! (${m.name})`, '#fca5a5', 12);
+        if (m.k === 'furia') P.furia = Math.max(P.furia, m.dur); else if (m.k === 'selo') P.seloT = Math.max(P.seloT || 0, m.dur); else P.hasteT = Math.max(P.hasteT || 0, m.dur);
+        if (!local) text(P.x, P.y - 44, m.k === 'furia' ? `Berserk! (${m.name})` : m.k === 'selo' ? `Selo Sagrado! (${m.name})` : `Pressa! (${m.name})`, '#fca5a5', 12);
       }
       break;
     }
+    case 'decoy': G.decoys.push({ x: m.x, y: m.y, t: m.dur, cls: m.cls, ptype: m.ptype }); break;
     case 'met': G.meteors.push({ x: m.x, y: m.y, r: m.r, t: m.delay, max: m.delay, zone: m.zone || 1 }); break;
     case 'evdone': onEventDone(m); break;
   }
@@ -1000,6 +1127,7 @@ function update(dt) {
   const P = G.P;
   if (P) updatePlayer(dt);
   updateAllies(dt);
+  updateZones(dt);
   updateWorld(dt);
   updateHM(dt);
   if (P) { storyTick(dt); questTick(dt); }
@@ -1041,7 +1169,11 @@ function update(dt) {
       if (Math.abs(e.x - b.x) > rr || Math.abs(e.y - b.y) > rr || (e.x - b.x) ** 2 + (e.y - b.y) ** 2 > rr * rr) continue;
       if (b.hit) { if (b.hit.has(e.id)) continue; b.hit.add(e.id); }
       if (G.P) playerHit(e, b);
-      if (!b.pierce) { b.dead = true; break; }
+      if (G.P && !b.ally && !b.rico && !b.spell && hasT(G.P, 'ricochete')) {
+        const nx = G.enemies.filter(o => o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 260).sort((p, q) => Math.hypot(p.x - e.x, p.y - e.y) - Math.hypot(q.x - e.x, q.y - e.y))[0];
+        if (nx) shootBullet(Math.atan2(nx.y - e.y, nx.x - e.x), { x: e.x, y: e.y, life: 0.5, rico: true, skip: e.id });
+      }
+      if (!b.pierce || (b.left && --b.left <= 0)) { b.dead = true; break; }
     }
   }
   G.pb = G.pb.filter(b => !b.dead);
@@ -1138,6 +1270,14 @@ function render() {
   } else renderOverworld(ox, oy);
 
   drawMeteors(ox, oy);
+  for (const z of G.zones) {
+    const x = z.x + ox, y = z.y + oy, pulse = 1 + Math.sin(G.time * 6) * 0.04;
+    const col = z.k === 'veneno' ? '163,230,53' : z.k === 'santuario' ? '253,230,138' : '251,191,36';
+    ctx.fillStyle = `rgba(${col},${z.k === 'armadilha' ? 0.12 : 0.22})`; ctx.strokeStyle = `rgba(${col},.8)`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, (z.k === 'armadilha' ? 22 : z.r) * pulse, 0, 7); ctx.fill(); ctx.stroke();
+    if (z.k === 'armadilha') { ctx.fillStyle = '#78350f'; ctx.fillRect(x - 10, y - 4, 20, 8); ctx.fillStyle = '#d1d5db'; for (let k = -8; k <= 8; k += 4) ctx.fillRect(x + k, y - 8, 2, 4); }
+  }
+  for (const d of G.decoys) drawPlayerSprite(d.cls || 'ladino', d.x + ox, d.y + oy, 1, Math.floor(G.time * 6) % 2, 0.5, 0, d.ptype);
   for (const b of G.bags) {
     const top = Math.max(...b.items.map(i => i.tier));
     const col = b.items.every(isPocket) ? '#8b5a2b' : top < 2 ? '#a0522d' : top < 4 ? '#ec4899' : top < 6 ? '#7c3aed' : '#ffffff';
@@ -1166,17 +1306,18 @@ function render() {
     for (const a of r.allies || []) if (vis(a[1], a[2])) ents.push({ y: a[2], ra: a });
   }
   for (const a of G.allies) ents.push({ y: a.y, a });
-  if (!inDg && Math.abs(cam.x) < W + 300 && Math.abs(cam.y) < H + 300) { for (const n of NPCS) ents.push({ y: n.y, n }); for (const b of BUILDINGS) ents.push({ y: b.y + b.h / 2, bld: b }); }
+  if (!inDg && Math.abs(cam.x) < W + 300 && Math.abs(cam.y) < H + 300) { for (const n of NPCS) ents.push({ y: n.y, n }); for (const b of BUILDINGS) ents.push({ y: b.y + b.h / 2, bld: b }); for (const d of TOWN_DECOR) ents.push({ y: d.sy, deco: d }); }
   if (G.P) ents.push({ y: G.P.y, me: G.P });
   ents.sort((a, b) => a.y - b.y);
   ctx.textAlign = 'center';
   for (const it of ents) {
     if (it.e) { drawEnemy(it.e, ox, oy); if (!it.e.dg && !it.e.fly) grassOver(it.e.x, it.e.y + it.e.h * 0.35, it.e.x + ox, it.e.y + oy + it.e.h * 0.42, it.e.w * 0.6); }
     else if (it.bld) drawBuilding(it.bld, ox, oy);
+    else if (it.deco) drawDecor(it.deco, ox, oy);
     else if (it.n) drawNPC(it.n, ox, oy);
     else if (it.a) {
       const a = it.a;
-      if (a.pet && mountPid(G.P)) continue; // virou montaria (desenhada embaixo do jogador)
+      if (a.pet && a.slot === G.P.petIdx && mountPid(G.P)) continue; // virou montaria (desenhada embaixo do jogador)
       drawAlly(a.look || a.pid, a.x, a.y, ox, oy, a.ghost, a.t, a.face, a.moving, a.pet && G.evo && G.P && G.evo.pt === G.P.pets[a.slot], a.pet ? a.lvl : 0);
       grassOver(a.x, a.y + 10, a.x + ox, a.y + oy + 14, 26);
     } else if (it.ra) drawAlly(it.ra[0], it.ra[1], it.ra[2], ox, oy, it.ra[3], G.time, 1, false);
@@ -1192,6 +1333,8 @@ function render() {
       if (r.bubble) drawBubble(x, y - 32, r.bubble.text);
     } else {
       const P = it.me, x = P.x + ox, y = P.y + oy;
+      if (P.shield > 0) { ctx.strokeStyle = 'rgba(147,197,253,.85)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.stroke(); }
+      if (P.seloT > 0) { ctx.strokeStyle = 'rgba(253,230,138,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 30 + Math.sin(G.time * 8) * 2, 0, 7); ctx.stroke(); }
       if (P.furia > 0) { ctx.fillStyle = 'rgba(239,68,68,.25)'; ctx.beginPath(); ctx.arc(x, y, 24 + Math.sin(G.time * 15) * 3, 0, 7); ctx.fill(); }
       const mpid = mountPid(P);
       let lift = 0;
@@ -1221,6 +1364,12 @@ function render() {
   ctx.globalAlpha = 1;
   for (const f of G.fx) {
     const a = f.life / f.max;
+    if (f.k === 'bolt') {
+      ctx.strokeStyle = f.color; ctx.globalAlpha = a; ctx.lineWidth = 3; ctx.beginPath();
+      f.pts.forEach(([px, py], i) => { const jx = i ? rand(-6, 6) : 0, jy = i ? rand(-6, 6) : 0; if (i) ctx.lineTo(px + ox + jx, py + oy + jy); else ctx.moveTo(px + ox, py + oy); });
+      ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke(); ctx.globalAlpha = 1;
+      continue;
+    }
     ctx.strokeStyle = f.color; ctx.lineWidth = 4; ctx.globalAlpha = a;
     ctx.beginPath(); ctx.arc(f.x + ox, f.y + oy, f.r, 0, 7); ctx.stroke();
     if (f.fill) { ctx.globalAlpha = a * 0.3; ctx.fillStyle = f.color; ctx.fill(); }
@@ -1232,7 +1381,7 @@ function render() {
     const dg = dungeonAt(cam.x);
     if (dg && DARK_THEMES.includes(dg.theme)) drawNight(ox, oy, flash ? 460 : 175, 'rgba(0,0,0,0.88)');
   } else {
-    const fog = zoneAt(cam.x, cam.y) === 4 && !flash;
+    const fog = (ZONES[zoneAt(cam.x, cam.y)] || {}).fog && !flash;
     if (isNight()) drawNight(ox, oy, flash ? 420 : 230, 'rgba(8,6,30,0.62)');
     else if (fog) drawNight(ox, oy, flash ? 380 : 270, 'rgba(70,60,90,0.6)');
   }
@@ -1274,10 +1423,10 @@ function drawHUD(ox, oy) {
   const name = areaName(cx, cy);
   ctx.textAlign = 'left'; ctx.font = 'bold 14px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
   let hy = 22;
-  if (dg) outlined(`${name} · Masmorra  Perigo ${dg.zone}/4`, 12, hy);
+  if (dg) outlined(`${name} · Perigo ${dg.zone}/5`, 12, hy);
   else {
     const z = zoneAt(cx, cy);
-    if (z >= 0) outlined(`${name}  ${z ? `Perigo ${z}/4 · Nv ${ZONES[z].lvl}+` : '(área segura)'}`, 12, hy);
+    if (z >= 0) outlined(`${REGION.nome} · ${name}  ${z ? `Perigo ${z}/5 · Nv ${ZONES[z].lvl}+` : '(área segura)'}`, 12, hy);
   }
   ctx.font = '12px Barlow Semi Condensed, system-ui';
   if (NET.mode !== 'solo') { hy += 18; outlined(`Sala ${NET.room} · ${G.remotes.size + 1} jogador(es)${NET.mode === 'host' ? ' · você é o host' : ''}`, 12, hy); }
@@ -1299,7 +1448,7 @@ function drawHUD(ox, oy) {
 
   if (G.banner > 0 && name) {
     ctx.globalAlpha = Math.min(1, G.banner);
-    ctx.textAlign = 'center'; ctx.font = 'bold 36px Pixelify Sans, sans-serif'; ctx.lineWidth = 5; ctx.fillStyle = dg ? THEMES[dg.theme].accent : '#fef3c7';
+    ctx.textAlign = 'center'; ctx.font = 'bold 36px Tiny5, sans-serif'; ctx.lineWidth = 5; ctx.fillStyle = dg ? THEMES[dg.theme].accent : '#fef3c7';
     outlined(name, W / 2, H * 0.28);
     const z = dg ? dg.zone : zoneAt(cx, cy);
     if (z > 0 && P) {
@@ -1403,12 +1552,12 @@ function updatePanel() {
   const c = CLASSES[P.cls];
   const mh = maxHP(P), need = xpNeed(P.lvl);
   $('b-hp').style.width = (P.hp / mh * 100) + '%'; $('t-hp').textContent = `PV ${Math.ceil(P.hp)} / ${mh}`;
-  $('b-xp').style.width = (P.lvl >= 20 ? 100 : P.xp / need * 100) + '%'; $('t-xp').textContent = P.lvl >= 20 ? 'NÍVEL MÁXIMO' : `XP ${P.xp} / ${need}`;
+  $('b-xp').style.width = (P.lvl >= MAX_LVL ? 100 : P.xp / need * 100) + '%'; $('t-xp').textContent = P.lvl >= MAX_LVL ? 'NÍVEL MÁXIMO' : `XP ${P.xp} / ${need}`;
   $('p-derived').innerHTML = `<div class="st" title="Classe de Armadura: o d20 inimigo + bônus precisa igualar ou superar"><span>CA</span><b>${AC(P)}</b></div>
     <div class="st" title="Bônus de acerto (d20 + isto contra a CA do inimigo)"><span>Acerto</span><b>+${toHit(P)}</b></div>
     <div class="st" title="Ouro"><span>Ouro</span><b style="color:var(--gold)">${P.gold}</b></div><div class="st" title="Fama acumulada"><span>Fama</span><b>${P.fame}</b></div>
     <div class="ptype" title="Seu tipo define o que é super efetivo nos seus ataques e quais ataques te acertam forte">Tipo: ${typeBadge(pType(P))}${P.tempTypeT > 0 ? ` <span class="small">cristal ${Math.ceil(P.tempTypeT)}s (natural: ${TYPE_PT[P.ptype]})</span>` : ''}</div>`;
-  const ab = c.abil, cd = abilCd(P);
+  const ab = curAbil(P), cd = abilCd(P);
   $('p-abil').innerHTML = `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>
     <div class="small" title="Voltar à vila: fique parado 1,5s">[R] Vila: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${ridingFlyer(P) ? ` · [V] Voar: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
   if (!G.dirty) return;
@@ -1416,16 +1565,16 @@ function updatePanel() {
   const rc = race(P), sub = P.subclass ? subInfo(P.subclass) : null;
   $('p-head').innerHTML = `<div class="pname">${esc(P.name)}</div><div class="pcls" title="${rc.traco}">${rc.nome} ${c.nome}${sub ? ` (${sub.nome})` : ''} · Nível ${P.lvl}</div>`;
   let choose = '';
-  if (P.lvl >= 10 && !P.subclass) {
-    choose += `<h4>Escolha sua subclasse <span class="pts">nível 10!</span></h4>` + SUBCLASSES[P.cls].map(s =>
-      `<button class="tal sub" data-sub="${s.id}"><b>${s.icon} ${s.nome}</b><span>${s.desc}</span></button>`).join('');
+  if (P.lvl >= SUB_LVL && !P.subclass) {
+    choose += `<h4>Escolha sua subclasse <span class="pts">nível ${SUB_LVL}!</span></h4>` + SUBCLASSES[P.cls].map(s =>
+      `<button class="tal sub" data-sub="${s.id}"><b>${s.icon} ${s.nome}</b><span>${s.desc}<br><b>Especial: ${s.abil.nome}</b> — ${s.abil.desc}</span></button>`).join('');
   }
   if (P.talentOffer) {
     choose += `<h4>Escolha um talento <span class="pts">novo!</span></h4>` + P.talentOffer.map(id =>
-      `<button class="tal" data-tal="${id}"><b>${TALENTS[id].icon} ${TALENTS[id].nome}</b><span>${TALENTS[id].desc}</span></button>`).join('');
+      `<button class="tal" data-tal="${id}"><b>${TALENTS[id].icon} ${TALENTS[id].nome}${TALENTS[id].max ? ` ${tRank(P, id) + 1}/${TALENTS[id].max}` : ''}</b><span>${TALENTS[id].desc}</span></button>`).join('');
   }
   if (P.talents.length || sub) {
-    choose += `<h4>Talentos</h4><div class="tchips">${sub ? `<span class="subchip" title="${sub.desc}">${sub.icon} ${sub.nome}</span>` : ''}${P.talents.map(id => `<span title="${TALENTS[id].desc}">${TALENTS[id].icon} ${TALENTS[id].nome}</span>`).join('')}</div>`;
+    choose += `<h4>Talentos</h4><div class="tchips">${sub ? `<span class="subchip" title="${sub.desc}">${sub.icon} ${sub.nome}</span>` : ''}${[...new Set(P.talents)].map(id => `<span title="${TALENTS[id].desc}">${TALENTS[id].icon} ${TALENTS[id].nome}${tRank(P, id) > 1 ? ' ×' + tRank(P, id) : ''}</span>`).join('')}</div>`;
   }
   $('p-talents').innerHTML = choose;
   $('p-attrs').innerHTML = `<h4>Atributos <span class="small" title="Ganhe +1 ponto a cada 2 níveis. Poções de Poder/Agilidade/Vigor (Alfas, chefes, lendários, baús) sobem o atributo para sempre.">máx ${ATTR_MAX}</span>${P.points ? `<span class="pts">${P.points} ponto(s)!</span>` : ''}</h4>` + ATTRS.map(k => {
@@ -1450,11 +1599,12 @@ function updatePanel() {
   $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}</button>
     <button data-elix="1" ${P.bag.elixir ? '' : 'disabled'} title="Elixir [2]: +2 de dano e +20% de cadência por 30s">🧪 ×${P.bag.elixir}</button></div>
     <div class="potrow balls">${Object.keys(BALLS).map(k => `<button data-ball="${k}" class="${bsel === k ? 'sel' : ''}" title="${BALLS[k].nome} (+${BALLS[k].bonus} na captura). Clique para escolher qual o F joga.">${BALLS[k].icon} ×${ballCount(P, k)}</button>`).join('')}</div>`;
-  $('p-pets').innerHTML = `<h4>Companheiros <span class="small">${P.pets.length}/${MAX_PETS}</span></h4>` + (P.pets.length
+  $('p-pets').innerHTML = `<h4>Companheiros <span class="small" title="Fora da Pokébola / máximo ao mesmo tempo">${P.petAct.length}/${petSlots(P)} fora · ${P.pets.length}/${MAX_PETS}</span></h4>` + (P.pets.length
     ? `<div class="pets">${P.pets.map((pt, i) => {
       const ev = evoLevel(pt.pid);
       const evt = ev === undefined ? '' : ev ? (pt.lvl >= ev ? 'pronto para evoluir!' : `evolui no Nv ${ev}`) : 'forma final';
-      return `<div class="pet ${i === P.petIdx ? 'on' : ''}" data-pet="${i}" title="${esc(pt.name)} (${TYPE_PT[pt.type]}) · ${evt}\nClique: ${i === P.petIdx ? 'guardar' : 'chamar'} · Botão direito 2×: soltar">
+      const on = P.petAct.includes(i);
+      return `<div class="pet ${on ? 'on' : ''}" data-pet="${i}" title="${esc(pt.name)} (${TYPE_PT[pt.type]}) · ${evt}\nClique: ${on ? 'guardar' : 'chamar'}${i === P.petIdx ? ' · líder (MOs e montaria)' : ''} · Botão direito 2×: soltar">
         <img src="${petIconUrl(pt.pid)}" alt=""><span>${esc(pt.name)} <b>Nv ${pt.lvl}</b></span>${typeBadge(pt.type)}
         <div class="pxp"><div style="width:${pt.lvl >= PET_MAX ? 100 : Math.min(100, pt.xp / petNeed(pt.lvl) * 100)}%"></div></div><i>${evt}</i>
         <div class="phm">${HM_KEYS.map(k => (pt.hms || []).includes(k) ? `<span class="hmk" title="${HMS[k].nome}">${HMS[k].icon}</span>`
@@ -1482,7 +1632,7 @@ $('panel').addEventListener('click', ev => {
     }
   } else if (t.dataset.tal) chooseTalent(t.dataset.tal);
   else if (t.dataset.sub) chooseSubclass(t.dataset.sub);
-  else if (t.dataset.pet !== undefined && !ev.target.closest('[data-teach]')) { const i = +t.dataset.pet; P.petIdx = P.petIdx === i ? -1 : i; saveGame(); }
+  else if (t.dataset.pet !== undefined && !ev.target.closest('[data-teach]')) { togglePet(P, +t.dataset.pet); saveGame(); }
   else if (t.dataset.inv !== undefined) {
     const i = +t.dataset.inv, it = P.inv[i];
     if (it && it.slot === 'pedra') useStone(i);
@@ -1522,7 +1672,7 @@ $('panel').addEventListener('contextmenu', ev => {
     }
     G.relIdx = -1;
     P.pets.splice(i, 1);
-    if (P.petIdx === i) P.petIdx = -1; else if (P.petIdx > i) P.petIdx--;
+    P.petAct = P.petAct.filter(j => j !== i).map(j => (j > i ? j - 1 : j)); P.petIdx = P.petAct.length ? P.petAct[0] : -1;
     G.toasts.push({ text: `${pt.name} foi solto na natureza.`, color: '#cbd5e1', t: 2.5 });
   }
   saveGame();
@@ -1572,6 +1722,7 @@ window.addEventListener('keydown', ev => {
   else if (ev.code === 'KeyT') autofire = !autofire;
   else if (ev.code === 'KeyM') showMap = !showMap;
   else if (ev.code === 'KeyH') $('help').classList.toggle('hidden');
+  else if (ev.code === 'ShiftLeft' || ev.code === 'ShiftRight') doDash();
   else if (ev.code === 'KeyN') G.toasts.push({ text: cycleSound(), color: '#e5e7eb', t: 1.8 });
   else if (ev.code === 'KeyR') {
     if (P.recallCd <= 0 && !G.recall && !inTown(P.x, P.y)) { G.recall = { t: 1.5 }; text(P.x, P.y - 40, 'Voltando à vila... fique parado', '#fde68a', 12); }
@@ -1595,7 +1746,26 @@ function resize() {
 window.addEventListener('resize', resize);
 
 /* ---------- Menu ---------- */
-const menuSel = { hero: null, mode: 'solo', loaded: false };
+const REGION_KEY = 'pkr_region_v1';
+const menuSel = { hero: null, mode: 'solo', loaded: false, region: 'kanto' };
+try { const r = localStorage.getItem(REGION_KEY); if (REGIONS[r]) menuSel.region = r; } catch (e) { /* ignora */ }
+function renderMaps() {
+  $('maps').innerHTML = REGION_IDS.map(id => `<button data-region="${id}" class="${menuSel.region === id ? 'sel' : ''}" title="${REGIONS[id].sub}">${REGIONS[id].nome}</button>`).join('');
+  $('map-sub').textContent = REGIONS[menuSel.region].sub;
+}
+$('maps').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-region]');
+  if (!b) return;
+  menuSel.region = b.dataset.region;
+  try { localStorage.setItem(REGION_KEY, menuSel.region); } catch (e) { /* ignora */ }
+  renderMaps();
+});
+// troca o mundo para a região e baixa os Pokémon dela (com progresso no menu)
+async function prepRegion(id) {
+  if (id !== REGION_ID) setRegion(id);
+  const ids = regionIds(REGION).filter(i => !POKE[i]);
+  if (ids.length) await loadPokedex(ids, (n, t) => { $('menu-err').textContent = `Carregando os Pokémon de ${REGION.nome}... ${n}/${t}`; });
+}
 
 function renderHero() {
   const h = menuSel.hero, c = CLASSES[h.cls], rc = RACES[h.race];
@@ -1643,6 +1813,7 @@ $('file-import').onchange = async ev => {
 };
 document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', () => {
   menuSel.mode = r.value;
+  $('map-box').classList.toggle('hidden', r.value === 'join');
   $('join-code').disabled = r.value !== 'join';
   if (r.value === 'join') $('join-code').focus();
 }));
@@ -1652,6 +1823,7 @@ $('btn-again').onclick = () => {
   menuSel.hero = rollHero();
   renderHero(); renderContinue(); renderHall();
   $('mode-box').classList.add('hidden');
+  $('map-box').classList.add('hidden');
   $('menu').classList.remove('hidden');
   state = 'menu';
 };
@@ -1664,8 +1836,13 @@ async function startGame(saved) {
     const btns = [$('btn-start'), $('btn-cont')].filter(Boolean);
     btns.forEach(b => { b.disabled = true; });
     try {
+      if (menuSel.mode !== 'join') await prepRegion(menuSel.region);
       if (menuSel.mode === 'host') { $('menu-err').textContent = 'Criando sala...'; await netHost(); }
-      else if (menuSel.mode === 'join') { $('menu-err').textContent = 'Conectando...'; await netJoin($('join-code').value); }
+      else if (menuSel.mode === 'join') {
+        $('menu-err').textContent = 'Conectando...';
+        await netJoin($('join-code').value);
+        await prepRegion(REGIONS[NET.region] ? NET.region : menuSel.region);
+      }
     } catch (e) {
       G = null;
       Object.assign(NET, { mode: 'solo', peer: null });
@@ -1681,25 +1858,31 @@ async function startGame(saved) {
     P = createPlayer(saved.name, { cls: saved.cls, race: saved.race, type: saved.ptype, attrs: saved.attrs, points: 0 });
     SAVE_FIELDS.forEach(k => { if (saved[k] !== undefined && saved[k] !== null) P[k] = saved[k]; });
     if (saved.talentOffer) P.talentOffer = saved.talentOffer;
+    // saves antigos: história e MOs eram globais, agora são por região
+    if (!saved.stories) P.stories = {};
+    if (!saved.hmsR) P.hmsR = {};
+    if (!Array.isArray(P.petAct)) P.petAct = P.petIdx >= 0 ? [P.petIdx] : [];
     if (!RACES[P.race]) P.race = 'humano';
     if (!TYPE_PT[P.ptype]) P.ptype = 'normal';
     if (!('amuleto' in P.equip)) P.equip.amuleto = null;
     P.bag = Object.assign({ grande: 0, ultra: 0, doce: 0, elixir: 0 }, P.bag || {});
-    if (!P.story) P.story = { ch: 0, done: false };
-    P.hms = (P.hms || []).filter(k => HMS[k]); P.fly = P.fly || ['vila']; P.chests = P.chests || [];
+    P.fly = P.fly || ['vila']; P.chests = P.chests || [];
     for (const pt of P.pets) pt.hms = (pt.hms || []).filter(k => HMS[k]);
     for (const pt of P.pets) { pt.lvl = pt.lvl || 5; pt.xp = pt.xp || 0; loadEvo(pt.pid); }
     loadPokedex(P.pets.map(pt => pt.pid)).then(() => { if (G) G.dirty = true; });
   } else P = createPlayer(name, menuSel.hero);
+  P.story = P.stories[REGION_ID] = P.stories[REGION_ID] || { ch: 0, done: false };
+  P.hms = P.hmsR[REGION_ID] = (P.hmsR[REGION_ID] || []).filter(k => HMS[k]);
+  P.petAct = P.petAct.filter(i => P.pets[i]).slice(0, petSlots(P)); P.petIdx = P.petAct.length ? P.petAct[0] : -1;
   P.hp = Math.min(Math.max(1, P.hp), maxHP(P));
   G.P = P;
   G.cam.x = P.x; G.cam.y = P.y;
   G.dirty = true;
   state = 'play';
   $('menu').classList.add('hidden');
-  emitEvent({ t: 'chat', sys: 1, text: `${P.name} (${heroLabel(P)}, tipo ${TYPE_PT[P.ptype]}) entrou no reino.` });
+  emitEvent({ t: 'chat', sys: 1, text: `${P.name} (${heroLabel(P)}, tipo ${TYPE_PT[P.ptype]}) chegou em ${REGION.nome}.` });
   if (NET.mode === 'host') G.toasts.push({ text: `Sala criada! Código: ${NET.room}`, color: '#86efac', t: 6 });
-  if (!saved) G.toasts.push({ text: 'Fale com Sildo Invernal (🛡️, ao norte da vila) com [E] para começar a história!', color: '#fef3c7', t: 7 });
+  if (!P.story.ch) G.toasts.push({ text: `Bem-vindo a ${REGION.nome}! Fale com ${REGION.guia.nome} (ao norte da vila) com [E] para começar a jornada.`, color: '#fef3c7', t: 7 });
   ensureTalentOffer(P);
   saveGame();
 }
@@ -1719,7 +1902,8 @@ function musicKey() {
   if (G.enemies.some(e => e.boss && e.hp > 0 && Math.hypot(e.x - P.x, e.y - P.y) < 650)) return 'chefe';
   if (inDungeonArea(P.x)) return 'masmorra';
   if (inTown(P.x, P.y)) return 'vila';
-  return ['vila', 'campo', 'floresta', 'montanha', 'sombra'][zoneAt(P.x, P.y)] || 'campo';
+  const z = ZONES[zoneAt(P.x, P.y)];
+  return z ? { campo: 'campo', floresta: 'floresta', montanha: 'montanha', neve: 'montanha', deserto: 'montanha', vulcao: 'sombra', sombrio: 'sombra', pantano: 'sombra' }[z.bio] || 'campo' : 'campo';
 }
 /* ---------- Fundo do menu: paisagem em pixel art de baixa resolução ---------- */
 const MBG = { cv: $('menu-bg'), stars: [], flies: [], ridges: [] };
@@ -1784,11 +1968,11 @@ try {
 function boot() {
   buildClassSprites();
   buildNPCSprites();
-  buildWorld();
+  setRegion(menuSel.region);
   resize();
   menuSel.hero = rollHero();
   $('name').value = pick(['Arwen', 'Thorin', 'Elric', 'Lyra', 'Kael', 'Brienne', 'Gandor', 'Mira', 'Fenrir', 'Sable']);
-  renderHero(); renderHall(); renderContinue();
+  renderHero(); renderHall(); renderContinue(); renderMaps();
   requestAnimationFrame(frame);
   loadPokedex(coreIds(), (n, t) => {
     $('load-n').textContent = `${n}/${t}`;
@@ -1799,7 +1983,7 @@ function boot() {
     $('btn-start').disabled = false;
     renderContinue();
     // Pokémon das masmorras e da noite carregam em segundo plano
-    return loadPokedex(THEME_IDS.concat(NIGHT_POOL));
+    return loadPokedex(THEME_IDS);
   });
 }
 boot();

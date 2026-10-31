@@ -1,53 +1,11 @@
 'use strict';
-/* ============ História: "A Mina Perdida de Pedrafunda" ============
- * Adaptação livre da estrutura da aventura introdutória de D&D 5e
- * "Lost Mine of Phandelver" (Starter Set): emboscada na estrada, esconderijo
- * dos bandidos, castelo dos brutamontes e a caverna com a forja mágica.
- * Cada jogador tem o próprio capítulo (P.story = { ch, done }).
- * Os chefes da história são criados pelo host quando alguém chega perto do marcador.
+/* ============ História (uma por região, preenchida por setRegion em regions.js) ============
+ * Capítulo 0 = prólogo, 1-8 = ginásios, 9 = confronto final com a organização vilã.
+ * Cada jogador tem o próprio progresso por região (P.stories[região] = { ch, done }).
+ * As masmorras dos ginásios são criadas pelo host quando alguém chega perto do marcador.
  */
-const STORY = [
-  {
-    titulo: 'Prólogo',
-    intro: `Você chegou a <b>Pedrafunda</b> escoltando a carroça de suprimentos do anão <b>Gundo Buscapedra</b>.
-      Gundo seguiu na frente pela estrada do norte, empolgado: jurava ter encontrado a entrada da <b>Caverna do Eco</b>,
-      uma mina perdida onde, há séculos, mestres antigos forjavam cristais com a energia dos Pokémon, a <b>Forja dos Encantos</b>.<br><br>
-      Ele nunca chegou. Hoje cedo, acharam a carroça dele virada na estrada, cercada de marcas de garra.`,
-  },
-  {
-    titulo: 'Emboscada na Estrada', obj: 'Investigue a carroça atacada na estrada ao norte (Campos Verdes)', at: [8.75, 8.25], zone: 1, lvl: 2,
-    kind: 'boss', boss: 217, adds: [216, 216, 216], nome: 'Garrão',
-    intro: `A carroça de Gundo foi atacada na estrada ao norte da vila. Os rastros são de um bando de Pokémon selvagens
-      liderados por um Ursaring enorme, que os moradores chamam de <b>Garrão</b>. Vá até lá, descubra o que aconteceu e traga notícias.`,
-    fim: `Entre os destroços você encontrou o mapa rasgado de Gundo e um broche vermelho. É o símbolo dos <b>Capas Vermelhas</b>,
-      bandidos que vêm aterrorizando a região. Garrão não agia sozinho: alguém o mandou atacar a carroça.`,
-  },
-  {
-    titulo: 'O Esconderijo dos Capas Vermelhas', obj: 'Entre no esconderijo na Floresta Antiga (oeste) e derrote o Cajado de Vidro', at: [3.5, 9.5], zone: 2, lvl: 6,
-    kind: 'dungeon', theme: 'capas', nome: 'Cajado de Vidro',
-    intro: `Os Capas Vermelhas obedecem a um mago misterioso chamado <b>Cajado de Vidro</b>, que se esconde numa caverna
-      na Floresta Antiga, a oeste. Ele usa um Alakazam para manter todos sob controle. Se alguém sabe onde está Gundo, é ele.`,
-    fim: `Nos papéis do Cajado de Vidro há uma ordem marcada com o desenho de uma teia: <i>"Levem o anão ao Castelo Garra-Torta.
-      Ele vai nos mostrar o caminho da Caverna."</i> Quem assina é a <b>Aranha Negra</b>.`,
-  },
-  {
-    titulo: 'O Castelo Garra-Torta', obj: 'Invada as ruínas nas Montanhas Rochosas (norte) e liberte Gundo', at: [7.5, 3.5], zone: 3, lvl: 11,
-    kind: 'boss', boss: 68, adds: [66, 67, 67, 66], nome: 'Rei Grol',
-    intro: `O Castelo Garra-Torta é uma ruína nas Montanhas Rochosas, ao norte, tomada por um bando de lutadores brutais.
-      O chefe deles, um Machamp imenso chamado <b>Rei Grol</b>, guarda Gundo como prisioneiro. Prepare-se: vai ser difícil.`,
-    fim: `Você libertou Gundo! Machucado, mas teimoso como todo anão, ele voltou com você para Pedrafunda.
-      A notícia é ruim: a Aranha Negra já está dentro da Caverna do Eco, tentando despertar a Forja para dominar os Pokémon da região.`,
-  },
-  {
-    titulo: 'A Caverna do Eco', obj: 'Desça à Caverna do Eco, no extremo nordeste das Terras Sombrias, e detenha a Aranha Negra', at: [17.5, 1.5], zone: 4, lvl: 15,
-    kind: 'dungeon', theme: 'eco', nome: 'Aranha Negra',
-    intro: `Gundo desenhou o caminho: a entrada da <b>Caverna do Eco</b> fica no extremo nordeste das Terras Sombrias.
-      Lá dentro, a <b>Aranha Negra</b> e seu Galvantula tecem teias sobre a Forja dos Encantos. Este é o fim da linha. Para ela ou para você.`,
-    fim: `A Aranha Negra caiu, e a Forja dos Encantos voltou a brilhar com uma luz calma. Gundo promete usar o fogo antigo para o bem.
-      Pedrafunda tem um novo herói.`,
-  },
-];
-const STORY_IDS = [217, 216, 68, 66, 67, 65, 596, 168, 167, 595];
+const STORY = [];
+const STORY_IDS = [];
 const storyPos = ch => cellPt(...STORY[ch].at);
 const storyOver = P => P.story && P.story.ch >= STORY.length;
 
@@ -105,7 +63,7 @@ function storyKill(m) {
   const P = G.P;
   if (!m.st || !P.story || P.story.ch !== m.st || P.story.done) return;
   P.story.done = true;
-  G.toasts.push({ text: `📖 Capítulo concluído: ${STORY[m.st].titulo}! Volte à vila e fale com Sildo.`, color: '#fde047', t: 6, big: 1 });
+  G.toasts.push({ text: `📖 ${STORY[m.st].titulo} vencido! Volte à vila e fale com ${REGION.guia.nome}.`, color: '#fde047', t: 6, big: 1 });
   sfx('lvl');
   saveGame();
 }
@@ -114,19 +72,19 @@ function storyKill(m) {
 function renderStoryNPC(n, P) {
   const st = P.story;
   if (n.id === 'gundo') {
-    if (storyOver(P)) return `<p class="fala">"A Forja dos Encantos está acesa de novo! Graças a você."</p>
-      <p>A Ferreira Duna agora aprimora equipamentos até <b>+8</b>, e eu posso <b>reencantar</b> uma arma ou armadura (sortear novos afixos).</p>
+    if (storyOver(P)) return `<p class="fala">"Então você é o novo campeão de ${REGION.nome}! Minha oficina está às suas ordens."</p>
+      <p>A ferraria agora aprimora equipamentos até <b>+8</b>, e eu posso <b>reencantar</b> uma arma ou armadura (sortear novos afixos).</p>
       ${['arma', 'armadura'].map(s => { const it = P.equip[s], c = 40 + it.tier * 40; return `<div class="shoprow"><span>${itemIcon(it)} ${esc(it.name)}</span><button data-act="reforge:${s}" ${P.gold < c ? 'disabled' : ''}>Reencantar (${c} 🪙)</button></div>`; }).join('')}`;
-    return `<p class="fala">"Aquela Aranha... ela quer a Forja para dominar os Pokémon. A Caverna do Eco fica no extremo nordeste das Terras Sombrias. Tome cuidado lá embaixo."</p>`;
+    return `<p class="fala">"Volte quando for campeão. Aí conversamos."</p>`;
   }
   if (storyOver(P)) {
-    return `<p class="fala">"${STORY[4].fim}"</p><p>A história principal terminou, mas os lendários ainda vagam pelas Terras Sombrias e as masmorras continuam se abrindo. Boa caçada, herói!</p>`;
+    return `<p class="fala">"${STORY[STORY.length - 1].fim}"</p><p>A história de ${REGION.nome} terminou, mas os lendários ainda vagam pelas áreas mais perigosas e os ginásios aceitam revanches pelos portais dos Alfas. Que tal conhecer outra região?</p>`;
   }
   const s = STORY[st.ch];
-  if (st.ch === 0) return `<p>${s.intro}</p><p class="fala">"Eu sou Sildo Invernal, cavaleiro da guarda. Você aceita procurar o nosso amigo?"</p><button data-act="story:start" class="good">📖 Aceitar a missão</button>`;
+  if (st.ch === 0) return `<p>${s.intro}</p><p class="fala">"Eu sou ${n.nome}. Você aceita a jornada pelos oito ginásios de ${REGION.nome}?"</p><button data-act="story:start" class="good">📖 Aceitar a jornada</button>`;
   if (st.done) return `<p>${s.fim}</p><button data-act="story:next" class="good">📖 Continuar a história (recompensa)</button>`;
   const warn = P.lvl < s.lvl ? ` <span style="color:#fca5a5">(recomendado nível ${s.lvl}, você é nível ${P.lvl})</span>` : '';
-  return `<div class="quest cur"><b>Capítulo ${st.ch}: ${s.titulo}</b><p>${s.intro}</p><div class="small">🎯 ${s.obj}${warn}<br>O destino aparece como ★ no minimapa.</div></div>`;
+  return `<div class="quest cur"><b>${st.ch <= 8 ? `Insígnia ${st.ch}/8: ` : 'Capítulo final: '}${s.titulo}</b><p>${s.intro}</p><div class="small">🎯 ${s.obj}${warn}<br>O destino aparece como ★ no minimapa.</div></div>`;
 }
 
 function storyAct(P, arg) {
@@ -136,19 +94,20 @@ function storyAct(P, arg) {
     G.toasts.push({ text: `📖 Capítulo 1: ${STORY[1].titulo}`, color: '#fde047', t: 4, big: 1 });
   } else if (arg === 'next' && st.done) {
     const ch = st.ch;
-    const xp = Math.round(xpNeed(P.lvl) * 0.35), gold = 80 * ch;
+    const last = ch === STORY.length - 1, xp = Math.round(xpNeed(P.lvl) * 0.35), gold = 60 * ch;
     P.gold += gold;
-    const it = ch === 4 ? { slot: 'amuleto', tier: 6, name: 'Coração da Forja', relic: 1, mods: { hp: 0.15, dmg: 2, cd: 0.15, regen: 0.5 } } : genItem(clamp(ch + 2, 0, 6));
+    const it = last ? { slot: 'amuleto', tier: 6, name: `Medalha do Campeão de ${REGION.nome}`, relic: 1, mods: { hp: 0.15, dmg: 2, cd: 0.15, regen: 0.5 } } : genItem(clamp(Math.round(ch * 0.7) + 1, 0, 6));
     const i = P.inv.indexOf(null);
     if (i >= 0) P.inv[i] = it; else G.bags.push({ x: P.x, y: P.y + 30, items: [it], life: 120 });
     P.bag.doce += 1;
     drinkStat(P, pick(ATTRS));
-    const hm = { 1: 'cut', 2: 'surf', 3: 'flash' }[ch];
+    const hm = HM_GYM[ch];
     if (hm) giveHM(P, hm);
+    if (ch <= 8) G.toasts.push({ text: `🏅 Insígnia ${ch}/8 de ${REGION.nome} conquistada!`, color: '#fde047', t: 4, big: 1 });
     G.toasts.push({ text: `🎁 +${xp} XP, +${gold} 🪙, ${it.name}, 🍬 Doce Raro`, color: '#facc15', t: 4 });
     st.ch++; st.done = false;
     if (st.ch < STORY.length) G.toasts.push({ text: `📖 Capítulo ${st.ch}: ${STORY[st.ch].titulo}`, color: '#fde047', t: 4, big: 1 });
-    else G.toasts.push({ text: '🏆 Você completou a história de Pedrafunda!', color: '#fde047', t: 6, big: 1 });
+    else G.toasts.push({ text: `🏆 Você é o campeão de ${REGION.nome}!`, color: '#fde047', t: 6, big: 1 });
     gainXP(xp, true);
   } else return;
   sfx('lvl');
@@ -176,9 +135,10 @@ function drawQuestHUD(hy, ox, oy) {
 function storyTarget(P) {
   if (!P || !P.story || storyOver(P)) return null;
   const st = P.story, s = STORY[st.ch];
-  if (st.ch === 0 || st.done) return { x: 0, y: -205, label: st.ch === 0 ? 'Fale com Sildo Invernal na vila' : 'Volte à vila e fale com Sildo', titulo: s.titulo };
+  const guia = REGION.guia.nome;
+  if (st.ch === 0 || st.done) return { x: 0, y: -205, label: st.ch === 0 ? `Fale com ${guia} na vila` : `Volte à vila e fale com ${guia}`, titulo: s.titulo };
   const [x, y] = storyPos(st.ch);
-  return { x, y, label: s.obj, titulo: `Cap. ${st.ch}: ${s.titulo}`, lvl: s.lvl };
+  return { x, y, label: s.obj, titulo: st.ch <= 8 ? `Insígnia ${st.ch}/8` : 'Final', lvl: s.lvl };
 }
 function drawStoryHUD(hy, ox, oy) {
   const P = G.P, t = storyTarget(P);

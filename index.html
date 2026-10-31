@@ -6,18 +6,19 @@
 <title>Poké Realm</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tiny5&family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0d0e10; --panel: #16171a; --panel2: #1d1e22; --well: #0b0c0e;
     --line: #2b2d33; --line-hi: #44474f;
     --text: #ece5d6; --dim: #8f8a80; --faint: #5d5a54;
     --gold: #e8b04a; --gold-dk: #7a4f12; --red: #d9573b; --green: #6abf69; --blue: #5d9fd8;
-    --px: 'Pixelify Sans', 'Barlow Semi Condensed', system-ui, sans-serif;
+    --px: 'Tiny5', 'Barlow Semi Condensed', system-ui, sans-serif;
     --ui: 'Barlow Semi Condensed', system-ui, sans-serif;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 500 15px/1.35 var(--ui); overflow: hidden; }
+  html { font-synthesis-weight: none; } /* a Tiny5 só tem um peso: negrito falso borra os pixels */
   ::selection { background: var(--gold); color: #000; }
   ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: var(--well); } ::-webkit-scrollbar-thumb { background: var(--line-hi); }
   b { font-weight: 700; }
@@ -149,6 +150,11 @@
   #name:focus, #join-code:focus { box-shadow: 0 0 0 1px var(--gold); }
   #join-code { margin-top: 6px; text-transform: uppercase; letter-spacing: .3em; text-align: center; }
   #join-code:disabled { display: none; }
+  #maps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border: 2px solid #000; box-shadow: 0 0 0 1px var(--line-hi); }
+  #maps button { box-shadow: none; border: 0; border-left: 2px solid #000; padding: 8px 2px; background: var(--panel2); color: var(--dim); font: 600 14px var(--ui); }
+  #maps button:first-child { border-left: 0; }
+  #maps button.sel { background: var(--gold); color: #1a1205; }
+  #map-sub { margin-left: auto; text-transform: none; letter-spacing: 0; font-family: var(--ui); }
   .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 2px solid #000; box-shadow: 0 0 0 1px var(--line-hi); }
   .modes label { display: block; text-align: center; padding: 8px 4px; cursor: pointer; background: var(--panel2); color: var(--dim); font-weight: 600; font-size: 14px; }
   .modes label + label { border-left: 2px solid #000; }
@@ -249,7 +255,7 @@
     <div class="help">
       <h3>Controles <span class="small">[H] fecha</span></h3>
       <kbd>WASD</kbd> mover · <kbd>Mouse</kbd> mirar/atirar · <kbd>Espaço</kbd> habilidade<br>
-      <kbd>E</kbd> falar / portal / MO · <kbd>F</kbd> Pokébola · <kbd>Q</kbd> poção · <kbd>X</kbd> montar · <kbd>V</kbd> voar (montaria voadora)<br><kbd>2</kbd> elixir · <kbd>3</kbd> cristal · <kbd>R</kbd> vila · <kbd>T</kbd> tiro automático<br>
+      <kbd>E</kbd> falar / portal / MO · <kbd>Shift</kbd> rolamento (talento) · <kbd>F</kbd> Pokébola · <kbd>Q</kbd> poção · <kbd>X</kbd> montar · <kbd>V</kbd> voar (montaria voadora)<br><kbd>2</kbd> elixir · <kbd>3</kbd> cristal · <kbd>R</kbd> vila · <kbd>T</kbd> tiro automático<br>
       <kbd>Enter</kbd> chat · <kbd>M</kbd> mapa · <kbd>N</kbd> música/som · <kbd>Ctrl+S</kbd> salvar arquivo<br>
       Clique num item para equipar (cristais: usar). <b>Botão direito solta o item no chão</b> (fica 3 min, seus amigos podem pegar). Mate um Pokémon Alfa para abrir um portal de masmorra. Fale com Sildo na vila para seguir a história. Passe o mouse num companheiro para ver habilidade e MOs; MOs compradas na loja só podem ser ensinadas a quem as aprende nos jogos.
     </div>
@@ -264,7 +270,7 @@
   <div class="menu-wrap">
     <div class="logo">
       <h1>Poké Realm</h1>
-      <p class="sub">Tiro frenético, dados de 20 lados e Pokémon selvagens. Encontre a Mina Perdida de Pedrafunda e fique lendário.</p>
+      <p class="sub">Tiro frenético, dados de 20 lados e Pokémon selvagens. Escolha uma região, vença os oito ginásios e enfrente o lendário no fim da jornada.</p>
     </div>
     <div class="menu-box">
       <div id="load">Invocando Pokémon da PokeAPI... <span id="load-n"></span><div class="lbar"><div id="load-b"></div></div></div>
@@ -276,6 +282,10 @@
           <div id="hall"></div>
         </div>
         <div>
+          <div id="map-box" class="field">
+            <h3>Mapa <span class="small" id="map-sub"></span></h3>
+            <div id="maps"></div>
+          </div>
           <div id="continue-box"></div>
           <div class="field">
             <h3>Nome</h3>
@@ -320,18 +330,20 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=3"></script>
-<script src="js/data.js?v=3"></script>
-<script src="js/rules.js?v=3"></script>
-<script src="js/items.js?v=3"></script>
-<script src="js/dungeon.js?v=3"></script>
-<script src="js/net.js?v=3"></script>
-<script src="js/map.js?v=3"></script>
-<script src="js/world.js?v=3"></script>
-<script src="js/story.js?v=3"></script>
-<script src="js/hm.js?v=3"></script>
-<script src="js/allies.js?v=3"></script>
-<script src="js/audio.js?v=3"></script>
-<script src="js/game.js?v=3"></script>
+<script src="js/pokedex.js?v=5"></script>
+<script src="js/data.js?v=5"></script>
+<script src="js/rules.js?v=5"></script>
+<script src="js/items.js?v=5"></script>
+<script src="js/dungeon.js?v=5"></script>
+<script src="js/net.js?v=5"></script>
+<script src="js/map.js?v=5"></script>
+<script src="js/world.js?v=5"></script>
+<script src="js/story.js?v=5"></script>
+<script src="js/hm.js?v=5"></script>
+<script src="js/allies.js?v=5"></script>
+<script src="js/town.js?v=5"></script>
+<script src="js/regions.js?v=5"></script>
+<script src="js/audio.js?v=5"></script>
+<script src="js/game.js?v=5"></script>
 </body>
 </html>

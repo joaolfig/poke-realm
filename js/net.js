@@ -10,7 +10,7 @@ const NET = {
   outS: [], // meus tiros cosméticos
   relayS: [], // tiros cosméticos de clientes para repassar
 };
-const ROOM_PREFIX = 'pokerealm-v1-';
+const ROOM_PREFIX = 'pokerealm-v2-'; // v2: salas com escolha de região
 // servidores para atravessar roteadores (STUN) e um relay público de reserva (TURN) para redes mais fechadas
 const PEER_OPTS = {
   config: {
@@ -45,7 +45,7 @@ function netHost() {
     });
     peer.on('connection', c => {
       if (!G) { c.close(); return; }
-      c.on('open', () => { NET.conns.set(c.peer, c); G.dirty = true; });
+      c.on('open', () => { NET.conns.set(c.peer, c); c.send({ t: 'region', id: REGION_ID }); G.dirty = true; });
       c.on('data', m => hostOnData(c.peer, m));
       c.on('close', () => dropConn(c.peer));
       c.on('error', () => dropConn(c.peer));
@@ -68,13 +68,14 @@ function netJoin(code) {
       if (failed) return;
       NET.myId = id;
       const c = peer.connect(ROOM_PREFIX + code, { reliable: true });
+      // espera o host dizer qual região está jogando (ou segue com a atual depois de 5s)
+      const fin = () => { if (done || failed) return; done = true; res(); };
       c.on('open', () => {
         if (failed) return;
-        done = true;
         Object.assign(NET, { peer, host: c, mode: 'client', room: code });
-        res();
+        setTimeout(fin, 5000);
       });
-      c.on('data', clientOnData);
+      c.on('data', m => { if (m && m.t === 'region') { NET.region = m.id; fin(); } else clientOnData(m); });
       c.on('close', hostLost);
       c.on('error', hostLost);
     });
@@ -142,7 +143,7 @@ function hostOnData(from, m) {
       if (e && !e.dead) { if (m.slow) e.slowT = m.slow; applyHit(e, m.dmg, from); }
       break;
     }
-    case 'chat': case 'heal': case 'fx': case 'drop': case 'bag': case 'buff': case 'cut':
+    case 'chat': case 'heal': case 'fx': case 'drop': case 'bag': case 'buff': case 'cut': case 'decoy':
       m.from = from;
       handleEvent(m, false);
       netBroadcastExcept(m, from);

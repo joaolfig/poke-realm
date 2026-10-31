@@ -6,19 +6,22 @@
  */
 // move = nome do golpe na PokeAPI (usado para saber quem pode aprender)
 // Só 4 MOs, cada uma com um papel claro. Voar ficou nas montarias voadoras (como no Let's Go).
+// As MOs só vêm da história (uma por ginásio) e valem só na região onde foram ganhas (P.hms é da região atual).
+const HM_GYM = { 1: 'cut', 2: 'smash', 3: 'flash', 4: 'surf' };
 const HMS = {
   cut: { mo: 'MO01', move: 'cut', nome: 'Corte', icon: '✂️', preco: 120, ch: 0, desc: 'Corta arvorezinhas que bloqueiam atalhos e baús ([E] perto delas).' },
   surf: { mo: 'MO02', move: 'surf', nome: 'Surfar', icon: '🌊', preco: 300, ch: 3, desc: 'Atravesse águas fundas montado no companheiro. Surfando, [E] nos pontos escuros mergulha atrás de tesouros.' },
   smash: { mo: 'MO03', move: 'rock-smash', nome: 'Esmaga-Rocha', icon: '🪨', preco: 150, ch: 0, desc: 'Quebra rochas rachadas ([E]); às vezes há itens dentro.' },
-  flash: { mo: 'MO04', move: 'flash', nome: 'Lampejo', icon: '💡', preco: 200, ch: 2, desc: 'Ilumina masmorras escuras e a noite, e dissipa a névoa das Terras Sombrias.' },
+  flash: { mo: 'MO04', move: 'flash', nome: 'Lampejo', icon: '💡', preco: 200, ch: 2, desc: 'Ilumina masmorras escuras e a noite, e dissipa a névoa das áreas sombrias.' },
 };
 const HM_KEYS = Object.keys(HMS);
 const HM_MOVES = Object.fromEntries(Object.entries(HMS).map(([k, h]) => [h.move, k]));
 const activePet = P => (P && P.petIdx >= 0 ? P.pets[P.petIdx] || null : null);
 const canLearn = (pid, k) => !!(POKE[pid] && POKE[pid].hm && POKE[pid].hm.includes(k));
+// qualquer companheiro fora da Pokébola que saiba a MO serve (desde que você tenha a MO desta região)
 function petKnows(P, k) {
-  const pt = activePet(P);
-  return !!(pt && pt.hms && pt.hms.includes(k) && G.allies.some(a => a.pet) && !G.evo);
+  if (!P || !P.hms.includes(k) || G.evo) return false;
+  return G.allies.some(a => a.pet && P.pets[a.slot] && (P.pets[a.slot].hms || []).includes(k));
 }
 const petIsFlyer = pid => !!(POKE[pid] && POKE[pid].types.includes('flying') && !POKE[pid].types.includes('water'));
 // 1 = pode entrar na água funda, 2 = pode subir cachoeira
@@ -45,14 +48,14 @@ function teachHM(i, k) {
 
 /* ---------- Pontos de voo (descobertos ao passar perto) ---------- */
 const LANDMARKS = [
-  { id: 'vila', nome: 'Vila Pedrafunda', at: [9, 11.12] },
+  { id: 'vila', nome: 'Vila', at: [9, 11.12] },
   { id: 'campos', nome: 'Acampamento dos Campos', at: [12, 10.5] },
   { id: 'lago', nome: 'Mirante da Floresta', at: [8.5, 7.5] },
   { id: 'clareira', nome: 'Clareira do Oeste', at: [2.5, 7.5] },
   { id: 'leste', nome: 'Posto do Leste', at: [16.5, 7.5] },
   { id: 'refugio', nome: 'Refúgio da Montanha', at: [8, 5.5] },
-  { id: 'pico', nome: 'Pico Nevado', at: [10.5, 2] },
-  { id: 'ruinas', nome: 'Ruínas Sombrias', at: [3, 3] },
+  { id: 'pico', nome: 'Pico do Norte', at: [10.5, 2] },
+  { id: 'ruinas', nome: 'Ruínas do Noroeste', at: [3, 3] },
   { id: 'torre', nome: 'Torre do Leste', at: [17, 3] },
 ].map(l => { const [x, y] = cellPt(...l.at); return { ...l, x, y }; });
 
@@ -146,7 +149,8 @@ function hmHint(P, h) {
   const H = HMS[hmNeed(h.k)];
   if (petKnows(P, hmNeed(h.k))) return { cut: '[E] Cortar a árvore', smash: '[E] Quebrar a rocha', dive: '[E] Mergulhar' }[h.k];
   const what = { cut: 'Árvore cortável', smash: 'Rocha rachada', dive: 'Ponto de mergulho' }[h.k];
-  return `${what}: precisa de um companheiro ativo com ${H.nome} (${H.mo})`;
+  if (!P.hms.includes(hmNeed(h.k))) { const g = Object.keys(HM_GYM).find(n => HM_GYM[n] === hmNeed(h.k)); return `${what}: você ganha ${H.nome} (${H.mo}) ao vencer o ${g}º ginásio de ${REGION.nome}`; }
+  return `${what}: precisa de um companheiro fora da Pokébola que saiba ${H.nome} (${H.mo})`;
 }
 const zoneOf = P => { const z = zoneAt(P.x, P.y); return z >= 1 ? z : 1; };
 function useHMTile(P, h) {

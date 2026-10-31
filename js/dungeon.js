@@ -82,7 +82,7 @@ function createDungeon(x, y, type, zone, o = {}) {
   if (G.dungeons.size >= (o.force ? 6 : 3)) return null;
   const theme = o.theme || TYPE_THEME[type] || 'grass';
   const id = ++G.dgNext;
-  const dg = genDungeon(id, theme, randi(1, 2e9), clamp(zone, 1, 4));
+  const dg = genDungeon(id, theme, randi(1, 2e9), clamp(Math.max(zone, THEMES[theme].zmin || 1), 1, 5));
   dg.ent = { x: Math.round(x), y: Math.round(y) };
   G.dungeons.set(id, dg);
   G.portals.push({ id: ++G.poNext, x: Math.round(x), y: Math.round(y), theme, ttl: o.ttl || 60, dg: id, exit: 0 });
@@ -93,7 +93,7 @@ function createDungeon(x, y, type, zone, o = {}) {
 function spawnRoom(dg, r) {
   const th = THEMES[dg.theme];
   const pool = th.pool.filter(id => POKE[id]);
-  const fallback = ZONE_POOLS[dg.zone];
+  const fallback = ZONE_POOLS[clamp(dg.zone, 1, 5)];
   if (r.kind === 'boss') {
     const c = roomCenter(dg, r);
     const b = hostSpawn(POKE[th.boss] ? th.boss : pick(fallback), dg.zone, 3, c.x + 120, c.y);
