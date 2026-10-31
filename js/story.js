@@ -83,10 +83,24 @@ function renderStoryNPC(n, P) {
   }
   const s = STORY[st.ch];
   if (st.ch === 0) return `<p>${s.intro}</p><p class="fala">"Eu sou ${n.nome}. Você aceita a jornada pelos oito ginásios de ${REGION.nome}?"</p><button data-act="story:start" class="good">📖 Aceitar a jornada</button>`;
-  if (st.done) return `<p>${s.fim}</p><button data-act="story:next" class="good">📖 Continuar a história (recompensa)</button>`;
+  if (st.done) {
+    // o líder entrega a MO na conversa (a MO é parte da história, não um prêmio automático)
+    const hm = HM_GYM[st.ch], H = hm && HMS[hm];
+    const gift = H ? `<div class="quest cur" style="margin-top:8px"><b>📀 ${s.nome} entrega a ${H.mo} ${H.nome}</b>
+      <p class="fala">"${HM_LINES[hm](s.nome)}"</p>
+      <div class="small">${HM_ZONE[hm] ? `Ela abre o caminho para <b>${ZONES[HM_ZONE[hm]].nome}</b> (ícone ${HM_ICON[hm]} no minimapa).` : 'Ela ilumina ginásios escuros, a noite e a névoa.'}
+      Depois, ensine a MO a um companheiro no painel (botão <b>+${H.icon}</b>) e deixe ele fora da Poké Ball.</div></div>` : '';
+    const gate = st.ch === 7 ? `<div class="quest cur" style="margin-top:8px"><b>🏅 7 insígnias!</b><p>Com elas, o Portão da Liga se abre para ${ZONES[5].nome}.</p></div>` : '';
+    return `<p>${s.fim}</p>${gift}${gate}<button data-act="story:next" class="good">${H ? `📀 Receber a ${H.mo} ${H.nome} e continuar` : '📖 Continuar a história (recompensa)'}</button>`;
+  }
   const warn = P.lvl < s.lvl ? ` <span style="color:#fca5a5">(recomendado nível ${s.lvl}, você é nível ${P.lvl})</span>` : '';
   const need = s.at ? needFor(P, zoneAt(...cellPt(...s.at))) : [];
-  return `<div class="quest cur"><b>${st.ch <= 8 ? `Insígnia ${st.ch}/8: ` : 'Capítulo final: '}${s.titulo}</b><p>${s.intro}</p><div class="small">🎯 ${s.obj}${warn}<br>O destino aparece como ★ no minimapa.${need.length ? `<br><span style="color:#fca5a5">Para chegar lá você precisa de: ${need.join(', ')}.</span>` : ''}</div></div>` + pathChecklist(P);
+  // o caminho até o ginásio passa por um bloqueio de MO: a história avisa qual usar
+  const zt = s.at ? zoneAt(...cellPt(...s.at)) : 1;
+  const block = zt >= 2 && zt <= 4 ? (() => { const k = { 2: 'cut', 3: 'smash', 4: 'surf' }[zt], H = HMS[k];
+    return `<p class="fala">O caminho até lá passa por ${{ cut: 'arbustos que fecham a estrada', smash: 'rochas rachadas que bloqueiam a passagem', surf: 'um rio largo e fundo' }[k]}. Use <b>${H.icon} ${H.nome}</b> com um companheiro que a saiba.</p>`; })()
+    : zt >= 5 ? `<p class="fala">O caminho passa pelo Portão da Liga, que só abre para quem tem 7 insígnias.</p>` : '';
+  return `<div class="quest cur"><b>${st.ch <= 8 ? `Insígnia ${st.ch}/8: ` : 'Capítulo final: '}${s.titulo}</b><p>${s.intro}</p>${block}<div class="small">🎯 ${s.obj}${warn}<br>O destino aparece como ★ no minimapa.${need.length ? `<br><span style="color:#fca5a5">Para chegar lá você precisa de: ${need.join(', ')}.</span>` : ''}</div></div>` + pathChecklist(P);
 }
 
 function storyAct(P, arg) {

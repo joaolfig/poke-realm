@@ -294,15 +294,15 @@ function enemyStats(pid, zone, kind) {
   if (!PAT[type]) type = 'normal';
   // a força cresce mais rápido que linear com a zona, acompanhando o poder do herói do nível 1 ao 30
   // (só a zona 1 fica como antes). Lendários são feitos para 2 heróis de nível 30.
-  const zh = (1 + (zone - 1) * 1.6 + (zone - 1) ** 2 * 0.4) * (zone >= 3 ? 1.15 : 1); // vida: 1 · 3 · 6,7 · 10,8 · 15,9
+  const zh = [1, 1, 3, 5.6, 8.8, 12.8][clamp(Math.round(zone), 1, 5)]; // vida por zona (testado com simulação de combate)
   const nd = Math.max(1, Math.round(zone * 1.75 - 0.9));    // dados de dano: 1 · 3 · 4 · 6 · 8
   return {
     p, pid, zone, kind, boss: kind === 2 || kind === 3, legend, alfa, rare, type, color: TYPE_COLORS[type] || '#fff',
     name: (alfa ? 'Alfa ' : '') + p.name + (rare ? ' ✨' : ''),
-    maxHp: Math.round(((st.hp || 50) * 0.35 + 8) * zh * (legend ? 190 : dboss ? (zone >= 4 ? 10 : 8) : alfa ? 3 : rare ? 2.5 : 1)),
+    maxHp: Math.round(((st.hp || 50) * 0.35 + 8) * zh * (legend ? 235 : dboss ? (zone >= 4 ? 10 : 8) : alfa ? 3 : rare ? 2.5 : 1)),
     ac: 9 + Math.floor((st.defense || 50) / 30) + zone + (legend ? 6 : dboss ? 2 : alfa ? 1 : 0),
     atk: 2 + Math.floor(atk / 35) + Math.round(zone * 2.5) + (legend ? 8 : dboss ? 2 : alfa ? 1 : 0),
-    dice: [legend ? 10 : dboss ? nd + 2 : nd + (alfa ? 1 : 0), legend ? 10 : 4 + 2 * Math.min(3, Math.floor(atk / 40)), zone * 2 + (zone >= 3 ? 2 : 0) + (legend ? 13 : dboss ? 3 : 0)],
+    dice: [legend ? 10 : dboss ? nd + 2 : nd + (alfa ? 1 : 0), legend ? 10 : 4 + 2 * Math.min(3, Math.floor(atk / 40)), zone * 2 + (legend ? 15 : dboss ? 3 : 0)],
     speed: (35 + (st.speed || 50) * 0.55) * (legend || dboss ? 0.6 : rare ? 1.5 : 1),
     scale: legend ? 4.2 : dboss ? 3.3 : clamp(1.7 + (p.height || 10) / 35, 1.7, 2.8) * (alfa || rare ? 1.3 : 1),
     xp: Math.round((p.exp || 100) * (0.4 + zone * 0.35) * (1 + (zone - 1) * 0.1) * (legend ? 45 : dboss ? 8 : alfa ? 3 : rare ? 4 : 1)),
@@ -1701,7 +1701,7 @@ function updatePanel() {
         <img src="${petIconUrl(pt.pid)}" alt=""><span>${esc(pt.name)} <b>Nv ${pt.lvl}</b></span>${typeBadge(pt.type)}
         <div class="pxp"><div style="width:${pt.lvl >= PET_MAX ? 100 : Math.min(100, pt.xp / petNeed(pt.lvl) * 100)}%"></div></div><i>${evt}</i>
         <div class="phm">${HM_KEYS.map(k => (pt.hms || []).includes(k) ? `<span class="hmk" title="${HMS[k].nome}">${HMS[k].icon}</span>`
-          : P.hms.includes(k) && canLearn(pt.pid, k) ? `<button class="hmt" data-teach="${i}:${k}" title="Ensinar ${HMS[k].mo} ${HMS[k].nome}">+${HMS[k].icon}</button>` : '').join('')}</div></div>`;
+          : P.hms.includes(k) && canLearn(pt.pid, k) ? `<button class="hmt${P.hmTeach === k ? ' pulse' : ''}" data-teach="${i}:${k}" title="Ensinar ${HMS[k].mo} ${HMS[k].nome}">+${HMS[k].icon}</button>` : '').join('')}</div></div>`;
     }).join('')}</div>${P.bag.doce && P.petIdx >= 0 ? `<button data-candy="1" class="candy">🍬 Dar Doce Raro ao ativo (×${P.bag.doce})</button>` : ''}`
     : '<div class="small">Enfraqueça um Pokémon, mire nele e aperte <b>[F]</b> para jogar uma Poké Ball. Companheiros sobem de nível e evoluem!</div>')
     + (P.hms.length ? `<div class="small keyit">Itens-chave: ${P.hms.map(k => `<span title="${HMS[k].desc}">${HMS[k].icon} ${HMS[k].mo} ${HMS[k].nome}</span>`).join(' ')}</div>` : '');

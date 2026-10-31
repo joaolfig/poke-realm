@@ -238,6 +238,8 @@
   #ptip .ok { color: #8fd68e; } #ptip .no { color: var(--faint); }
   .phm { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 4px; }
   .phm .hmk { font-size: 12px; }
+  .phm .hmt.pulse { animation: hmpulse .8s ease-in-out infinite alternate; }
+  @keyframes hmpulse { from { box-shadow: 0 0 0 1px var(--blue); } to { box-shadow: 0 0 0 3px #fde047; background: #3a3214; } }
   .phm .hmt { padding: 0 4px; font-size: 11px; background: #17263a; box-shadow: 0 0 0 1px var(--blue); }
   .keyit span { display: inline-block; margin: 2px 6px 0 0; color: var(--blue); }
   .qtier { font: 600 11px var(--px); padding: 0 6px; margin-right: 4px; border: 1px solid #000; }
@@ -348,23 +350,23 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=37"></script>
-<script src="js/data.js?v=37"></script>
-<script src="js/rules.js?v=37"></script>
-<script src="js/items.js?v=37"></script>
-<script src="js/dungeon.js?v=37"></script>
-<script src="js/net.js?v=37"></script>
-<script src="js/map.js?v=37"></script>
-<script src="js/world.js?v=37"></script>
-<script src="js/story.js?v=37"></script>
-<script src="js/hm.js?v=37"></script>
-<script src="js/allies.js?v=37"></script>
-<script src="js/town.js?v=37"></script>
-<script src="js/geo.js?v=37"></script>
-<script src="js/regions.js?v=37"></script>
-<script src="js/audio.js?v=37"></script>
-<script src="js/pad.js?v=37"></script>
-<script src="js/pvp.js?v=37"></script>
-<script src="js/game.js?v=37"></script>
+<script src="js/pokedex.js?v=38"></script>
+<script src="js/data.js?v=38"></script>
+<script src="js/rules.js?v=38"></script>
+<script src="js/items.js?v=38"></script>
+<script src="js/dungeon.js?v=38"></script>
+<script src="js/net.js?v=38"></script>
+<script src="js/map.js?v=38"></script>
+<script src="js/world.js?v=38"></script>
+<script src="js/story.js?v=38"></script>
+<script src="js/hm.js?v=38"></script>
+<script src="js/allies.js?v=38"></script>
+<script src="js/town.js?v=38"></script>
+<script src="js/geo.js?v=38"></script>
+<script src="js/regions.js?v=38"></script>
+<script src="js/audio.js?v=38"></script>
+<script src="js/pad.js?v=38"></script>
+<script src="js/pvp.js?v=38"></script>
+<script src="js/game.js?v=38"></script>
 </body>
 </html>

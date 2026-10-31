@@ -11,6 +11,14 @@
 // A zona 5 fica atrás do Portão da Liga, que só abre com 7 insígnias.
 const HM_GYM = { 1: 'cut', 2: 'smash', 3: 'flash', 4: 'surf' };
 const HM_ZONE = { cut: 2, smash: 3, surf: 4 };
+const HM_ICON = { cut: '✂️', smash: '🪨', surf: '🌊', flash: '💡' };
+// fala do líder ao entregar cada MO
+const HM_LINES = {
+  cut: () => 'Leve esta MO e corte os arbustos que fecham a estrada. Daqui pra frente, o caminho só se abre para quem sabe usar Corte.',
+  smash: () => 'Rochas rachadas bloqueiam as passagens para as terras mais altas. Esmaga-Rocha abre caminho por elas.',
+  flash: () => 'Alguns ginásios são escuros como breu, e a noite aqui não perdoa. Com Lampejo você enxerga o que os outros não veem.',
+  surf: () => 'Um rio fundo separa as terras mais perigosas. Com Surfar, seu companheiro te leva pela água até lá.',
+};
 // o que falta para chegar a uma zona
 function needFor(P, z) {
   const miss = [];
@@ -55,7 +63,9 @@ function giveHM(P, k) {
   if (P.hms.includes(k)) return;
   P.hms.push(k);
   const opens = HM_ZONE[k] ? ` Ela abre o caminho para ${ZONES[HM_ZONE[k]].nome}.` : k === 'flash' ? ' Ela ilumina ginásios escuros e a névoa.' : '';
-  G.toasts.push({ text: `📀 Você recebeu a ${HMS[k].mo} ${HMS[k].nome}!${opens} Ensine a um companheiro no painel.`, color: '#93c5fd', t: 7, big: 1 });
+  G.toasts.push({ text: `📀 Você recebeu a ${HMS[k].mo} ${HMS[k].nome}!${opens}`, color: '#93c5fd', t: 7, big: 1 });
+  G.toasts.push({ text: `👉 No painel, em Companheiros, aperte +${HMS[k].icon} para ensinar ${HMS[k].nome} (o botão está piscando).`, color: '#fde68a', t: 9 });
+  P.hmTeach = k; // destaca os botões de ensinar até alguém aprender
   sfx('lvl');
   G.dirty = true;
 }
@@ -65,7 +75,8 @@ function teachHM(i, k) {
   pt.hms = pt.hms || [];
   if (pt.hms.includes(k)) return;
   pt.hms.push(k);
-  G.toasts.push({ text: `${HMS[k].icon} ${pt.name} aprendeu ${HMS[k].nome}!`, color: '#93c5fd', t: 3 });
+  if (P.hmTeach === k) P.hmTeach = null;
+  G.toasts.push({ text: `${HMS[k].icon} ${pt.name} aprendeu ${HMS[k].nome}! Deixe ${pt.name} fora da Poké Ball para usar.`, color: '#93c5fd', t: 4 });
   sfx('lvl');
   saveGame();
 }
