@@ -11,10 +11,10 @@ const PAD = { on: false, nav: false, prev: [], focus: null, rep: 0, aim: 0, aimR
 try { PAD.on = localStorage.getItem(PAD_KEY) === '1'; } catch (e) { /* ignora */ }
 
 // botões do layout "standard": 0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 8 View, 9 Menu, 10 L3, 11 R3, 12-15 direcional
-const PAD_KEYS = { 0: 'KeyE', 2: 'KeyQ', 3: 'KeyF', 4: 'KeyG', 5: 'Space', 6: 'ShiftLeft', 12: 'Digit3', 13: 'KeyX', 14: 'KeyR', 15: 'KeyV', 10: 'KeyM', 11: 'KeyT', 8: 'KeyH' };
+const PAD_KEYS = { 0: 'KeyE', 2: 'KeyQ', 3: 'KeyF', 4: 'KeyC', 5: 'Space', 6: 'ShiftLeft', 12: 'Digit3', 13: 'KeyX', 14: 'KeyR', 15: 'KeyV', 10: 'KeyM', 11: 'KeyT', 8: 'KeyH' };
 const PAD_HELP = [
   ['Analógico esquerdo', 'Andar'], ['Analógico direito', 'Mirar'], ['RT (segurar)', 'Atirar'], ['RB', 'Especial'], ['LT', 'Rolamento (talento)'],
-  ['A', 'Falar / portal / MO'], ['B', 'Fechar janela'], ['X', 'Poção'], ['Y', 'Poké Ball'], ['LB', 'Trocar Poké Ball'],
+  ['A', 'Falar / portal / MO'], ['B', 'Fechar janela (sem janela: trocar Poké Ball)'], ['X', 'Poção'], ['Y', 'Poké Ball'], ['LB', 'Trocar Pokémon ativo'],
   ['↑ direcional', 'Usar cristal'], ['↓ direcional', 'Montar'], ['← direcional', 'Voltar à última cidade'], ['→ direcional', 'Voar (MO Voar)'],
   ['L3', 'Minimapa / mapa da região / esconder'], ['R3', 'Tiro automático'], ['View', 'Controles'], ['Menu (Start)', 'Modo menu: painel, inventário, talentos'],
 ];
@@ -199,7 +199,7 @@ function padTick(dt) {
     mouse.down = shooting;
     // botões de ação
     for (const i in PAD_KEYS) if (down(+i)) keyTap(PAD_KEYS[i]);
-    if (down(1)) { if (G.npcOpen) closeNPC(); else if (!$('help').classList.contains('hidden')) $('help').classList.add('hidden'); }
+    if (down(1)) { if (G.npcOpen) closeNPC(); else if (!$('help').classList.contains('hidden')) $('help').classList.add('hidden'); else cycleBall(); }
     if (down(9)) { padNav(true); PAD.auto = null; }
   }
   PAD.prev = gp.buttons.map(b => b.pressed || b.value > 0.5);

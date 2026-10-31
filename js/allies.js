@@ -278,7 +278,25 @@ function allyHit(e, a, sp) {
 
 /* ---------- Captura ---------- */
 const BALLS = { poke: { nome: 'Poké Ball', icon: '⚪', bonus: 0 }, grande: CONS.grande, ultra: CONS.ultra };
-// [G] / LB: troca a bola que o F joga (pula as que estão em falta)
+// [C] / LB: troca o companheiro líder pelo próximo que está na Poké Ball (se todos já estão fora, passa a liderança)
+function cyclePet() {
+  const P = G.P;
+  if (!P || G.evo) return;
+  if (!P.pets.length) return G.toasts.push({ text: 'Você ainda não tem companheiros. Capture um com a Poké Ball!', color: '#fca5a5', t: 2.5 });
+  if ((G.petSwapT || 0) > G.time) return;
+  G.petSwapT = G.time + 0.4;
+  const bench = P.pets.map((_, i) => i).filter(i => !P.petAct.includes(i));
+  if (!P.petAct.length) P.petAct = [bench[0]];
+  else if (!bench.length) P.petAct.push(P.petAct.shift());
+  else { const cur = P.petAct[0], next = bench.find(i => i > cur); P.petAct[0] = next !== undefined ? next : bench[0]; }
+  P.petIdx = P.petAct[0];
+  const pt = P.pets[P.petIdx];
+  G.toasts.push({ text: `⚪ Vai, ${pt.name}! (Nv ${pt.lvl})`, color: '#86efac', t: 2 });
+  sfx('pick');
+  G.dirty = true;
+  saveGame();
+}
+// B (controle) / [G]: troca a bola que o F joga (pula as que estão em falta)
 function cycleBall() {
   const P = G.P, ks = Object.keys(BALLS), cur = ks.indexOf(P.ballSel || 'poke');
   let k = ks[cur];

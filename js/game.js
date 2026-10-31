@@ -1838,6 +1838,7 @@ window.addEventListener('keydown', ev => {
   else if (ev.code === 'KeyV') { if (G.npcOpen === 'fly') closeNPC(); else openFly(); }
   else if (ev.code === 'KeyF') throwBall();
   else if (ev.code === 'KeyG') cycleBall();
+  else if (ev.code === 'KeyC') cyclePet();
   else if (ev.code === 'KeyS' && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); K.KeyS = false; exportSave(); }
   else if (ev.code === 'KeyE') {
     if (G.npcOpen) closeNPC();
