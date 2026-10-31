@@ -14,8 +14,8 @@ try { PAD.on = localStorage.getItem(PAD_KEY) === '1'; } catch (e) { /* ignora */
 const PAD_KEYS = { 0: 'KeyE', 2: 'KeyQ', 3: 'KeyF', 4: 'KeyC', 5: 'Space', 6: 'ShiftLeft', 12: 'Digit3', 13: 'KeyX', 14: 'KeyR', 15: 'KeyV', 10: 'KeyM', 11: 'KeyT', 8: 'KeyH' };
 const PAD_HELP = [
   ['Analógico esquerdo', 'Andar'], ['Analógico direito', 'Mirar'], ['RT (segurar)', 'Atirar'], ['RB', 'Especial'], ['LT', 'Rolamento (talento)'],
-  ['A', 'Falar / portal / MO'], ['B', 'Fechar janela (sem janela: trocar Poké Ball)'], ['X', 'Poção'], ['Y', 'Poké Ball'], ['LB', 'Trocar Pokémon ativo'],
-  ['↑ direcional', 'Usar cristal'], ['↓ direcional', 'Montar'], ['← direcional', 'Voltar à última cidade'], ['→ direcional', 'Voar (MO Voar)'],
+  ['A', 'Falar / portal / HM'], ['B', 'Fechar janela (sem janela: trocar Poké Ball)'], ['X', 'Poção'], ['Y', 'Poké Ball'], ['LB', 'Trocar Pokémon ativo'],
+  ['↑ direcional', 'Usar cristal'], ['↓ direcional', 'Montar'], ['← direcional', 'Voltar à última cidade'], ['→ direcional', 'Fly (HM)'],
   ['L3', 'Minimapa / mapa da região / esconder'], ['R3', 'Tiro automático'], ['View', 'Controles'], ['Menu (Start)', 'Modo menu: painel, inventário, talentos'],
 ];
 const PAD_NAV_HELP = [['Direcional / analógico', 'Mover a seleção'], ['A', 'Escolher / clicar'], ['X', 'Ação do botão direito (soltar item ou companheiro)'], ['B ou Start', 'Sair do modo menu']];

@@ -301,7 +301,7 @@ function setRegion(id) {
   setGeo(geo);
   replaceArr(LANDMARKS, [['vila', R.vila, geo.vila[0], geo.vila[1] + 0.12], ...geo.marks.map(([nome, cx, cy], i) => [REGION_ID + '_c' + i, nome, cx, cy])]
     .map(([id, nome, cx, cy]) => { const [x, y] = cellPt(cx, cy); return { id, nome, at: [cx, cy], x, y }; }));
-  // a 2ª cidade é um destino de Voar (pouso na praça, ao sul do chafariz)
+  // a 2ª cidade é um destino de Fly (pouso na praça, ao sul do chafariz)
   const t2 = TOWNS[1], lt = t2 && LANDMARKS.find(l => l.nome === t2.nome);
   if (lt) Object.assign(lt, { id: 'town2', x: t2.x, y: t2.y + 100 });
   // ginásios viram temas de masmorra

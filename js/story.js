@@ -14,6 +14,36 @@ const needT2 = P => !!(TOWNS[1] && P.story && P.story.ch >= T2_CH && !P.story.t2
 const storyHub = P => (TOWNS[1] && P.story && P.story.t2 ? 1 : 0);
 const storyGuide = P => (storyHub(P) ? NPCS2.find(n => n.id === 'sildo') : NPCS.find(n => n.id === 'sildo'));
 const hubName = P => townName(TOWNS[storyHub(P)]);
+// etapas de captura dentro da história: o 1º companheiro (antes do 1º ginásio) e,
+// no fim de jogo, uma captura com Great/Ultra Ball na zona 4 (antes do 7º ginásio)
+const CAPU_CH = 7;
+function storyStep(P) {
+  const st = P && P.story;
+  if (!st || st.done || storyOver(P)) return null;
+  if (st.ch === 1 && !P.pets.length) return 'cap1';
+  if (st.ch === CAPU_CH && !st.capU) return 'capU';
+  return null;
+}
+// ponto de captura sugerido: o lugar da zona mais perto da cidade-base
+function capPoint(P, z) {
+  const t = TOWNS[storyHub(P)] || TOWNS[0];
+  let b = null, bd = 1e18;
+  for (const p of ZPTS[z]) { const d0 = (p[0] - t.x) ** 2 + (p[1] - t.y) ** 2; if (d0 > 500 * 500 && d0 < bd) { bd = d0; b = p; } }
+  return b || randomZonePoint(z);
+}
+// chamado quando o jogador captura um Pokémon (k = bola usada)
+function storyCapture(P, e, k) {
+  const st = P.story;
+  if (!st) return;
+  if (st.ch === 1 && !st.done && P.pets.length === 1) {
+    G.toasts.push({ text: `📖 Seu primeiro companheiro! ${e.p.name} vai lutar ao seu lado. Agora siga para o ${STORY[1].titulo}.`, color: '#fde047', t: 6, big: 1 });
+  }
+  if (st.ch === CAPU_CH && !st.capU && (k === 'grande' || k === 'ultra') && e.zone >= 4) {
+    st.capU = true;
+    G.toasts.push({ text: `📖 ${e.p.name} capturado com ${BALLS[k].nome}! A prova está feita: o caminho para o ${STORY[CAPU_CH].titulo} está livre.`, color: '#fde047', t: 7, big: 1 });
+    sfx('lvl');
+  }
+}
 
 // ajusta um inimigo da história (igual no host e nos clientes)
 function storyMod(e, ch) {
@@ -37,7 +67,7 @@ function storyTick(dt) {
   if (G.storyT > 0) return;
   G.storyT = 1;
   const s = STORY[P.story.ch];
-  if (!s || !s.at || P.story.done || needT2(P)) return;
+  if (!s || !s.at || P.story.done || needT2(P) || storyStep(P)) return;
   const [x, y] = storyPos(P.story.ch);
   if (Math.hypot(P.x - x, P.y - y) > 700) return;
   if (isHost()) hostStory(P.story.ch);
@@ -94,33 +124,38 @@ function renderStoryNPC(n, P) {
     if (needT2(P)) return `<p class="fala">"Você deve ser quem ${REGION.guia.nome} mandou! Que bom que chegou a ${t2.nome}."</p>
       <p>Daqui em diante a jornada fica longe de casa, e ${t2.nome} fica bem no meio de ${REGION.nome}: é daqui que você parte para os próximos ginásios, e é aqui que você volta depois de cada vitória.</p>
       <div class="quest cur" style="margin-top:8px"><b>📀 ${n.nome} entrega a ${HMS.fly.mo} ${HMS.fly.nome}</b>
-      <p class="fala">"Com Voar, um companheiro voador te leva para <b>qualquer cidade que você já visitou</b>: aperte <b>[V]</b> e escolha o destino. Toda cidade por onde você passa vira um destino novo."</p>
-      <div class="small">Ensine Voar a um Pokémon do tipo Voador no painel (botão <b>+🪶</b>) e deixe ele fora da Poké Ball.<br>
+      <p class="fala">"Com Fly, um companheiro voador te leva para <b>qualquer cidade que você já visitou</b>: aperte <b>[V]</b> e escolha o destino. Toda cidade por onde você passa vira um destino novo."</p>
+      <div class="small">Ensine Fly a um Pokémon do tipo Voador no painel (botão <b>+🪶</b>) e deixe ele fora da Poké Ball.<br>
       E lembre: <b>[R]</b> agora te leva de volta à <b>última cidade</b> em que você esteve, não só à ${ZONES[0].nome}.</div></div>
       <button data-act="story:t2" class="good">📀 Receber a ${HMS.fly.mo} ${HMS.fly.nome}</button>`;
     if (!st.t2 && !storyOver(P)) return `<p class="fala">"Olá! ${REGION.guia.nome} me pediu para cuidar dos treinadores que chegam a ${t2.nome}. Quando a sua jornada passar por aqui, venha falar comigo."</p>`;
   } else if (st.t2 && !storyOver(P)) {
     // o guia da vila manda o jogador para a 2ª cidade
     return `<p class="fala">"A sua jornada agora segue a partir de ${t2.nome}. ${helper.nome} está esperando você lá com as próximas missões."</p>
-      <div class="small">Use <b>[V]</b> Voar com um companheiro voador para chegar rápido.</div>`;
+      <div class="small">Use <b>[V]</b> Fly com um companheiro voador para chegar rápido.</div>`;
   } else if (needT2(P)) {
-    return `<div class="quest cur"><b>📖 Missão: ${t2.nome}</b><p class="fala">"Você já tem quatro insígnias! Daqui pra frente os ginásios ficam longe demais da ${ZONES[0].nome}. Vá até <b>${t2.nome}</b>, no coração de ${REGION.nome}, e fale com ${helper.nome}. É de lá que a sua jornada continua, e ${helper.nome} tem uma MO que vai mudar o seu jeito de viajar."</p>
+    return `<div class="quest cur"><b>📖 Missão: ${t2.nome}</b><p class="fala">"Você já tem quatro insígnias! Daqui pra frente os ginásios ficam longe demais da ${ZONES[0].nome}. Vá até <b>${t2.nome}</b>, no coração de ${REGION.nome}, e fale com ${helper.nome}. É de lá que a sua jornada continua, e ${helper.nome} tem uma HM que vai mudar o seu jeito de viajar."</p>
       <div class="small">🎯 Vá até ${t2.nome} e fale com ${helper.nome}<br>O destino aparece como ★ no minimapa.</div></div>` + pathChecklist(P);
   }
+  const step = storyStep(P);
+  if (step === 'cap1') return `<div class="quest cur"><b>📖 Primeiro passo: um companheiro</b><p class="fala">"Ninguém enfrenta um ginásio sozinho. Antes de qualquer coisa, você precisa de um parceiro. Procure um Pokémon no mato alto aqui perto, enfraqueça ele sem derrotar e jogue uma Poké Ball."</p>
+      <div class="small">🎯 Capture seu primeiro Pokémon ([F] ou Y no controle joga a Poké Ball). Há um bom lugar marcado com ★ no minimapa.</div></div>`;
+  if (step === 'capU' && (n.town || 0) === storyHub(P)) return `<div class="quest cur"><b>📖 A prova do treinador</b><p class="fala">"Os últimos líderes não recebem qualquer um. Eles querem ver se você sabe lidar com os Pokémon selvagens de ${ZONES[4].nome}... e esses não se entregam fácil. Traga a prova: capture um deles."</p>
+      <div class="small">🎯 Capture um Pokémon em ${ZONES[4].nome} com uma <b>Great Ball 🔵</b> ou <b>Ultra Ball 🟡</b>. O ★ no minimapa mostra um bom lugar.</div></div>` + pathChecklist(P);
   if (st.ch === 0) return `<p>${s.intro}</p><p class="fala">"Eu sou ${n.nome}. Você aceita a jornada pelos oito ginásios de ${REGION.nome}?"</p><button data-act="story:start" class="good">📖 Aceitar a jornada</button>`;
   if (st.done) {
-    // o líder entrega a MO na conversa (a MO é parte da história, não um prêmio automático)
+    // o líder entrega a HM na conversa (a HM é parte da história, não um prêmio automático)
     const hm = HM_GYM[st.ch], H = hm && HMS[hm];
     const gift = H ? `<div class="quest cur" style="margin-top:8px"><b>📀 ${s.nome} entrega a ${H.mo} ${H.nome}</b>
       <p class="fala">"${HM_LINES[hm](s.nome)}"</p>
       <div class="small">${HM_ZONE[hm] ? `Ela abre o caminho para <b>${ZONES[HM_ZONE[hm]].nome}</b> (ícone ${HM_ICON[hm]} no minimapa).` : 'Ela ilumina ginásios escuros, a noite e a névoa.'}
-      Depois, ensine a MO a um companheiro no painel (botão <b>+${H.icon}</b>) e deixe ele fora da Poké Ball.</div></div>` : '';
+      Depois, ensine a HM a um companheiro no painel (botão <b>+${H.icon}</b>) e deixe ele fora da Poké Ball.</div></div>` : '';
     const gate = st.ch === 7 ? `<div class="quest cur" style="margin-top:8px"><b>🏅 7 insígnias!</b><p>Com elas, o Portão da Liga se abre para ${ZONES[5].nome}.</p></div>` : '';
     return `<p>${s.fim}</p>${gift}${gate}<button data-act="story:next" class="good">${H ? `📀 Receber a ${H.mo} ${H.nome} e continuar` : '📖 Continuar a história (recompensa)'}</button>`;
   }
   const warn = P.lvl < s.lvl ? ` <span style="color:#fca5a5">(recomendado nível ${s.lvl}, você é nível ${P.lvl})</span>` : '';
   const need = s.at ? needFor(P, zoneAt(...cellPt(...s.at))) : [];
-  // o caminho até o ginásio passa por um bloqueio de MO: a história avisa qual usar
+  // o caminho até o ginásio passa por um bloqueio de HM: a história avisa qual usar
   const zt = s.at ? zoneAt(...cellPt(...s.at)) : 1;
   const block = zt >= 2 && zt <= 4 ? (() => { const k = { 2: 'cut', 3: 'smash', 4: 'surf' }[zt], H = HMS[k];
     return `<p class="fala">O caminho até lá passa por ${{ cut: 'arbustos que fecham a estrada', smash: 'rochas rachadas que bloqueiam a passagem', surf: 'um rio largo e fundo' }[k]}. Use <b>${H.icon} ${H.nome}</b> com um companheiro que a saiba.</p>`; })()
@@ -132,7 +167,8 @@ function storyAct(P, arg) {
   const st = P.story;
   if (arg === 'start' && st.ch === 0) {
     st.ch = 1; st.done = false;
-    G.toasts.push({ text: `📖 Capítulo 1: ${STORY[1].titulo}`, color: '#fde047', t: 4, big: 1 });
+    if (!P.pets.length) { P.balls += 2; G.toasts.push({ text: '📖 Primeiro passo: capture um Pokémon para ser seu companheiro (+2 Poké Balls).', color: '#fde047', t: 6, big: 1 }); }
+    else G.toasts.push({ text: `📖 Capítulo 1: ${STORY[1].titulo}`, color: '#fde047', t: 4, big: 1 });
   } else if (arg === 't2' && needT2(P)) {
     st.t2 = true;
     giveHM(P, 'fly');
@@ -140,7 +176,7 @@ function storyAct(P, arg) {
     G.toasts.push({ text: `📖 Capítulo ${st.ch}: ${STORY[st.ch].titulo}`, color: '#fde047', t: 4, big: 1 });
   } else if (arg === 'next' && st.done) {
     const ch = st.ch;
-    // a história não dá dinheiro: recompensa em XP, item, Doce Raro, atributo e MOs
+    // a história não dá dinheiro: recompensa em XP, item, Doce Raro, atributo e HMs
     const last = ch === STORY.length - 1, xp = Math.round(xpNeed(P.lvl) * 0.35);
     const it = last ? { slot: 'amuleto', tier: 6, name: `Medalha do Campeão de ${REGION.nome}`, relic: 1, mods: { hp: 0.15, dmg: 2, cd: 0.15, regen: 0.5 } } : genItem(clamp(Math.round(ch * 0.7) + 1, 0, 6));
     const i = P.inv.indexOf(null);
@@ -153,6 +189,7 @@ function storyAct(P, arg) {
     G.toasts.push({ text: `🎁 +${xp} XP, ${it.name}, 🍬 Doce Raro`, color: '#facc15', t: 4 });
     st.ch++; st.done = false;
     if (needT2(P)) G.toasts.push({ text: `📖 Nova missão: vá até ${TOWNS[1].nome} e fale com ${NPCS2.find(n => n.id === 'sildo').nome}`, color: '#fde047', t: 6, big: 1 });
+    else if (storyStep(P) === 'capU') G.toasts.push({ text: `📖 Nova missão: capture um Pokémon em ${ZONES[4].nome} com Great ou Ultra Ball`, color: '#fde047', t: 6, big: 1 });
     else if (st.ch < STORY.length) G.toasts.push({ text: `📖 Capítulo ${st.ch}: ${STORY[st.ch].titulo}`, color: '#fde047', t: 4, big: 1 });
     else G.toasts.push({ text: `🏆 Você é o campeão de ${REGION.nome}!`, color: '#fde047', t: 6, big: 1 });
     gainXP(xp, true);
@@ -183,6 +220,14 @@ function storyTarget(P) {
   if (!P || !P.story || storyOver(P)) return null;
   const st = P.story, s = STORY[st.ch];
   const gd = storyGuide(P);
+  const step = storyStep(P);
+  if (step) {
+    const z = step === 'cap1' ? 1 : 4, k = 'cap' + REGION_ID + storyHub(P) + z;
+    if (!G[k]) G[k] = capPoint(P, z);
+    const [x, y] = G[k];
+    return step === 'cap1' ? { x, y, label: 'Capture seu primeiro Pokémon (enfraqueça e jogue a Poké Ball)', titulo: 'Primeiro passo' }
+      : { x, y, label: `Capture um Pokémon em ${ZONES[4].nome} com Great ou Ultra Ball`, titulo: 'A prova do treinador', lvl: ZONE_LVL[4] };
+  }
   if (needT2(P)) { const h = NPCS2.find(n => n.id === 'sildo'); return { x: h.x, y: h.y, label: `Vá até ${TOWNS[1].nome} e fale com ${h.nome}`, titulo: `Missão: ${TOWNS[1].nome}` }; }
   if (st.ch === 0 || st.done) return { x: gd.x, y: gd.y, label: st.ch === 0 ? `Fale com ${gd.nome} na vila` : `Volte para ${hubName(P)} e fale com ${gd.nome}`, titulo: s.titulo };
   const [x, y] = storyPos(st.ch);

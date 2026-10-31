@@ -90,7 +90,7 @@ function renderNPC() {
   let body = n.fala ? `<p class="fala">"${n.fala}"</p>` : '';
   if (n.id === 'cura') {
     // dica da vendedora: insinua que a Poké Ball comum não segura os Pokémon mais fortes (sem explicar a regra)
-    body += `<p class="fala">"Ouvi dizer que, para lá de ${ZONES[3].nome}, os Pokémon não se deixam prender por qualquer bola... Os treinadores que voltam de lá inteiros nunca levam só Poké Ball na mochila. Por que será que a Great Ball e a Ultra Ball vendem tanto?"</p>`;
+    body += `<p class="fala">"Ouvi dizer que, de ${ZONES[3].nome} em diante, os Pokémon não se deixam prender por qualquer bola... Os treinadores que voltam de lá inteiros nunca levam só Poké Ball na mochila. Por que será que a Great Ball e a Ultra Ball vendem tanto?"</p>`;
     body += '<h4>Poké Balls</h4>' + ballShop(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}</span>
       <button data-act="buy:${s.id}" ${s.lock || P.gold < s.preco ? 'disabled' : ''}>${s.lock ? 'a partir do Nv 8' : s.preco + ' 🪙'}</button></div>`).join('')
       + `<div class="small">Você tem ${P.balls} Poké Ball, ${P.bag.grande} Great Ball e ${P.bag.ultra} Ultra Ball · ${P.pets.length}/${petCap(P)} companheiros${petCap(P) >= PET_CAP_MAX ? ' (máximo)' : ''}.</div>`;
@@ -115,7 +115,8 @@ function renderNPC() {
         <div class="small">${q.have}/${q.need} · Recompensa: ${q.xp} XP, ${q.gold} 🪙${q.bonus ? ', ' + BONUS_NAMES[q.bonus] : ''}</div></div>
         ${q.done ? '<button data-act="claim" class="good">🎁 Receber recompensa</button>' : '<button data-act="abandon">Abandonar contrato</button>'}`;
     } else {
-      if (!P.questOffer) P.questOffer = genQuests(P);
+      // as ofertas acompanham o jogador: refeitas quando ele muda de faixa de nível, ganha acesso a outra zona ou troca de região
+      if (!P.questOffer || P.questOffer.some(o => o.zt !== questZone(P) || o.reg !== REGION_ID)) P.questOffer = genQuests(P);
       body += P.questOffer.map((o, i) => `<div class="quest"><b>${o.desc}</b><div class="small">Recompensa: ${o.xp} XP, ${o.gold} 🪙${o.bonus ? ', ' + BONUS_NAMES[o.bonus] : ''}</div>
         <button data-act="accept:${i}">Aceitar</button></div>`).join('');
     }
@@ -199,22 +200,28 @@ const QPEOPLE = {
   coleta: [['Alquimista Zuza', 'preciso de ingredientes para poções'], ['Artesã Bia', 'faço amuletos com isso'], ['Curandeira Íris', 'uso isso nos remédios']],
   explorar: [['Cartógrafa Nina', 'meu mapa ainda tem buracos'], ['Estudioso Ivo', 'dizem que há ruínas por lá']],
   especie: [['Fazendeira Lia', 'eles estão comendo toda a colheita'], ['Mineiro Brás', 'cavaram túneis embaixo da minha casa'], ['Guarda Tomé', 'um bando deles bloqueou a ponte']],
+  pegaralfa: [['Criador Otto', 'um Alfa daria filhotes fortíssimos'], ['Caçadora Rita', 'quero ver alguém domar um líder de bando']],
+  pesquisa: [['Pesquisadora Sofia', 'estou catalogando as espécies da região'], ['Estudioso Ivo', 'quero comparar espécies diferentes']],
+  noturno: [['Astrônoma Lua', 'alguns Pokémon só mostram sua verdadeira natureza à noite'], ['Vigia Noel', 'quero companheiros para a ronda da madrugada']],
+  bolaboa: [['Vendedora de Poké Balls', 'preciso de relatos de campo das minhas bolas novas'], ['Colecionador Ivo', 'quero ver as bolas especiais em ação']],
   pegar: [['Pesquisadora Sofia', 'preciso de um exemplar para a minha pesquisa'], ['Menino Pedrinho', 'sempre sonhei em ter um'], ['Criador Otto', 'falta essa espécie no meu rancho'], ['Colecionador Ivo', 'é a peça que falta na minha coleção']],
 };
 const MATERIAL = { flying: 'Penas', fire: 'Cinzas', water: 'Escamas', grass: 'Folhas', bug: 'Seda', poison: 'Glândulas de veneno', electric: 'Faíscas engarrafadas',
   ground: 'Torrões', rock: 'Pedrinhas raras', ghost: 'Ectoplasma', psychic: 'Cristais mentais', fighting: 'Faixas', normal: 'Pelos', ice: 'Gelo eterno',
   dragon: 'Escamas de dragão', dark: 'Garras sombrias', steel: 'Parafusos', fairy: 'Pó de fada' };
+// zona dos contratos: a do nível do jogador, mas só até onde ele já consegue chegar (HMs e insígnias)
+const questZone = P => { let z = lvlZone(P.lvl); while (z > 1 && needFor(P, z).length) z--; return z; };
 function genQuests(P) {
-  const z = lvlZone(P.lvl);
+  const z = questZone(P);
   const recent = P.recentQ || [];
   const unknown = LANDMARKS.filter(l => !P.fly.includes(l.id) && zoneAt(l.x, l.y) <= z + 1);
-  let kinds = ['tipo', 'zona', 'alfa', 'masmorra', 'captura', 'evento', 'caca', 'caca', 'coleta', 'coleta', 'especie', 'especie', 'pegar', 'pegar', ...(unknown.length ? ['explorar'] : [])];
+  let kinds = ['tipo', 'zona', 'alfa', 'masmorra', 'captura', 'evento', 'caca', 'caca', 'coleta', 'coleta', 'especie', 'especie', 'pegar', 'pegar', 'pegaralfa', 'pesquisa', 'pesquisa', 'noturno', ...(z >= 2 ? ['bolaboa'] : []), ...(unknown.length ? ['explorar'] : [])];
   const fresh = kinds.filter(k => !recent.includes(k));
   if (fresh.length >= 3) kinds = fresh;
   const picked = [];
   for (const k of kinds.sort(() => Math.random() - 0.5)) if (!picked.includes(k) && picked.length < 3) picked.push(k);
   return picked.map((k, idx) => {
-    const T = QTIERS[idx], q = { k, have: 0, done: false, tier: idx, zt: z, zone: z };
+    const T = QTIERS[idx], q = { k, have: 0, done: false, tier: idx, zt: z, zone: z, reg: REGION_ID };
     const need = base => Math.max(1, Math.round(base * T.m));
     const pool = ZONE_POOLS[z].filter(id => POKE[id]);
     let [who, why] = pick(QPEOPLE[k]);
@@ -250,6 +257,18 @@ function genQuests(P) {
     } else if (k === 'pegar') {
       q.pid = pick(pool); q.need = idx === 2 ? 2 : 1; diff = 1.8;
       q.desc = `Capture ${q.need > 1 ? q.need + ' ' : 'um '}${POKE[q.pid] ? POKE[q.pid].name : 'Pokémon'} (aparece em ${ZONES[z].nome})`;
+    } else if (k === 'pegaralfa') {
+      q.need = 1; diff = 2.6;
+      q.desc = 'Capture um Pokémon Alfa (enfraqueça bem: eles resistem mais)';
+    } else if (k === 'pesquisa') {
+      q.need = need(3 + Math.floor(z / 2)); q.seen = []; diff = 1.7;
+      q.desc = `Pesquisa de campo: capture ${q.need} espécies diferentes em ${ZONES[z].nome}`;
+    } else if (k === 'noturno') {
+      q.need = need(2); diff = 1.8;
+      q.desc = `Capture ${q.need} Pokémon durante a noite (zona ${z} ou acima)`;
+    } else if (k === 'bolaboa') {
+      q.need = need(2); diff = 1.6;
+      q.desc = `Capture ${q.need} Pokémon usando Great Ball ou Ultra Ball (zona ${z} ou acima)`;
     } else if (k === 'coleta') {
       const p = POKE[pick(pool)]; q.type = p ? mainType(p) : 'normal'; q.need = need(5 + z * 2); diff = 1.4;
       q.desc = `Colete ${q.need} ${MATERIAL[q.type]} de Pokémon do tipo ${TYPE_PT[q.type]}`;
@@ -275,6 +294,8 @@ function questProgress(k, info = {}) {
   if (k === 'zona' && info.zone !== q.zone) return;
   if ((k === 'caca' || k === 'especie' || k === 'pegar') && info.pid !== q.pid) return;
   if (k === 'explorar' && info.id !== q.lm) return;
+  if ((k === 'noturno' || k === 'bolaboa') && (info.zone || 0) < q.zone) return;
+  if (k === 'pesquisa') { if (info.zone !== q.zone || (q.seen = q.seen || []).includes(info.pid)) return; q.seen.push(info.pid); }
   if (k === 'coleta') {
     if (Math.random() > 0.4) return;
     text(P.x, P.y - 58, `+1 ${MATERIAL[q.type]}`, '#fde68a', 12);
@@ -282,7 +303,7 @@ function questProgress(k, info = {}) {
   q.have++;
   if (q.have >= q.need) {
     q.done = true;
-    G.toasts.push({ text: '📜 Contrato cumprido! Volte ao Mestre da Guilda na vila.', color: '#4ade80', t: 4 });
+    G.toasts.push({ text: '📜 Contrato cumprido! Volte a um Mestre da Guilda.', color: '#4ade80', t: 4 });
     sfx('lvl');
   }
   G.dirty = true;

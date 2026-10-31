@@ -32,7 +32,7 @@ async function fetchPoke(id, cache) {
     types: j.types.sort((a, b) => a.slot - b.slot).map(t => t.type.name),
     stats: st, exp: j.base_experience || 100, height: j.height || 10,
     icon: icon || null, front: j.sprites.front_default,
-    hm: [...new Set(j.moves.map(m => HM_MOVES[m.move.name]).filter(Boolean))], // MOs que aprenderia nos jogos
+    hm: [...new Set(j.moves.map(m => HM_MOVES[m.move.name]).filter(Boolean))], // HMs que aprenderia nos jogos
   };
   cache[id] = clean(p);
   return p;
@@ -971,7 +971,7 @@ function updatePlayer(dt) {
       if (stuck || !solidR(P.x, ny, 9, sw)) P.y = ny; else blocked = true;
       if (blocked && !(sw & 1) && isDeep(P.x + mx * 16, P.y + my * 16) && G.time - (G.deepWarn || -9) > 5) {
         G.deepWarn = G.time;
-        G.toasts.push({ text: `🌊 A água é funda demais. Um companheiro com Surfar (MO02, do ${hmGymOf('surf')}º ginásio) leva você.`, color: '#93c5fd', t: 3 });
+        G.toasts.push({ text: `🌊 A água é funda demais. Um companheiro com Surf (HM02, do ${hmGymOf('surf')}º ginásio) leva você.`, color: '#93c5fd', t: 3 });
       }
       clampWorld(P);
     }
@@ -986,7 +986,7 @@ function updatePlayer(dt) {
   if (P.riding && (inDg || !activePet(P) || !G.allies.some(a => a.pet) || !canRide(activePet(P).pid) || G.evo)) P.riding = false;
   P.surfing = !inDg && !P.riding && isDeep(P.x, P.y) && petKnows(P, 'surf');
   P.wading = !inDg && !P.surfing && !P.riding && isWater(P.x, P.y);
-  if (P.surfing && !wasSurf) text(P.x, P.y - 44, `🌊 ${activePet(P).name} usou Surfar!`, '#93c5fd', 13);
+  if (P.surfing && !wasSurf) text(P.x, P.y - 44, `🌊 ${activePet(P).name} usou Surf!`, '#93c5fd', 13);
   const mw = mouseWorld();
   P.aim = Math.atan2(mw.y - P.y, mw.x - P.x);
   P.face = Math.cos(P.aim) >= 0 ? 1 : -1;
@@ -1409,14 +1409,14 @@ function render() {
     if (f.fill) { ctx.globalAlpha = a * 0.3; ctx.fillStyle = f.color; ctx.fill(); }
     ctx.globalAlpha = 1;
   }
-  // escuridão: noite, névoa das Terras Sombrias (Dissipar Névoa) e masmorras escuras (Lampejo)
+  // escuridão: noite, névoa das Terras Sombrias (Dissipar Névoa) e masmorras escuras (Flash)
   const flash = G.P && petKnows(G.P, 'flash');
   if (inDg) {
     const dg = dungeonAt(cam.x);
     if (dg && DARK_THEMES.includes(dg.theme)) drawNight(ox, oy, flash ? 460 : 175, 'rgba(0,0,0,0.88)');
   } else {
     const fog = (ZONES[zoneAt(cam.x, cam.y)] || {}).fog && !flash;
-    // à noite e na névoa quase não se enxerga sem Lampejo
+    // à noite e na névoa quase não se enxerga sem Flash
     if (isNight()) drawNight(ox, oy, flash ? 420 : 150, flash ? 'rgba(8,6,30,0.62)' : 'rgba(4,3,16,0.88)');
     else if (fog) drawNight(ox, oy, flash ? 380 : 180, flash ? 'rgba(70,60,90,0.6)' : 'rgba(45,38,60,0.84)');
   }
@@ -1633,7 +1633,7 @@ function drawHUD(ox, oy) {
         ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fdba74'; ctx.strokeStyle = '#000';
         outlined(EVENT_ICONS[ev.kind], a, b + 5);
       }
-      // passagens bloqueadas por MO (apagadas quando você já pode passar)
+      // passagens bloqueadas por HM (apagadas quando você já pode passar)
       if (!dg && P) {
         ctx.font = '10px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center';
         for (const g of GATES) {
@@ -1682,7 +1682,7 @@ function updatePanel() {
     <div class="ptype" title="Seu tipo define o que é super efetivo nos seus ataques e quais ataques te acertam forte">Tipo: ${typeBadge(pType(P))}${P.tempTypeT > 0 ? ` <span class="small">cristal ${Math.ceil(P.tempTypeT)}s (natural: ${TYPE_PT[P.ptype]})</span>` : ''}</div>`;
   const ab = curAbil(P), cd = abilCd(P);
   $('p-abil').innerHTML = `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>
-    <div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Voar: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
+    <div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Fly: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
   padFixDom($('p-abil'));
   if (!G.dirty) return;
   G.dirty = false;
@@ -1728,7 +1728,7 @@ function updatePanel() {
       const eevee = pt.pid === EEVEE;
       const evt = eevee ? (pt.lvl >= EEVEE_LVL ? 'aperte ✨ para evoluir (depende do seu tipo)' : `evolui no Nv ${EEVEE_LVL} (depende do seu tipo)`) : ev === undefined ? '' : ev ? (pt.lvl >= ev ? 'pronto para evoluir!' : `evolui no Nv ${ev}`) : 'forma final';
       const on = P.petAct.includes(i);
-      return `<div class="pet ${on ? 'on' : ''}" data-pet="${i}" title="${esc(pt.name)} (${TYPE_PT[pt.type]}) · ${evt}\nClique: ${on ? 'guardar' : 'chamar'}${i === P.petIdx ? ' · líder (MOs e montaria)' : ''} · Botão direito 2×: soltar">
+      return `<div class="pet ${on ? 'on' : ''}" data-pet="${i}" title="${esc(pt.name)} (${TYPE_PT[pt.type]}) · ${evt}\nClique: ${on ? 'guardar' : 'chamar'}${i === P.petIdx ? ' · líder (HMs e montaria)' : ''} · Botão direito 2×: soltar">
         <img src="${petIconUrl(pt.pid)}" alt=""><span>${esc(pt.name)} <b>Nv ${pt.lvl}</b></span>${typeBadge(pt.type)}
         <div class="pxp"><div style="width:${pt.lvl >= PET_MAX ? 100 : Math.min(100, pt.xp / petNeed(pt.lvl) * 100)}%"></div></div><i>${evt}</i>
         <div class="phm">${eevee && pt.lvl >= EEVEE_LVL ? `<button class="hmt pulse" data-eevee="${i}" title="Evoluir: vira a evolução do seu tipo atual (natural ou de cristal)">✨</button>` : ''}${HM_KEYS.map(k => (pt.hms || []).includes(k) ? `<span class="hmk" title="${HMS[k].nome}">${HMS[k].icon}</span>`
@@ -1993,7 +1993,7 @@ async function startGame(saved) {
     P = createPlayer(saved.name, { cls: saved.cls, race: saved.race, type: saved.ptype, attrs: saved.attrs, points: 0 });
     SAVE_FIELDS.forEach(k => { if (saved[k] !== undefined && saved[k] !== null) P[k] = saved[k]; });
     if (saved.talentOffer) P.talentOffer = saved.talentOffer;
-    // saves antigos: história e MOs eram globais, agora são por região
+    // saves antigos: história e HMs eram globais, agora são por região
     if (!saved.stories) P.stories = {};
     if (!saved.hmsR) P.hmsR = {};
     if (!Array.isArray(P.petAct)) P.petAct = P.petIdx >= 0 ? [P.petIdx] : [];
@@ -2013,9 +2013,9 @@ async function startGame(saved) {
   } else P = createPlayer(name, menuSel.hero);
   P.story = P.stories[REGION_ID] = P.stories[REGION_ID] || { ch: 0, done: false };
   P.hms = P.hmsR[REGION_ID] = (P.hmsR[REGION_ID] || []).filter(k => HMS[k]);
-  // saves de antes da 2ª cidade: quem já passou do 5º capítulo ganha a missão e a MO Voar
+  // saves de antes da 2ª cidade: quem já passou do 5º capítulo ganha a missão e a HM Fly
   if (P.story.ch > 5 || (P.story.ch === 5 && P.story.done)) { P.story.t2 = true; if (!P.hms.includes('fly')) P.hms.push('fly'); }
-  // a ordem das MOs mudou: quem já passou de um ginásio recebe a MO dele (ninguém perde as que já tem)
+  // a ordem das HMs mudou: quem já passou de um ginásio recebe a HM dele (ninguém perde as que já tem)
   for (let c = 1; c < P.story.ch; c++) if (HM_GYM[c] && !P.hms.includes(HM_GYM[c])) P.hms.push(HM_GYM[c]);
   if (!TOWNS[P.lastTown]) P.lastTown = 0;
   P.petAct = P.petAct.filter(i => P.pets[i]).slice(0, petSlots(P)); P.petIdx = P.petAct.length ? P.petAct[0] : -1;

@@ -69,7 +69,7 @@ const BUILDINGS = [
   { id: 'guilda', x: 140, y: 78, w: 132, h: 80, roof: '#5b3f6e', wall: '#efe6d6', sign: '📜' },
 ];
 
-// esconderijos com baú, cercados por um obstáculo de MO
+// esconderijos com baú, cercados por um obstáculo de HM
 const SECRETS = [
   { id: 's_cut1', k: 'cut', at: [11, 9.6] },
   { id: 's_cut2', k: 'cut', at: [6.5, 7] },
@@ -81,7 +81,7 @@ const SECRETS = [
   { id: 's_surf', k: 'surf', at: [4.5, 11.5] },
 ].map(sc => { const [x, y] = cellPt(...sc.at); return { ...sc, x, y, zone: 1 }; });
 const SECRET_AT = new Map();
-// bloqueios de MO nas rotas entre zonas (para o minimapa e as dicas)
+// bloqueios de HM nas rotas entre zonas (para o minimapa e as dicas)
 const GATES = [];
 const badgeCount = P => (P && P.story ? clamp(P.story.ch - 1 + (P.story.done ? 1 : 0), 0, 8) : 0);
 // insígnias somadas de todas as regiões
@@ -144,7 +144,7 @@ function wetAt(x, y) {
 }
 const isWater = (x, y) => x < DG_BASE - 5000 && tileKind(x, y) !== TK.BRIDGE && wetAt(x, y) > SHALLOW_T;
 const isDeep = (x, y) => x < DG_BASE - 5000 && tileKind(x, y) !== TK.BRIDGE && wetAt(x, y) > DEEP_T;
-// swim: bit 1 = entra na água funda (Surfar/voador/aquático), bit 2 = sobe cachoeira
+// swim: bit 1 = entra na água funda (Surf/voador/aquático), bit 2 = sobe cachoeira
 function solidAt(x, y, swim) {
   if (x > DG_BASE - 5000) return false;
   const sw = swim | 0, i = tileIdx(x, y);
@@ -223,7 +223,7 @@ function buildWorld() {
       if (pd < 34) {
         let mz = 0;
         for (let k = 0; k < 8; k++) mz = Math.max(mz, zoneRaw(wx + Math.cos(k * 0.785) * 520, wy + Math.sin(k * 0.785) * 520));
-        if (mz < 4) { TT[i] = TK.BRIDGE; onPath[i] = 1; TZ[i] = 1; } // perto de ilhas de zona 4+: Surfar
+        if (mz < 4) { TT[i] = TK.BRIDGE; onPath[i] = 1; TZ[i] = 1; } // perto de ilhas de zona 4+: Surf
       }
       continue;
     }
@@ -254,11 +254,11 @@ function buildWorld() {
       const j = tIdx(ix + dx, iy + dy);
       if (j < 0) continue;
       if (TT[j] === TK.SEA) sea = true;
-      // rio largo em volta da zona 4 (só Surfar atravessa); a divisa com a zona 5 é de penhasco (Portão da Liga)
+      // rio largo em volta da zona 4 (só Surf atravessa); a divisa com a zona 5 é de penhasco (Portão da Liga)
       if (TZ[j] >= 1 && TZ[j] <= 4 && z <= 4 && TZ[j] !== z && (TZ[j] === 4 || z === 4)) river = true;
       if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1 && TZ[j] >= 1 && TZ[j] !== z) bz = Math.max(bz, TZ[j], z);
     }
-    // progressão pelas MOs: zona 2 = Corte, zona 3 = Esmaga-Rocha, zona 4 = Surfar (rio), zona 5 = Portão da Liga (7 insígnias)
+    // progressão pelas HMs: zona 2 = Cut, zona 3 = Rock Smash, zona 4 = Surf (rio), zona 5 = Portão da Liga (7 insígnias)
     const gateK = bz >= 5 ? TK.GATE : bz === 4 ? TK.WATER : bz === 3 ? TK.CRACKED : TK.CUTTREE;
     if (river) {
       T2[i] = onPath[i] ? (bz ? gateK : TK.BRIDGE) : TK.WATER;
@@ -267,7 +267,7 @@ function buildWorld() {
     else if (bz) {
       const wx = (ix - OX + 0.5) * TILE, wy = (iy - OY + 0.5) * TILE;
       if (onPath[i]) { T2[i] = gateK; GATES.push({ x: wx, y: wy, k: bz >= 5 ? 'badge' : bz === 4 ? 'surf' : bz === 3 ? 'smash' : 'cut' }); continue; }
-      // trechos da divisa podem ser abertos com a mesma MO da rota (atalhos)
+      // trechos da divisa podem ser abertos com a mesma HM da rota (atalhos)
       const nb = vnoise(wx / 260 + 77, wy / 260 + 13) > 0.72;
       T2[i] = bz === 2 ? (nb ? TK.CUTTREE : TK.TREE) : bz === 3 && nb ? TK.CRACKED : TK.CLIFF;
     } else if (z === 5 && (sea || [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const j = tIdx(ix + dx, iy + dy); return j < 0 || TZ[j] < 1; }))) {

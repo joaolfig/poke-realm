@@ -146,7 +146,7 @@ const TYPE_THEME = {
   poison: 'ghost', psychic: 'psychic', fairy: 'psychic', ice: 'ice', rock: 'mine', ground: 'mine', steel: 'mine', fighting: 'mine',
   dragon: 'dragon', flying: 'dragon',
 };
-const DARK_THEMES = ['ghost', 'mine']; // masmorras escuras (Lampejo ilumina)
+const DARK_THEMES = ['ghost', 'mine']; // masmorras escuras (Flash ilumina)
 const THEME_IDS = [...new Set(Object.values(THEMES).flatMap(t => [...t.pool, t.boss]))];
 
 /* ============ Eventos do mundo ============ */

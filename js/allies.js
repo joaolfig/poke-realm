@@ -2,7 +2,7 @@
 /* ============ Companheiros ============
  * P.pets guarda até 4 Pokémon capturados ({ pid, name, type, lvl, xp }).
  * P.petAct lista os que estão fora da Pokébola (o talento Batalha em Equipe libera até 4);
- * o primeiro (P.petIdx) é o líder: usa MOs e serve de montaria.
+ * o primeiro (P.petIdx) é o líder: usa HMs e serve de montaria.
  * O ativo ganha XP com os abates, sobe de nível e evolui seguindo a cadeia de
  * evolução da PokeAPI. Em tempo de jogo, G.allies tem o ativo e os espíritos do Necromante.
  */
@@ -186,7 +186,7 @@ function syncPet() {
     if (!a && POKE[pt.pid]) { a = { pet: true, slot: i, pid: pt.pid, type: pt.type, lvl: pt.lvl, x: P.x - 30, y: P.y + 20, cd: 1 + n * 0.3, spT: 4 + n, t: 0, face: 1 }; G.allies.push(a); }
     if (a) a.lvl = pt.lvl;
   });
-  // o líder vai na frente da lista (montaria e MOs)
+  // o líder vai na frente da lista (montaria e HMs)
   G.allies.sort((a, b) => (b.pet && b.slot === P.petIdx) - (a.pet && a.slot === P.petIdx));
 }
 
@@ -359,7 +359,7 @@ function updateThrows(dt) {
     const e = b.e;
     if (e.dead || e.hp <= 0 || !G.emap.has(e.id)) { text(e.x, e.y - 20, 'A Poké Ball caiu no chão...', '#cbd5e1', 12); continue; }
     G.fx.push({ k: 'ring', x: e.x, y: e.y, r: 0, R: e.r + 20, life: 0.5, max: 0.5, color: b.k === 'ultra' ? '#facc15' : b.k === 'grande' ? '#60a5fa' : '#f87171' });
-    if (b.ok && G.P && G.P.pets.length < petCap(G.P)) capture(e, b.rollTxt);
+    if (b.ok && G.P && G.P.pets.length < petCap(G.P)) capture(e, b.rollTxt, b.k);
     else { text(e.x, e.y - e.h / 2 - 10, `Escapou! (${b.rollTxt.replace(/^\S+ /, '')})`, '#fca5a5', 13); e.flash = 0.2; burst(e.x, e.y, '#f87171', 10); sfx('pick'); }
   }
   G.throws = G.throws.filter(b => !b.done);
@@ -381,7 +381,7 @@ function drawThrows(ox, oy) {
   }
 }
 
-function capture(e, rollTxt) {
+function capture(e, rollTxt, k = 'poke') {
   const P = G.P;
   e.hp = 0; e.dead = true;
   const lvl = clamp(e.zone * 5 - 4 + randi(0, 2) + (e.alfa ? 3 : 0) + (e.kind === 4 ? 2 : 0), 1, 28);
@@ -396,6 +396,11 @@ function capture(e, rollTxt) {
   else if (NET.host && NET.host.open) NET.host.send({ t: 'cap', id: e.id });
   questProgress('captura', { types: e.p.types, zone: e.zone });
   questProgress('pegar', { pid: e.pid });
+  if (e.alfa) questProgress('pegaralfa');
+  questProgress('pesquisa', { pid: e.pid, zone: e.zone });
+  if (isNight()) questProgress('noturno', { zone: e.zone });
+  if (k !== 'poke') questProgress('bolaboa', { zone: e.zone });
+  storyCapture(P, e, k);
   G.dirty = true;
   saveGame();
 }

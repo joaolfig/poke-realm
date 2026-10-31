@@ -1,35 +1,35 @@
 'use strict';
-/* ============ MOs, pontos de voo, baús secretos e habilidades ============
- * As MOs são itens-chave reutilizáveis (P.hms). Cada companheiro só aprende
- * as MOs que aprenderia nos jogos (lista de golpes da PokeAPI: POKE[id].hm).
- * Só o companheiro ATIVO e que conhece a MO permite usar o efeito.
+/* ============ HMs, pontos de voo, baús secretos e habilidades ============
+ * As HMs são itens-chave reutilizáveis (P.hms). Cada companheiro só aprende
+ * as HMs que aprenderia nos jogos (lista de golpes da PokeAPI: POKE[id].hm).
+ * Só o companheiro ATIVO e que conhece a HM permite usar o efeito.
  */
 // move = nome do golpe na PokeAPI (usado para saber quem pode aprender)
-// Só 4 MOs, cada uma com um papel claro. Voar ficou nas montarias voadoras (como no Let's Go).
-// As MOs só vêm da história (uma por ginásio) e valem só na região onde foram ganhas (P.hms é da região atual).
-// Elas abrem o caminho entre as zonas: Corte -> zona 2, Esmaga-Rocha -> zona 3, Surfar -> zona 4.
+// Só 4 HMs, cada uma com um papel claro. Fly ficou nas montarias voadoras (como no Let's Go).
+// As HMs só vêm da história (uma por ginásio) e valem só na região onde foram ganhas (P.hms é da região atual).
+// Elas abrem o caminho entre as zonas: Cut -> zona 2, Rock Smash -> zona 3, Surf -> zona 4.
 // A zona 5 fica atrás do Portão da Liga, que só abre com 7 insígnias.
-// Ordem padrão (medida nos mapas): Corte no 1º (o 2º ginásio já fica na zona 2), Lampejo no 2º,
-// Esmaga-Rocha no 4º (zona 3 começa no Nv 14: 5º ginásio e 2ª cidade), Surfar no 6º (zona 4: 7º ginásio).
-// Hoenn tem ordem própria: a 2ª cidade (Porto dos Lírios) só se alcança pelo mar, então Surfar vem no 4º.
+// Ordem padrão (medida nos mapas): Cut no 1º (o 2º ginásio já fica na zona 2), Flash no 2º,
+// Rock Smash no 4º (zona 3 começa no Nv 14: 5º ginásio e 2ª cidade), Surf no 6º (zona 4: 7º ginásio).
+// Hoenn tem ordem própria: a 2ª cidade (Porto dos Lírios) só se alcança pelo mar, então Surf vem no 4º.
 const HM_GYM_BASE = { 1: 'cut', 2: 'flash', 4: 'smash', 6: 'surf' };
 const HM_GYM = { ...HM_GYM_BASE };
 const hmGymOf = k => +Object.keys(HM_GYM).find(n => HM_GYM[n] === k);
 const HM_ZONE = { cut: 2, smash: 3, surf: 4 };
 const HM_ICON = { cut: '✂️', smash: '🪨', surf: '🌊', flash: '💡', fly: '🪶' };
-// fala do líder ao entregar cada MO
+// fala do líder ao entregar cada HM
 const HM_LINES = {
-  cut: () => 'Leve esta MO e corte os arbustos que fecham a estrada. Daqui pra frente, o caminho só se abre para quem sabe usar Corte.',
-  smash: () => 'Rochas rachadas bloqueiam as passagens para as terras mais altas. Esmaga-Rocha abre caminho por elas.',
-  flash: () => 'Alguns ginásios são escuros como breu, e a noite aqui não perdoa. Com Lampejo você enxerga o que os outros não veem.',
-  surf: () => 'Um rio fundo separa as terras mais perigosas. Com Surfar, seu companheiro te leva pela água até lá.',
+  cut: () => 'Leve esta HM e corte os arbustos que fecham a estrada. Daqui pra frente, o caminho só se abre para quem sabe usar Cut.',
+  smash: () => 'Rochas rachadas bloqueiam as passagens para as terras mais altas. Rock Smash abre caminho por elas.',
+  flash: () => 'Alguns ginásios são escuros como breu, e a noite aqui não perdoa. Com Flash você enxerga o que os outros não veem.',
+  surf: () => 'Um rio fundo separa as terras mais perigosas. Com Surf, seu companheiro te leva pela água até lá.',
 };
 // o que falta para chegar a uma zona
 function needFor(P, z) {
   const miss = [];
-  if (z >= 2 && !P.hms.includes('cut')) miss.push('Corte');
-  if (z >= 3 && !P.hms.includes('smash')) miss.push('Esmaga-Rocha');
-  if (z >= 4 && !P.hms.includes('surf')) miss.push('Surfar');
+  if (z >= 2 && !P.hms.includes('cut')) miss.push('Cut');
+  if (z >= 3 && !P.hms.includes('smash')) miss.push('Rock Smash');
+  if (z >= 4 && !P.hms.includes('surf')) miss.push('Surf');
   if (z >= 5 && badgeCount(P) < 7) miss.push(`7 insígnias (você tem ${badgeCount(P)})`);
   return miss;
 }
@@ -37,27 +37,27 @@ function needFor(P, z) {
 function pathChecklist(P) {
   const row = (ok, txt) => `<div class="small" style="color:${ok ? '#86efac' : '#fca5a5'}">${ok ? '✔' : '✖'} ${txt}</div>`;
   return '<h4>Caminhos</h4>'
-    + row(P.hms.includes('cut'), `✂️ Corte abre as rotas para ${ZONES[2].nome} (${hmGymOf('cut')}º ginásio)`)
-    + row(P.hms.includes('smash'), `🪨 Esmaga-Rocha abre as rotas para ${ZONES[3].nome} (${hmGymOf('smash')}º ginásio)`)
-    + row(P.hms.includes('surf'), `🌊 Surfar atravessa o rio até ${ZONES[4].nome}, o mar e as ilhas distantes (${hmGymOf('surf')}º ginásio)`)
+    + row(P.hms.includes('cut'), `✂️ Cut abre as rotas para ${ZONES[2].nome} (${hmGymOf('cut')}º ginásio)`)
+    + row(P.hms.includes('smash'), `🪨 Rock Smash abre as rotas para ${ZONES[3].nome} (${hmGymOf('smash')}º ginásio)`)
+    + row(P.hms.includes('surf'), `🌊 Surf atravessa o rio até ${ZONES[4].nome}, o mar e as ilhas distantes (${hmGymOf('surf')}º ginásio)`)
     + row(badgeCount(P) >= 7, `🏅 O Portão da Liga para ${ZONES[5].nome} abre com 7 insígnias (você tem ${badgeCount(P)})`)
-    + row(P.hms.includes('flash'), `💡 Lampejo ilumina ginásios escuros, a noite e a névoa (${hmGymOf('flash')}º ginásio)`)
-    + row(P.hms.includes('fly'), `🪶 Voar leva você a qualquer cidade já visitada com [V] (missão em ${TOWNS[1] ? TOWNS[1].nome : 'outra cidade'})`)
-    + '<div class="small">MOs só funcionam com um companheiro que as saiba fora da Poké Ball (ensine no painel). Os bloqueios aparecem no minimapa.</div>';
+    + row(P.hms.includes('flash'), `💡 Flash ilumina ginásios escuros, a noite e a névoa (${hmGymOf('flash')}º ginásio)`)
+    + row(P.hms.includes('fly'), `🪶 Fly leva você a qualquer cidade já visitada com [V] (missão em ${TOWNS[1] ? TOWNS[1].nome : 'outra cidade'})`)
+    + '<div class="small">HMs só funcionam com um companheiro que as saiba fora da Poké Ball (ensine no painel). Os bloqueios aparecem no minimapa.</div>';
 }
 const HMS = {
-  cut: { mo: 'MO01', move: 'cut', nome: 'Corte', icon: '✂️', preco: 120, ch: 0, desc: 'Corta arvorezinhas que bloqueiam atalhos e baús ([E] perto delas).' },
-  surf: { mo: 'MO02', move: 'surf', nome: 'Surfar', icon: '🌊', preco: 300, ch: 3, desc: 'Atravesse águas fundas montado no companheiro. Surfando, [E] nos pontos escuros mergulha atrás de tesouros.' },
-  smash: { mo: 'MO03', move: 'rock-smash', nome: 'Esmaga-Rocha', icon: '🪨', preco: 150, ch: 0, desc: 'Quebra rochas rachadas ([E]); às vezes há itens dentro.' },
-  fly: { mo: 'MO05', move: 'fly', nome: 'Voar', icon: '🪶', preco: 0, ch: 5, desc: 'Com um companheiro voador fora da Poké Ball que saiba Voar, [V] leva você a qualquer cidade já visitada.' },
-  flash: { mo: 'MO04', move: 'flash', nome: 'Lampejo', icon: '💡', preco: 200, ch: 2, desc: 'Ilumina masmorras escuras e a noite, e dissipa a névoa das áreas sombrias.' },
+  cut: { mo: 'HM01', move: 'cut', nome: 'Cut', icon: '✂️', preco: 120, ch: 0, desc: 'Corta arvorezinhas que bloqueiam atalhos e baús ([E] perto delas).' },
+  surf: { mo: 'HM02', move: 'surf', nome: 'Surf', icon: '🌊', preco: 300, ch: 3, desc: 'Atravesse águas fundas montado no companheiro. Surfando, [E] nos pontos escuros mergulha atrás de tesouros.' },
+  smash: { mo: 'HM03', move: 'rock-smash', nome: 'Rock Smash', icon: '🪨', preco: 150, ch: 0, desc: 'Quebra rochas rachadas ([E]); às vezes há itens dentro.' },
+  fly: { mo: 'HM05', move: 'fly', nome: 'Fly', icon: '🪶', preco: 0, ch: 5, desc: 'Com um companheiro voador fora da Poké Ball que saiba Fly, [V] leva você a qualquer cidade já visitada.' },
+  flash: { mo: 'HM04', move: 'flash', nome: 'Flash', icon: '💡', preco: 200, ch: 2, desc: 'Ilumina masmorras escuras e a noite, e dissipa a névoa das áreas sombrias.' },
 };
 const HM_KEYS = Object.keys(HMS);
 const HM_MOVES = Object.fromEntries(Object.entries(HMS).map(([k, h]) => [h.move, k]));
 const activePet = P => (P && P.petIdx >= 0 ? P.pets[P.petIdx] || null : null);
-// Voar: qualquer Pokémon do tipo Voador aprende
+// Fly: qualquer Pokémon do tipo Voador aprende
 const canLearn = (pid, k) => !!(POKE[pid] && (k === 'fly' ? POKE[pid].types.includes('flying') : POKE[pid].hm && POKE[pid].hm.includes(k)));
-// qualquer companheiro fora da Pokébola que saiba a MO serve (desde que você tenha a MO desta região)
+// qualquer companheiro fora da Pokébola que saiba a HM serve (desde que você tenha a HM desta região)
 function petKnows(P, k) {
   if (!P || !P.hms.includes(k) || G.evo) return false;
   return G.allies.some(a => a.pet && P.pets[a.slot] && (P.pets[a.slot].hms || []).includes(k));
@@ -142,9 +142,9 @@ function drawLandmarks(ox, oy) {
 function openFly() {
   const P = G.P;
   if (inDungeonArea(P.x)) return G.toasts.push({ text: 'Não dá para voar dentro de uma masmorra.', color: '#fca5a5', t: 2 });
-  if (!P.hms.includes('fly')) return G.toasts.push({ text: `Você ainda não tem a MO05 Voar. Ela é entregue em ${TOWNS[1] ? TOWNS[1].nome : 'outra cidade'} durante a história.`, color: '#fca5a5', t: 3.5 });
-  if (!petKnows(P, 'fly')) return G.toasts.push({ text: 'Para voar, deixe fora da Poké Ball um companheiro voador que saiba Voar (ensine no painel).', color: '#fca5a5', t: 3 });
-  if (P.flyCd > 0) return G.toasts.push({ text: `Seu companheiro está cansado. Voar de novo em ${Math.ceil(P.flyCd)}s.`, color: '#fca5a5', t: 2 });
+  if (!P.hms.includes('fly')) return G.toasts.push({ text: `Você ainda não tem a HM05 Fly. Ela é entregue em ${TOWNS[1] ? TOWNS[1].nome : 'outra cidade'} durante a história.`, color: '#fca5a5', t: 3.5 });
+  if (!petKnows(P, 'fly')) return G.toasts.push({ text: 'Para voar, deixe fora da Poké Ball um companheiro voador que saiba Fly (ensine no painel).', color: '#fca5a5', t: 3 });
+  if (P.flyCd > 0) return G.toasts.push({ text: `Seu companheiro está cansado. Fly de novo em ${Math.ceil(P.flyCd)}s.`, color: '#fca5a5', t: 2 });
   G.npcOpen = 'fly'; G.npcRef = null;
   $('npc').classList.remove('hidden');
   renderNPC();
@@ -152,10 +152,10 @@ function openFly() {
 function renderFly(P) {
   const rows = LANDMARKS.filter(l => P.fly.includes(l.id)).map(l => {
     const d0 = Math.round(Math.hypot(l.x - P.x, l.y - P.y) / 32);
-    return `<div class="shoprow"><span>📍 ${l.nome} <i>${d0}m</i></span><button data-act="fly:${l.id}">Voar</button></div>`;
+    return `<div class="shoprow"><span>📍 ${l.nome} <i>${d0}m</i></span><button data-act="fly:${l.id}">Fly</button></div>`;
   }).join('');
   const pt = P.pets.find((x, i) => P.petAct.includes(i) && (x.hms || []).includes('fly')) || activePet(P);
-  return `<div class="npc-head"><span>🪶 <b>Voar com ${esc(pt ? pt.name : '')}</b></span><button data-act="close" title="Fechar (Esc)">✕</button></div>
+  return `<div class="npc-head"><span>🪶 <b>Fly com ${esc(pt ? pt.name : '')}</b></span><button data-act="close" title="Fechar (Esc)">✕</button></div>
     ${rows}<div class="small">Toda cidade que você visita vira um destino. Novas cidades aparecem quando você passa perto delas.</div>`;
 }
 function flyTo(P, id) {
@@ -170,11 +170,11 @@ function flyTo(P, id) {
   burst(P.x, P.y, '#e0f2fe', 30);
   G.shake = 6;
   P.flyCd = 15;
-  G.toasts.push({ text: `🪶 ${pt.name} usou Voar! Você pousou em ${l.nome}.`, color: '#93c5fd', t: 3 });
+  G.toasts.push({ text: `🪶 ${pt.name} usou Fly! Você pousou em ${l.nome}.`, color: '#93c5fd', t: 3 });
   sfx('pot');
 }
 
-/* ---------- Obstáculos de MO ---------- */
+/* ---------- Obstáculos de HM ---------- */
 const tileXY = i => [(i % NX - OX + 0.5) * TILE, (Math.floor(i / NX) - OY + 0.5) * TILE];
 const HM_TILE = { [TK.CUTTREE]: 'cut', [TK.CRACKED]: 'smash', [TK.DIVE]: 'dive', [TK.CHEST]: 'chest' };
 const hmNeed = k => (k === 'dive' ? 'surf' : k);
@@ -364,7 +364,7 @@ function petTip(P, i) {
     <div>🌀 ${ab ? `<b>${ab.nome}</b>: ${Math.round(ab.ch * 100)}% por acerto de ${STATUS[ab.st].txt}` : 'Sem habilidade especial'}</div>
     <div>🧬 ${evt} · XP ${pt.xp}/${petNeed(pt.lvl)}</div>
     ${petIsFlyer(pt.pid) ? '<div>🪽 Voa sobre a água</div>' : ''}
-    <div class="tip-hm"><b>MOs</b>${hm}</div>`;
+    <div class="tip-hm"><b>HMs</b>${hm}</div>`;
 }
 // passar o mouse sobre o companheiro no mapa mostra um resumo
 function drawPetHover(ox, oy) {
@@ -376,7 +376,7 @@ function drawPetHover(ox, oy) {
   if (!pt) return;
   const ab = petAbility(pt.pid);
   const lines = [`${pt.name} · Nv ${pt.lvl} · ${TYPE_PT[pt.type]}`, `Especial: ${MOVES[pt.type] || 'Investida'}`, ab ? `Habilidade: ${ab.nome}` : 'Sem habilidade',
-    'MOs: ' + (HM_KEYS.filter(k => pt.hms && pt.hms.includes(k)).map(k => HMS[k].icon + ' ' + HMS[k].nome).join(', ') || 'nenhuma')];
+    'HMs: ' + (HM_KEYS.filter(k => pt.hms && pt.hms.includes(k)).map(k => HMS[k].icon + ' ' + HMS[k].nome).join(', ') || 'nenhuma')];
   ctx.font = '12px Barlow Semi Condensed, system-ui';
   const w = Math.max(...lines.map(s => ctx.measureText(s).width)) + 16, x = a.x + ox + 20, y = a.y + oy - 70;
   ctx.fillStyle = 'rgba(15,11,26,.92)'; ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1.5;

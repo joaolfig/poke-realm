@@ -1,7 +1,7 @@
 'use strict';
 /* ============ Arena PvP ============
  * Uma ilha cercada de penhascos embaixo do mapa (zona 6), com obstáculos simétricos que
- * pedem MOs: lagos fundos (Surfar), arbustos (Corte), rochas rachadas (Esmaga-Rocha),
+ * pedem HMs: lagos fundos (Surf), arbustos (Cut), rochas rachadas (Rock Smash),
  * pedras grandes para se cobrir e mato alto para se esconder.
  * No multiplayer, um jogador desafia outros pelo painel; quem aceita é levado à arena.
  * Lá dentro os tiros dos jogadores se acertam. Perder NÃO apaga o personagem:
@@ -23,13 +23,13 @@ function carveArena() {
   }
   // tudo espelhado entre a esquerda e a direita
   const mir = (i, j, k) => { set(i, j, k); set(ARENA_W - 1 - i, j, k); };
-  // lago central fundo (só Surfar atravessa pelo meio) e dois laguinhos
+  // lago central fundo (só Surf atravessa pelo meio) e dois laguinhos
   for (let j = 11; j <= 22; j++) for (let i = 21; i <= 28; i++) if (((i - 24.5) / 4.2) ** 2 + ((j - 16.5) / 6) ** 2 < 1) set(i, j, TK.WATER);
   for (const [ci, cj] of [[12, 6], [12, 27]]) for (let j = cj - 2; j <= cj + 2; j++) for (let i = ci - 3; i <= ci + 3; i++) if (((i - ci) / 3.2) ** 2 + ((j - cj) / 2.2) ** 2 < 1) mir(i, j, TK.WATER);
-  // muros de arbustos (Corte) protegendo as bases
+  // muros de arbustos (Cut) protegendo as bases
   for (let j = 10; j <= 23; j++) if (j < 15 || j > 18) mir(8, j, TK.CUTTREE);
   for (let i = 15; i <= 19; i++) { mir(i, 4, TK.CUTTREE); mir(i, 29, TK.CUTTREE); }
-  // rochas rachadas (Esmaga-Rocha) fechando atalhos
+  // rochas rachadas (Rock Smash) fechando atalhos
   for (const [i, j] of [[18, 13], [18, 14], [18, 19], [18, 20], [5, 4], [6, 4], [5, 29], [6, 29]]) mir(i, j, TK.CRACKED);
   // pedras grandes para se cobrir
   for (const [i, j] of [[13, 15], [13, 18], [16, 9], [16, 24], [21, 6], [21, 27], [4, 12], [4, 21]]) mir(i, j, TK.BOULDER);
