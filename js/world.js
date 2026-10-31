@@ -60,7 +60,7 @@ function closeNPC() { G.npcOpen = null; G.npcRef = null; $('npc').classList.add(
 // loja de Poké Balls (a antiga curandeira): bolas e vagas extras de companheiro
 function ballShop(P) {
   return [
-    { id: 'ball', nome: 'Poké Ball', icon: '⚪', preco: 30 },
+    { id: 'ball', nome: 'Poké Ball (fraca nas zonas 3-5)', icon: '⚪', preco: 30 },
     { id: 'grande', nome: 'Great Ball (+3 na captura)', icon: '🔵', preco: 70 },
     { id: 'ultra', nome: 'Ultra Ball (+6 na captura)', icon: '🟡', preco: 150, lock: P.lvl < 8 },
     ...(petCap(P) < PET_CAP_MAX ? [{ id: 'cinto', nome: `Cinto de Poké Balls: +1 vaga de companheiro (${petCap(P)} → ${petCap(P) + 1})`, icon: '🎒', preco: CINTO_PRECO[petCap(P)] }] : []),

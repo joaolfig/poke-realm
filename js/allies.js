@@ -277,6 +277,8 @@ function allyHit(e, a, sp) {
 }
 
 /* ---------- Captura ---------- */
+// penalidade da Poké Ball comum por zona (com o nível recomendado e o alvo quase sem vida: ~15% na zona 3, ~10% na 4, só 20 natural na 5)
+const POKE_BALL_PEN = { 3: 11, 4: 13, 5: 16 };
 const BALLS = { poke: { nome: 'Poké Ball', icon: '⚪', bonus: 0 }, grande: CONS.grande, ultra: CONS.ultra };
 // [C] / LB: troca o companheiro líder pelo próximo que está na Poké Ball (se todos já estão fora, passa a liderança)
 function cyclePet() {
@@ -337,8 +339,11 @@ function throwBall() {
   G.dirty = true;
   // rolagem de captura: d20 + nível/2 + bônus da bola contra uma CD que cai com a vida do alvo
   const dc = 8 + e.zone * 2 + (e.alfa ? 4 : 0) + Math.round(e.hp / e.maxHp * 10) - (e.kind === 4 ? 6 : 0);
-  const nat = d(20), total = nat + Math.floor(P.lvl / 2) + (hasT(P, 'domador') ? 4 : 0) + BALLS[k].bonus + M(P, 'cap');
-  const ok = nat === 20 || total >= dc, rollTxt = `${BALLS[k].icon} 🎲 ${nat}+${total - nat} vs CD ${dc}`;
+  // a Poké Ball comum quase não segura Pokémon das zonas 3-5 (empurra o jogador para Great e Ultra Ball)
+  const pen = k === 'poke' ? (POKE_BALL_PEN[e.zone] || 0) : 0;
+  const nat = d(20), total = nat + Math.floor(P.lvl / 2) + (hasT(P, 'domador') ? 4 : 0) + BALLS[k].bonus + M(P, 'cap') - pen;
+  const ok = nat === 20 || total >= dc, rollTxt = `${BALLS[k].icon} 🎲 ${nat}${total - nat >= 0 ? '+' : ''}${total - nat} vs CD ${dc}${pen ? ` (Poké Ball −${pen} nesta zona)` : ''}`;
+  if (pen && !ok && !G.ballTip) { G.ballTip = 1; G.toasts.push({ text: '⚪ A Poké Ball comum é fraca demais para os Pokémon desta zona. Use Great 🔵 ou Ultra Ball 🟡 (vendidas na loja de Poké Balls; troque a bola com [G] ou B no controle).', color: '#fde68a', t: 8 }); }
   // a bola voa em arco até o Pokémon; o resultado sai quando ela chega
   const dist = Math.hypot(e.x - P.x, e.y - P.y);
   G.throws = G.throws || [];
