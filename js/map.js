@@ -22,11 +22,22 @@ const MACRO = [
   '~~~~1111111111~~~~~~',
   '~~~~~~~~~~~~~~~~~~~~',
 ];
-// mundo de ~16800 x 11800 px (a vila fica no canto entre as células 8/9 e 10/11)
-const CELL = 840, WX0 = -9 * CELL, WY0 = -11 * CELL, WX1 = WX0 + 20 * CELL, WY1 = WY0 + 14 * CELL;
-const OX = -Math.floor(WX0 / TILE), OY = -Math.floor(WY0 / TILE);
-const NX = Math.floor(WX1 / TILE) + OX + 1, NY = Math.floor(WY1 / TILE) + OY + 1;
+// células de 840px; o tamanho da grade e a posição da vila mudam por região (setGeo)
+const CELL = 840;
+let WX0 = -9 * CELL, WY0 = -11 * CELL, WX1 = WX0 + 20 * CELL, WY1 = WY0 + 14 * CELL;
+let OX = -Math.floor(WX0 / TILE), OY = -Math.floor(WY0 / TILE);
+let NX = Math.floor(WX1 / TILE) + OX + 1, NY = Math.floor(WY1 / TILE) + OY + 1;
 const cellPt = (cx, cy) => [WX0 + cx * CELL, WY0 + cy * CELL];
+// aplica a geografia de uma região: grade, vila (célula na origem), rotas e baús secretos
+function setGeo(geo) {
+  replaceArr(MACRO, geo.macro);
+  const [vx, vy] = geo.vila, cols = MACRO[0].length, rows = MACRO.length;
+  WX0 = -vx * CELL; WY0 = -vy * CELL; WX1 = WX0 + cols * CELL; WY1 = WY0 + rows * CELL;
+  OX = -Math.floor(WX0 / TILE); OY = -Math.floor(WY0 / TILE);
+  NX = Math.floor(WX1 / TILE) + OX + 1; NY = Math.floor(WY1 / TILE) + OY + 1;
+  replaceArr(ROUTES, geo.routes.map(r => r.map(([cx, cy]) => cellPt(cx, cy))));
+  replaceArr(SECRETS, geo.secrets.map(([k, cx, cy], i) => { const [x, y] = cellPt(cx, cy); return { id: `s_${k}${i}`, k, x, y, zone: 1 }; }));
+}
 
 const TK = { GRASS: 0, TALL: 1, PATH: 2, WATER: 3, TREE: 4, ROCK: 5, FLOWER: 6, PLAZA: 7, FENCE: 8, CLIFF: 9, SAND: 10, DEAD: 11, GRAVE: 12, CRYSTAL: 13, BRIDGE: 14, PINE: 15, SNOW: 16, SEA: 17, CUTTREE: 18, CRACKED: 19, BOULDER: 20, WATERFALL: 21, DIVE: 22, CHEST: 23, DTREE: 24, POND: 25 };
 // barreiras só onde têm função: fronteiras (progresso), anéis dos baús (loot), água funda e prédios.
@@ -71,7 +82,7 @@ const inTown = (x, y) => x * x + y * y < VILA_R * VILA_R;
 const MZ = { '~': -1, L: -2, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, V: 1 };
 function macroAt(x, y) {
   const cx = Math.floor((x - WX0) / CELL), cy = Math.floor((y - WY0) / CELL);
-  if (cy < 0 || cy >= MACRO.length || cx < 0 || cx >= 20) return -1;
+  if (cy < 0 || cy >= MACRO.length || cx < 0 || cx >= MACRO[0].length) return -1;
   return MZ[MACRO[cy][cx]];
 }
 function zoneRaw(x, y) {
@@ -227,12 +238,13 @@ function buildWorld() {
     const i = iy * NX + ix, z = TZ[i], x = (ix - OX + 0.5) * TILE, y = (iy - OY + 0.5) * TILE;
     if (z >= 1 && !solidAt(x, y) && !isWater(x, y)) ZPTS[z].push([x, y]);
   }
-  // minimapa (160 x 112)
+  // minimapa: 160 de largura, altura proporcional à região
+  const MH = Math.round(160 * (WY1 - WY0) / (WX1 - WX0));
   MINIMAP = document.createElement('canvas');
-  MINIMAP.width = 160; MINIMAP.height = 112;
+  MINIMAP.width = 160; MINIMAP.height = MH;
   const mx = MINIMAP.getContext('2d');
-  for (let y = 0; y < 112; y++) for (let x = 0; x < 160; x++) {
-    const wx = WX0 + (x + 0.5) / 160 * (WX1 - WX0), wy = WY0 + (y + 0.5) / 112 * (WY1 - WY0);
+  for (let y = 0; y < MH; y++) for (let x = 0; x < 160; x++) {
+    const wx = WX0 + (x + 0.5) / 160 * (WX1 - WX0), wy = WY0 + (y + 0.5) / MH * (WY1 - WY0);
     const k = tileKind(wx, wy), z = zoneAt(wx, wy);
     mx.fillStyle = k === TK.SEA ? '#1c4870' : k === TK.WATER || k === TK.POND ? '#2f6fb8' : k === TK.PATH || k === TK.BRIDGE ? '#e6d3a3' : k === TK.SAND ? '#e8d9a0'
       : k === TK.TREE || k === TK.PINE || k === TK.CUTTREE || k === TK.DTREE ? '#1f5a2a' : k === TK.CLIFF ? '#6d5d48' : z === 0 ? '#d6cfc0' : k === TK.TALL ? shade(ZONES[Math.max(1, z)].cols[0], 0.8) : ZONES[Math.max(0, z)].cols[1];

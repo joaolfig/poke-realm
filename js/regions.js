@@ -22,8 +22,6 @@ const BIOMES = {
 const ZONE_LVL = [1, 1, 7, 14, 21, 26];
 const lvlZone = l => (l < 7 ? 1 : l < 14 ? 2 : l < 21 ? 3 : l < 26 ? 4 : 5);
 
-// posições (em células do mapa) dos ginásios 1-8 e do capítulo final, todas sobre as rotas
-const GYM_AT = [[12, 10.5], [6, 10.5], [8.5, 7.5], [16.5, 7.5], [2.5, 7.5], [13, 5.5], [17, 3], [4, 1.5], [10.5, 2]];
 const GYM_LVL = [4, 7, 10, 13, 16, 20, 23, 26, 29];
 const GYM_ZONE = [1, 2, 2, 3, 3, 4, 4, 5, 5];
 
@@ -42,23 +40,7 @@ const REGIONS = {
     nome: 'Kanto', sub: 'Gerações I · onde tudo começou', vila: 'Vila Alvorada',
     guia: { nome: 'Professora Alecrim', spr: { h: '#9ca3af', b: '#f1f5f9', d: '#64748b' } },
     artesao: 'Mestre Ferro-Velho',
-    zonas: [['Campos de Alvorada', 'campo'], ['Floresta Esmeralda', 'floresta'], ['Monte Lunar', 'montanha'], ['Pântano Fantasma', 'sombrio'], ['Estrada da Vitória', 'montanha']],
-    macro: [
-      '~~~~~~~~~~~~~~~~~~~~',
-      '~~~555~~~5555~~~444~',
-      '~~5555443355553344~~',
-      '~~4444333LL3333444~~',
-      '~~44423333333333444~',
-      '~~22222333333332222~',
-      '~~2222LL22222222222~',
-      '~~22222222222222222~',
-      '~~222211111111222~~~',
-      '~~2211111111111122~~',
-      '~~~11111VV111111~~~~',
-      '~~~~1111VV1111~~~~~~',
-      '~~~~~~111111~~~~~~~~',
-      '~~~~~~~~~~~~~~~~~~~~',
-    ],
+    zonas: [['Campos de Alvorada', 'campo'], ['Monte Lunar e Bosques', 'floresta'], ['Zona Safári', 'pantano'], ['Terras Assombradas', 'sombrio'], ['Estrada da Vitória', 'montanha']],
     pools: {
       1: [16, 19, 10, 13, 21, 29, 32, 43, 69, 39, 52, 56, 25],
       2: [11, 14, 12, 15, 46, 48, 23, 27, 41, 74, 37, 58, 84, 96],
@@ -87,8 +69,8 @@ const REGIONS = {
       prologo: `A <b>Equipe Rubra</b> anda roubando Pokémon pelas estradas de Kanto, e ninguém sabe para quê.
         A Professora Alecrim acredita que os oito líderes de ginásio sabem de alguma coisa. Vença cada um, ganhe a confiança deles e descubra o plano da Rubra.`,
       caps: [
-        ['Granito, o líder de pedra, desconfia de forasteiros. Prove seu valor no ginásio a leste da vila.', 'Granito conta que a Rubra comprou todas as Pedras-Lua da região. "Para que alguém precisa de tantas?"'],
-        ['A Líder Marisa viu barcos da Rubra no rio. Ela só fala com quem vencer suas cascatas.', 'Marisa mostra um mapa molhado: a Rubra leva os Pokémon roubados para o norte, passando pela Floresta Esmeralda.'],
+        ['Granito, o líder de pedra, desconfia de forasteiros. Prove seu valor na Cidade de Pedra, seguindo a estrada ao norte da vila.', 'Granito conta que a Rubra comprou todas as Pedras-Lua da região. "Para que alguém precisa de tantas?"'],
+        ['A Líder Marisa viu barcos da Rubra no rio. Ela só fala com quem vencer suas cascatas.', 'Marisa mostra um mapa molhado: a Rubra leva os Pokémon roubados para o norte, passando pelo Monte Lunar.'],
         ['O Tenente Faísca guarda a usina que abastece Kanto. A Rubra tentou sabotá-la ontem à noite.', 'Faísca prendeu um capanga, que repetia sem parar: "o chefe vai criar o Pokémon mais forte do mundo".'],
         ['Flora cuida da estufa onde se fazem os remédios da região. Agentes da Rubra foram vistos rondando por lá.', 'Flora descobre que a Rubra roubou amostras genéticas da estufa. Eles não querem só roubar Pokémon. Querem criar um.'],
         ['O ninja Kogen conhece todos os segredos do pântano. Dizem que a Rubra tem um esconderijo lá.', 'Kogen derruba uma parede falsa e revela anotações de um laboratório: "Projeto Clone, fase final".'],
@@ -105,23 +87,7 @@ const REGIONS = {
     nome: 'Johto', sub: 'Geração II · tradição e lendas', vila: 'Vila dos Ventos',
     guia: { nome: 'Professor Ipê', spr: { h: '#78350f', b: '#fef3c7', d: '#b45309' } },
     artesao: 'Artesã das Bolas',
-    zonas: [['Trilhas do Vento', 'campo'], ['Bosque Antigo', 'floresta'], ['Lago Gélido', 'neve'], ['Ruínas Sombrias', 'sombrio'], ['Pico Prateado', 'montanha']],
-    macro: [
-      '~~~~~~~~~~~~~~~~~~~~',
-      '~~5555~~~33333~4444~',
-      '~555554333333334444~',
-      '~5544433LLL33334444~',
-      '~44433333333333344~~',
-      '~222222333333332222~',
-      '~222222222222222222~',
-      '~22222222222L22222~~',
-      '~~2222111111112222~~',
-      '~~~2111111111111L2~~',
-      '~~111111VV1111111~~~',
-      '~~~11111VV111111~~~~',
-      '~~~~~111111111~~~~~~',
-      '~~~~~~~~~~~~~~~~~~~~',
-    ],
+    zonas: [['Trilhas do Vento', 'campo'], ['Bosque Antigo', 'floresta'], ['Costa Oeste e Monte Mortar', 'montanha'], ['Caminho Gelado', 'neve'], ['Pico Prateado e Redemoinhos', 'sombrio']],
     pools: {
       1: [161, 163, 165, 167, 16, 19, 187, 191, 179, 10, 13, 172, 21],
       2: [162, 164, 166, 168, 41, 74, 204, 190, 203, 209, 206, 69, 43, 48, 214],
@@ -150,7 +116,7 @@ const REGIONS = {
       prologo: `Os sinos das torres antigas de Johto pararam de tocar. Dizem que os <b>Corvos da Meia-Noite</b> roubaram as plumas sagradas que acalmam o Guardião dos Mares.
         O Professor Ipê pede que você percorra os oito ginásios: cada líder guarda um pedaço da lenda.`,
       caps: [
-        ['Plumo, o líder dos pássaros, viu os Corvos voando para o oeste. Ele treina no ginásio a leste da vila.', 'Plumo mostra uma pena prateada caída no ginásio. "Isso não é de nenhum pássaro comum. É uma pluma sagrada."'],
+        ['Plumo, o líder dos pássaros, viu os Corvos voando para o oeste. Ele treina na Cidade Violeta, a noroeste da vila.', 'Plumo mostra uma pena prateada caída no ginásio. "Isso não é de nenhum pássaro comum. É uma pluma sagrada."'],
         ['O Líder Zumbi cuida do bosque onde a pluma foi achada. Os Corvos estão capturando os insetos de lá.', 'Zumbi encontra um bilhete dos Corvos: "Com as plumas, chamaremos o Guardião e controlaremos o mar."'],
         ['Clarinha e sua Miltank seguram as fazendas da região. Os Corvos querem os rebanhos para alimentar seus Pokémon.', 'Clarinha conta que os Corvos usam uma rádio pirata para dar ordens. O sinal vem das ruínas ao norte.'],
         ['Morfeu, o vidente, fala com os espíritos das torres queimadas. Eles sabem onde estão as plumas.', 'Os espíritos sussurram: duas plumas já estão com os Corvos. Falta uma, escondida no farol.'],
@@ -168,23 +134,7 @@ const REGIONS = {
     nome: 'Hoenn', sub: 'Geração III · mar, vulcões e céu', vila: 'Vila Musgo',
     guia: { nome: 'Professora Restinga', spr: { h: '#92400e', b: '#bbf7d0', d: '#15803d' } },
     artesao: 'Ferreiro do Vulcão',
-    zonas: [['Litoral Tropical', 'campo'], ['Selva Densa', 'floresta'], ['Deserto de Cinzas', 'deserto'], ['Vulcão Rubro', 'vulcao'], ['Caverna da Vitória', 'montanha']],
-    macro: [
-      '~~~~~~~~~~~~~~~~~~~~',
-      '~~5555~~5555~~~~33~~',
-      '~~5554445555~~~333~~',
-      '~~44444433L3~LL333~~',
-      '~~44433333333L33322~',
-      '~22223333L333333222~',
-      '~22LL22222222L2L222~',
-      '~22222L2222222~2222~',
-      '~~222111111112L22~~~',
-      '~~221111111111112L~~',
-      '~~111111VV1111111~~~',
-      '~~~11L11VV111111~~~~',
-      '~~~~1111111111~~~~~~',
-      '~~~~~~~~~~~~~~~~~~~~',
-    ],
+    zonas: [['Litoral Tropical', 'campo'], ['Selva Densa', 'floresta'], ['Deserto e Céu do Norte', 'deserto'], ['Vulcão Rubro', 'vulcao'], ['Ilhas do Alto-Mar', 'montanha']],
     pools: {
       1: [261, 263, 265, 270, 273, 276, 278, 280, 283, 285, 287, 290, 293, 300],
       2: [262, 264, 267, 269, 271, 274, 277, 286, 288, 296, 304, 307, 309, 311, 312, 315],
@@ -213,10 +163,10 @@ const REGIONS = {
       prologo: `A <b>Seita das Marés</b> quer expandir os oceanos e afogar a terra firme. Para isso, procura um orbe antigo capaz de despertar o <b>Titã dos Oceanos</b>.
         A Professora Restinga quer que você siga a trilha dos oito ginásios de Hoenn e chegue antes deles.`,
       caps: [
-        ['O Líder Rocha estuda fósseis nas cavernas. A Seita escavou ilegalmente perto do ginásio dele, a leste.', 'Rocha mostra marcas de escavação: "Eles procuravam uma pedra azul, brilhante. Não era fóssil."'],
-        ['Breno, o surfista lutador, conhece cada onda da costa. Os barcos da Seita andam rondando a praia dele.', 'Breno pegou um mapa marítimo da Seita com um X em cima de uma montanha: o Monte das Pirâmides.'],
-        ['O Inventor Watts criou um radar de correntes. A Seita roubou as peças para rastrear o Titã.', 'Watts reconstrói o radar e detecta a Seita escavando o Monte das Pirâmides de verdade.'],
-        ['Fumaça cuida das fontes termais do vulcão. A Seita quer esfriar o vulcão com água do mar.', 'Fumaça salvou as fontes, mas a Seita já tirou o <b>Orbe Azul</b> de dentro do monte.'],
+        ['O Líder Rocha estuda fósseis nas cavernas. A Seita escavou ilegalmente perto do ginásio dele, na Cidade de Rocha, a noroeste.', 'Rocha mostra marcas de escavação: "Eles procuravam uma pedra azul, brilhante. Não era fóssil."'],
+        ['Breno, o surfista lutador, conhece cada onda da costa. Os barcos da Seita andam rondando a praia dele.', 'Breno pegou um mapa marítimo da Seita com um X em cima do Vulcão Rubro, ao norte.'],
+        ['O Inventor Watts criou um radar de correntes. A Seita roubou as peças para rastrear o Titã.', 'Watts reconstrói o radar e detecta a Seita escavando dentro do Vulcão Rubro.'],
+        ['Fumaça cuida das fontes termais do vulcão. A Seita quer esfriar o vulcão com água do mar.', 'Fumaça salvou as fontes, mas a Seita já tirou o <b>Orbe Azul</b> de dentro do vulcão.'],
         ['O Pai Norberto treina a força bruta dos Pokémon. Ele já enfrentou a Seita e sabe onde ficam as bases deles.', 'Norberto aponta a base da Seita no mar e avisa: "O orbe precisa de uma tempestade para funcionar."'],
         ['Penélope voa acima das nuvens. Ela viu a tempestade artificial que a Seita está criando.', 'Do alto, Penélope vê o redemoinho se formando sobre a Caverna do Abismo.'],
         ['Os Gêmeos Sol e Lua leem o céu. Só eles sabem quando o Titã vai despertar.', 'Os gêmeos calculam: o Titã acorda na próxima maré cheia. Falta pouquíssimo tempo.'],
@@ -231,23 +181,7 @@ const REGIONS = {
     nome: 'Sinnoh', sub: 'Geração IV · neve, mitos e o tempo', vila: 'Vila Orvalho',
     guia: { nome: 'Professor Pinheiro', spr: { h: '#e5e7eb', b: '#1f2937', d: '#111827' } },
     artesao: 'Artesão das Placas',
-    zonas: [['Planícies Frescas', 'campo'], ['Bosque Eterno', 'floresta'], ['Cordilheira Central', 'montanha'], ['Pântano Grande', 'pantano'], ['Picos Nevados', 'neve']],
-    macro: [
-      '~~~~~~~~~~~~~~~~~~~~',
-      '~~5555~~5555~~4444~~',
-      '~555555555555344444~',
-      '~5L555533333333444~~',
-      '~222223333333334444~',
-      '~22222233333L332222~',
-      '~2222L2222332222222~',
-      '~2222222233222222L2~',
-      '~~22221111311111222~',
-      '~~2211111111111122~~',
-      '~~111111VV1111111~~~',
-      '~~~1L111VV111111~~~~',
-      '~~~~1111111111~~~~~~',
-      '~~~~~~~~~~~~~~~~~~~~',
-    ],
+    zonas: [['Planícies Frescas', 'campo'], ['Bosque Eterno', 'floresta'], ['Monte Coronet', 'montanha'], ['Neves do Norte', 'neve'], ['Pilar Lendário', 'sombrio']],
     pools: {
       1: [396, 399, 401, 403, 406, 412, 415, 417, 420, 425, 433, 434, 63, 41],
       2: [397, 400, 402, 404, 315, 427, 431, 436, 446, 455, 453, 95, 74, 66, 413],
@@ -276,7 +210,7 @@ const REGIONS = {
       prologo: `A <b>Ordem do Vazio</b> acredita que o mundo é imperfeito e quer recomeçar o tempo do zero. Para isso, vai capturar os três espíritos dos lagos e invocar o <b>Senhor do Tempo</b>.
         O Professor Pinheiro pede que você visite os oito ginásios de Sinnoh: os líderes guardam pistas dos mitos antigos.`,
       caps: [
-        ['Rocco, filho de mineiros, encontrou placas antigas na mina. A Ordem quer essas placas. O ginásio dele fica a leste.', 'As placas falam de um pilar no alto da Cordilheira Central, onde o tempo "pode ser reescrito".'],
+        ['Rocco, filho de mineiros, encontrou placas antigas na mina. A Ordem quer essas placas. O ginásio dele fica na Cidade do Carvão, ao norte da vila.', 'As placas falam de um pilar no alto do Monte Coronet, onde o tempo "pode ser reescrito".'],
         ['Gardênia cuida do bosque onde dorme uma árvore milenar. A Ordem anda cortando galhos por lá.', 'Gardênia descobre que a Ordem procura <b>três lagos</b>: o do Saber, o da Emoção e o da Vontade.'],
         ['Maylene medita na montanha e sente a aura dos Pokémon. Ela sentiu algo errado no lago do Saber.', 'O lago do Saber está vazio: a Ordem já capturou o primeiro espírito.'],
         ['O lutador Correnteza vigia o grande pântano. Os barcos da Ordem passam por ali rumo ao segundo lago.', 'Correnteza chegou tarde: o espírito da Emoção também foi levado.'],
@@ -294,23 +228,7 @@ const REGIONS = {
     nome: 'Unova', sub: 'Geração V · verdade e ideais', vila: 'Vila Nuvem',
     guia: { nome: 'Professora Acácia', spr: { h: '#a16207', b: '#e0f2fe', d: '#0369a1' } },
     artesao: 'Engenheira Lírio',
-    zonas: [['Planícies do Sul', 'campo'], ['Mata das Pinheiras', 'floresta'], ['Deserto do Repouso', 'deserto'], ['Charco Sombrio', 'sombrio'], ['Caminho dos Gigantes', 'montanha']],
-    macro: [
-      '~~~~~~~~~~~~~~~~~~~~',
-      '~~4444~~55555~~444~~',
-      '~444444555555334444~',
-      '~44443333LL33334444~',
-      '~443333333333333222~',
-      '~222223333333332222~',
-      '~2222L2222222222222~',
-      '~22222222222L22222~~',
-      '~2222211111112222~~~',
-      '~~22111111111111L2~~',
-      '~~111111VV11111111~~',
-      '~~~11111VV11111LL~~~',
-      '~~~~1111111111~~~~~~',
-      '~~~~~~~~~~~~~~~~~~~~',
-    ],
+    zonas: [['Planícies do Sul', 'campo'], ['Floresta dos Cata-Ventos', 'floresta'], ['Deserto do Repouso', 'deserto'], ['Norte Gelado', 'neve'], ['Caminho dos Gigantes', 'montanha']],
     pools: {
       1: [504, 506, 509, 511, 513, 515, 519, 527, 531, 532, 540, 543, 546, 548],
       2: [505, 507, 510, 520, 522, 524, 529, 541, 544, 551, 554, 556, 557, 559, 562],
@@ -338,7 +256,7 @@ const REGIONS = {
       prologo: `A <b>Ordem da Verdade</b> prega que treinadores devem libertar seus Pokémon, mas por trás dos discursos há um plano para dominar Unova com um dragão lendário.
         A Professora Acácia pede que você enfrente os oito ginásios e descubra o que a Ordem esconde.`,
       caps: [
-        ['Os Trigêmeos Chef servem batalhas junto com o almoço, a leste da vila. Um membro da Ordem discursou lá ontem.', 'Os trigêmeos guardaram o panfleto da Ordem: "A verdade despertará o dragão branco."'],
+        ['Os Trigêmeos Chef servem batalhas junto com o almoço na Cidade Estriada, ao norte da vila. Um membro da Ordem discursou lá ontem.', 'Os trigêmeos guardaram o panfleto da Ordem: "A verdade despertará o dragão branco."'],
         ['A Curadora Lenora cuida do museu, onde fica uma pedra escura muito antiga. A Ordem quer roubá-la.', 'A pedra do museu foi trocada por uma falsa. A Ordem já levou a Pedra da Verdade.'],
         ['O artista Burgh pinta no meio da colmeia. Ele viu a Ordem escondendo algo na Mata das Pinheiras.', 'Burgh desenha o rosto do líder da Ordem, um jovem chamado <b>N.</b>, que fala com os Pokémon.'],
         ['Elesa ilumina a cidade dos parques de diversão. A Ordem montou um palanque na frente do ginásio dela.', 'Elesa ouviu N. dizer que vai acordar o dragão "no castelo, quando tiver o apoio do povo".'],
@@ -375,7 +293,10 @@ function setRegion(id) {
   replaceArr(ZONES, [{ nome: R.vila, bio: 'vila', ...BIOMES.vila, lvl: 1 }, ...R.zonas.map(([nome, bio], i) => ({ nome, bio, ...BIOMES[bio], lvl: ZONE_LVL[i + 1] }))]);
   replaceObj(ZONE_POOLS, R.pools); replaceObj(WATER_POOLS, R.water);
   replaceArr(BOSSES, R.lendas); replaceArr(RARE_POOL, R.rare); replaceArr(NIGHT_POOL, R.night); replaceArr(MIGRATION_POOL, R.migra);
-  replaceArr(MACRO, R.macro);
+  const geo = GEO[REGION_ID];
+  setGeo(geo);
+  replaceArr(LANDMARKS, [['vila', R.vila, geo.vila[0], geo.vila[1] + 0.12], ...geo.marks.map(([nome, cx, cy], i) => [REGION_ID + '_c' + i, nome, cx, cy])]
+    .map(([id, nome, cx, cy]) => { const [x, y] = cellPt(cx, cy); return { id, nome, at: [cx, cy], x, y }; }));
   // ginásios viram temas de masmorra
   for (const k of Object.keys(THEMES)) if (!BASE_THEME_KEYS.includes(k)) delete THEMES[k];
   replaceObj(TYPE_THEME, BASE_TYPE_THEME); replaceArr(DARK_THEMES, BASE_DARK);
@@ -391,10 +312,10 @@ function setRegion(id) {
   // história
   const H = R.historia;
   replaceArr(STORY, [{ titulo: 'Prólogo', intro: H.prologo }, ...R.gyms.map((g, i) => ({
-    titulo: `${g.nome}`, obj: `Vença ${g.lider} no ${g.nome} (insígnia ${i + 1}/8)`, at: GYM_AT[i], zone: GYM_ZONE[i], lvl: GYM_LVL[i],
+    titulo: `${g.nome}`, obj: `Vença ${g.lider} no ${g.nome} (insígnia ${i + 1}/8)`, at: geo.gyms[i], zone: GYM_ZONE[i], lvl: GYM_LVL[i],
     kind: 'dungeon', theme: 'gym' + (i + 1), nome: g.lider, intro: H.caps[i][0], fim: H.caps[i][1],
   })), {
-    titulo: R.final.nome, obj: `Entre em ${R.final.nome} e enfrente ${R.final.lider}`, at: GYM_AT[8], zone: GYM_ZONE[8], lvl: GYM_LVL[8],
+    titulo: R.final.nome, obj: `Entre em ${R.final.nome} e enfrente ${R.final.lider}`, at: geo.gyms[8], zone: GYM_ZONE[8], lvl: GYM_LVL[8],
     kind: 'dungeon', theme: 'final', nome: R.final.lider, intro: H.final[0], fim: H.final[1],
   }]);
   replaceArr(STORY_IDS, [R.final.boss, ...R.gyms.map(g => g.boss)]);
@@ -402,6 +323,5 @@ function setRegion(id) {
   const guia = NPCS.find(n => n.id === 'sildo'), art = NPCS.find(n => n.id === 'gundo');
   guia.nome = R.guia.nome; guia.spr = R.guia.spr; art.nome = R.artesao;
   if (typeof buildNPCSprites === 'function') buildNPCSprites();
-  LANDMARKS[0].nome = R.vila;
   rebuildWorld();
 }
