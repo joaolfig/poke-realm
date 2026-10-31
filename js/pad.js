@@ -67,11 +67,12 @@ function padNav(on) {
   if (!PAD.focus || !document.contains(PAD.focus)) setFocus(navItems().sort((p, q) => { const a = p.getBoundingClientRect(), b = q.getBoundingClientRect(); return a.top - b.top || a.left - b.left; })[0] || null);
 }
 // identidade de um item da interface, para reencontrá-lo quando o painel ou a loja são redesenhados
+const kindOf = el => (el.dataset && el.dataset.act ? el.dataset.act.split(':')[0] : Object.keys(el.dataset || {})[0] || el.tagName);
 const sigOf = el => el.id || el.tagName + JSON.stringify(el.dataset) + (el.dataset && Object.keys(el.dataset).length ? '' : el.textContent.trim().slice(0, 30));
 function setFocus(el) {
   if (PAD.focus) PAD.focus.classList.remove('padfocus');
   PAD.focus = el;
-  if (el) { const r = el.getBoundingClientRect(); PAD.sig = sigOf(el); PAD.pos = [r.left + r.width / 2, r.top + r.height / 2]; }
+  if (el) { const r = el.getBoundingClientRect(); PAD.sig = sigOf(el); PAD.kind = kindOf(el); PAD.idx = navItems().indexOf(el); PAD.pos = [r.left + r.width / 2, r.top + r.height / 2]; }
   const info = $('padinfo');
   if (!el) { info.classList.add('hidden'); $('ptip').classList.add('hidden'); return; }
   el.classList.add('padfocus');
@@ -87,6 +88,8 @@ function relocate() {
   if (!PAD.nav || (PAD.focus && document.contains(PAD.focus))) return;
   const items = navItems();
   let el = PAD.sig && items.find(i => sigOf(i) === PAD.sig);
+  // sumiu (ex.: o item vendido): fica no que ocupou o lugar dele na lista, se for do mesmo tipo
+  if (!el && PAD.idx >= 0) { const c = items[Math.min(PAD.idx, items.length - 1)]; if (c && kindOf(c) === PAD.kind) el = c; }
   if (!el && PAD.pos) {
     let bd = 1e9;
     for (const i of items) { const r = i.getBoundingClientRect(), d = Math.hypot(r.left + r.width / 2 - PAD.pos[0], r.top + r.height / 2 - PAD.pos[1]); if (d < bd) { bd = d; el = i; } }
