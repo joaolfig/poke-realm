@@ -290,7 +290,8 @@ function setRegion(id) {
   const R = REGIONS[id] || REGIONS.kanto;
   REGION_ID = REGIONS[id] ? id : 'kanto'; REGION = R;
   // zonas e Pokémon
-  replaceArr(ZONES, [{ nome: R.vila, bio: 'vila', ...BIOMES.vila, lvl: 1 }, ...R.zonas.map(([nome, bio], i) => ({ nome, bio, ...BIOMES[bio], lvl: ZONE_LVL[i + 1] }))]);
+  replaceArr(ZONES, [{ nome: R.vila, bio: 'vila', ...BIOMES.vila, lvl: 1 }, ...R.zonas.map(([nome, bio], i) => ({ nome, bio, ...BIOMES[bio], lvl: ZONE_LVL[i + 1] })),
+    { nome: 'Arena PvP', bio: 'campo', ...BIOMES.campo, lvl: 1 }]);
   replaceObj(ZONE_POOLS, R.pools); replaceObj(WATER_POOLS, R.water);
   replaceArr(BOSSES, R.lendas); replaceArr(RARE_POOL, R.rare); replaceArr(NIGHT_POOL, R.night); replaceArr(MIGRATION_POOL, R.migra);
   const geo = GEO[REGION_ID];

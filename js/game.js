@@ -478,7 +478,7 @@ function hostSpawning(dt) {
   G.spawnT -= dt;
   if (G.spawnT > 0) return;
   G.spawnT = 0.35;
-  const pls = allPlayers().filter(p => !inDungeonArea(p.x));
+  const pls = allPlayers().filter(p => !inDungeonArea(p.x) && !inArena(p.x, p.y));
   if (!pls.length) return;
   G.enemies = G.enemies.filter(e => {
     if (e.boss || e.dg || e.ev) return true;
@@ -614,10 +614,10 @@ function spawnPB(o) {
   const b = {
     ox: o.x, oy: o.y, x: o.x, y: o.y, dx: Math.cos(o.a), dy: Math.sin(o.a), a: o.a, spd: o.spd, t: 0, life: o.life,
     amp: o.amp || 0, ph: o.ph || 0, r: o.r, color: o.color, shape: o.shape, pierce: !!o.pierce || !!o.left, hit: o.pierce || o.left || o.skip ? new Set(o.skip ? [o.skip] : []) : null, ally: o.ally || null, sp: o.sp || 0, spell: o.spell || 0,
-    left: o.left || 0, rico: !!o.rico,
+    left: o.left || 0, rico: !!o.rico, pd: o.pd || 0,
   };
   G.pb.push(b);
-  if (netActive()) NET.outS.push([Math.round(b.ox), Math.round(b.oy), +o.a.toFixed(3), b.spd, +b.life.toFixed(2), b.amp, +b.ph.toFixed(2), b.r, b.shape, b.color]);
+  if (netActive()) NET.outS.push([Math.round(b.ox), Math.round(b.oy), +o.a.toFixed(3), b.spd, +b.life.toFixed(2), b.amp, +b.ph.toFixed(2), b.r, b.shape, b.color, b.pd]);
   return b;
 }
 function shootBullet(a, o = {}) {
@@ -625,12 +625,12 @@ function shootBullet(a, o = {}) {
   spawnPB({
     a, spd: o.spd || w.speed, life: (o.life || w.life) * rangeMul(P), amp: w.wave ? 14 : 0, ph: o.ph || 0,
     r: o.r || w.size, color: o.color || (P.tempTypeT > 0 ? TYPE_COLORS[P.tempType] : w.color), shape: o.shape || w.shape, pierce: o.pierce || w.pierce || M(P, 'pierce') > 0, spell: o.spell, x: o.x !== undefined ? o.x : P.x, y: o.y !== undefined ? o.y : P.y,
-    left: !(o.pierce || w.pierce) && hasT(P, 'perfurante') ? 2 : 0, rico: o.rico, skip: o.skip,
+    left: !(o.pierce || w.pierce) && hasT(P, 'perfurante') ? 2 : 0, rico: o.rico, skip: o.skip, pd: pvpShotDmg(P, o),
   });
 }
-function addCosmetic(s) {
-  const [ox, oy, a, spd, life, amp, ph, r, shape, color] = s;
-  G.cb.push({ ox, oy, x: ox, y: oy, dx: Math.cos(a), dy: Math.sin(a), a, spd, t: 0, life, amp, ph, r, shape, color });
+function addCosmetic(s, own) {
+  const [ox, oy, a, spd, life, amp, ph, r, shape, color, dmg] = s;
+  G.cb.push({ ox, oy, x: ox, y: oy, dx: Math.cos(a), dy: Math.sin(a), a, spd, t: 0, life, amp, ph, r, shape, color, dmg: dmg || 0, own });
 }
 
 function playerShoot() {
@@ -898,6 +898,7 @@ function heroLabel(P) {
 
 function playerDie(src) {
   const P = G.P;
+  if (P.pvp || inArena(P.x, P.y)) return pvpLeave(true, src); // na arena ninguém morre de verdade
   burst(P.x, P.y, '#ef4444', 40);
   sfx('die');
   try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignora */ }
@@ -1107,6 +1108,7 @@ function handleEvent(m, local) {
       }
       break;
     }
+    case 'pvpinv': case 'pvpok': case 'pvpout': pvpEvent(m); break;
     case 'decoy': G.decoys.push({ x: m.x, y: m.y, t: m.dur, cls: m.cls, ptype: m.ptype }); break;
     case 'met': G.meteors.push({ x: m.x, y: m.y, r: m.r, t: m.delay, max: m.delay, zone: m.zone || 1 }); break;
     case 'evdone': onEventDone(m); break;
@@ -1128,6 +1130,7 @@ function update(dt) {
   if (P) updatePlayer(dt);
   updateAllies(dt);
   updateZones(dt);
+  pvpTick(dt);
   updateWorld(dt);
   updateHM(dt);
   if (P) { storyTick(dt); questTick(dt); }
@@ -1177,7 +1180,7 @@ function update(dt) {
     }
   }
   G.pb = G.pb.filter(b => !b.dead);
-  G.cb = G.cb.filter(b => moveShot(b, dt) && !(b.x < DG_BASE - 5000 && inTown(b.x, b.y)));
+  G.cb = G.cb.filter(b => moveShot(b, dt) && !(b.x < DG_BASE - 5000 && inTown(b.x, b.y)) && !pvpHitCheck(b));
 
   for (const b of G.bags) b.life -= dt;
   G.bags = G.bags.filter(b => b.life > 0 && b.items.length);
@@ -1426,7 +1429,7 @@ function drawHUD(ox, oy) {
   if (dg) outlined(`${name} · Perigo ${dg.zone}/5`, 12, hy);
   else {
     const z = zoneAt(cx, cy);
-    if (z >= 0) outlined(`${REGION.nome} · ${name}  ${z ? `Perigo ${z}/5 · Nv ${ZONES[z].lvl}+` : '(área segura)'}`, 12, hy);
+    if (z >= 0) outlined(`${REGION.nome} · ${name}  ${z === ARENA_Z ? '(duelo entre jogadores)' : z ? `Perigo ${z}/5 · Nv ${ZONES[z].lvl}+` : '(área segura)'}`, 12, hy);
   }
   ctx.font = '12px Barlow Semi Condensed, system-ui';
   if (NET.mode !== 'solo') { hy += 18; outlined(`Sala ${NET.room} · ${G.remotes.size + 1} jogador(es)${NET.mode === 'host' ? ' · você é o host' : ''}`, 12, hy); }
@@ -1617,6 +1620,7 @@ function updatePanel() {
   if (NET.mode === 'host') $('p-room').innerHTML = `<h4>Multiplayer</h4><div class="room">Código da sala: <b>${NET.room}</b> <button data-copy="1">Copiar</button></div><div class="small">Seus amigos escolhem "Entrar em sala" e digitam este código.</div>`;
   else if (NET.mode === 'client') $('p-room').innerHTML = `<h4>Multiplayer</h4><div class="room">Conectado à sala <b>${NET.room}</b></div>`;
   else $('p-room').innerHTML = '';
+  $('p-room').innerHTML += pvpPanel();
   $('p-room').innerHTML += '<button data-save="1" class="savebtn" title="Baixa um arquivo .json com seu personagem (Ctrl+S)">Salvar em arquivo <small>Ctrl+S</small></button>';
   padFixDom($('panel'));
 }
@@ -1904,6 +1908,7 @@ function step(now, draw) {
 function musicKey() {
   const P = G && G.P;
   if (!P || state !== 'play') return 'menu';
+  if (inArena(P.x, P.y)) return 'chefe';
   if (G.enemies.some(e => e.boss && e.hp > 0 && Math.hypot(e.x - P.x, e.y - P.y) < 650)) return 'chefe';
   if (inDungeonArea(P.x)) return 'masmorra';
   if (inTown(P.x, P.y)) return 'vila';

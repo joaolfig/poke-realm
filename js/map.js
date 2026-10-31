@@ -30,7 +30,8 @@ let NX = Math.floor(WX1 / TILE) + OX + 1, NY = Math.floor(WY1 / TILE) + OY + 1;
 const cellPt = (cx, cy) => [WX0 + cx * CELL, WY0 + cy * CELL];
 // aplica a geografia de uma região: grade, vila (célula na origem), rotas e baús secretos
 function setGeo(geo) {
-  replaceArr(MACRO, geo.macro);
+  // 4 linhas extras de mar embaixo: é onde fica a ilha da arena PvP
+  replaceArr(MACRO, [...geo.macro, ...Array(4).fill('~'.repeat(geo.macro[0].length))]);
   const [vx, vy] = geo.vila, cols = MACRO[0].length, rows = MACRO.length;
   WX0 = -vx * CELL; WY0 = -vy * CELL; WX1 = WX0 + cols * CELL; WY1 = WY0 + rows * CELL;
   OX = -Math.floor(WX0 / TILE); OY = -Math.floor(WY0 / TILE);
@@ -225,6 +226,7 @@ function buildWorld() {
   }
   TT = T2;
   for (const sc of SECRETS) carveSecret(sc);
+  carveArena();
   WET = new Float32Array(NX * NY);
   const wet = k => (k === TK.WATER || k === TK.SEA || k === TK.BRIDGE || k === TK.DIVE ? 1 : k === TK.POND ? 0.5 : 0);
   for (let iy = 0; iy < NY; iy++) for (let ix = 0; ix < NX; ix++) {
@@ -236,7 +238,7 @@ function buildWorld() {
   for (let i = 0; i < NX * NY; i++) if (WET[i] === 1 && (TT[i] === TK.SEA || TT[i] === TK.WATER) && hash(i * 3 + 1, 77) < 0.0022) TT[i] = TK.DIVE;
   for (let iy = 0; iy < NY; iy += 3) for (let ix = 0; ix < NX; ix += 3) {
     const i = iy * NX + ix, z = TZ[i], x = (ix - OX + 0.5) * TILE, y = (iy - OY + 0.5) * TILE;
-    if (z >= 1 && !solidAt(x, y) && !isWater(x, y)) ZPTS[z].push([x, y]);
+    if (z >= 1 && z <= 5 && !solidAt(x, y) && !isWater(x, y)) ZPTS[z].push([x, y]);
   }
   // minimapa: 160 de largura, altura proporcional à região
   const MH = Math.round(160 * (WY1 - WY0) / (WX1 - WX0));

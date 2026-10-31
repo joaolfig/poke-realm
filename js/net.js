@@ -123,7 +123,7 @@ function hostOnData(from, m) {
       if (!r) { r = { id: from, x: m.s[0], y: m.s[1], walk: 0 }; G.remotes.set(from, r); }
       const s = m.s;
       Object.assign(r, { name: m.name, cls: m.cls, tx: s[0], ty: s[1], face: s[2], moving: !!s[3], invis: !!s[4], hp: s[5], maxHp: s[6], lvl: s[7], aim: s[8], ptype: s[9] || '', mount: s[10] || 0, allies: m.al || [], dead: false });
-      if (m.b) for (const sh of m.b) { addCosmetic(sh); NET.relayS.push([from, ...sh]); }
+      if (m.b) for (const sh of m.b) { addCosmetic(sh, from); NET.relayS.push([from, ...sh]); }
       break;
     }
     case 'cap':
@@ -143,7 +143,7 @@ function hostOnData(from, m) {
       if (e && !e.dead) { if (m.slow) e.slowT = m.slow; applyHit(e, m.dmg, from); }
       break;
     }
-    case 'chat': case 'heal': case 'fx': case 'drop': case 'bag': case 'buff': case 'cut': case 'decoy':
+    case 'chat': case 'heal': case 'fx': case 'drop': case 'bag': case 'buff': case 'cut': case 'decoy': case 'pvpinv': case 'pvpok': case 'pvpout':
       m.from = from;
       handleEvent(m, false);
       netBroadcastExcept(m, from);
@@ -186,7 +186,7 @@ function clientOnData(m) {
     dungeonsFromNet(m.dg, m.po);
     G.evInfo = m.ev || null;
     for (const b of m.b) spawnEB(G.emap.get(b[0]), b);
-    for (const s of m.cs) if (s[0] !== NET.myId) addCosmetic(s.slice(1));
+    for (const s of m.cs) if (s[0] !== NET.myId) addCosmetic(s.slice(1), s[0]);
     return;
   }
   handleEvent(m, false);

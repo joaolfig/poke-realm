@@ -348,7 +348,7 @@ function evSpot(pl) {
 }
 
 function startEvent() {
-  const pls = allPlayers().filter(p => !inDungeonArea(p.x));
+  const pls = allPlayers().filter(p => !inDungeonArea(p.x) && !inArena(p.x, p.y));
   if (!pls.length) return;
   const pl = pick(pls), pz = clamp(zoneAt(pl.x, pl.y), 1, 5);
   const kind = pick(['horda', 'migracao', 'meteoros', 'raro', 'noite']);
