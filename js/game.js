@@ -1421,6 +1421,49 @@ function drawEnemy(e, ox, oy) {
   }
 }
 
+// cartão do Pokémon sob a mira (canto inferior direito, pequeno)
+function drawTargetCard() {
+  const P = G.P;
+  if (!P || state !== 'play') return;
+  let e = PAD.on && PAD.lock && !PAD.lock.remote ? PAD.lock : null;
+  if (!e) {
+    const mw = mouseWorld();
+    let bd = 1e9;
+    for (const o of G.enemies) { if (o.hp <= 0 || o.dead) continue; const d = Math.hypot(o.x - mw.x, o.y - mw.y); if (d < o.r + 14 && d < bd) { bd = d; e = o; } }
+  }
+  if (!e || !e.p) return;
+  if (e.hp <= 0 || e.dead) return;
+  const w = 214, h = 58, x = W - w - 12, y = H - h - 12;
+  ctx.fillStyle = 'rgba(13,14,16,.86)'; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
+  ctx.strokeStyle = e.legend ? '#f87171' : e.alfa ? '#facc15' : e.boss ? '#a78bfa' : '#44474f'; ctx.lineWidth = 1; ctx.strokeRect(x - 2.5, y - 2.5, w + 5, h + 5);
+  // ícone
+  ctx.fillStyle = '#16171a'; ctx.fillRect(x + 6, y + 6, 46, 46);
+  const im = e.p.img;
+  if (im) { const k = Math.min(42 / im.width, 42 / im.height); ctx.drawImage(im, x + 29 - im.width * k / 2, y + 29 - im.height * k / 2, im.width * k, im.height * k); }
+  // nome e tipos
+  ctx.textAlign = 'left'; ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#ece5d6';
+  const tag = e.legend ? ' ★' : e.rare ? ' ✨' : '';
+  let nm = (e.alfa ? 'Alfa ' : '') + e.p.name + tag;
+  while (ctx.measureText(nm).width > w - 66 && nm.length > 4) nm = nm.slice(0, -2);
+  ctx.fillText(nm, x + 58, y + 17);
+  let tx = x + 58;
+  ctx.font = 'bold 10px Barlow Semi Condensed, system-ui';
+  for (const t of e.p.types) {
+    const lab = TYPE_PT[t] || t, tw = ctx.measureText(lab).width + 8;
+    ctx.fillStyle = TYPE_COLORS[t] || '#888'; ctx.fillRect(tx, y + 22, tw, 13);
+    ctx.fillStyle = '#111'; ctx.fillText(lab, tx + 4, y + 32);
+    tx += tw + 4;
+  }
+  // vida
+  const f = clamp(e.hp / e.maxHp, 0, 1), bx = x + 58, by = y + 40, bw = w - 66;
+  ctx.fillStyle = '#000'; ctx.fillRect(bx - 1, by - 1, bw + 2, 10);
+  ctx.fillStyle = f > 0.5 ? '#3f9f45' : f > 0.2 ? '#d4a017' : '#c0392b'; ctx.fillRect(bx, by, bw * f, 8);
+  ctx.font = 'bold 9px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+  ctx.fillText(`${Math.ceil(e.hp)} / ${e.maxHp}`, bx + bw / 2, by + 7.5);
+  ctx.textAlign = 'left';
+}
+
 function drawHUD(ox, oy) {
   const P = G.P;
   const cx = P ? P.x : G.cam.x, cy = P ? P.y : G.cam.y;
@@ -1450,6 +1493,7 @@ function drawHUD(ox, oy) {
     outlined(`💎 Tipo ${TYPE_PT[P.tempType]}: ${Math.ceil(P.tempTypeT)}s`, 12, hy);
   }
   drawPadReticle();
+  try { drawTargetCard(); } catch (e) { /* o cartão nunca pode travar o desenho do jogo */ }
   if (autofire) { hy += 18; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fde047'; outlined('TIRO AUTOMÁTICO (T)', 12, hy); }
 
   if (G.banner > 0 && name) {
