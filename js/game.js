@@ -288,18 +288,22 @@ function enemyStats(pid, zone, kind) {
   let type = p.types[0];
   if (type === 'normal' && p.types[1]) type = p.types[1];
   if (!PAT[type]) type = 'normal';
-  const zf = 1 + (zone - 1) * 0.9;
+  // a força cresce mais rápido que linear com a zona, acompanhando o poder do herói do nível 1 ao 30
+  // (zonas 1-2 ficam como antes; 4 e 5 bem mais duras). Lendários são feitos para 2 heróis de nível 30.
+  const zh = 1 + (zone - 1) * 1.1 + (zone - 1) ** 2 * 0.3; // vida: 1 · 2,4 · 4,4 · 7 · 10,2
+  const nd = Math.max(1, Math.round(zone * 1.4 - 0.4));     // dados de dano: 1 · 2 · 4 · 5 · 7
   return {
     p, pid, zone, kind, boss: kind === 2 || kind === 3, legend, alfa, rare, type, color: TYPE_COLORS[type] || '#fff',
     name: (alfa ? 'Alfa ' : '') + p.name + (rare ? ' ✨' : ''),
-    maxHp: Math.round(((st.hp || 50) * 0.35 + 8) * (1 + (zone - 1) * 1.1) * (legend ? 14 : dboss ? 8 : alfa ? 3 : rare ? 2.5 : 1)),
-    ac: 9 + Math.floor((st.defense || 50) / 30) + zone + (legend ? 3 : dboss ? 2 : alfa ? 1 : 0),
-    atk: 2 + Math.floor(atk / 35) + zone * 2 + (legend ? 3 : dboss ? 2 : alfa ? 1 : 0),
-    dice: [legend ? 5 : dboss ? zone + 2 : zone + (alfa ? 1 : 0), 4 + 2 * Math.min(3, Math.floor(atk / 40)), Math.floor(zone * 1.5) + (legend ? 4 : dboss ? 2 : 0)],
+    maxHp: Math.round(((st.hp || 50) * 0.35 + 8) * zh * (legend ? 70 : dboss ? 8 : alfa ? 3 : rare ? 2.5 : 1)),
+    ac: 9 + Math.floor((st.defense || 50) / 30) + zone + (legend ? 6 : dboss ? 2 : alfa ? 1 : 0),
+    atk: 2 + Math.floor(atk / 35) + Math.round(zone * 2.5) + (legend ? 8 : dboss ? 2 : alfa ? 1 : 0),
+    dice: [legend ? 10 : dboss ? nd + 2 : nd + (alfa ? 1 : 0), legend ? 10 : 4 + 2 * Math.min(3, Math.floor(atk / 40)), zone * 2 + (legend ? 15 : dboss ? 3 : 0)],
     speed: (35 + (st.speed || 50) * 0.55) * (legend || dboss ? 0.6 : rare ? 1.5 : 1),
     scale: legend ? 4.2 : dboss ? 3.3 : clamp(1.7 + (p.height || 10) / 35, 1.7, 2.8) * (alfa || rare ? 1.3 : 1),
-    xp: Math.round((p.exp || 100) * (0.4 + zone * 0.35) * (legend ? 12 : dboss ? 8 : alfa ? 3 : rare ? 4 : 1)),
+    xp: Math.round((p.exp || 100) * (0.4 + zone * 0.35) * (zone >= 4 ? 1.3 : 1) * (legend ? 45 : dboss ? 8 : alfa ? 3 : rare ? 4 : 1)),
     cdMul: 1 / (1 + (zone - 1) * 0.2),
+    cdBoss: legend ? 0.7 : undefined, // lendários atacam mais rápido
   };
 }
 
