@@ -216,6 +216,7 @@ function buildWorld() {
     if ((SOLIDK[k] || k === TK.WATER || k === TK.POND) && pd < 60) k = TK.GRASS; // margem livre ao lado das rotas
     TT[i] = k;
   }
+  enforceProgression();
   // 2ª passada: fronteiras naturais e praias
   const T2 = TT.slice();
   for (let iy = 1; iy < NY - 1; iy++) for (let ix = 1; ix < NX - 1; ix++) {
@@ -241,6 +242,9 @@ function buildWorld() {
       // trechos da divisa podem ser abertos com a mesma MO da rota (atalhos)
       const nb = vnoise(wx / 260 + 77, wy / 260 + 13) > 0.72;
       T2[i] = bz === 2 ? (nb ? TK.CUTTREE : TK.TREE) : bz === 3 && nb ? TK.CRACKED : TK.CLIFF;
+    } else if (z === 5 && (sea || [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const j = tIdx(ix + dx, iy + dy); return j < 0 || TZ[j] < 1; }))) {
+      // a zona 5 só se entra pelo Portão da Liga: a costa dela é de penhascos
+      if (onPath[i]) { T2[i] = TK.GATE; GATES.push({ x: (ix - OX + 0.5) * TILE, y: (iy - OY + 0.5) * TILE, k: 'badge' }); } else T2[i] = TK.CLIFF;
     } else if (sea && !onPath[i]) T2[i] = TK.SAND;
   }
   TT = T2;
@@ -255,7 +259,6 @@ function buildWorld() {
   }
   // pontos de mergulho no meio de águas fundas
   for (let i = 0; i < NX * NY; i++) if (WET[i] === 1 && (TT[i] === TK.SEA || TT[i] === TK.WATER) && hash(i * 3 + 1, 77) < 0.0022) TT[i] = TK.DIVE;
-  enforceProgression();
   // um ícone por passagem bloqueada (agrupa os tiles vizinhos)
   const pts = [];
   for (const g of GATES) if (!pts.some(p => p.k === g.k && Math.hypot(p.x - g.x, p.y - g.y) < 300)) pts.push(g);
@@ -770,7 +773,7 @@ function rebuildWorld() {
 // progressão: o perigo de cada lugar é no mínimo o maior perigo do caminho mais fácil até ele a partir da vila
 // (nenhuma área mais fraca fica "atrás" de uma mais forte). Roda depois de gerar o mapa.
 function enforceProgression() {
-  const pass = i => TT[i] === TK.CUTTREE || TT[i] === TK.CRACKED || TT[i] === TK.GATE || TT[i] === TK.WATER || (!SOLIDK[TT[i]] && TT[i] !== TK.SEA);
+  const pass = i => TT[i] !== TK.SEA; // roda antes das barreiras: só o mar aberto separa as áreas
   const req = new Uint8Array(NX * NY).fill(99), B = [[], [], [], [], [], []];
   const s0 = tileIdx(0, 60);
   req[s0] = 1; B[1].push(s0);
