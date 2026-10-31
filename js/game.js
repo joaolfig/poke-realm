@@ -222,7 +222,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'fame', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'quest', 'questOffer', 'hp'];
+  'talentPending', 'killsPot', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -1599,7 +1599,7 @@ function updatePanel() {
   $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}</button>
     <button data-elix="1" ${P.bag.elixir ? '' : 'disabled'} title="Elixir [2]: +2 de dano e +20% de cadência por 30s">🧪 ×${P.bag.elixir}</button></div>
     <div class="potrow balls">${Object.keys(BALLS).map(k => `<button data-ball="${k}" class="${bsel === k ? 'sel' : ''}" title="${BALLS[k].nome} (+${BALLS[k].bonus} na captura). Clique para escolher qual o F joga.">${BALLS[k].icon} ×${ballCount(P, k)}</button>`).join('')}</div>`;
-  $('p-pets').innerHTML = `<h4>Companheiros <span class="small" title="Fora da Pokébola / máximo ao mesmo tempo">${P.petAct.length}/${petSlots(P)} fora · ${P.pets.length}/${MAX_PETS}</span></h4>` + (P.pets.length
+  $('p-pets').innerHTML = `<h4>Companheiros <span class="small" title="Fora da Pokébola / máximo ao mesmo tempo">${P.petAct.length}/${petSlots(P)} fora · ${P.pets.length}/${petCap(P)}</span></h4>` + (P.pets.length
     ? `<div class="pets">${P.pets.map((pt, i) => {
       const ev = evoLevel(pt.pid);
       const evt = ev === undefined ? '' : ev ? (pt.lvl >= ev ? 'pronto para evoluir!' : `evolui no Nv ${ev}`) : 'forma final';
@@ -1862,6 +1862,7 @@ async function startGame(saved) {
     if (!saved.stories) P.stories = {};
     if (!saved.hmsR) P.hmsR = {};
     if (!Array.isArray(P.petAct)) P.petAct = P.petIdx >= 0 ? [P.petIdx] : [];
+    P.petCap = Math.max(petCap(P), P.pets.length); // saves antigos tinham 4 vagas: ninguém perde companheiro
     if (!RACES[P.race]) P.race = 'humano';
     if (!TYPE_PT[P.ptype]) P.ptype = 'normal';
     if (!('amuleto' in P.equip)) P.equip.amuleto = null;

@@ -62,6 +62,7 @@ function shopList(P) {
     { id: 'armadura', nome: ARMORS[tier], icon: '🛡️', preco: 50 + tier * 40, tier },
     { id: 'anel', nome: 'Anel aleatório', icon: '💍', preco: 70 + tier * 30, tier },
     { id: 'amuleto', nome: 'Amuleto aleatório', icon: '📿', preco: 90 + tier * 40, tier },
+    ...(petCap(P) < PET_CAP_MAX ? [{ id: 'cinto', nome: `Cinto de Pokébolas: +1 vaga de companheiro (${petCap(P)} → ${petCap(P) + 1})`, icon: '🎒', preco: CINTO_PRECO[petCap(P)] }] : []),
   ];
 }
 const sellPrice = it => 8 + it.tier * 12 + (it.upg || 0) * 10;
@@ -89,7 +90,7 @@ function renderNPC() {
       const it = P.equip[s], c = upgCost(it), maxed = (it.upg || 0) >= cap;
       return `<div class="shoprow"><span>${itemIcon(it)} ${esc(it.name)}${it.upg ? ' +' + it.upg : ''} <i>${itemDesc(it)}</i></span>
         <button data-act="upg:${s}" ${maxed || P.gold < c ? 'disabled' : ''}>${maxed ? 'Máximo' : `Aprimorar (${c} 🪙)`}</button></div>`;
-    }).join('') + `<div class="small">Cada aprimoramento dá +1 de dano na arma ou +1 de CA na armadura (até +${cap}${cap < 8 ? '; a Forja dos Encantos libera até +8' : ''}).</div>`;
+    }).join('') + `<div class="small">Cada aprimoramento dá +1 de dano na arma ou +1 de CA na armadura (até +${cap}${cap < 8 ? '; vencer a história da região libera até +8' : ''}).</div>`;
   } else if (n.id === 'guilda') {
     const q = P.quest;
     if (q) {
@@ -158,6 +159,7 @@ function buyItem(P, id) {
   } else if (id === 'pot') P.pots.hp++;
   else if (id === 'ball') P.balls++;
   else if (CONS[id]) P.bag[id]++;
+  else if (id === 'cinto') { P.petCap = petCap(P) + 1; G.toasts.push({ text: `🎒 Agora você pode levar ${P.petCap} companheiros!`, color: '#86efac', t: 3 }); G.dirty = true; }
   P.gold -= s.preco;
   sfx('pick');
 }

@@ -6,7 +6,10 @@
  * O ativo ganha XP com os abates, sobe de nível e evolui seguindo a cadeia de
  * evolução da PokeAPI. Em tempo de jogo, G.allies tem o ativo e os espíritos do Necromante.
  */
-const MAX_PETS = 4, PET_MAX = 30;
+const PET_MAX = 30;
+// vagas de companheiro: começa com 2 e compra mais na loja (Cinto de Pokébolas), até 6
+const PET_CAP_MAX = 6, CINTO_PRECO = { 2: 350, 3: 750, 4: 1300, 5: 2000 };
+const petCap = P => clamp(P.petCap || 2, 2, PET_CAP_MAX);
 const petNeed = l => Math.round(55 * Math.pow(l, 1.75));
 const mainType = p => { let t = p.types[0]; if (t === 'normal' && p.types[1]) t = p.types[1]; return t; };
 const MOVES = {
@@ -275,7 +278,7 @@ function throwBall() {
   }
   if (!e) { text(P.x, P.y - 40, 'Mire num Pokémon próximo', '#cbd5e1', 12); return; }
   if (e.boss) { text(e.x, e.y - e.h / 2, 'Não pode ser capturado!', '#fca5a5', 13); return; }
-  if (P.pets.length >= MAX_PETS) { G.toasts.push({ text: `Você já tem ${MAX_PETS} companheiros. Solte um no painel (botão direito duas vezes).`, color: '#fca5a5', t: 3 }); return; }
+  if (P.pets.length >= petCap(P)) { G.toasts.push({ text: `Você já tem ${petCap(P)} companheiros. Compre mais vagas na loja (Cinto de Pokébolas) ou solte um no painel (botão direito duas vezes).`, color: '#fca5a5', t: 4 }); return; }
   if (k === 'poke') P.balls--; else P.bag[k]--;
   G.dirty = true;
   // rolagem de captura: d20 + nível/2 + bônus da bola contra uma CD que cai com a vida do alvo
