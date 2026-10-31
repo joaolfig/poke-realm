@@ -85,7 +85,8 @@ function renderStoryNPC(n, P) {
   if (st.ch === 0) return `<p>${s.intro}</p><p class="fala">"Eu sou ${n.nome}. Você aceita a jornada pelos oito ginásios de ${REGION.nome}?"</p><button data-act="story:start" class="good">📖 Aceitar a jornada</button>`;
   if (st.done) return `<p>${s.fim}</p><button data-act="story:next" class="good">📖 Continuar a história (recompensa)</button>`;
   const warn = P.lvl < s.lvl ? ` <span style="color:#fca5a5">(recomendado nível ${s.lvl}, você é nível ${P.lvl})</span>` : '';
-  return `<div class="quest cur"><b>${st.ch <= 8 ? `Insígnia ${st.ch}/8: ` : 'Capítulo final: '}${s.titulo}</b><p>${s.intro}</p><div class="small">🎯 ${s.obj}${warn}<br>O destino aparece como ★ no minimapa.</div></div>`;
+  const need = s.at ? needFor(P, zoneAt(...cellPt(...s.at))) : [];
+  return `<div class="quest cur"><b>${st.ch <= 8 ? `Insígnia ${st.ch}/8: ` : 'Capítulo final: '}${s.titulo}</b><p>${s.intro}</p><div class="small">🎯 ${s.obj}${warn}<br>O destino aparece como ★ no minimapa.${need.length ? `<br><span style="color:#fca5a5">Para chegar lá você precisa de: ${need.join(', ')}.</span>` : ''}</div></div>` + pathChecklist(P);
 }
 
 function storyAct(P, arg) {
@@ -139,7 +140,8 @@ function storyTarget(P) {
   const guia = REGION.guia.nome;
   if (st.ch === 0 || st.done) return { x: 0, y: -205, label: st.ch === 0 ? `Fale com ${guia} na vila` : `Volte à vila e fale com ${guia}`, titulo: s.titulo };
   const [x, y] = storyPos(st.ch);
-  return { x, y, label: s.obj, titulo: st.ch <= 8 ? `Insígnia ${st.ch}/8` : 'Final', lvl: s.lvl };
+  const need = needFor(P, zoneAt(x, y));
+  return { x, y, label: s.obj + (need.length ? ` (precisa de ${need.join(', ')})` : ''), titulo: st.ch <= 8 ? `Insígnia ${st.ch}/8` : 'Final', lvl: s.lvl };
 }
 function drawStoryHUD(hy, ox, oy) {
   const P = G.P, t = storyTarget(P);

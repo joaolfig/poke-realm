@@ -1526,6 +1526,7 @@ function drawHUD(ox, oy) {
     let hint = null, col = '#fef3c7';
     if (G.nearPortal) { const p = G.nearPortal; hint = p.exit ? '[E] Sair da masmorra' : `[E] Entrar: ${THEMES[p.theme].nome}`; col = p.exit ? '#facc15' : THEMES[p.theme].accent; }
     else if (G.nearNPC) hint = `[E] Falar com ${G.nearNPC.nome}`;
+    else if (!gateOpen() && [[0, -40], [0, 40], [-40, 0], [40, 0]].some(([dx, dy]) => tileKind(P.x + dx, P.y + dy) === TK.GATE)) { hint = `🏅 Portão da Liga: abre com 7 insígnias (você tem ${badgeCount(P)})`; col = '#fcd34d'; }
     else if (G.nearHM) { hint = hmHint(P, G.nearHM); col = G.nearHM.k === 'chest' || petKnows(P, G.nearHM.k) ? '#86efac' : '#cbd5e1'; }
     if (hint) { ctx.textAlign = 'center'; ctx.font = 'bold 16px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 4; ctx.fillStyle = col; outlined(hint, W / 2, H / 2 + 70); }
   }
@@ -1584,6 +1585,17 @@ function drawHUD(ox, oy) {
         const [a, b] = toM(ev.x, ev.y);
         ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fdba74'; ctx.strokeStyle = '#000';
         outlined(EVENT_ICONS[ev.kind], a, b + 5);
+      }
+      // passagens bloqueadas por MO (apagadas quando você já pode passar)
+      if (!dg && P) {
+        ctx.font = '10px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center';
+        for (const g of GATES) {
+          const open = g.k === 'badge' ? gateOpen() : P.hms.includes(g.k);
+          const [a, b] = toM(g.x, g.y);
+          ctx.globalAlpha = open ? 0.35 : 1;
+          ctx.fillText({ cut: '✂️', smash: '🪨', surf: '🌊', badge: '🏅' }[g.k], a, b + 4);
+        }
+        ctx.globalAlpha = 1;
       }
       const qt = !dg && questTarget(P);
       if (qt) { const [a, b] = toM(qt.x, qt.y); ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; outlined('🎯', a, b + 4); }

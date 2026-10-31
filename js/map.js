@@ -40,7 +40,7 @@ function setGeo(geo) {
   replaceArr(SECRETS, geo.secrets.map(([k, cx, cy], i) => { const [x, y] = cellPt(cx, cy); return { id: `s_${k}${i}`, k, x, y, zone: 1 }; }));
 }
 
-const TK = { GRASS: 0, TALL: 1, PATH: 2, WATER: 3, TREE: 4, ROCK: 5, FLOWER: 6, PLAZA: 7, FENCE: 8, CLIFF: 9, SAND: 10, DEAD: 11, GRAVE: 12, CRYSTAL: 13, BRIDGE: 14, PINE: 15, SNOW: 16, SEA: 17, CUTTREE: 18, CRACKED: 19, BOULDER: 20, WATERFALL: 21, DIVE: 22, CHEST: 23, DTREE: 24, POND: 25 };
+const TK = { GRASS: 0, TALL: 1, PATH: 2, WATER: 3, TREE: 4, ROCK: 5, FLOWER: 6, PLAZA: 7, FENCE: 8, CLIFF: 9, SAND: 10, DEAD: 11, GRAVE: 12, CRYSTAL: 13, BRIDGE: 14, PINE: 15, SNOW: 16, SEA: 17, CUTTREE: 18, CRACKED: 19, BOULDER: 20, WATERFALL: 21, DIVE: 22, CHEST: 23, DTREE: 24, POND: 25, GATE: 26 };
 // barreiras só onde têm função: fronteiras (progresso), anéis dos baús (loot), água funda e prédios.
 // DTREE = árvore decorativa (atravessável), POND = laguinho raso
 const SOLIDK = new Uint8Array(32);
@@ -79,6 +79,10 @@ const SECRETS = [
   { id: 's_surf', k: 'surf', at: [4.5, 11.5] },
 ].map(sc => { const [x, y] = cellPt(...sc.at); return { ...sc, x, y, zone: 1 }; });
 const SECRET_AT = new Map();
+// bloqueios de MO nas rotas entre zonas (para o minimapa e as dicas)
+const GATES = [];
+const badgeCount = P => (P && P.story ? clamp(P.story.ch - 1 + (P.story.done ? 1 : 0), 0, 8) : 0);
+const gateOpen = () => !!(G && G.P && badgeCount(G.P) >= 7);
 const inTown = (x, y) => x * x + y * y < VILA_R * VILA_R;
 const MZ = { '~': -1, L: -2, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, V: 1 };
 function macroAt(x, y) {
@@ -132,6 +136,7 @@ function solidAt(x, y, swim) {
   if (x > DG_BASE - 5000) return false;
   const sw = swim | 0, i = tileIdx(x, y);
   if (i < 0) return !(sw & 1);
+  if (TT[i] === TK.GATE) return !gateOpen();
   if (SOLIDK[TT[i]]) return true;
   if (TT[i] === TK.WATERFALL) return !(sw & 2);
   if (!(sw & 1) && TT[i] !== TK.BRIDGE && (WET[i] > 0 || TT[i] === TK.SEA) && wetAt(x, y) > DEEP_T) return true;
@@ -169,6 +174,7 @@ function carveSecret(sc) {
 
 function buildWorld() {
   TT = new Uint8Array(NX * NY); TZ = new Int8Array(NX * NY); TV = new Uint8Array(NX * NY);
+  GATES.length = 0;
   const onPath = new Uint8Array(NX * NY);
   // 1ª passada: zona, rotas e bioma
   for (let iy = 0; iy < NY; iy++) for (let ix = 0; ix < NX; ix++) {
@@ -185,7 +191,15 @@ function buildWorld() {
     }
     let z = zoneRaw(wx, wy);
     if (z === -1) { TZ[i] = -1; TT[i] = TK.SEA; continue; }
-    if (z === -2) { TZ[i] = -1; TT[i] = pd < 34 ? TK.BRIDGE : TK.WATER; if (pd < 34) { onPath[i] = 1; TZ[i] = 1; } continue; }
+    if (z === -2) {
+      TZ[i] = -1; TT[i] = TK.WATER;
+      if (pd < 34) {
+        let mz = 0;
+        for (let k = 0; k < 8; k++) mz = Math.max(mz, zoneRaw(wx + Math.cos(k * 0.785) * 520, wy + Math.sin(k * 0.785) * 520));
+        if (mz < 4) { TT[i] = TK.BRIDGE; onPath[i] = 1; TZ[i] = 1; } // perto de ilhas de zona 4+: Surfar
+      }
+      continue;
+    }
     TZ[i] = z;
     if (pd < 34) { TT[i] = TK.PATH; onPath[i] = 1; continue; }
     const n1 = vnoise(wx / 180 + 40, wy / 180 + 11), n2 = vnoise(wx / 95 + 7, wy / 95 + 70);
@@ -215,13 +229,18 @@ function buildWorld() {
       if (TZ[j] >= 1 && TZ[j] !== z && (TZ[j] === 4 || z === 4)) river = true; // rio largo em volta das Terras Sombrias
       if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1 && TZ[j] >= 1 && TZ[j] !== z) bz = Math.max(bz, TZ[j], z);
     }
-    if (river) T2[i] = onPath[i] ? TK.BRIDGE : TK.WATER;
+    // progressão pelas MOs: zona 2 = Corte, zona 3 = Esmaga-Rocha, zona 4 = Surfar (rio), zona 5 = Portão da Liga (7 insígnias)
+    const gateK = bz >= 5 ? TK.GATE : bz === 4 ? TK.WATER : bz === 3 ? TK.CRACKED : TK.CUTTREE;
+    if (river) {
+      T2[i] = onPath[i] ? (bz ? gateK : TK.BRIDGE) : TK.WATER;
+      if (onPath[i] && bz) GATES.push({ x: (ix - OX + 0.5) * TILE, y: (iy - OY + 0.5) * TILE, k: bz >= 5 ? 'badge' : 'surf' });
+    }
     else if (bz) {
-      if (onPath[i]) continue;
       const wx = (ix - OX + 0.5) * TILE, wy = (iy - OY + 0.5) * TILE;
-      // trechos da fileira de árvores podem ser cortados (atalhos com Corte)
+      if (onPath[i]) { T2[i] = gateK; GATES.push({ x: wx, y: wy, k: bz >= 5 ? 'badge' : bz === 4 ? 'surf' : bz === 3 ? 'smash' : 'cut' }); continue; }
+      // trechos da divisa podem ser abertos com a mesma MO da rota (atalhos)
       const nb = vnoise(wx / 260 + 77, wy / 260 + 13) > 0.72;
-      T2[i] = bz === 2 ? (nb ? TK.CUTTREE : TK.TREE) : nb ? TK.CRACKED : TK.CLIFF;
+      T2[i] = bz === 2 ? (nb ? TK.CUTTREE : TK.TREE) : bz === 3 && nb ? TK.CRACKED : TK.CLIFF;
     } else if (sea && !onPath[i]) T2[i] = TK.SAND;
   }
   TT = T2;
@@ -237,6 +256,10 @@ function buildWorld() {
   // pontos de mergulho no meio de águas fundas
   for (let i = 0; i < NX * NY; i++) if (WET[i] === 1 && (TT[i] === TK.SEA || TT[i] === TK.WATER) && hash(i * 3 + 1, 77) < 0.0022) TT[i] = TK.DIVE;
   enforceProgression();
+  // um ícone por passagem bloqueada (agrupa os tiles vizinhos)
+  const pts = [];
+  for (const g of GATES) if (!pts.some(p => p.k === g.k && Math.hypot(p.x - g.x, p.y - g.y) < 300)) pts.push(g);
+  GATES.length = 0; GATES.push(...pts);
   for (let iy = 0; iy < NY; iy += 3) for (let ix = 0; ix < NX; ix += 3) {
     const i = iy * NX + ix, z = TZ[i], x = (ix - OX + 0.5) * TILE, y = (iy - OY + 0.5) * TILE;
     if (z >= 1 && z <= 5 && !solidAt(x, y) && !isWater(x, y)) ZPTS[z].push([x, y]);
@@ -318,6 +341,14 @@ function tileImg(kind, z, v) {
         px(col, 0, 0, 32, 32);
         px(shade(col, 1.25), 0, 0, 32, 3);
         for (const [y, o] of [[9, 0], [18, 6], [26, 2]]) { px(shade(col, 0.75), o + v * 2, y, 14, 2); px(shade(col, 0.75), o + 18, y + 2, 10, 2); }
+        break;
+      }
+      case TK.GATE: { // Portão da Liga: grade de ferro com a insígnia
+        px(PATHC[zz] || '#c8b48a', 0, 0, 32, 32);
+        px('#3a2a1a', 0, 2, 4, 28); px('#3a2a1a', 28, 2, 4, 28);
+        for (let x = 6; x < 28; x += 5) px('#4b5563', x, 4, 2, 26);
+        px('#374151', 4, 6, 24, 2); px('#374151', 4, 22, 24, 2);
+        px('#e8b04a', 13, 11, 6, 6); px('#7a4f12', 15, 13, 2, 2);
         break;
       }
       case TK.FENCE: {
@@ -404,13 +435,13 @@ function tileImg(kind, z, v) {
  */
 const GCH = 256, GRES = 4, GCACHE = new Map(), RGBC = {};
 const rgbOf = h => RGBC[h] || (RGBC[h] = [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
-const HARDK = new Set([TK.FENCE, TK.CLIFF, TK.WATERFALL, TK.BRIDGE]);
+const HARDK = new Set([TK.FENCE, TK.CLIFF, TK.WATERFALL, TK.BRIDGE, TK.GATE]);
 const WETK = new Set([TK.WATER, TK.SEA, TK.DIVE, TK.POND]);
 function groundCol(k, z, wx, wy, hx, hy) {
   const zz = Math.max(0, z), fine = hash(hx, hy);
   let col, f = 1;
   if (k === TK.TALL) { col = rgbOf((TALLC[zz] || TALLC[1])[0]); f = 0.94 + vnoise(wx / 90, wy / 90) * 0.12; }
-  else if (k === TK.PATH || (ZONES[zz].swamp && WETK.has(k))) { col = rgbOf(PATHC[zz]); f = 0.95 + vnoise(wx / 70, wy / 70) * 0.08 - (fine < 0.07 ? 0.08 : 0); }
+  else if (k === TK.PATH || k === TK.GATE || (ZONES[zz].swamp && WETK.has(k))) { col = rgbOf(PATHC[zz]); f = 0.95 + vnoise(wx / 70, wy / 70) * 0.08 - (fine < 0.07 ? 0.08 : 0); }
   else if (k === TK.SAND || WETK.has(k)) { col = rgbOf('#eadb9f'); f = 0.96 + vnoise(wx / 60, wy / 60) * 0.06 - (fine < 0.05 ? 0.07 : 0); }
   else if (k === TK.SNOW) { col = rgbOf('#eef3f8'); f = 0.97 + vnoise(wx / 60, wy / 60) * 0.04 - (fine < 0.04 ? 0.05 : 0); }
   else if (k === TK.PLAZA) col = rgbOf('#d6cdb8');
@@ -535,6 +566,7 @@ function renderOverworld(ox, oy) {
     if (k === TK.GRASS) { if (hash(tx, ty) < 0.45) ctx.drawImage(tuftImg(z, TV[i] & 3, windFrame(tx, ty)), sx, sy - 4); continue; }
     if (k === TK.FLOWER) { ctx.drawImage(tileImg(k, z, TV[i]), sx, sy); continue; }
     if (!HARDK.has(k) || k === TK.WATERFALL) continue;
+    if (k === TK.GATE && gateOpen()) continue; // portão aberto: só o caminho
     ctx.drawImage(tileImg(k, z, TV[i]), sx, sy);
     if (k === TK.CLIFF) {
       const n = tIdx(tx + OX, ty + OY + 1);
@@ -738,7 +770,7 @@ function rebuildWorld() {
 // progressão: o perigo de cada lugar é no mínimo o maior perigo do caminho mais fácil até ele a partir da vila
 // (nenhuma área mais fraca fica "atrás" de uma mais forte). Roda depois de gerar o mapa.
 function enforceProgression() {
-  const pass = i => !SOLIDK[TT[i]] && !(WET[i] > 0.55 && (TT[i] === TK.WATER || TT[i] === TK.SEA || TT[i] === TK.DIVE));
+  const pass = i => TT[i] === TK.CUTTREE || TT[i] === TK.CRACKED || TT[i] === TK.GATE || TT[i] === TK.WATER || (!SOLIDK[TT[i]] && TT[i] !== TK.SEA);
   const req = new Uint8Array(NX * NY).fill(99), B = [[], [], [], [], [], []];
   const s0 = tileIdx(0, 60);
   req[s0] = 1; B[1].push(s0);

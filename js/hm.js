@@ -7,7 +7,30 @@
 // move = nome do golpe na PokeAPI (usado para saber quem pode aprender)
 // Só 4 MOs, cada uma com um papel claro. Voar ficou nas montarias voadoras (como no Let's Go).
 // As MOs só vêm da história (uma por ginásio) e valem só na região onde foram ganhas (P.hms é da região atual).
+// Elas abrem o caminho entre as zonas: Corte -> zona 2, Esmaga-Rocha -> zona 3, Surfar -> zona 4.
+// A zona 5 fica atrás do Portão da Liga, que só abre com 7 insígnias.
 const HM_GYM = { 1: 'cut', 2: 'smash', 3: 'flash', 4: 'surf' };
+const HM_ZONE = { cut: 2, smash: 3, surf: 4 };
+// o que falta para chegar a uma zona
+function needFor(P, z) {
+  const miss = [];
+  if (z >= 2 && !P.hms.includes('cut')) miss.push('Corte');
+  if (z >= 3 && !P.hms.includes('smash')) miss.push('Esmaga-Rocha');
+  if (z >= 4 && !P.hms.includes('surf')) miss.push('Surfar');
+  if (z >= 5 && badgeCount(P) < 7) miss.push(`7 insígnias (você tem ${badgeCount(P)})`);
+  return miss;
+}
+// lista de caminhos para o guia da vila
+function pathChecklist(P) {
+  const row = (ok, txt) => `<div class="small" style="color:${ok ? '#86efac' : '#fca5a5'}">${ok ? '✔' : '✖'} ${txt}</div>`;
+  return '<h4>Caminhos</h4>'
+    + row(P.hms.includes('cut'), `✂️ Corte abre as rotas para ${ZONES[2].nome} (1º ginásio)`)
+    + row(P.hms.includes('smash'), `🪨 Esmaga-Rocha abre as rotas para ${ZONES[3].nome} (2º ginásio)`)
+    + row(P.hms.includes('surf'), `🌊 Surfar atravessa o rio até ${ZONES[4].nome} e as ilhas distantes (4º ginásio)`)
+    + row(badgeCount(P) >= 7, `🏅 O Portão da Liga para ${ZONES[5].nome} abre com 7 insígnias (você tem ${badgeCount(P)})`)
+    + row(P.hms.includes('flash'), '💡 Lampejo ilumina ginásios escuros e a névoa (3º ginásio)')
+    + '<div class="small">MOs só funcionam com um companheiro que as saiba fora da Poké Ball (ensine no painel). Os bloqueios aparecem no minimapa.</div>';
+}
 const HMS = {
   cut: { mo: 'MO01', move: 'cut', nome: 'Corte', icon: '✂️', preco: 120, ch: 0, desc: 'Corta arvorezinhas que bloqueiam atalhos e baús ([E] perto delas).' },
   surf: { mo: 'MO02', move: 'surf', nome: 'Surfar', icon: '🌊', preco: 300, ch: 3, desc: 'Atravesse águas fundas montado no companheiro. Surfando, [E] nos pontos escuros mergulha atrás de tesouros.' },
@@ -31,7 +54,8 @@ const ridingFlyer = P => !!(P.riding && activePet(P) && rideFlies(activePet(P).p
 function giveHM(P, k) {
   if (P.hms.includes(k)) return;
   P.hms.push(k);
-  G.toasts.push({ text: `📀 Você recebeu a ${HMS[k].mo} ${HMS[k].nome}! Ensine a um companheiro compatível no painel.`, color: '#93c5fd', t: 5, big: 1 });
+  const opens = HM_ZONE[k] ? ` Ela abre o caminho para ${ZONES[HM_ZONE[k]].nome}.` : k === 'flash' ? ' Ela ilumina ginásios escuros e a névoa.' : '';
+  G.toasts.push({ text: `📀 Você recebeu a ${HMS[k].mo} ${HMS[k].nome}!${opens} Ensine a um companheiro no painel.`, color: '#93c5fd', t: 7, big: 1 });
   sfx('lvl');
   G.dirty = true;
 }
