@@ -342,8 +342,8 @@ function throwBall() {
   // a Poké Ball comum quase não segura Pokémon das zonas 3-5 (empurra o jogador para Great e Ultra Ball)
   const pen = k === 'poke' ? (POKE_BALL_PEN[e.zone] || 0) : 0;
   const nat = d(20), total = nat + Math.floor(P.lvl / 2) + (hasT(P, 'domador') ? 4 : 0) + BALLS[k].bonus + M(P, 'cap') - pen;
-  const ok = nat === 20 || total >= dc, rollTxt = `${BALLS[k].icon} 🎲 ${nat}${total - nat >= 0 ? '+' : ''}${total - nat} vs CD ${dc}${pen ? ` (Poké Ball −${pen} nesta zona)` : ''}`;
-  if (pen && !ok && !G.ballTip) { G.ballTip = 1; G.toasts.push({ text: '⚪ A Poké Ball comum é fraca demais para os Pokémon desta zona. Use Great 🔵 ou Ultra Ball 🟡 (vendidas na loja de Poké Balls; troque a bola com [G] ou B no controle).', color: '#fde68a', t: 8 }); }
+  const ok = nat === 20 || total >= dc, rollTxt = `${BALLS[k].icon} 🎲 ${nat}${total - nat >= 0 ? '+' : ''}${total - nat} vs CD ${dc}`;
+  if (pen && !ok && !G.ballTip) { G.ballTip = 1; G.toasts.push({ text: '⚪ O Pokémon escapou da Poké Ball como se ela nem estivesse ali... Talvez essa bola não seja páreo para os Pokémon daqui.', color: '#fde68a', t: 8 }); }
   // a bola voa em arco até o Pokémon; o resultado sai quando ela chega
   const dist = Math.hypot(e.x - P.x, e.y - P.y);
   G.throws = G.throws || [];

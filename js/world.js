@@ -60,7 +60,7 @@ function closeNPC() { G.npcOpen = null; G.npcRef = null; $('npc').classList.add(
 // loja de Poké Balls (a antiga curandeira): bolas e vagas extras de companheiro
 function ballShop(P) {
   return [
-    { id: 'ball', nome: 'Poké Ball (fraca nas zonas 3-5)', icon: '⚪', preco: 30 },
+    { id: 'ball', nome: 'Poké Ball', icon: '⚪', preco: 30 },
     { id: 'grande', nome: 'Great Ball (+3 na captura)', icon: '🔵', preco: 70 },
     { id: 'ultra', nome: 'Ultra Ball (+6 na captura)', icon: '🟡', preco: 150, lock: P.lvl < 8 },
     ...(petCap(P) < PET_CAP_MAX ? [{ id: 'cinto', nome: `Cinto de Poké Balls: +1 vaga de companheiro (${petCap(P)} → ${petCap(P) + 1})`, icon: '🎒', preco: CINTO_PRECO[petCap(P)] }] : []),
@@ -89,9 +89,8 @@ function renderNPC() {
   if (!P || !n) { closeNPC(); return; }
   let body = n.fala ? `<p class="fala">"${n.fala}"</p>` : '';
   if (n.id === 'cura') {
-    // dica da vendedora: a Poké Ball comum não segura os Pokémon mais fortes
-    body += `<p class="fala">"Um conselho: a Poké Ball comum só dá conta dos Pokémon das primeiras áreas. De ${ZONES[3].nome} em diante eles são fortes demais e escapam quase sempre. Lá, leve <b>Great Ball 🔵</b> e, nas áreas mais perigosas, <b>Ultra Ball 🟡</b>. E enfraqueça bem o Pokémon antes de jogar!"</p>`
-      + `<div class="small">Troque a bola que você joga com <b>[G]</b> (ou <b>B</b> no controle).</div>`;
+    // dica da vendedora: insinua que a Poké Ball comum não segura os Pokémon mais fortes (sem explicar a regra)
+    body += `<p class="fala">"Ouvi dizer que, para lá de ${ZONES[3].nome}, os Pokémon não se deixam prender por qualquer bola... Os treinadores que voltam de lá inteiros nunca levam só Poké Ball na mochila. Por que será que a Great Ball e a Ultra Ball vendem tanto?"</p>`;
     body += '<h4>Poké Balls</h4>' + ballShop(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}</span>
       <button data-act="buy:${s.id}" ${s.lock || P.gold < s.preco ? 'disabled' : ''}>${s.lock ? 'a partir do Nv 8' : s.preco + ' 🪙'}</button></div>`).join('')
       + `<div class="small">Você tem ${P.balls} Poké Ball, ${P.bag.grande} Great Ball e ${P.bag.ultra} Ultra Ball · ${P.pets.length}/${petCap(P)} companheiros${petCap(P) >= PET_CAP_MAX ? ' (máximo)' : ''}.</div>`;
