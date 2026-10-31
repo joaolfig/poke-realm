@@ -89,6 +89,9 @@ function renderNPC() {
   if (!P || !n) { closeNPC(); return; }
   let body = n.fala ? `<p class="fala">"${n.fala}"</p>` : '';
   if (n.id === 'cura') {
+    // dica da vendedora: a Poké Ball comum não segura os Pokémon mais fortes
+    body += `<p class="fala">"Um conselho: a Poké Ball comum só dá conta dos Pokémon das primeiras áreas. De ${ZONES[3].nome} em diante eles são fortes demais e escapam quase sempre. Lá, leve <b>Great Ball 🔵</b> e, nas áreas mais perigosas, <b>Ultra Ball 🟡</b>. E enfraqueça bem o Pokémon antes de jogar!"</p>`
+      + `<div class="small">Troque a bola que você joga com <b>[G]</b> (ou <b>B</b> no controle).</div>`;
     body += '<h4>Poké Balls</h4>' + ballShop(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}</span>
       <button data-act="buy:${s.id}" ${s.lock || P.gold < s.preco ? 'disabled' : ''}>${s.lock ? 'a partir do Nv 8' : s.preco + ' 🪙'}</button></div>`).join('')
       + `<div class="small">Você tem ${P.balls} Poké Ball, ${P.bag.grande} Great Ball e ${P.bag.ultra} Ultra Ball · ${P.pets.length}/${petCap(P)} companheiros${petCap(P) >= PET_CAP_MAX ? ' (máximo)' : ''}.</div>`;
