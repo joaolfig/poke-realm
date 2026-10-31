@@ -84,21 +84,28 @@ const TOWN_DECOR = [
   { k: 'tree', x: -262, y: 128 }, { k: 'tree', x: 262, y: 140 },
 ];
 // portais nas entradas: onde as ruas cruzam a borda da vila (recalculados a cada região)
+// portais de cada cidade (coordenadas locais, relativas ao centro da cidade)
+const TOWN_GATES = [[], []];
+const decorSy = d => (d.k === 'gate' ? d.y + Math.abs(d.ty) * 46 : d.k === 'tree' ? d.y + 6 : d.k === 'stall' ? d.y + 16 : d.y);
 function rebuildTownDecor() {
   for (let i = TOWN_DECOR.length - 1; i >= 0; i--) if (TOWN_DECOR[i].k === 'gate') TOWN_DECOR.splice(i, 1);
-  const R = VILA_R - 8, found = [];
-  for (let a = 0; a < Math.PI * 2; a += 0.01) {
-    const x = Math.cos(a) * R, y = Math.sin(a) * R, d = pathDist(x, y);
-    if (d < 12 && !found.some(f => Math.abs(Math.atan2(Math.sin(f.a - a), Math.cos(f.a - a))) < 0.4)) found.push({ a, d, x, y });
-  }
-  for (const f of found) {
-    // centraliza no meio da rua
-    let best = f;
-    for (let a = f.a - 0.2; a < f.a + 0.2; a += 0.005) { const x = Math.cos(a) * R, y = Math.sin(a) * R, d = pathDist(x, y); if (d < best.d) best = { a, d, x, y }; }
-    const tx = -Math.sin(best.a), ty = Math.cos(best.a);
-    TOWN_DECOR.push({ k: 'gate', x: best.x, y: best.y, tx, ty, main: Math.abs(best.a + Math.PI / 2) < 0.4 });
-  }
-  for (const d of TOWN_DECOR) d.sy = d.k === 'gate' ? d.y + Math.abs(d.ty) * 46 : d.k === 'tree' ? d.y + 6 : d.k === 'stall' ? d.y + 16 : d.y;
+  for (const d of TOWN_DECOR) d.sy = decorSy(d);
+  TOWNS.forEach((t, ti) => {
+    const R = VILA_R - 8, found = [], gates = TOWN_GATES[ti] = [];
+    const pd = (x, y) => pathDist(t.x + x, t.y + y);
+    for (let a = 0; a < Math.PI * 2; a += 0.01) {
+      const x = Math.cos(a) * R, y = Math.sin(a) * R, d = pd(x, y);
+      if (d < 12 && !found.some(f => Math.abs(Math.atan2(Math.sin(f.a - a), Math.cos(f.a - a))) < 0.4)) found.push({ a, d, x, y });
+    }
+    for (const f of found) {
+      // centraliza no meio da rua
+      let best = f;
+      for (let a = f.a - 0.2; a < f.a + 0.2; a += 0.005) { const x = Math.cos(a) * R, y = Math.sin(a) * R, d = pd(x, y); if (d < best.d) best = { a, d, x, y }; }
+      const g = { k: 'gate', x: best.x, y: best.y, tx: -Math.sin(best.a), ty: Math.cos(best.a), main: Math.abs(best.a + Math.PI / 2) < 0.4, town: ti };
+      g.sy = decorSy(g);
+      gates.push(g);
+    }
+  });
 }
 
 function post(x, y, h) {
@@ -198,7 +205,7 @@ function drawDecor(d, ox, oy) {
         const mx = (p1x + p2x) / 2, my = (p1y + p2y) / 2 - 50;
         ctx.fillStyle = '#2a2a2a'; ctx.fillRect(mx - 22, my, 1, 6); ctx.fillRect(mx + 21, my, 1, 6);
         ctx.fillStyle = WOOD.dk; ctx.fillRect(mx - 40, my + 5, 80, 16); ctx.fillStyle = WOOD.lt; ctx.fillRect(mx - 39, my + 6, 78, 14);
-        ctx.font = 'bold 11px Tiny5, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#2a1a0c'; ctx.fillText(ZONES[0].nome.replace(/^Vila /, '').toUpperCase(), mx, my + 17);
+        ctx.font = 'bold 11px Tiny5, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#2a1a0c'; ctx.fillText(((d.town ? TOWNS[d.town].nome : ZONES[0].nome) || '').replace(/^(Vila|Cidade|Porto) (d[aoe]s? )?/, '').toUpperCase().slice(0, 14), mx, my + 17);
       }
       break;
     }

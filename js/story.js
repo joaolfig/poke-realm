@@ -8,6 +8,12 @@ const STORY = [];
 const STORY_IDS = [];
 const storyPos = ch => cellPt(...STORY[ch].at);
 const storyOver = P => P.story && P.story.ch >= STORY.length;
+// no meio da história (antes do 5º ginásio) o jogador precisa ir à 2ª cidade; dali em diante a jornada segue de lá
+const T2_CH = 5;
+const needT2 = P => !!(TOWNS[1] && P.story && P.story.ch >= T2_CH && !P.story.t2 && !storyOver(P));
+const storyHub = P => (TOWNS[1] && P.story && P.story.t2 ? 1 : 0);
+const storyGuide = P => (storyHub(P) ? NPCS2.find(n => n.id === 'sildo') : NPCS.find(n => n.id === 'sildo'));
+const hubName = P => townName(TOWNS[storyHub(P)]);
 
 // ajusta um inimigo da história (igual no host e nos clientes)
 function storyMod(e, ch) {
@@ -31,7 +37,7 @@ function storyTick(dt) {
   if (G.storyT > 0) return;
   G.storyT = 1;
   const s = STORY[P.story.ch];
-  if (!s || !s.at || P.story.done) return;
+  if (!s || !s.at || P.story.done || needT2(P)) return;
   const [x, y] = storyPos(P.story.ch);
   if (Math.hypot(P.x - x, P.y - y) > 700) return;
   if (isHost()) hostStory(P.story.ch);
@@ -64,7 +70,7 @@ function storyKill(m) {
   const P = G.P;
   if (!m.st || !P.story || P.story.ch !== m.st || P.story.done) return;
   P.story.done = true;
-  G.toasts.push({ text: `📖 ${STORY[m.st].titulo} vencido! Volte à vila e fale com ${REGION.guia.nome}.`, color: '#fde047', t: 6, big: 1 });
+  G.toasts.push({ text: `📖 ${STORY[m.st].titulo} vencido! Volte para ${hubName(P)} e fale com ${storyGuide(P).nome}.`, color: '#fde047', t: 6, big: 1 });
   sfx('lvl');
   saveGame();
 }
@@ -82,6 +88,25 @@ function renderStoryNPC(n, P) {
     return `<p class="fala">"${STORY[STORY.length - 1].fim}"</p><p>A história de ${REGION.nome} terminou, mas os lendários ainda vagam pelas áreas mais perigosas e os ginásios aceitam revanches pelos portais dos Alfas. Que tal conhecer outra região?</p>`;
   }
   const s = STORY[st.ch];
+  const t2 = TOWNS[1], helper = NPCS2.find(x => x.id === 'sildo');
+  if (n.town === 1) {
+    // assistente na 2ª cidade
+    if (needT2(P)) return `<p class="fala">"Você deve ser quem ${REGION.guia.nome} mandou! Que bom que chegou a ${t2.nome}."</p>
+      <p>Daqui em diante a jornada fica longe de casa, e ${t2.nome} fica bem no meio de ${REGION.nome}: é daqui que você parte para os próximos ginásios, e é aqui que você volta depois de cada vitória.</p>
+      <div class="quest cur" style="margin-top:8px"><b>📀 ${n.nome} entrega a ${HMS.fly.mo} ${HMS.fly.nome}</b>
+      <p class="fala">"Com Voar, um companheiro voador te leva para <b>qualquer cidade que você já visitou</b>: aperte <b>[V]</b> e escolha o destino. Toda cidade por onde você passa vira um destino novo."</p>
+      <div class="small">Ensine Voar a um Pokémon do tipo Voador no painel (botão <b>+🪶</b>) e deixe ele fora da Poké Ball.<br>
+      E lembre: <b>[R]</b> agora te leva de volta à <b>última cidade</b> em que você esteve, não só à ${ZONES[0].nome}.</div></div>
+      <button data-act="story:t2" class="good">📀 Receber a ${HMS.fly.mo} ${HMS.fly.nome}</button>`;
+    if (!st.t2 && !storyOver(P)) return `<p class="fala">"Olá! ${REGION.guia.nome} me pediu para cuidar dos treinadores que chegam a ${t2.nome}. Quando a sua jornada passar por aqui, venha falar comigo."</p>`;
+  } else if (st.t2 && !storyOver(P)) {
+    // o guia da vila manda o jogador para a 2ª cidade
+    return `<p class="fala">"A sua jornada agora segue a partir de ${t2.nome}. ${helper.nome} está esperando você lá com as próximas missões."</p>
+      <div class="small">Use <b>[V]</b> Voar com um companheiro voador para chegar rápido.</div>`;
+  } else if (needT2(P)) {
+    return `<div class="quest cur"><b>📖 Missão: ${t2.nome}</b><p class="fala">"Você já tem quatro insígnias! Daqui pra frente os ginásios ficam longe demais da ${ZONES[0].nome}. Vá até <b>${t2.nome}</b>, no coração de ${REGION.nome}, e fale com ${helper.nome}. É de lá que a sua jornada continua, e ${helper.nome} tem uma MO que vai mudar o seu jeito de viajar."</p>
+      <div class="small">🎯 Vá até ${t2.nome} e fale com ${helper.nome}<br>O destino aparece como ★ no minimapa.</div></div>` + pathChecklist(P);
+  }
   if (st.ch === 0) return `<p>${s.intro}</p><p class="fala">"Eu sou ${n.nome}. Você aceita a jornada pelos oito ginásios de ${REGION.nome}?"</p><button data-act="story:start" class="good">📖 Aceitar a jornada</button>`;
   if (st.done) {
     // o líder entrega a MO na conversa (a MO é parte da história, não um prêmio automático)
@@ -108,10 +133,15 @@ function storyAct(P, arg) {
   if (arg === 'start' && st.ch === 0) {
     st.ch = 1; st.done = false;
     G.toasts.push({ text: `📖 Capítulo 1: ${STORY[1].titulo}`, color: '#fde047', t: 4, big: 1 });
+  } else if (arg === 't2' && needT2(P)) {
+    st.t2 = true;
+    giveHM(P, 'fly');
+    G.toasts.push({ text: `📖 A jornada agora parte de ${TOWNS[1].nome}. [R] volta para a última cidade visitada.`, color: '#fde047', t: 6, big: 1 });
+    G.toasts.push({ text: `📖 Capítulo ${st.ch}: ${STORY[st.ch].titulo}`, color: '#fde047', t: 4, big: 1 });
   } else if (arg === 'next' && st.done) {
     const ch = st.ch;
-    const last = ch === STORY.length - 1, xp = Math.round(xpNeed(P.lvl) * 0.35), gold = 60 * ch;
-    P.gold += gold;
+    // a história não dá dinheiro: recompensa em XP, item, Doce Raro, atributo e MOs
+    const last = ch === STORY.length - 1, xp = Math.round(xpNeed(P.lvl) * 0.35);
     const it = last ? { slot: 'amuleto', tier: 6, name: `Medalha do Campeão de ${REGION.nome}`, relic: 1, mods: { hp: 0.15, dmg: 2, cd: 0.15, regen: 0.5 } } : genItem(clamp(Math.round(ch * 0.7) + 1, 0, 6));
     const i = P.inv.indexOf(null);
     if (i >= 0) P.inv[i] = it; else G.bags.push({ x: P.x, y: P.y + 30, items: [it], life: 120 });
@@ -120,9 +150,10 @@ function storyAct(P, arg) {
     const hm = HM_GYM[ch];
     if (hm) giveHM(P, hm);
     if (ch <= 8) G.toasts.push({ text: `🏅 Insígnia ${ch}/8 de ${REGION.nome} conquistada!`, color: '#fde047', t: 4, big: 1 });
-    G.toasts.push({ text: `🎁 +${xp} XP, +${gold} 🪙, ${it.name}, 🍬 Doce Raro`, color: '#facc15', t: 4 });
+    G.toasts.push({ text: `🎁 +${xp} XP, ${it.name}, 🍬 Doce Raro`, color: '#facc15', t: 4 });
     st.ch++; st.done = false;
-    if (st.ch < STORY.length) G.toasts.push({ text: `📖 Capítulo ${st.ch}: ${STORY[st.ch].titulo}`, color: '#fde047', t: 4, big: 1 });
+    if (needT2(P)) G.toasts.push({ text: `📖 Nova missão: vá até ${TOWNS[1].nome} e fale com ${NPCS2.find(n => n.id === 'sildo').nome}`, color: '#fde047', t: 6, big: 1 });
+    else if (st.ch < STORY.length) G.toasts.push({ text: `📖 Capítulo ${st.ch}: ${STORY[st.ch].titulo}`, color: '#fde047', t: 4, big: 1 });
     else G.toasts.push({ text: `🏆 Você é o campeão de ${REGION.nome}!`, color: '#fde047', t: 6, big: 1 });
     gainXP(xp, true);
   } else return;
@@ -151,8 +182,9 @@ function drawQuestHUD(hy, ox, oy) {
 function storyTarget(P) {
   if (!P || !P.story || storyOver(P)) return null;
   const st = P.story, s = STORY[st.ch];
-  const guia = REGION.guia.nome;
-  if (st.ch === 0 || st.done) return { x: 0, y: -205, label: st.ch === 0 ? `Fale com ${guia} na vila` : `Volte à vila e fale com ${guia}`, titulo: s.titulo };
+  const gd = storyGuide(P);
+  if (needT2(P)) { const h = NPCS2.find(n => n.id === 'sildo'); return { x: h.x, y: h.y, label: `Vá até ${TOWNS[1].nome} e fale com ${h.nome}`, titulo: `Missão: ${TOWNS[1].nome}` }; }
+  if (st.ch === 0 || st.done) return { x: gd.x, y: gd.y, label: st.ch === 0 ? `Fale com ${gd.nome} na vila` : `Volte para ${hubName(P)} e fale com ${gd.nome}`, titulo: s.titulo };
   const [x, y] = storyPos(st.ch);
   const need = needFor(P, zoneAt(x, y));
   return { x, y, label: s.obj + (need.length ? ` (precisa de ${need.join(', ')})` : ''), titulo: st.ch <= 8 ? `Insígnia ${st.ch}/8` : 'Final', lvl: s.lvl };

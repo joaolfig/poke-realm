@@ -94,8 +94,23 @@ function giveCandy() {
   saveGame();
 }
 
+// Eevee não evolui sozinho: a partir do Nv EEVEE_LVL o jogador aperta para evoluir, e ele vira
+// a evolução do tipo que o herói tem NAQUELE momento (o natural ou o do cristal ativo)
+const EEVEE = 133, EEVEE_LVL = 14;
+const EEVEE_EVO = { water: 134, electric: 135, fire: 136, psychic: 196, dark: 197, grass: 470, ice: 471, fairy: 700 };
+function eeveeEvolve(i) {
+  const P = G.P, pt = P.pets[i];
+  if (!pt || pt.pid !== EEVEE || G.evo) return;
+  if (pt.lvl < EEVEE_LVL) return G.toasts.push({ text: `${pt.name} só pode evoluir a partir do Nv ${EEVEE_LVL}.`, color: '#fca5a5', t: 3 });
+  const t = pType(P), id = EEVEE_EVO[t];
+  if (!id) return G.toasts.push({ text: `${pt.name} não reage ao tipo ${TYPE_PT[t]}. Ele só evolui se você estiver com um destes tipos (natural ou de um cristal): ${Object.keys(EEVEE_EVO).map(k => TYPE_PT[k]).join(', ')}.`, color: '#fca5a5', t: 7 });
+  G.evo = { pt, ids: [id], t: 3.2, ready: false };
+  loadPokedex([id]).then(() => { if (G && G.evo && G.evo.pt === pt) G.evo.ready = true; });
+  G.toasts.push({ text: `✨ ${pt.name} sente a sua energia do tipo ${TYPE_PT[t]} e está evoluindo!`, color: '#fde047', t: 3.5, big: 1 });
+  sfx('boss');
+}
 function checkEvolve(pt) {
-  if (G.evo) return;
+  if (G.evo || pt.pid === EEVEE) return;
   const opts = evoCache()[pt.pid];
   if (!opts) { loadEvo(pt.pid); return; }
   const ids = opts.filter(o => o[1] <= pt.lvl).map(o => o[0]);

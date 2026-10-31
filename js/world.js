@@ -21,9 +21,19 @@ function buildNPCSprites() {
     NPC_SPR[n.id] = c;
   }
 }
+// NPCs da segunda cidade: cópias da vila (mesmas lojas) + um assistente do guia (setRegion)
+const NPCS2 = [];
+function rebuildTownNPCs() {
+  NPCS2.length = 0;
+  const t = TOWNS[1];
+  if (!t) return;
+  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo'].includes(n.id))
+    NPCS2.push({ ...n, x: n.x + t.x, y: n.y + t.y, town: 1, nome: n.id === 'sildo' ? `Assistente ${REGION.guia.nome.split(' ').pop()}` : n.nome, show: null });
+}
+const allNPCs = () => NPCS.concat(NPCS2);
 function nearNPC(P) {
   if (inDungeonArea(P.x) || !inTown(P.x, P.y)) return null;
-  return NPCS.find(n => (!n.show || n.show(P)) && Math.hypot(n.x - P.x, n.y - P.y) < 60) || null;
+  return allNPCs().find(n => (!n.show || n.show(P)) && Math.hypot(n.x - P.x, n.y - P.y) < 60) || null;
 }
 function drawNPC(n, ox, oy) {
   if (n.show && !(G.P && n.show(G.P))) return;
@@ -37,15 +47,15 @@ function drawNPC(n, ox, oy) {
     ctx.font = 'bold 20px Barlow Semi Condensed, system-ui'; ctx.fillStyle = P.quest && P.quest.done ? '#4ade80' : '#facc15';
     outlined(P.quest && P.quest.done ? '?' : '!', x, y - 40 + Math.sin(G.time * 5) * 3);
   }
-  if (n.id === 'sildo' && P && P.story && !storyOver(P) && (P.story.ch === 0 || P.story.done)) {
+  if (n.id === 'sildo' && P && P.story && !storyOver(P) && ((n.town === 1 && needT2(P)) || (!needT2(P) && (n.town || 0) === storyHub(P) && (P.story.ch === 0 || P.story.done)))) {
     ctx.font = 'bold 22px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fde047';
     outlined('!', x, y - 40 + Math.sin(G.time * 5) * 3);
   }
 }
 
 /* ---------- Diálogo ---------- */
-function openNPC(id) { G.npcOpen = id; $('npc').classList.remove('hidden'); renderNPC(); sfx('open'); }
-function closeNPC() { G.npcOpen = null; $('npc').classList.add('hidden'); }
+function openNPC(id) { G.npcOpen = id; G.npcRef = G.nearNPC && G.nearNPC.id === id ? G.nearNPC : NPCS.find(n => n.id === id); $('npc').classList.remove('hidden'); renderNPC(); sfx('open'); }
+function closeNPC() { G.npcOpen = null; G.npcRef = null; $('npc').classList.add('hidden'); }
 
 // loja de Poké Balls (a antiga curandeira): bolas e vagas extras de companheiro
 function ballShop(P) {
@@ -62,7 +72,6 @@ function shopList(P) {
   return [
     { id: 'pot', nome: 'Poção de Cura', icon: '❤️', preco: 25 },
     { id: 'doce', nome: 'Doce Raro (+1 nível do companheiro)', icon: '🍬', preco: 140 },
-    { id: 'elixir', nome: 'Elixir de Poder (30s)', icon: '🧪', preco: 40 },
     { id: 'stone', nome: 'Cristal de tipo aleatório', icon: '💎', preco: 50 },
     { id: 'arma', nome: CLASSES[P.cls].weapons[tier], icon: CLASSES[P.cls].wicon, preco: 60 + tier * 45, tier },
     { id: 'armadura', nome: ARMORS[tier], icon: '🛡️', preco: 50 + tier * 40, tier },
@@ -75,7 +84,7 @@ const upgMax = P => (storyOver(P) ? 8 : 5);
 const upgCost = it => Math.round(60 * ((it.upg || 0) + 1) * (1 + it.tier * 0.5));
 
 function renderNPC() {
-  const P = G.P, n = NPCS.find(x => x.id === G.npcOpen);
+  const P = G.P, n = G.npcRef && G.npcRef.id === G.npcOpen ? G.npcRef : NPCS.find(x => x.id === G.npcOpen);
   if (P && G.npcOpen === 'fly') { $('npc').innerHTML = renderFly(P); return; }
   if (!P || !n) { closeNPC(); return; }
   let body = n.fala ? `<p class="fala">"${n.fala}"</p>` : '';
@@ -512,7 +521,7 @@ function updateWorld(dt) {
     P.giftT = Math.max(0, (P.giftT || 0) - dt);
     G.nearNPC = nearNPC(P);
     if (G.npcOpen && G.npcOpen !== 'fly') {
-      const n = NPCS.find(x => x.id === G.npcOpen);
+      const n = G.npcRef || NPCS.find(x => x.id === G.npcOpen);
       if (!n || Math.hypot(n.x - P.x, n.y - P.y) > 110) closeNPC();
     }
   } else if (G.npcOpen) closeNPC();

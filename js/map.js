@@ -37,6 +37,8 @@ function setGeo(geo) {
   OX = -Math.floor(WX0 / TILE); OY = -Math.floor(WY0 / TILE);
   NX = Math.floor(WX1 / TILE) + OX + 1; NY = Math.floor(WY1 / TILE) + OY + 1;
   replaceArr(ROUTES, geo.routes.map(r => r.map(([cx, cy]) => cellPt(cx, cy))));
+  TOWNS.length = 1;
+  if (geo.town2) { const [x, y] = cellPt(geo.town2[0], geo.town2[1]); TOWNS.push({ x, y, i: 1, nome: geo.town2[2] }); }
   replaceArr(SECRETS, geo.secrets.map(([k, cx, cy], i) => { const [x, y] = cellPt(cx, cy); return { id: `s_${k}${i}`, k, x, y, zone: 1 }; }));
 }
 
@@ -83,7 +85,12 @@ const SECRET_AT = new Map();
 const GATES = [];
 const badgeCount = P => (P && P.story ? clamp(P.story.ch - 1 + (P.story.done ? 1 : 0), 0, 8) : 0);
 const gateOpen = () => !!(G && G.P && badgeCount(G.P) >= 7);
-const inTown = (x, y) => x * x + y * y < VILA_R * VILA_R;
+// cidades seguras: a vila inicial (na origem) e a segunda cidade de cada região (setGeo)
+const TOWNS = [{ x: 0, y: 0, i: 0 }];
+const townAt = (x, y) => { for (const t of TOWNS) if ((x - t.x) ** 2 + (y - t.y) ** 2 < VILA_R * VILA_R) return t; return null; };
+const inTown = (x, y) => !!townAt(x, y);
+const townName = t => (t.i ? t.nome : ZONES[0].nome);
+const nearestTown = (x, y) => { let b = TOWNS[0], bd = 1e18; for (const t of TOWNS) { const d = (x - t.x) ** 2 + (y - t.y) ** 2; if (d < bd) { bd = d; b = t; } } return b; };
 const MZ = { '~': -1, L: -2, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, V: 1 };
 function macroAt(x, y) {
   const cx = Math.floor((x - WX0) / CELL), cy = Math.floor((y - WY0) / CELL);
@@ -109,7 +116,8 @@ function pathDist(x, y) {
     best = Math.min(best, segDist(qx, qy, a[0], a[1], b[0], b[1]));
   }
   // dentro da vila as ruas são retas
-  if (inTown(x, y)) best = Math.min(Math.abs(x), Math.abs(y + Math.abs(x) / 6));
+  const tw = townAt(x, y);
+  if (tw) { const lx = x - tw.x, ly = y - tw.y; best = Math.min(Math.abs(lx), Math.abs(ly + Math.abs(lx) / 6)); }
   return best;
 }
 
@@ -140,17 +148,22 @@ function solidAt(x, y, swim) {
   if (SOLIDK[TT[i]]) return true;
   if (TT[i] === TK.WATERFALL) return !(sw & 2);
   if (!(sw & 1) && TT[i] !== TK.BRIDGE && (WET[i] > 0 || TT[i] === TK.SEA) && wetAt(x, y) > DEEP_T) return true;
-  if (inTown(x, y)) {
-    if ((x / 44) ** 2 + ((y + 2) / 22) ** 2 < 1) return true; // chafariz da praça
-    for (const b of BUILDINGS) if (Math.abs(x - b.x) < b.w / 2 - 4 && Math.abs(y - b.y) < b.h / 2 - 4) return true;
+  const tw = townAt(x, y);
+  if (tw) {
+    const lx = x - tw.x, ly = y - tw.y;
+    if ((lx / 44) ** 2 + ((ly + 2) / 22) ** 2 < 1) return true; // chafariz da praça
+    for (const b of BUILDINGS) if (Math.abs(lx - b.x) < b.w / 2 - 4 && Math.abs(ly - b.y) < b.h / 2 - 4) return true;
   }
   return false;
 }
 const solidR = (x, y, r, swim) => solidAt(x - r, y - r, swim) || solidAt(x + r, y - r, swim) || solidAt(x - r, y + r, swim) || solidAt(x + r, y + r, swim);
 function clampWorld(o) { o.x = clamp(o.x, WX0 + 40, WX1 - 40); o.y = clamp(o.y, WY0 + 40, WY1 - 40); }
 function pushOutTown(e) {
-  const m = VILA_R + 30, d0 = Math.hypot(e.x, e.y) || 1;
-  if (d0 < m) { e.x *= m / d0; e.y *= m / d0; }
+  const m = VILA_R + 30;
+  for (const t of TOWNS) {
+    const dx = e.x - t.x, dy = e.y - t.y, d0 = Math.hypot(dx, dy) || 1;
+    if (d0 < m) { e.x = t.x + dx * m / d0; e.y = t.y + dy * m / d0; }
+  }
 }
 const randomZonePoint = z => (ZPTS[z].length ? pick(ZPTS[z]) : [0, -1500]);
 
@@ -180,15 +193,21 @@ function buildWorld() {
   GATES.length = 0;
   const onPath = new Uint8Array(NX * NY);
   // 1ª passada: zona, rotas e bioma
+  const town2T = [];
+  for (const t of TOWNS) if (t.i) t.z = zoneRaw(t.x, t.y);
   for (let iy = 0; iy < NY; iy++) for (let ix = 0; ix < NX; ix++) {
     const i = iy * NX + ix, wx = (ix - OX + 0.5) * TILE, wy = (iy - OY + 0.5) * TILE;
     TV[i] = Math.floor(hash(ix * 3 + 7, iy * 5 + 1) * 4);
     const h = hash(ix * 7 + 1, iy * 13 + 5);
     const pd = pathDist(wx, wy);
-    if (inTown(wx, wy)) {
-      TZ[i] = 0;
-      if (pd < 34) { TT[i] = Math.hypot(wx, wy) < 110 ? TK.PLAZA : TK.PATH; onPath[i] = 1; }
-      else if (Math.hypot(wx, wy) < 110) TT[i] = TK.PLAZA;
+    const tw = townAt(wx, wy);
+    if (tw) {
+      // a 2ª cidade conta como a zona onde está até as divisas serem feitas (assim ela nunca vira atalho)
+      TZ[i] = tw.i ? Math.max(1, tw.z) : 0;
+      if (tw.i) town2T.push(i);
+      const dc = Math.hypot(wx - tw.x, wy - tw.y);
+      if (pd < 34) { TT[i] = dc < 110 ? TK.PLAZA : TK.PATH; onPath[i] = 1; }
+      else if (dc < 110) TT[i] = TK.PLAZA;
       else TT[i] = h < 0.07 ? TK.FLOWER : TK.GRASS;
       continue;
     }
@@ -252,6 +271,7 @@ function buildWorld() {
     } else if (sea && !onPath[i]) T2[i] = TK.SAND;
   }
   TT = T2;
+  for (const i of town2T) TZ[i] = 0;
   for (const sc of SECRETS) carveSecret(sc);
   carveArena();
   WET = new Float32Array(NX * NY);
@@ -486,7 +506,7 @@ function groundChunk(cx, cy) {
       const ax = wx + (vnoise(wx / 22, wy / 22) - 0.5) * 22, ay = wy + (vnoise(wx / 22 + 91, wy / 22) - 0.5) * 22, k2 = tileKind(ax, ay);
       if (!HARDK.has(k2)) { k = k2; sx = ax; sy = ay; }
     }
-    const dc = Math.hypot(wx, wy), town = dc < VILA_R + 20 && (dc < 112 || k === TK.PATH || k === TK.PLAZA);
+    const nt = nearestTown(wx, wy), dc = Math.hypot(wx - nt.x, wy - nt.y), town = dc < VILA_R + 20 && (dc < 112 || k === TK.PATH || k === TK.PLAZA);
     const col = town ? cobble(wx, wy, dc) : groundCol(k, zoneAt(sx, sy), wx, wy, px + cx * 977, py + cy * 613), o = (py * n + px) * 4;
     D[o] = col[0]; D[o + 1] = col[1]; D[o + 2] = col[2]; D[o + 3] = 255;
   }
@@ -589,7 +609,8 @@ function renderOverworld(ox, oy) {
   drawAnimTiles(ox, oy, tx0, tx1, ty0, ty1);
   // limite da área segura, bem discreto
   ctx.strokeStyle = 'rgba(255,240,190,.18)'; ctx.lineWidth = 2; ctx.setLineDash([10, 12]);
-  ctx.beginPath(); ctx.arc(ox, oy, VILA_R, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+  for (const t of TOWNS) { ctx.beginPath(); ctx.arc(ox + t.x, oy + t.y, VILA_R, 0, 7); ctx.stroke(); }
+  ctx.setLineDash([]);
   for (let ty = ty0; ty <= ty1 + 2; ty++) for (let tx = tx0 - 1; tx <= tx1 + 1; tx++) {
     const i = tIdx(tx + OX, ty + OY);
     if (i < 0 || !OBJK[TT[i]]) continue;

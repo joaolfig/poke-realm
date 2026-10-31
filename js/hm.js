@@ -11,7 +11,7 @@
 // A zona 5 fica atrás do Portão da Liga, que só abre com 7 insígnias.
 const HM_GYM = { 1: 'cut', 2: 'smash', 3: 'flash', 4: 'surf' };
 const HM_ZONE = { cut: 2, smash: 3, surf: 4 };
-const HM_ICON = { cut: '✂️', smash: '🪨', surf: '🌊', flash: '💡' };
+const HM_ICON = { cut: '✂️', smash: '🪨', surf: '🌊', flash: '💡', fly: '🪶' };
 // fala do líder ao entregar cada MO
 const HM_LINES = {
   cut: () => 'Leve esta MO e corte os arbustos que fecham a estrada. Daqui pra frente, o caminho só se abre para quem sabe usar Corte.',
@@ -37,18 +37,21 @@ function pathChecklist(P) {
     + row(P.hms.includes('surf'), `🌊 Surfar atravessa o rio até ${ZONES[4].nome} e as ilhas distantes (4º ginásio)`)
     + row(badgeCount(P) >= 7, `🏅 O Portão da Liga para ${ZONES[5].nome} abre com 7 insígnias (você tem ${badgeCount(P)})`)
     + row(P.hms.includes('flash'), '💡 Lampejo ilumina ginásios escuros e a névoa (3º ginásio)')
+    + row(P.hms.includes('fly'), `🪶 Voar leva você a qualquer cidade já visitada com [V] (missão em ${TOWNS[1] ? TOWNS[1].nome : 'outra cidade'})`)
     + '<div class="small">MOs só funcionam com um companheiro que as saiba fora da Poké Ball (ensine no painel). Os bloqueios aparecem no minimapa.</div>';
 }
 const HMS = {
   cut: { mo: 'MO01', move: 'cut', nome: 'Corte', icon: '✂️', preco: 120, ch: 0, desc: 'Corta arvorezinhas que bloqueiam atalhos e baús ([E] perto delas).' },
   surf: { mo: 'MO02', move: 'surf', nome: 'Surfar', icon: '🌊', preco: 300, ch: 3, desc: 'Atravesse águas fundas montado no companheiro. Surfando, [E] nos pontos escuros mergulha atrás de tesouros.' },
   smash: { mo: 'MO03', move: 'rock-smash', nome: 'Esmaga-Rocha', icon: '🪨', preco: 150, ch: 0, desc: 'Quebra rochas rachadas ([E]); às vezes há itens dentro.' },
+  fly: { mo: 'MO05', move: 'fly', nome: 'Voar', icon: '🪶', preco: 0, ch: 5, desc: 'Com um companheiro voador fora da Poké Ball que saiba Voar, [V] leva você a qualquer cidade já visitada.' },
   flash: { mo: 'MO04', move: 'flash', nome: 'Lampejo', icon: '💡', preco: 200, ch: 2, desc: 'Ilumina masmorras escuras e a noite, e dissipa a névoa das áreas sombrias.' },
 };
 const HM_KEYS = Object.keys(HMS);
 const HM_MOVES = Object.fromEntries(Object.entries(HMS).map(([k, h]) => [h.move, k]));
 const activePet = P => (P && P.petIdx >= 0 ? P.pets[P.petIdx] || null : null);
-const canLearn = (pid, k) => !!(POKE[pid] && POKE[pid].hm && POKE[pid].hm.includes(k));
+// Voar: qualquer Pokémon do tipo Voador aprende
+const canLearn = (pid, k) => !!(POKE[pid] && (k === 'fly' ? POKE[pid].types.includes('flying') : POKE[pid].hm && POKE[pid].hm.includes(k)));
 // qualquer companheiro fora da Pokébola que saiba a MO serve (desde que você tenha a MO desta região)
 function petKnows(P, k) {
   if (!P || !P.hms.includes(k) || G.evo) return false;
@@ -62,10 +65,11 @@ const ridingFlyer = P => !!(P.riding && activePet(P) && rideFlies(activePet(P).p
 function giveHM(P, k) {
   if (P.hms.includes(k)) return;
   P.hms.push(k);
-  const opens = HM_ZONE[k] ? ` Ela abre o caminho para ${ZONES[HM_ZONE[k]].nome}.` : k === 'flash' ? ' Ela ilumina ginásios escuros e a névoa.' : '';
+  const opens = HM_ZONE[k] ? ` Ela abre o caminho para ${ZONES[HM_ZONE[k]].nome}.` : k === 'flash' ? ' Ela ilumina ginásios escuros e a névoa.' : k === 'fly' ? ' Com ela, [V] leva você a qualquer cidade já visitada.' : '';
   G.toasts.push({ text: `📀 Você recebeu a ${HMS[k].mo} ${HMS[k].nome}!${opens}`, color: '#93c5fd', t: 7, big: 1 });
   G.toasts.push({ text: `👉 No painel, em Companheiros, aperte +${HMS[k].icon} para ensinar ${HMS[k].nome} (o botão está piscando).`, color: '#fde68a', t: 9 });
   P.hmTeach = k; // destaca os botões de ensinar até alguém aprender
+  if (!P.pets.some(pt => canLearn(pt.pid, k))) G.toasts.push({ text: `Nenhum companheiro seu pode aprender ${HMS[k].nome}. Capture um Pokémon ${k === 'fly' ? 'do tipo Voador' : 'compatível'}!`, color: '#fca5a5', t: 9 });
   sfx('lvl');
   G.dirty = true;
 }
@@ -101,6 +105,8 @@ function updateHM(dt) {
   if (!P) return;
   P.flyCd = Math.max(0, (P.flyCd || 0) - dt);
   G.nearHM = nearHM(P);
+  // [R] volta para a última cidade em que o jogador esteve
+  if (!inDungeonArea(P.x)) { const t = townAt(P.x, P.y); if (t && P.lastTown !== t.i) { P.lastTown = t.i; G.dirty = true; } }
   for (const l of LANDMARKS) {
     if (P.fly.includes(l.id) || Math.hypot(P.x - l.x, P.y - l.y) > 260) continue;
     P.fly.push(l.id);
@@ -112,7 +118,7 @@ function updateHM(dt) {
 
 function drawLandmarks(ox, oy) {
   for (const l of LANDMARKS) {
-    if (l.id === 'vila') continue;
+    if (l.id === 'vila' || l.id === 'town2') continue;
     const x = l.x + 46 + ox, y = l.y - 30 + oy;
     if (x < -80 || y < -80 || x > W + 80 || y > H + 80) continue;
     ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, y + 16, 26, 6, 0, 0, 7); ctx.fill();
@@ -130,9 +136,10 @@ function drawLandmarks(ox, oy) {
 function openFly() {
   const P = G.P;
   if (inDungeonArea(P.x)) return G.toasts.push({ text: 'Não dá para voar dentro de uma masmorra.', color: '#fca5a5', t: 2 });
-  if (!ridingFlyer(P)) return G.toasts.push({ text: 'Para voar, monte [X] num Pokémon voador grande (Charizard, Pidgeot, Dragonite, Aerodactyl...).', color: '#fca5a5', t: 3 });
+  if (!P.hms.includes('fly')) return G.toasts.push({ text: `Você ainda não tem a MO05 Voar. Ela é entregue em ${TOWNS[1] ? TOWNS[1].nome : 'outra cidade'} durante a história.`, color: '#fca5a5', t: 3.5 });
+  if (!petKnows(P, 'fly')) return G.toasts.push({ text: 'Para voar, deixe fora da Poké Ball um companheiro voador que saiba Voar (ensine no painel).', color: '#fca5a5', t: 3 });
   if (P.flyCd > 0) return G.toasts.push({ text: `Seu companheiro está cansado. Voar de novo em ${Math.ceil(P.flyCd)}s.`, color: '#fca5a5', t: 2 });
-  G.npcOpen = 'fly';
+  G.npcOpen = 'fly'; G.npcRef = null;
   $('npc').classList.remove('hidden');
   renderNPC();
 }
@@ -141,17 +148,18 @@ function renderFly(P) {
     const d0 = Math.round(Math.hypot(l.x - P.x, l.y - P.y) / 32);
     return `<div class="shoprow"><span>📍 ${l.nome} <i>${d0}m</i></span><button data-act="fly:${l.id}">Voar</button></div>`;
   }).join('');
-  const pt = activePet(P);
+  const pt = P.pets.find((x, i) => P.petAct.includes(i) && (x.hms || []).includes('fly')) || activePet(P);
   return `<div class="npc-head"><span>🪶 <b>Voar com ${esc(pt ? pt.name : '')}</b></span><button data-act="close" title="Fechar (Esc)">✕</button></div>
-    ${rows}<div class="small">Novos destinos aparecem quando você passa perto das tendas 🪶 espalhadas pelo mapa.</div>`;
+    ${rows}<div class="small">Toda cidade que você visita vira um destino. Novas cidades aparecem quando você passa perto delas.</div>`;
 }
 function flyTo(P, id) {
   const l = LANDMARKS.find(x => x.id === id);
-  if (!l || !P.fly.includes(id) || !ridingFlyer(P)) return;
+  if (!l || !P.fly.includes(id) || !petKnows(P, 'fly')) return;
   closeNPC();
-  const pt = activePet(P);
+  const pt = P.pets.find((x, i) => P.petAct.includes(i) && (x.hms || []).includes('fly')) || activePet(P);
   burst(P.x, P.y, '#e0f2fe', 30);
   P.x = l.x + rand(-20, 20); P.y = l.y + rand(14, 30);
+  const tw = townAt(P.x, P.y); if (tw) P.lastTown = tw.i;
   G.cam.x = P.x; G.cam.y = P.y;
   burst(P.x, P.y, '#e0f2fe', 30);
   G.shake = 6;

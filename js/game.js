@@ -187,7 +187,7 @@ const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armad
 const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
 const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
-const fireRate = P => CLASSES[P.cls].wpn.rate * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (P.elixT > 0 ? 1.2 : 1) * (1 + M(P, 'rate'));
+const fireRate = P => CLASSES[P.cls].wpn.rate * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.15 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
 // XP por nível = abates desejados × XP médio de um abate na zona recomendada para aquele nível.
@@ -216,8 +216,8 @@ function createPlayer(name, h) {
     name, cls: h.cls, race: h.race, ptype: h.type, subclass: null, lvl: 1, xp: 0, fame: 0, kills: 0, gold: 20,
     attrs: { ...h.attrs }, points: h.points || 0, attrV2: 1, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
     equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: null, amuleto: null },
-    inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0, elixir: 1 }, ballSel: 'poke', story: { ch: 0, done: false },
-    pets: [], petIdx: -1, petAct: [], stories: {}, hmsR: {}, quest: null, questOffer: null, elixT: 0, hasteT: 0, slowCd: 0, hms: [], fly: ['vila'], chests: [], flyCd: 0,
+    inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0 }, ballSel: 'poke', story: { ch: 0, done: false },
+    pets: [], petIdx: -1, petAct: [], stories: {}, hmsR: {}, quest: null, questOffer: null, hasteT: 0, slowCd: 0, hms: [], fly: ['vila'], chests: [], flyCd: 0,
     x: rand(-40, 40), y: rand(55, 80), hp: 1, shootCd: 0, abilCd: 0, breathCd: 0, furia: 0, invis: 0, nextCrit: false,
     recallCd: 0, dashCd: 0, dodgeT: 0, shield: 0, shieldT: 0, seloT: 0, sinceHit: 10, face: 1, walk: 0, moving: false, aim: 0, tempType: null, tempTypeT: 0, alt: 0.14, auraT: 0, giftT: 0,
   };
@@ -226,7 +226,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'fame', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'attrV2', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -429,7 +429,7 @@ function updateEnemiesHost(dt) {
       // sem ninguém para atacar: perde o interesse, volta para casa (longe da vila) e passeia por lá
       e.calmT = (e.calmT || 0) + dt;
       let hx = e.hx === undefined ? e.x : e.hx, hy = e.hy === undefined ? e.y : e.hy;
-      if (!e.dg && Math.hypot(hx, hy) < VILA_R + 260) { const k = (VILA_R + 420) / (Math.hypot(hx, hy) || 1); hx *= k; hy *= k; e.hx = hx; e.hy = hy; }
+      if (!e.dg) for (const t of TOWNS) { const dx = hx - t.x, dy = hy - t.y, d0 = Math.hypot(dx, dy); if (d0 < VILA_R + 260) { const k = (VILA_R + 420) / (d0 || 1); hx = t.x + dx * k; hy = t.y + dy * k; e.hx = hx; e.hy = hy; } }
       const dh = Math.hypot(hx - e.x, hy - e.y);
       if (!e.dg && e.calmT > 0.8 && dh > 220) {
         vx = (hx - e.x) / dh * e.speed * 0.7; vy = (hy - e.y) / dh * e.speed * 0.7;
@@ -846,7 +846,6 @@ function playerHit(e, b) {
       : roll(w.dice[0] * (crit ? 2 : 1), w.dice[1]) + A(P, 'POD') + w.bonus + M(P, 'dmg');
   if (P.furia > 0) dmg += d(6);
   if (P.seloT > 0) dmg += d(6);
-  if (P.elixT > 0) dmg += 2;
   if (P.tempTypeT > 0) dmg += d(4);
   if (hasS(P, 'guerra')) dmg += d(6);
   if (crit && P.cls === 'ladino') dmg += roll(Math.ceil(P.lvl / 4), 6);
@@ -942,6 +941,7 @@ function playerDie(src) {
 function areaName(x, y) {
   if (inDungeonArea(x)) { const dg = dungeonAt(x); return dg ? THEMES[dg.theme].nome : ''; }
   const z = zoneAt(x, y);
+  if (z === 0) { const t = townAt(x, y); if (t) return townName(t); }
   return z >= 0 ? ZONES[z].nome : '';
 }
 
@@ -978,7 +978,7 @@ function updatePlayer(dt) {
   if (G.recall) {
     G.recall.t -= dt;
     if (P.moving || P.sinceHit < 0.05) { G.recall = null; text(P.x, P.y - 40, 'Retorno cancelado', '#fca5a5', 12); }
-    else if (G.recall.t <= 0) { G.recall = null; burst(P.x, P.y, '#fde68a', 20); P.x = rand(-50, 50); P.y = rand(55, 80); P.recallCd = 45; burst(P.x, P.y, '#fde68a', 20); sfx('pot'); }
+    else if (G.recall.t <= 0) { const t = TOWNS[P.lastTown] || TOWNS[0]; G.recall = null; burst(P.x, P.y, '#fde68a', 20); P.x = t.x + rand(-50, 50); P.y = t.y + rand(55, 80); P.recallCd = 45; burst(P.x, P.y, '#fde68a', 20); sfx('pot'); }
   }
   const wasSurf = P.surfing;
   if (P.riding && (inDg || !activePet(P) || !G.allies.some(a => a.pet) || !canRide(activePet(P).pid) || G.evo)) P.riding = false;
@@ -994,7 +994,6 @@ function updatePlayer(dt) {
   if ((P.shieldT = Math.max(0, (P.shieldT || 0) - dt)) <= 0) P.shield = 0;
   P.breathCd = Math.max(0, P.breathCd - dt);
   P.furia = Math.max(0, P.furia - dt);
-  P.elixT = Math.max(0, (P.elixT || 0) - dt);
   P.hasteT = Math.max(0, (P.hasteT || 0) - dt);
   P.invis = Math.max(0, P.invis - dt);
   P.recallCd = Math.max(0, P.recallCd - dt);
@@ -1037,6 +1036,7 @@ function updatePlayer(dt) {
       if (it.slot === 'pot') { P.pots.hp++; text(P.x, P.y - 50, '+1 Poção de Cura', '#fca5a5', 12); continue; }
       if (it.slot === 'ball') { P.balls++; text(P.x, P.y - 50, '+1 Poké Ball', '#e5e7eb', 12); continue; }
       if (it.slot === 'cons' && CONS[it.k].stat) { drinkStat(P, CONS[it.k].stat); continue; }
+      if (it.slot === 'cons' && it.k === 'elixir') continue; // item antigo, não existe mais
       if (it.slot === 'cons') { P.bag[it.k] = (P.bag[it.k] || 0) + 1; text(P.x, P.y - 50, `+1 ${CONS[it.k].nome}`, '#f9a8d4', 12); continue; }
       const i = P.inv.indexOf(null);
       if (i < 0) { left.push(it); continue; }
@@ -1053,15 +1053,6 @@ function updatePlayer(dt) {
   }
 }
 
-function useElixir() {
-  const P = G.P;
-  if (P && P.pvp) { text(P.x, P.y - 40, 'Sem elixir na arena!', '#fca5a5', 12); return; }
-  if (!P || !P.bag.elixir) return;
-  P.bag.elixir--; P.elixT = 30;
-  text(P.x, P.y - 40, '🧪 Elixir de Poder!', '#f0abfc', 14);
-  sfx('pot');
-  G.dirty = true;
-}
 // solta itens no chão; todo mundo na sala vê e pode pegar por 3 minutos
 function dropItems(items) {
   const P = G.P;
@@ -1338,14 +1329,21 @@ function render() {
     for (const a of r.allies || []) if (vis(a[1], a[2])) ents.push({ y: a[2], ra: a });
   }
   for (const a of G.allies) ents.push({ y: a.y, a });
-  if (!inDg && Math.abs(cam.x) < W + 300 && Math.abs(cam.y) < H + 300) { for (const n of NPCS) ents.push({ y: n.y, n }); for (const b of BUILDINGS) ents.push({ y: b.y + b.h / 2, bld: b }); for (const d of TOWN_DECOR) ents.push({ y: d.sy, deco: d }); }
+  // cidades: prédios e enfeites ficam em coordenadas locais (deslocados pelo centro de cada cidade)
+  if (!inDg) for (const t of TOWNS) {
+    if (Math.abs(cam.x - t.x) > W + 300 || Math.abs(cam.y - t.y) > H + 300) continue;
+    for (const n of t.i ? NPCS2 : NPCS) ents.push({ y: n.y, n });
+    for (const b of BUILDINGS) ents.push({ y: t.y + b.y + b.h / 2, bld: b, t });
+    for (const d of TOWN_DECOR) ents.push({ y: t.y + d.sy, deco: d, t });
+    for (const d of TOWN_GATES[t.i] || []) ents.push({ y: t.y + d.sy, deco: d, t });
+  }
   if (G.P) ents.push({ y: G.P.y, me: G.P });
   ents.sort((a, b) => a.y - b.y);
   ctx.textAlign = 'center';
   for (const it of ents) {
     if (it.e) { drawEnemy(it.e, ox, oy); if (!it.e.dg && !it.e.fly) grassOver(it.e.x, it.e.y + it.e.h * 0.35, it.e.x + ox, it.e.y + oy + it.e.h * 0.42, it.e.w * 0.6); }
-    else if (it.bld) drawBuilding(it.bld, ox, oy);
-    else if (it.deco) drawDecor(it.deco, ox, oy);
+    else if (it.bld) drawBuilding(it.bld, ox + it.t.x, oy + it.t.y);
+    else if (it.deco) drawDecor(it.deco, ox + it.t.x, oy + it.t.y);
     else if (it.n) drawNPC(it.n, ox, oy);
     else if (it.a) {
       const a = it.a;
@@ -1517,7 +1515,6 @@ function drawHUD(ox, oy) {
   }
   if (P) hy = drawStoryHUD(hy, ox, oy);
   if (P) hy = drawQuestHUD(hy, ox, oy);
-  if (P && P.elixT > 0) { hy += 20; ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#f0abfc'; outlined(`🧪 Elixir: ${Math.ceil(P.elixT)}s`, 12, hy); }
   if (P && P.tempTypeT > 0) {
     hy += 20; ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = TYPE_COLORS[P.tempType];
     outlined(`💎 Tipo ${TYPE_PT[P.tempType]}: ${Math.ceil(P.tempTypeT)}s`, 12, hy);
@@ -1651,7 +1648,7 @@ function updatePanel() {
     <div class="ptype" title="Seu tipo define o que é super efetivo nos seus ataques e quais ataques te acertam forte">Tipo: ${typeBadge(pType(P))}${P.tempTypeT > 0 ? ` <span class="small">cristal ${Math.ceil(P.tempTypeT)}s (natural: ${TYPE_PT[P.ptype]})</span>` : ''}</div>`;
   const ab = curAbil(P), cd = abilCd(P);
   $('p-abil').innerHTML = `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>
-    <div class="small" title="Voltar à vila: fique parado 1,5s">[R] Vila: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${ridingFlyer(P) ? ` · [V] Voar: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
+    <div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Voar: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
   padFixDom($('p-abil'));
   if (!G.dirty) return;
   G.dirty = false;
@@ -1689,18 +1686,18 @@ function updatePanel() {
     return `<div class="slot" data-inv="${i}" style="border-color:${itemColor(it)}" title="${esc(it.name)} — ${itemDesc(it)}${it.slot === 'pedra' ? '' : ` (${TIER_NAMES[it.tier]})`}\n${hint} · Botão direito: soltar no chão">${itemIcon(it)}${better ? '<i class="up">▲</i>' : ''}</div>`;
   }).join('') + '</div>';
   const bsel = P.ballSel || 'poke';
-  $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}</button>
-    <button data-elix="1" ${P.bag.elixir ? '' : 'disabled'} title="Elixir [2]: +2 de dano e +20% de cadência por 30s">🧪 ×${P.bag.elixir}</button></div>
+  $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}</button></div>
     <div class="potrow balls">${Object.keys(BALLS).map(k => `<button data-ball="${k}" class="${bsel === k ? 'sel' : ''}" title="${BALLS[k].nome} (+${BALLS[k].bonus} na captura). Clique para escolher qual o F joga.">${BALLS[k].icon} ×${ballCount(P, k)}</button>`).join('')}</div>`;
   $('p-pets').innerHTML = `<h4>Companheiros <span class="small" title="Fora da Pokébola / máximo ao mesmo tempo">${P.petAct.length}/${petSlots(P)} fora · ${P.pets.length}/${petCap(P)}</span></h4>` + (P.pets.length
     ? `<div class="pets">${P.pets.map((pt, i) => {
       const ev = evoLevel(pt.pid);
-      const evt = ev === undefined ? '' : ev ? (pt.lvl >= ev ? 'pronto para evoluir!' : `evolui no Nv ${ev}`) : 'forma final';
+      const eevee = pt.pid === EEVEE;
+      const evt = eevee ? (pt.lvl >= EEVEE_LVL ? 'aperte ✨ para evoluir (depende do seu tipo)' : `evolui no Nv ${EEVEE_LVL} (depende do seu tipo)`) : ev === undefined ? '' : ev ? (pt.lvl >= ev ? 'pronto para evoluir!' : `evolui no Nv ${ev}`) : 'forma final';
       const on = P.petAct.includes(i);
       return `<div class="pet ${on ? 'on' : ''}" data-pet="${i}" title="${esc(pt.name)} (${TYPE_PT[pt.type]}) · ${evt}\nClique: ${on ? 'guardar' : 'chamar'}${i === P.petIdx ? ' · líder (MOs e montaria)' : ''} · Botão direito 2×: soltar">
         <img src="${petIconUrl(pt.pid)}" alt=""><span>${esc(pt.name)} <b>Nv ${pt.lvl}</b></span>${typeBadge(pt.type)}
         <div class="pxp"><div style="width:${pt.lvl >= PET_MAX ? 100 : Math.min(100, pt.xp / petNeed(pt.lvl) * 100)}%"></div></div><i>${evt}</i>
-        <div class="phm">${HM_KEYS.map(k => (pt.hms || []).includes(k) ? `<span class="hmk" title="${HMS[k].nome}">${HMS[k].icon}</span>`
+        <div class="phm">${eevee && pt.lvl >= EEVEE_LVL ? `<button class="hmt pulse" data-eevee="${i}" title="Evoluir: vira a evolução do seu tipo atual (natural ou de cristal)">✨</button>` : ''}${HM_KEYS.map(k => (pt.hms || []).includes(k) ? `<span class="hmk" title="${HMS[k].nome}">${HMS[k].icon}</span>`
           : P.hms.includes(k) && canLearn(pt.pid, k) ? `<button class="hmt${P.hmTeach === k ? ' pulse' : ''}" data-teach="${i}:${k}" title="Ensinar ${HMS[k].mo} ${HMS[k].nome}">+${HMS[k].icon}</button>` : '').join('')}</div></div>`;
     }).join('')}</div>${P.bag.doce && P.petIdx >= 0 ? `<button data-candy="1" class="candy">🍬 Dar Doce Raro ao ativo (×${P.bag.doce})</button>` : ''}`
     : '<div class="small">Enfraqueça um Pokémon, mire nele e aperte <b>[F]</b> para jogar uma Poké Ball. Companheiros sobem de nível e evoluem!</div>')
@@ -1714,7 +1711,7 @@ function updatePanel() {
 }
 
 $('panel').addEventListener('click', ev => {
-  const t = ev.target.closest('[data-attr],[data-inv],[data-eq],[data-pot],[data-ball],[data-copy],[data-tal],[data-sub],[data-pet],[data-elix],[data-candy],[data-save],[data-teach]');
+  const t = ev.target.closest('[data-attr],[data-inv],[data-eq],[data-pot],[data-ball],[data-copy],[data-tal],[data-sub],[data-pet],[data-candy],[data-save],[data-teach],[data-eevee]');
   if (!t || !G || !G.P) return;
   const P = G.P;
   if (t.dataset.attr) {
@@ -1727,7 +1724,7 @@ $('panel').addEventListener('click', ev => {
     }
   } else if (t.dataset.tal) chooseTalent(t.dataset.tal);
   else if (t.dataset.sub) chooseSubclass(t.dataset.sub);
-  else if (t.dataset.pet !== undefined && !ev.target.closest('[data-teach]')) { togglePet(P, +t.dataset.pet); saveGame(); }
+  else if (t.dataset.pet !== undefined && !ev.target.closest('[data-teach],[data-eevee]')) { togglePet(P, +t.dataset.pet); saveGame(); }
   else if (t.dataset.inv !== undefined) {
     const i = +t.dataset.inv, it = P.inv[i];
     if (it && it.slot === 'pedra') useStone(i);
@@ -1736,9 +1733,9 @@ $('panel').addEventListener('click', ev => {
     const i = P.inv.indexOf(null);
     if (i >= 0) { P.inv[i] = P.equip[t.dataset.eq]; P.equip[t.dataset.eq] = null; }
   } else if (t.dataset.pot) usePotion();
-  else if (t.dataset.elix) useElixir();
   else if (t.dataset.candy) giveCandy();
   else if (t.dataset.save) exportSave();
+  else if (t.dataset.eevee !== undefined) eeveeEvolve(+t.dataset.eevee);
   else if (t.dataset.teach) { const [i, k] = t.dataset.teach.split(':'); teachHM(+i, k); }
   else if (t.dataset.ball) { P.ballSel = t.dataset.ball; G.toasts.push({ text: `F agora joga: ${BALLS[P.ballSel].nome}`, color: '#e5e7eb', t: 2 }); }
   else if (t.dataset.copy) { if (navigator.clipboard) navigator.clipboard.writeText(NET.room); G.toasts.push({ text: 'Código copiado!', color: '#86efac', t: 2 }); }
@@ -1803,7 +1800,6 @@ window.addEventListener('keydown', ev => {
   if (ev.code === 'Escape' && G.npcOpen) closeNPC();
   else if (ev.code === 'Space') { ev.preventDefault(); useAbility(); }
   else if (ev.code === 'KeyQ' || ev.code === 'Digit1') usePotion();
-  else if (ev.code === 'Digit2') useElixir();
   else if (ev.code === 'KeyX') toggleRide();
   else if (ev.code === 'KeyV') { if (G.npcOpen === 'fly') closeNPC(); else openFly(); }
   else if (ev.code === 'KeyF') throwBall();
@@ -1820,7 +1816,7 @@ window.addEventListener('keydown', ev => {
   else if (ev.code === 'ShiftLeft' || ev.code === 'ShiftRight') doDash();
   else if (ev.code === 'KeyN') G.toasts.push({ text: cycleSound(), color: '#e5e7eb', t: 1.8 });
   else if (ev.code === 'KeyR') {
-    if (P.recallCd <= 0 && !G.recall && !inTown(P.x, P.y)) { G.recall = { t: 1.5 }; text(P.x, P.y - 40, 'Voltando à vila... fique parado', '#fde68a', 12); }
+    if (P.recallCd <= 0 && !G.recall && !inTown(P.x, P.y)) { G.recall = { t: 1.5 }; text(P.x, P.y - 40, `Voltando para ${townName(TOWNS[P.lastTown] || TOWNS[0])}... fique parado`, '#fde68a', 12); }
     else if (P.recallCd > 0) text(P.x, P.y - 40, `Retorno em ${Math.ceil(P.recallCd)}s`, '#cbd5e1', 12);
   } else if (ev.code === 'Enter') { ev.preventDefault(); openChat(); }
 });
@@ -1977,7 +1973,8 @@ async function startGame(saved) {
     if (!RACES[P.race]) P.race = 'humano';
     if (!TYPE_PT[P.ptype]) P.ptype = 'normal';
     if (!('amuleto' in P.equip)) P.equip.amuleto = null;
-    P.bag = Object.assign({ grande: 0, ultra: 0, doce: 0, elixir: 0 }, P.bag || {});
+    P.bag = Object.assign({ grande: 0, ultra: 0, doce: 0 }, P.bag || {});
+    delete P.bag.elixir;
     P.fly = P.fly || ['vila']; P.chests = P.chests || [];
     for (const pt of P.pets) pt.hms = (pt.hms || []).filter(k => HMS[k]);
     for (const pt of P.pets) { pt.lvl = pt.lvl || 5; pt.xp = pt.xp || 0; loadEvo(pt.pid); }
@@ -1985,6 +1982,9 @@ async function startGame(saved) {
   } else P = createPlayer(name, menuSel.hero);
   P.story = P.stories[REGION_ID] = P.stories[REGION_ID] || { ch: 0, done: false };
   P.hms = P.hmsR[REGION_ID] = (P.hmsR[REGION_ID] || []).filter(k => HMS[k]);
+  // saves de antes da 2ª cidade: quem já passou do 5º capítulo ganha a missão e a MO Voar
+  if (P.story.ch > 5 || (P.story.ch === 5 && P.story.done)) { P.story.t2 = true; if (!P.hms.includes('fly')) P.hms.push('fly'); }
+  if (!TOWNS[P.lastTown]) P.lastTown = 0;
   P.petAct = P.petAct.filter(i => P.pets[i]).slice(0, petSlots(P)); P.petIdx = P.petAct.length ? P.petAct[0] : -1;
   P.hp = Math.min(Math.max(1, P.hp), maxHP(P));
   G.P = P;

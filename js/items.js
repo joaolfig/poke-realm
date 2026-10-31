@@ -229,10 +229,10 @@ function rollLoot(m) {
     maybe(0.25, statPot);
   } else if (m.kind === 1) {
     items.push(genItem(tier() + 1), potion());
-    maybe(0.5, ballItem); maybe(0.3, () => stone(m.type)); maybe(0.25, () => consItem('doce')); maybe(0.25, () => consItem('grande')); maybe(0.2, () => consItem('elixir')); maybe(0.06 + (m.st >= 10 ? 0.5 : 0), statPot);
+    maybe(0.5, ballItem); maybe(0.3, () => stone(m.type)); maybe(0.25, () => consItem('doce')); maybe(0.25, () => consItem('grande')); maybe(0.06 + (m.st >= 10 ? 0.5 : 0), statPot);
   } else {
     const r = Math.random();
-    items.push(r < 0.38 ? potion() : r < 0.48 ? ballItem() : r < 0.52 ? consItem('grande') : r < 0.545 ? consItem('doce') : r < 0.6 ? consItem('elixir')
+    items.push(r < 0.38 ? potion() : r < 0.48 ? ballItem() : r < 0.52 ? consItem('grande') : r < 0.545 ? consItem('doce')
       : Math.random() < 0.15 ? stone(m.type) : genItem(tier()));
   }
   if (m.kind === 0 && m.zone >= 3 && Math.random() < 0.004) items.push(statPot());
