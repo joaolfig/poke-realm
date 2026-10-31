@@ -163,6 +163,9 @@ function carveSecret(sc) {
     const j = tIdx(cx + dx, cy + dy), d0 = Math.hypot(dx, dy);
     if (j < 0 || TT[j] === TK.PATH || TT[j] === TK.BRIDGE) continue;
     if (d0 > R) continue;
+    // o anel do baú não invade outra zona nem troca as barreiras das divisas (senão vira atalho)
+    if (TZ[j] >= 1 && TZ[j] !== sc.zone) continue;
+    if (TT[j] === TK.GATE || TT[j] === TK.CLIFF || TT[j] === TK.TREE || (TT[j] === TK.WATER && TZ[j] >= 1)) continue;
     if (TZ[j] < 1) TZ[j] = sc.zone;
     if (d0 <= inner) { TT[j] = TK.GRASS; continue; }
     TT[j] = sc.k === 'cut' ? TK.CUTTREE : sc.k === 'smash' ? TK.CRACKED : TK.WATER;
