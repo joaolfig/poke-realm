@@ -380,11 +380,12 @@ function allPlayers() {
   return arr;
 }
 
-// Lendários (fim de jogo): regeneram LEGEND_REGEN da vida por segundo, o tempo todo. Isso é mais do que
-// um herói Nv 30 mediano tira sozinho, então na prática eles pedem um grupo (só um herói muito forte consegue sozinho).
-const LEGEND_HP = 280, LEGEND_REGEN = 0.003;
+// Lendários (fim de jogo): regeneram o tempo todo. Com um só jogador por perto a regeneração passa do dano de um
+// herói Nv 30 bem equipado (medido: 360-770 de dano/s contra ~710/s); com 2+ jogadores ela cai e o grupo vence em poucos minutos.
+const LEGEND_HP = 280, LEGEND_REGEN = 0.0025, LEGEND_REGEN_SOLO = 0.0055;
+const legendRegen = e => (allPlayers().filter(p => Math.hypot(p.x - e.x, p.y - e.y) < 1100).length >= 2 ? LEGEND_REGEN : LEGEND_REGEN_SOLO);
 function updateEnemiesHost(dt) {
-  for (const e of G.enemies) if (e.legend && !e.dead) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * LEGEND_REGEN * dt);
+  for (const e of G.enemies) if (e.legend && !e.dead) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * legendRegen(e) * dt);
   const T = allPlayers().filter(t => !t.invis && zoneAt(t.x, t.y) !== 0).concat(G.decoys.map(d => ({ x: d.x, y: d.y })));
   for (const e of G.enemies) {
     e.t += dt; e.flash = Math.max(0, e.flash - dt);
@@ -1560,7 +1561,7 @@ function drawHUD(ox, oy) {
     const w = Math.min(420, W - 260);
     bar(W / 2 - w / 2, 74, w, 12, boss.hp / boss.maxHp, boss.legend ? '#dc2626' : '#a855f7');
     ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
-    outlined(`${boss.name} — ${Math.max(0, Math.ceil(boss.hp))}/${boss.maxHp}${boss.legend ? ` · ♻ regenera ${Math.round(boss.maxHp * LEGEND_REGEN)}/s` : ''}`, W / 2, 68);
+    outlined(`${boss.name} — ${Math.max(0, Math.ceil(boss.hp))}/${boss.maxHp}${boss.legend ? ` · ♻ regenera ${Math.round(boss.maxHp * legendRegen(boss))}/s${legendRegen(boss) > LEGEND_REGEN ? ' (sozinho! traga mais alguém)' : ''}` : ''}`, W / 2, 68);
   }
   const legend = G.enemies.find(e => e.legend);
   if (legend && !dg) {
