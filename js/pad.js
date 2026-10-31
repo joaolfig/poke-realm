@@ -48,7 +48,8 @@ function keyTap(code) {
 }
 
 /* ---------- modo menu: navegação espacial pelos elementos clicáveis ---------- */
-const NAV_SEL = 'button:not(:disabled), [data-inv], [data-eq], [data-pet], .modes label, #maps button, input#name, input#join-code:not(:disabled)';
+// .slot inclui os espaços vazios da mochila: assim a grade não tem buracos na navegação
+const NAV_SEL = 'button:not(:disabled), .slot, [data-pet], .modes label, #maps button, input#name, input#join-code:not(:disabled)';
 function navRoot() {
   for (const id of ['lost', 'death', 'menu']) if (!$(id).classList.contains('hidden')) return $(id);
   if (G && G.npcOpen && !$('npc').classList.contains('hidden')) return $('npc');
@@ -87,8 +88,11 @@ function navMove(dx, dy) {
   for (const el of items) {
     if (el === PAD.focus) continue;
     const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
-    const along = (x - ax) * dx + (y - ay) * dy, side = Math.abs((x - ax) * dy) + Math.abs((y - ay) * dx);
+    const along = (x - ax) * dx + (y - ay) * dy;
     if (along <= 2) continue;
+    // na mesma coluna (ou linha) o desvio lateral não conta: anda certinho pelas grades
+    const overlap = dx ? r.top < a.bottom && r.bottom > a.top : r.left < a.right && r.right > a.left;
+    const side = overlap ? 0 : Math.abs((x - ax) * dy) + Math.abs((y - ay) * dx);
     const sc = along + side * 2.5;
     if (sc < bs) { bs = sc; best = el; }
   }
@@ -109,8 +113,12 @@ function padTick(dt) {
   const gp = navigator.getGamepads ? [...navigator.getGamepads()].find(g => g && g.connected) : null;
   if (!gp) return;
   if (!PAD.on) {
+    // Start liga o controle (assim dá para religar mesmo sem teclado e mouse)
+    const st = !!(gp.buttons[9] && gp.buttons[9].pressed);
+    if (st && !PAD.prev[9]) { setPad(true); PAD.prev = gp.buttons.map(b => b.pressed || b.value > 0.5); if (G && G.toasts) G.toasts.push({ text: '🎮 Controle ligado!', color: '#93c5fd', t: 3 }); return; }
+    PAD.prev[9] = st;
     // avisa uma vez que há um controle e como ligar
-    if (!PAD.hint && gp.buttons.some(b => b.pressed)) { PAD.hint = 1; if (G && G.toasts) G.toasts.push({ text: '🎮 Controle detectado! Ligue em "Controle" no menu ou no painel.', color: '#93c5fd', t: 5 }); }
+    if (!PAD.hint && gp.buttons.some(b => b.pressed)) { PAD.hint = 1; if (G && G.toasts) G.toasts.push({ text: '🎮 Controle detectado! Aperte Start para ligar.', color: '#93c5fd', t: 5 }); }
     return;
   }
   const btn = i => !!(gp.buttons[i] && (gp.buttons[i].pressed || gp.buttons[i].value > 0.5));
@@ -149,17 +157,45 @@ function padTick(dt) {
     const mk = { KeyA: lx < -0.35, KeyD: lx > 0.35, KeyW: ly < -0.35, KeyS: ly > 0.35 };
     for (const k in mk) { K[k] = mk[k]; PAD.moveK[k] = 1; }
     // mirar: o cursor vira um ponto em volta do herói
-    const rx = ax(2), ry = ax(3), rm = Math.hypot(rx, ry);
-    if (rm > 0.3) { PAD.aim = Math.atan2(ry, rx); PAD.aimR = 120 + rm * 200; }
-    else if (lx || ly) { if (!btn(7)) PAD.aim = Math.atan2(ly, lx); }
-    mouse.x = W / 2 + Math.cos(PAD.aim) * PAD.aimR; mouse.y = H / 2 + Math.sin(PAD.aim) * PAD.aimR;
-    mouse.down = btn(7) || rm > 0.55;
+    const rx = ax(2), ry = ax(3), rm = Math.hypot(rx, ry), shooting = btn(7) || rm > 0.55;
+    if (rm > 0.3) { PAD.aim = Math.atan2(ry, rx); PAD.aimR = 140 + rm * 180; }
+    else if ((lx || ly) && !btn(7)) PAD.aim = Math.atan2(ly, lx);
+    // mira semi-assistida: se há um Pokémon perto da direção apontada (cone de ~20°, até 520px),
+    // a mira é puxada 75% do caminho até ele. Ajuda bastante, mas ainda é preciso apontar.
+    // Atirando sem mexer o analógico direito, vale a direção em que você anda (cone mais aberto).
+    PAD.lock = padAimTarget(PAD.aim, rm > 0.3 ? 0.35 : shooting ? 0.6 : 0);
+    let fa = PAD.aim, fr = PAD.aimR;
+    if (PAD.lock) {
+      const dx = PAD.lock.x - G.P.x, dy = PAD.lock.y - G.P.y, ta = Math.atan2(dy, dx);
+      fa = PAD.aim + Math.atan2(Math.sin(ta - PAD.aim), Math.cos(ta - PAD.aim)) * 0.75;
+      fr = Math.hypot(dx, dy);
+    }
+    mouse.x = W / 2 + Math.cos(fa) * fr + (G.P.x - G.cam.x); mouse.y = H / 2 + Math.sin(fa) * fr + (G.P.y - G.cam.y);
+    mouse.down = shooting;
     // botões de ação
     for (const i in PAD_KEYS) if (down(+i)) keyTap(PAD_KEYS[i]);
     if (down(1)) { if (G.npcOpen) closeNPC(); else if (!$('help').classList.contains('hidden')) $('help').classList.add('hidden'); }
     if (down(9)) { padNav(true); PAD.auto = null; }
   }
   PAD.prev = gp.buttons.map(b => b.pressed || b.value > 0.5);
+}
+
+// alvo da mira assistida: o inimigo com melhor equilíbrio entre ângulo e distância dentro do cone
+function padAimTarget(ang, cone) {
+  const P = G.P;
+  if (!cone || !P) return null;
+  let best = null, bs = 1e9;
+  const pool = G.enemies.filter(e => e.hp > 0 && !e.dead);
+  for (const r of G.remotes.values()) if (P.pvp && r.name && !r.dead) pool.push({ x: r.x, y: r.y, r: 12, remote: 1 });
+  for (const e of pool) {
+    const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy);
+    if (d > 520 || d < 1) continue;
+    const da = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - ang), Math.cos(Math.atan2(dy, dx) - ang)));
+    if (da > cone) continue;
+    const sc = da * 300 + d * 0.5 - (e === PAD.lock ? 60 : 0); // um pouco de "memória" para não ficar trocando de alvo
+    if (sc < bs) { bs = sc; best = e; }
+  }
+  return best;
 }
 
 // mira desenhada no mapa (com controle não há cursor do mouse)
@@ -176,6 +212,13 @@ function drawPadReticle() {
   ctx.strokeStyle = '#000'; ctx.lineWidth = 6; shape(); ctx.stroke();
   ctx.strokeStyle = '#ffe14a'; ctx.lineWidth = 2.5; shape(); ctx.stroke();
   ctx.fillStyle = '#ff3b3b'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 7); ctx.fill(); ctx.stroke();
+  if (PAD.lock) {
+    // travado num alvo: cantoneiras vermelhas em volta do Pokémon
+    const e = PAD.lock, R = (e.r || 14) + 10, ex = e.x - G.cam.x + W / 2, ey = e.y - G.cam.y + H / 2, k = 8;
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 5;
+    const corners = () => { ctx.beginPath(); for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.moveTo(ex + sx * R, ey + sy * (R - k)); ctx.lineTo(ex + sx * R, ey + sy * R); ctx.lineTo(ex + sx * (R - k), ey + sy * R); } };
+    corners(); ctx.stroke(); ctx.strokeStyle = '#ff5a4a'; ctx.lineWidth = 2.5; corners(); ctx.stroke();
+  }
   ctx.lineCap = 'butt';
 }
 
