@@ -1361,7 +1361,7 @@ function render() {
       if (r.bubble) drawBubble(x, y - 32, r.bubble.text);
     } else {
       const P = it.me, x = P.x + ox, y = P.y + oy;
-      for (const g of G.trail || []) drawPlayerSprite(g.cls, g.x + ox, g.y + oy, g.face, 1, Math.max(0, g.t / 0.28) * 0.45, P.aim, g.ptype);
+      for (const g of G.trail || []) drawPlayerSprite(g.cls, g.x + ox, g.y + oy, g.face, 1, Math.max(0, g.t / 0.28) * 0.45, P.aim, null); // sem o anel do tipo nos fantasmas
       if (P.shield > 0) { ctx.strokeStyle = 'rgba(147,197,253,.85)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.stroke(); }
       if (P.seloT > 0) { ctx.strokeStyle = 'rgba(253,230,138,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 30 + Math.sin(G.time * 8) * 2, 0, 7); ctx.stroke(); }
       if (P.furia > 0) { ctx.fillStyle = 'rgba(239,68,68,.25)'; ctx.beginPath(); ctx.arc(x, y, 24 + Math.sin(G.time * 15) * 3, 0, 7); ctx.fill(); }
