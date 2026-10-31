@@ -1130,6 +1130,7 @@ function update(dt) {
   if (P) updatePlayer(dt);
   updateAllies(dt);
   updateZones(dt);
+  updateThrows(dt);
   pvpTick(dt);
   updateWorld(dt);
   updateHM(dt);
@@ -1354,6 +1355,7 @@ function render() {
     }
   }
 
+  drawThrows(ox, oy);
   for (const b of G.cb) drawShot(b, ox, oy);
   for (const b of G.pb) drawShot(b, ox, oy);
   for (const b of G.eb) {

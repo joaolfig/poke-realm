@@ -284,13 +284,42 @@ function throwBall() {
   // rolagem de captura: d20 + nível/2 + bônus da bola contra uma CD que cai com a vida do alvo
   const dc = 8 + e.zone * 2 + (e.alfa ? 4 : 0) + Math.round(e.hp / e.maxHp * 10) - (e.kind === 4 ? 6 : 0);
   const nat = d(20), total = nat + Math.floor(P.lvl / 2) + (hasT(P, 'domador') ? 4 : 0) + BALLS[k].bonus + M(P, 'cap');
-  G.fx.push({ k: 'ring', x: e.x, y: e.y, r: 0, R: e.r + 20, life: 0.5, max: 0.5, color: k === 'ultra' ? '#facc15' : k === 'grande' ? '#60a5fa' : '#f87171' });
-  if (nat === 20 || total >= dc) capture(e, `${BALLS[k].icon} 🎲 ${nat}+${total - nat} vs CD ${dc}`);
-  else {
-    text(e.x, e.y - e.h / 2 - 10, `Escapou! (🎲 ${nat}+${total - nat} vs CD ${dc})`, '#fca5a5', 13);
-    e.flash = 0.2;
+  const ok = nat === 20 || total >= dc, rollTxt = `${BALLS[k].icon} 🎲 ${nat}+${total - nat} vs CD ${dc}`;
+  // a bola voa em arco até o Pokémon; o resultado sai quando ela chega
+  const dist = Math.hypot(e.x - P.x, e.y - P.y);
+  G.throws = G.throws || [];
+  G.throws.push({ k, e, x0: P.x, y0: P.y - 10, t: 0, dur: clamp(dist / 700, 0.22, 0.5), ok, rollTxt });
+  sfx('ui');
+}
+function updateThrows(dt) {
+  if (!G.throws || !G.throws.length) return;
+  for (const b of G.throws) {
+    b.t += dt;
+    if (b.t < b.dur) continue;
+    b.done = true;
+    const e = b.e;
+    if (e.dead || e.hp <= 0 || !G.emap.has(e.id)) { text(e.x, e.y - 20, 'A Pokébola caiu no chão...', '#cbd5e1', 12); continue; }
+    G.fx.push({ k: 'ring', x: e.x, y: e.y, r: 0, R: e.r + 20, life: 0.5, max: 0.5, color: b.k === 'ultra' ? '#facc15' : b.k === 'grande' ? '#60a5fa' : '#f87171' });
+    if (b.ok && G.P && G.P.pets.length < petCap(G.P)) capture(e, b.rollTxt);
+    else { text(e.x, e.y - e.h / 2 - 10, `Escapou! (${b.rollTxt.replace(/^\S+ /, '')})`, '#fca5a5', 13); e.flash = 0.2; burst(e.x, e.y, '#f87171', 10); sfx('pick'); }
   }
-  sfx('pick');
+  G.throws = G.throws.filter(b => !b.done);
+}
+function drawThrows(ox, oy) {
+  if (!G.throws) return;
+  for (const b of G.throws) {
+    const p = Math.min(1, b.t / b.dur), tx = b.e.x, ty = b.e.y;
+    const x = b.x0 + (tx - b.x0) * p + ox, y = b.y0 + (ty - b.y0) * p - Math.sin(p * Math.PI) * 50 + oy;
+    const top = b.k === 'ultra' ? '#fbbf24' : b.k === 'grande' ? '#3b82f6' : '#ef4444';
+    // sombra no chão
+    ctx.beginPath(); ctx.ellipse(b.x0 + (tx - b.x0) * p + ox, b.y0 + (ty - b.y0) * p + oy + 12, 6, 2.5, 0, 0, 7); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fill();
+    ctx.save(); ctx.translate(x, y); ctx.rotate(b.t * 18);
+    ctx.fillStyle = '#f8fafc'; ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = top; ctx.beginPath(); ctx.arc(0, 0, 7, Math.PI, 0); ctx.fill();
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, 7, 0, 7); ctx.moveTo(-7, 0); ctx.lineTo(7, 0); ctx.stroke();
+    ctx.fillStyle = '#f8fafc'; ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function capture(e, rollTxt) {
