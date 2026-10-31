@@ -295,7 +295,7 @@ function enemyStats(pid, zone, kind) {
   return {
     p, pid, zone, kind, boss: kind === 2 || kind === 3, legend, alfa, rare, type, color: TYPE_COLORS[type] || '#fff',
     name: (alfa ? 'Alfa ' : '') + p.name + (rare ? ' ✨' : ''),
-    maxHp: Math.round(((st.hp || 50) * 0.35 + 8) * zh * (legend ? 55 : dboss ? (zone >= 4 ? 10 : 8) : alfa ? 3 : rare ? 2.5 : 1)),
+    maxHp: Math.round(((st.hp || 50) * 0.35 + 8) * zh * (legend ? 220 : dboss ? (zone >= 4 ? 10 : 8) : alfa ? 3 : rare ? 2.5 : 1)),
     ac: 9 + Math.floor((st.defense || 50) / 30) + zone + (legend ? 6 : dboss ? 2 : alfa ? 1 : 0),
     atk: 2 + Math.floor(atk / 35) + Math.round(zone * 2.5) + (legend ? 8 : dboss ? 2 : alfa ? 1 : 0),
     dice: [legend ? 10 : dboss ? nd + 2 : nd + (alfa ? 1 : 0), legend ? 10 : 4 + 2 * Math.min(3, Math.floor(atk / 40)), zone * 2 + (legend ? 15 : dboss ? 3 : 0)],
@@ -836,7 +836,7 @@ function playerHit(e, b) {
   if (P.elixT > 0) dmg += 2;
   if (P.tempTypeT > 0) dmg += d(4);
   if (hasS(P, 'guerra')) dmg += d(6);
-  if (crit && P.cls === 'ladino') dmg += roll(Math.ceil(P.lvl / 2), 6);
+  if (crit && P.cls === 'ladino') dmg += roll(Math.ceil(P.lvl / 4), 6);
   if (crit && hasS(P, 'assassino')) dmg = Math.round(dmg * 1.5);
   dmg = Math.max(1, dmg);
   if (!hit) dmg = Math.max(1, Math.floor(dmg / 2));
@@ -1400,8 +1400,9 @@ function render() {
     if (dg && DARK_THEMES.includes(dg.theme)) drawNight(ox, oy, flash ? 460 : 175, 'rgba(0,0,0,0.88)');
   } else {
     const fog = (ZONES[zoneAt(cam.x, cam.y)] || {}).fog && !flash;
-    if (isNight()) drawNight(ox, oy, flash ? 420 : 230, 'rgba(8,6,30,0.62)');
-    else if (fog) drawNight(ox, oy, flash ? 380 : 270, 'rgba(70,60,90,0.6)');
+    // à noite e na névoa quase não se enxerga sem Lampejo
+    if (isNight()) drawNight(ox, oy, flash ? 420 : 150, flash ? 'rgba(8,6,30,0.62)' : 'rgba(4,3,16,0.88)');
+    else if (fog) drawNight(ox, oy, flash ? 380 : 180, flash ? 'rgba(70,60,90,0.6)' : 'rgba(45,38,60,0.84)');
   }
   drawPetHover(ox, oy);
   for (const t of G.texts) {
