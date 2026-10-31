@@ -89,7 +89,11 @@ function relocate() {
   const items = navItems();
   let el = PAD.sig && items.find(i => sigOf(i) === PAD.sig);
   // sumiu (ex.: o item vendido): fica no que ocupou o lugar dele na lista, se for do mesmo tipo
-  if (!el && PAD.idx >= 0) { const c = items[Math.min(PAD.idx, items.length - 1)]; if (c && kindOf(c) === PAD.kind) el = c; }
+  // (procura o mais perto na ordem da lista: botões que surgem ou somem acima não atrapalham)
+  if (!el && PAD.idx >= 0) {
+    let bd = 1e9;
+    items.forEach((c, i) => { if (kindOf(c) !== PAD.kind) return; const d = Math.abs(i - PAD.idx) + (i < PAD.idx ? 0.5 : 0); if (d < bd) { bd = d; el = c; } });
+  }
   if (!el && PAD.pos) {
     let bd = 1e9;
     for (const i of items) { const r = i.getBoundingClientRect(), d = Math.hypot(r.left + r.width / 2 - PAD.pos[0], r.top + r.height / 2 - PAD.pos[1]); if (d < bd) { bd = d; el = i; } }
