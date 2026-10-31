@@ -1444,6 +1444,7 @@ function drawHUD(ox, oy) {
     hy += 20; ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = TYPE_COLORS[P.tempType];
     outlined(`💎 Tipo ${TYPE_PT[P.tempType]}: ${Math.ceil(P.tempTypeT)}s`, 12, hy);
   }
+  drawPadReticle();
   if (autofire) { hy += 18; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fde047'; outlined('TIRO AUTOMÁTICO (T)', 12, hy); }
 
   if (G.banner > 0 && name) {
@@ -1894,6 +1895,7 @@ function step(now, draw) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   musicTick(musicKey(), dt);
+  padTick(dt);
   if (G && state !== 'lost') { update(dt); if (draw) render(); }
   else if (!G && draw) { ctx.fillStyle = '#0f0b1a'; ctx.fillRect(0, 0, W, H); }
 }
