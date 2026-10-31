@@ -66,9 +66,12 @@ function padNav(on) {
   // começa no item mais alto (e mais à esquerda) da tela
   if (!PAD.focus || !document.contains(PAD.focus)) setFocus(navItems().sort((p, q) => { const a = p.getBoundingClientRect(), b = q.getBoundingClientRect(); return a.top - b.top || a.left - b.left; })[0] || null);
 }
+// identidade de um item da interface, para reencontrá-lo quando o painel ou a loja são redesenhados
+const sigOf = el => el.id || el.tagName + JSON.stringify(el.dataset) + (el.dataset && Object.keys(el.dataset).length ? '' : el.textContent.trim().slice(0, 30));
 function setFocus(el) {
   if (PAD.focus) PAD.focus.classList.remove('padfocus');
   PAD.focus = el;
+  if (el) { const r = el.getBoundingClientRect(); PAD.sig = sigOf(el); PAD.pos = [r.left + r.width / 2, r.top + r.height / 2]; }
   const info = $('padinfo');
   if (!el) { info.classList.add('hidden'); $('ptip').classList.add('hidden'); return; }
   el.classList.add('padfocus');
@@ -79,7 +82,19 @@ function setFocus(el) {
   info.textContent = tip;
   info.classList.toggle('hidden', !tip || !$('ptip').classList.contains('hidden'));
 }
+// o item selecionado sumiu (a interface foi redesenhada): volta para o mesmo item ou para o mais próximo de onde estava
+function relocate() {
+  if (!PAD.nav || (PAD.focus && document.contains(PAD.focus))) return;
+  const items = navItems();
+  let el = PAD.sig && items.find(i => sigOf(i) === PAD.sig);
+  if (!el && PAD.pos) {
+    let bd = 1e9;
+    for (const i of items) { const r = i.getBoundingClientRect(), d = Math.hypot(r.left + r.width / 2 - PAD.pos[0], r.top + r.height / 2 - PAD.pos[1]); if (d < bd) { bd = d; el = i; } }
+  }
+  setFocus(el || items[0] || null);
+}
 function navMove(dx, dy) {
+  relocate();
   const items = navItems();
   if (!items.length) return;
   if (!PAD.focus || !items.includes(PAD.focus)) return setFocus(items[0]);
@@ -105,7 +120,7 @@ function navPress(alt) {
   else if (el.tagName === 'INPUT') { el.focus(); if (el.id === 'name') el.select(); }
   else el.click();
   // a interface pode ter sido redesenhada: mantém a seleção no item equivalente
-  setTimeout(() => { if (PAD.nav && (!PAD.focus || !document.contains(PAD.focus))) setFocus(navItems()[0] || null); }, 60);
+  setTimeout(relocate, 30);
 }
 
 /* ---------- leitura do controle (chamada a cada quadro) ---------- */
@@ -136,6 +151,7 @@ function padTick(dt) {
     // digitando o nome/código: A ou B confirma e volta à navegação
     if (down(0) || down(1) || down(9)) document.activeElement.blur();
   } else if (PAD.nav) {
+    relocate();
     let dx = (btn(15) ? 1 : 0) - (btn(14) ? 1 : 0), dy = (btn(13) ? 1 : 0) - (btn(12) ? 1 : 0);
     if (!dx && !dy) { const lx = ax(0), ly = ax(1); if (Math.abs(lx) > 0.6) dx = Math.sign(lx); else if (Math.abs(ly) > 0.6) dy = Math.sign(ly); }
     PAD.rep -= dt;
