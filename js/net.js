@@ -122,7 +122,7 @@ function hostOnData(from, m) {
       if (m.dead) { if (r) r.dead = true; break; }
       if (!r) { r = { id: from, x: m.s[0], y: m.s[1], walk: 0 }; G.remotes.set(from, r); }
       const s = m.s;
-      Object.assign(r, { name: m.name, cls: m.cls, tx: s[0], ty: s[1], face: s[2], moving: !!s[3], invis: !!s[4], hp: s[5], maxHp: s[6], lvl: s[7], aim: s[8], ptype: s[9] || '', mount: s[10] || 0, allies: m.al || [], dead: false });
+      Object.assign(r, { name: m.name, cls: m.cls, tx: s[0], ty: s[1], face: s[2], moving: !!s[3], invis: !!s[4], hp: s[5], maxHp: s[6], lvl: s[7], aim: s[8], ptype: s[9] || '', mount: s[10] || 0, champ: !!m.ch, allies: m.al || [], dead: false });
       if (m.b) for (const sh of m.b) { addCosmetic(sh, from); NET.relayS.push([from, ...sh]); }
       break;
     }
@@ -209,7 +209,7 @@ function sendPlayerState() {
   if (!NET.host || !NET.host.open) return;
   const P = G.P;
   if (!P) { NET.host.send({ t: 'p', dead: 1 }); NET.outS = []; return; }
-  const m = { t: 'p', name: P.name, cls: P.cls, s: [Math.round(P.x), Math.round(P.y), P.face, P.moving ? 1 : 0, P.invis > 0 ? 1 : 0, Math.round(P.hp), maxHP(P), P.lvl, +P.aim.toFixed(2), myType(P), mountPid(P)] };
+  const m = { t: 'p', name: P.name, cls: P.cls, s: [Math.round(P.x), Math.round(P.y), P.face, P.moving ? 1 : 0, P.invis > 0 ? 1 : 0, Math.round(P.hp), maxHP(P), P.lvl, +P.aim.toFixed(2), myType(P), mountPid(P)], ch: storyOver(P) ? 1 : 0 };
   if (NET.outS.length) m.b = NET.outS;
   if (G.allies.length) m.al = alliesToNet();
   NET.host.send(m);

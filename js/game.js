@@ -300,15 +300,15 @@ function enemyStats(pid, zone, kind) {
   return {
     p, pid, zone, kind, boss: kind === 2 || kind === 3, legend, alfa, rare, type, color: TYPE_COLORS[type] || '#fff',
     name: (alfa ? 'Alfa ' : '') + p.name + (rare ? ' ✨' : ''),
-    maxHp: Math.round(((st.hp || 50) * 0.35 + 8) * zh * (legend ? 235 : dboss ? (zone >= 4 ? 10 : 8) : alfa ? 3 : rare ? 2.5 : 1)),
+    maxHp: Math.round(((st.hp || 50) * 0.35 + 8) * zh * (legend ? LEGEND_HP : dboss ? (zone >= 4 ? 10 : 8) : alfa ? 3 : rare ? 2.5 : 1)),
     ac: 9 + Math.floor((st.defense || 50) / 30) + zone + (legend ? 6 : dboss ? 2 : alfa ? 1 : 0),
     atk: 2 + Math.floor(atk / 35) + Math.round(zone * 2.5) + (legend ? 8 : dboss ? 2 : alfa ? 1 : 0),
-    dice: [legend ? 10 : dboss ? nd + 2 : nd + (alfa ? 1 : 0), legend ? 10 : 4 + 2 * Math.min(3, Math.floor(atk / 40)), zone * 2 + (legend ? 15 : dboss ? 3 : 0)],
+    dice: [legend ? 10 : dboss ? nd + 2 : nd + (alfa ? 1 : 0), legend ? 10 : 4 + 2 * Math.min(3, Math.floor(atk / 40)), zone * 2 + (legend ? 20 : dboss ? 3 : 0)],
     speed: (35 + (st.speed || 50) * 0.55) * (legend || dboss ? 0.6 : rare ? 1.5 : 1),
     scale: legend ? 4.2 : dboss ? 3.3 : clamp(1.7 + (p.height || 10) / 35, 1.7, 2.8) * (alfa || rare ? 1.3 : 1),
     xp: Math.round((p.exp || 100) * (0.4 + zone * 0.35) * (1 + (zone - 1) * 0.1) * (legend ? 45 : dboss ? 8 : alfa ? 3 : rare ? 4 : 1)),
     cdMul: 1 / (1 + (zone - 1) * 0.2 + Math.max(0, zone - 2) * 0.1), // atacam mais rápido nas zonas altas
-    cdBoss: legend ? 0.7 : undefined, // lendários atacam mais rápido
+    cdBoss: legend ? 0.6 : undefined, // lendários atacam mais rápido
   };
 }
 
@@ -375,12 +375,16 @@ const BOSS_PH = [
 function allPlayers() {
   const arr = [];
   const P = G.P;
-  if (P) arr.push({ x: P.x, y: P.y, invis: P.invis > 0 });
-  for (const r of G.remotes.values()) if (!r.dead && r.name) arr.push({ x: r.tx, y: r.ty, invis: r.invis });
+  if (P) arr.push({ x: P.x, y: P.y, invis: P.invis > 0, champ: storyOver(P) });
+  for (const r of G.remotes.values()) if (!r.dead && r.name) arr.push({ x: r.tx, y: r.ty, invis: r.invis, champ: !!r.champ });
   return arr;
 }
 
+// Lendários (fim de jogo): regeneram LEGEND_REGEN da vida por segundo, o tempo todo. Isso é mais do que
+// um herói Nv 30 mediano tira sozinho, então na prática eles pedem um grupo (só um herói muito forte consegue sozinho).
+const LEGEND_HP = 280, LEGEND_REGEN = 0.003;
 function updateEnemiesHost(dt) {
+  for (const e of G.enemies) if (e.legend && !e.dead) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * LEGEND_REGEN * dt);
   const T = allPlayers().filter(t => !t.invis && zoneAt(t.x, t.y) !== 0).concat(G.decoys.map(d => ({ x: d.x, y: d.y })));
   for (const e of G.enemies) {
     e.t += dt; e.flash = Math.max(0, e.flash - dt);
@@ -528,12 +532,13 @@ function hostBoss(dt) {
   G.bossT -= dt;
   if (G.bossT > 0) return;
   G.bossT = 150;
-  if (G.enemies.some(e => e.legend) || !allPlayers().some(p => !inDungeonArea(p.x))) return;
+  // os lendários só aparecem depois que alguém da sala terminou a história, em qualquer ponto do mapa
+  if (G.enemies.some(e => e.legend) || !allPlayers().some(p => p.champ && !inDungeonArea(p.x))) return;
   const pid = pick(BOSSES);
   if (!POKE[pid]) return;
-  const [bx, by] = randomZonePoint(5);
+  const [bx, by] = randomZonePoint(randi(1, 5));
   hostSpawn(pid, 5, 2, bx, by);
-  emitEvent({ t: 'toast', text: `⚠ ${POKE[pid].name} lendário surgiu em ${ZONES[5].nome}!`, color: '#f87171', big: 1 });
+  emitEvent({ t: 'toast', text: `⚠ ${POKE[pid].name} lendário surgiu em ${areaName(bx, by)}! Siga a seta vermelha.`, color: '#f87171', big: 1 });
 }
 
 // from = id do jogador que causou o dano (null para meteoros, veneno etc.)
@@ -1555,7 +1560,7 @@ function drawHUD(ox, oy) {
     const w = Math.min(420, W - 260);
     bar(W / 2 - w / 2, 74, w, 12, boss.hp / boss.maxHp, boss.legend ? '#dc2626' : '#a855f7');
     ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
-    outlined(`${boss.name} — ${Math.max(0, Math.ceil(boss.hp))}/${boss.maxHp}`, W / 2, 68);
+    outlined(`${boss.name} — ${Math.max(0, Math.ceil(boss.hp))}/${boss.maxHp}${boss.legend ? ` · ♻ regenera ${Math.round(boss.maxHp * LEGEND_REGEN)}/s` : ''}`, W / 2, 68);
   }
   const legend = G.enemies.find(e => e.legend);
   if (legend && !dg) {

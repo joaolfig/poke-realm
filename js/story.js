@@ -85,7 +85,7 @@ function renderStoryNPC(n, P) {
     return `<p class="fala">"Volte quando for campeão. Aí conversamos."</p>`;
   }
   if (storyOver(P)) {
-    return `<p class="fala">"${STORY[STORY.length - 1].fim}"</p><p>A história de ${REGION.nome} terminou, mas os lendários ainda vagam pelas áreas mais perigosas e os ginásios aceitam revanches pelos portais dos Alfas. Que tal conhecer outra região?</p>`;
+    return `<p class="fala">"${STORY[STORY.length - 1].fim}"</p><p>A história de ${REGION.nome} terminou, e agora os lendários despertaram: eles aparecem em qualquer canto do mapa, são fortes demais para um herói sozinho e se regeneram sem parar. Junte um grupo para caçá-los. E os ginásios aceitam revanches pelos portais dos Alfas. Que tal conhecer outra região?</p>`;
   }
   const s = STORY[st.ch];
   const t2 = TOWNS[1], helper = NPCS2.find(x => x.id === 'sildo');
