@@ -13,7 +13,7 @@ try { PAD.on = localStorage.getItem(PAD_KEY) === '1'; } catch (e) { /* ignora */
 // botões do layout "standard": 0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 8 View, 9 Menu, 10 L3, 11 R3, 12-15 direcional
 const PAD_KEYS = { 0: 'KeyE', 2: 'KeyQ', 3: 'KeyF', 4: 'Digit2', 5: 'Space', 6: 'ShiftLeft', 12: 'Digit3', 13: 'KeyX', 14: 'KeyR', 15: 'KeyV', 10: 'KeyM', 11: 'KeyT', 8: 'KeyH' };
 const PAD_HELP = [
-  ['Analógico esquerdo', 'Andar'], ['Analógico direito', 'Mirar (empurrar já atira)'], ['RT', 'Atirar'], ['RB', 'Especial'], ['LT', 'Rolamento (talento)'],
+  ['Analógico esquerdo', 'Andar'], ['Analógico direito', 'Mirar'], ['RT (segurar)', 'Atirar'], ['RB', 'Especial'], ['LT', 'Rolamento (talento)'],
   ['A', 'Falar / portal / MO'], ['B', 'Fechar janela'], ['X', 'Poção'], ['Y', 'Poké Ball'], ['LB', 'Elixir'],
   ['↑ direcional', 'Usar cristal'], ['↓ direcional', 'Montar'], ['← direcional', 'Voltar à vila'], ['→ direcional', 'Voar (montaria voadora)'],
   ['L3', 'Mapa'], ['R3', 'Tiro automático'], ['View', 'Controles'], ['Menu (Start)', 'Modo menu: painel, inventário, talentos'],
@@ -180,7 +180,8 @@ function padTick(dt) {
     const mk = { KeyA: lx < -0.35, KeyD: lx > 0.35, KeyW: ly < -0.35, KeyS: ly > 0.35 };
     for (const k in mk) { K[k] = mk[k]; PAD.moveK[k] = 1; }
     // mirar: o cursor vira um ponto em volta do herói
-    const rx = ax(2), ry = ax(3), rm = Math.hypot(rx, ry), shooting = btn(7) || rm > 0.55;
+    // só atira segurando RT (o analógico direito apenas mira)
+    const rx = ax(2), ry = ax(3), rm = Math.hypot(rx, ry), shooting = btn(7);
     PAD.rm = rm;
     if (rm > 0.3) { PAD.aim = Math.atan2(ry, rx); PAD.aimR = 140 + rm * 180; }
     else if ((lx || ly) && !btn(7)) PAD.aim = Math.atan2(ly, lx);
