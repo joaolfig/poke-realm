@@ -9,7 +9,12 @@
 // As MOs só vêm da história (uma por ginásio) e valem só na região onde foram ganhas (P.hms é da região atual).
 // Elas abrem o caminho entre as zonas: Corte -> zona 2, Esmaga-Rocha -> zona 3, Surfar -> zona 4.
 // A zona 5 fica atrás do Portão da Liga, que só abre com 7 insígnias.
-const HM_GYM = { 1: 'cut', 2: 'smash', 3: 'flash', 4: 'surf' };
+// Ordem padrão (medida nos mapas): Corte no 1º (o 2º ginásio já fica na zona 2), Lampejo no 2º,
+// Esmaga-Rocha no 4º (zona 3 começa no Nv 14: 5º ginásio e 2ª cidade), Surfar no 6º (zona 4: 7º ginásio).
+// Hoenn tem ordem própria: a 2ª cidade (Porto dos Lírios) só se alcança pelo mar, então Surfar vem no 4º.
+const HM_GYM_BASE = { 1: 'cut', 2: 'flash', 4: 'smash', 6: 'surf' };
+const HM_GYM = { ...HM_GYM_BASE };
+const hmGymOf = k => +Object.keys(HM_GYM).find(n => HM_GYM[n] === k);
 const HM_ZONE = { cut: 2, smash: 3, surf: 4 };
 const HM_ICON = { cut: '✂️', smash: '🪨', surf: '🌊', flash: '💡', fly: '🪶' };
 // fala do líder ao entregar cada MO
@@ -32,11 +37,11 @@ function needFor(P, z) {
 function pathChecklist(P) {
   const row = (ok, txt) => `<div class="small" style="color:${ok ? '#86efac' : '#fca5a5'}">${ok ? '✔' : '✖'} ${txt}</div>`;
   return '<h4>Caminhos</h4>'
-    + row(P.hms.includes('cut'), `✂️ Corte abre as rotas para ${ZONES[2].nome} (1º ginásio)`)
-    + row(P.hms.includes('smash'), `🪨 Esmaga-Rocha abre as rotas para ${ZONES[3].nome} (2º ginásio)`)
-    + row(P.hms.includes('surf'), `🌊 Surfar atravessa o rio até ${ZONES[4].nome} e as ilhas distantes (4º ginásio)`)
+    + row(P.hms.includes('cut'), `✂️ Corte abre as rotas para ${ZONES[2].nome} (${hmGymOf('cut')}º ginásio)`)
+    + row(P.hms.includes('smash'), `🪨 Esmaga-Rocha abre as rotas para ${ZONES[3].nome} (${hmGymOf('smash')}º ginásio)`)
+    + row(P.hms.includes('surf'), `🌊 Surfar atravessa o rio até ${ZONES[4].nome}, o mar e as ilhas distantes (${hmGymOf('surf')}º ginásio)`)
     + row(badgeCount(P) >= 7, `🏅 O Portão da Liga para ${ZONES[5].nome} abre com 7 insígnias (você tem ${badgeCount(P)})`)
-    + row(P.hms.includes('flash'), '💡 Lampejo ilumina ginásios escuros e a névoa (3º ginásio)')
+    + row(P.hms.includes('flash'), `💡 Lampejo ilumina ginásios escuros, a noite e a névoa (${hmGymOf('flash')}º ginásio)`)
     + row(P.hms.includes('fly'), `🪶 Voar leva você a qualquer cidade já visitada com [V] (missão em ${TOWNS[1] ? TOWNS[1].nome : 'outra cidade'})`)
     + '<div class="small">MOs só funcionam com um companheiro que as saiba fora da Poké Ball (ensine no painel). Os bloqueios aparecem no minimapa.</div>';
 }
@@ -105,6 +110,7 @@ function updateHM(dt) {
   if (!P) return;
   P.flyCd = Math.max(0, (P.flyCd || 0) - dt);
   G.nearHM = nearHM(P);
+  updateFog(dt);
   // [R] volta para a última cidade em que o jogador esteve
   if (!inDungeonArea(P.x)) { const t = townAt(P.x, P.y); if (t && P.lastTown !== t.i) { P.lastTown = t.i; G.dirty = true; } }
   for (const l of LANDMARKS) {

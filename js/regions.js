@@ -133,6 +133,7 @@ const REGIONS = {
 
   hoenn: {
     nome: 'Hoenn', sub: 'Geração III · mar, vulcões e céu', vila: 'Vila Musgo',
+    hmGym: { 1: 'cut', 2: 'flash', 3: 'smash', 4: 'surf' },
     guia: { nome: 'Professora Restinga', spr: { h: '#92400e', b: '#bbf7d0', d: '#15803d' } },
     artesao: 'Ferreiro do Vulcão',
     zonas: [['Litoral Tropical', 'campo'], ['Selva Densa', 'floresta'], ['Deserto e Céu do Norte', 'deserto'], ['Vulcão Rubro', 'vulcao'], ['Ilhas do Alto-Mar', 'montanha']],
@@ -295,6 +296,7 @@ function setRegion(id) {
     { nome: 'Arena PvP', bio: 'campo', ...BIOMES.campo, lvl: 1 }]);
   replaceObj(ZONE_POOLS, R.pools); replaceObj(WATER_POOLS, R.water);
   replaceArr(BOSSES, R.lendas); replaceArr(RARE_POOL, R.rare); replaceArr(NIGHT_POOL, R.night); replaceArr(MIGRATION_POOL, R.migra);
+  replaceObj(HM_GYM, R.hmGym || HM_GYM_BASE);
   const geo = GEO[REGION_ID];
   setGeo(geo);
   replaceArr(LANDMARKS, [['vila', R.vila, geo.vila[0], geo.vila[1] + 0.12], ...geo.marks.map(([nome, cx, cy], i) => [REGION_ID + '_c' + i, nome, cx, cy])]

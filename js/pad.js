@@ -16,7 +16,7 @@ const PAD_HELP = [
   ['Analógico esquerdo', 'Andar'], ['Analógico direito', 'Mirar'], ['RT (segurar)', 'Atirar'], ['RB', 'Especial'], ['LT', 'Rolamento (talento)'],
   ['A', 'Falar / portal / MO'], ['B', 'Fechar janela'], ['X', 'Poção'], ['Y', 'Poké Ball'], ['LB', 'Trocar Poké Ball'],
   ['↑ direcional', 'Usar cristal'], ['↓ direcional', 'Montar'], ['← direcional', 'Voltar à última cidade'], ['→ direcional', 'Voar (MO Voar)'],
-  ['L3', 'Mapa'], ['R3', 'Tiro automático'], ['View', 'Controles'], ['Menu (Start)', 'Modo menu: painel, inventário, talentos'],
+  ['L3', 'Minimapa / mapa da região / esconder'], ['R3', 'Tiro automático'], ['View', 'Controles'], ['Menu (Start)', 'Modo menu: painel, inventário, talentos'],
 ];
 const PAD_NAV_HELP = [['Direcional / analógico', 'Mover a seleção'], ['A', 'Escolher / clicar'], ['X', 'Ação do botão direito (soltar item ou companheiro)'], ['B ou Start', 'Sair do modo menu']];
 

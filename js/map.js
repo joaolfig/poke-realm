@@ -84,6 +84,8 @@ const SECRET_AT = new Map();
 // bloqueios de MO nas rotas entre zonas (para o minimapa e as dicas)
 const GATES = [];
 const badgeCount = P => (P && P.story ? clamp(P.story.ch - 1 + (P.story.done ? 1 : 0), 0, 8) : 0);
+// insígnias somadas de todas as regiões
+const totalBadges = P => Object.values(P.stories || {}).reduce((s, st) => s + clamp(st.ch - 1 + (st.done ? 1 : 0), 0, 8), 0);
 const gateOpen = () => !!(G && G.P && badgeCount(G.P) >= 7);
 // cidades seguras: a vila inicial (na origem) e a segunda cidade de cada região (setGeo)
 const TOWNS = [{ x: 0, y: 0, i: 0 }];
@@ -122,6 +124,9 @@ function pathDist(x, y) {
 }
 
 let TT = null, TZ = null, TV = null, WET = null, MINIMAP = null;
+// MINIMAP: 1 pixel = MAP_S px do mundo. Névoa: células de FOG_S px; KNOWN = mapa só com o que já foi visto
+const MAP_S = 64, FOG_S = 128, FOG_R = 720;
+let FOG = null, FOGW = 0, FOGH = 0, KNOWN = null, fogT = 0;
 const ZPTS = { 1: [], 2: [], 3: [], 4: [], 5: [] };
 const tIdx = (ix, iy) => (ix < 0 || iy < 0 || ix >= NX || iy >= NY ? -1 : iy * NX + ix);
 function tileIdx(x, y) { return tIdx(Math.floor(x / TILE) + OX, Math.floor(y / TILE) + OY); }
@@ -291,13 +296,13 @@ function buildWorld() {
     const i = iy * NX + ix, z = TZ[i], x = (ix - OX + 0.5) * TILE, y = (iy - OY + 0.5) * TILE;
     if (z >= 1 && z <= 5 && !solidAt(x, y) && !isWater(x, y)) ZPTS[z].push([x, y]);
   }
-  // minimapa: 160 de largura, altura proporcional à região
-  const MH = Math.round(160 * (WY1 - WY0) / (WX1 - WX0));
+  // mapa da região em boa resolução (o minimapa mostra só um pedaço, com zoom)
+  const MW = Math.ceil((WX1 - WX0) / MAP_S), MH = Math.ceil((WY1 - WY0) / MAP_S);
   MINIMAP = document.createElement('canvas');
-  MINIMAP.width = 160; MINIMAP.height = MH;
+  MINIMAP.width = MW; MINIMAP.height = MH;
   const mx = MINIMAP.getContext('2d');
-  for (let y = 0; y < MH; y++) for (let x = 0; x < 160; x++) {
-    const wx = WX0 + (x + 0.5) / 160 * (WX1 - WX0), wy = WY0 + (y + 0.5) / MH * (WY1 - WY0);
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    const wx = WX0 + (x + 0.5) * MAP_S, wy = WY0 + (y + 0.5) * MAP_S;
     const k = tileKind(wx, wy), z = zoneAt(wx, wy);
     mx.fillStyle = k === TK.SEA ? '#1c4870' : k === TK.WATER || k === TK.POND ? '#2f6fb8' : k === TK.PATH || k === TK.BRIDGE ? '#e6d3a3' : k === TK.SAND ? '#e8d9a0'
       : k === TK.TREE || k === TK.PINE || k === TK.CUTTREE || k === TK.DTREE ? '#1f5a2a' : k === TK.CLIFF ? '#6d5d48' : z === 0 ? '#d6cfc0' : k === TK.TALL ? shade(ZONES[Math.max(1, z)].cols[0], 0.8) : ZONES[Math.max(0, z)].cols[1];
@@ -817,4 +822,57 @@ function enforceProgression() {
     }
   }
   for (let i = 0; i < NX * NY; i++) if (TZ[i] >= 1 && TZ[i] <= 5 && req[i] <= 5 && req[i] > TZ[i]) TZ[i] = req[i];
+}
+
+/* ---------- Névoa do mapa: só aparece o que o jogador já explorou (salvo por região) ---------- */
+function initFog(P) {
+  FOGW = Math.ceil((WX1 - WX0) / FOG_S); FOGH = Math.ceil((WY1 - WY0) / FOG_S);
+  FOG = new Uint8Array(FOGW * FOGH);
+  KNOWN = document.createElement('canvas');
+  KNOWN.width = MINIMAP.width; KNOWN.height = MINIMAP.height;
+  const k = KNOWN.getContext('2d');
+  k.fillStyle = '#0b1020'; k.fillRect(0, 0, KNOWN.width, KNOWN.height);
+  P.seenR = P.seenR || {};
+  const s = P.seenR[REGION_ID];
+  if (s) {
+    try {
+      const b = atob(s);
+      for (let i = 0; i < FOG.length; i++) if (b.charCodeAt(i >> 3) & (1 << (i & 7))) revealCell(i);
+    } catch (e) { /* save estragado: começa do zero */ }
+  } else {
+    // saves antigos: revela em volta das cidades e pontos de voo que o jogador já conhece
+    for (const l of LANDMARKS) if (P.fly.includes(l.id)) revealAround(l.x, l.y, 1400);
+  }
+  revealAround(P.x, P.y, FOG_R);
+}
+function revealCell(i) {
+  if (FOG[i]) return false;
+  FOG[i] = 1;
+  const r = FOG_S / MAP_S, x = (i % FOGW) * r, y = Math.floor(i / FOGW) * r;
+  KNOWN.getContext('2d').drawImage(MINIMAP, x, y, r, r, x, y, r, r);
+  return true;
+}
+function revealAround(x, y, R) {
+  if (!FOG) return;
+  const cx = (x - WX0) / FOG_S, cy = (y - WY0) / FOG_S, rr = R / FOG_S;
+  let any = false;
+  for (let j = Math.max(0, Math.floor(cy - rr)); j <= Math.min(FOGH - 1, Math.ceil(cy + rr)); j++)
+    for (let i = Math.max(0, Math.floor(cx - rr)); i <= Math.min(FOGW - 1, Math.ceil(cx + rr)); i++)
+      if ((i + 0.5 - cx) ** 2 + (j + 0.5 - cy) ** 2 < rr * rr && revealCell(j * FOGW + i)) any = true;
+  if (any && G && G.P) { G.P.seenR = G.P.seenR || {}; G.P.seenR[REGION_ID] = fogEncode(); }
+}
+function fogEncode() {
+  const b = new Uint8Array(Math.ceil(FOG.length / 8));
+  for (let i = 0; i < FOG.length; i++) if (FOG[i]) b[i >> 3] |= 1 << (i & 7);
+  let s = '';
+  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+  return btoa(s);
+}
+const fogSeen = (x, y) => { if (!FOG) return true; const i = Math.floor((x - WX0) / FOG_S), j = Math.floor((y - WY0) / FOG_S); return i >= 0 && j >= 0 && i < FOGW && j < FOGH && !!FOG[j * FOGW + i]; };
+function updateFog(dt) {
+  const P = G.P;
+  fogT -= dt;
+  if (!P || !FOG || fogT > 0 || inDungeonArea(P.x)) return;
+  fogT = 0.25;
+  revealAround(P.x, P.y, FOG_R);
 }
