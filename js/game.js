@@ -214,7 +214,7 @@ function createPlayer(name, h) {
     equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: null, amuleto: null },
     inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0, elixir: 1 }, ballSel: 'poke', story: { ch: 0, done: false },
     pets: [], petIdx: -1, petAct: [], stories: {}, hmsR: {}, quest: null, questOffer: null, elixT: 0, hasteT: 0, slowCd: 0, hms: [], fly: ['vila'], chests: [], flyCd: 0,
-    x: rand(-40, 40), y: rand(10, 50), hp: 1, shootCd: 0, abilCd: 0, breathCd: 0, furia: 0, invis: 0, nextCrit: false,
+    x: rand(-40, 40), y: rand(55, 80), hp: 1, shootCd: 0, abilCd: 0, breathCd: 0, furia: 0, invis: 0, nextCrit: false,
     recallCd: 0, dashCd: 0, dodgeT: 0, shield: 0, shieldT: 0, seloT: 0, sinceHit: 10, face: 1, walk: 0, moving: false, aim: 0, tempType: null, tempTypeT: 0, alt: 0.14, auraT: 0, giftT: 0,
   };
   P.hp = maxHP(P);
@@ -927,7 +927,7 @@ function updatePlayer(dt) {
   const my = (K.KeyS || K.ArrowDown ? 1 : 0) - (K.KeyW || K.ArrowUp ? 1 : 0);
   const inDg = inDungeonArea(P.x);
   if (inDg && !dungeonAt(P.x)) {
-    P.x = rand(-50, 50); P.y = rand(-50, 50);
+    P.x = rand(-50, 50); P.y = rand(55, 80);
     G.toasts.push({ text: 'A masmorra desmoronou! Você foi levado de volta à vila.', color: '#fca5a5', t: 3 });
     return;
   }
@@ -953,7 +953,7 @@ function updatePlayer(dt) {
   if (G.recall) {
     G.recall.t -= dt;
     if (P.moving || P.sinceHit < 0.05) { G.recall = null; text(P.x, P.y - 40, 'Retorno cancelado', '#fca5a5', 12); }
-    else if (G.recall.t <= 0) { G.recall = null; burst(P.x, P.y, '#fde68a', 20); P.x = rand(-50, 50); P.y = rand(10, 50); P.recallCd = 45; burst(P.x, P.y, '#fde68a', 20); sfx('pot'); }
+    else if (G.recall.t <= 0) { G.recall = null; burst(P.x, P.y, '#fde68a', 20); P.x = rand(-50, 50); P.y = rand(55, 80); P.recallCd = 45; burst(P.x, P.y, '#fde68a', 20); sfx('pot'); }
   }
   const wasSurf = P.surfing;
   if (P.riding && (inDg || !activePet(P) || !G.allies.some(a => a.pet) || !canRide(activePet(P).pid) || G.evo)) P.riding = false;
@@ -1239,7 +1239,7 @@ function bar(x, y, w, h, frac, col) {
   ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
   ctx.fillStyle = col; ctx.fillRect(x, y, w * clamp(frac, 0, 1), h);
 }
-function outlined(s, x, y) { ctx.strokeText(s, x, y); ctx.fillText(s, x, y); }
+function outlined(s, x, y) { s = padText(s); ctx.strokeText(s, x, y); ctx.fillText(s, x, y); }
 
 function drawShot(b, ox, oy) {
   const x = b.x + ox, y = b.y + oy;
@@ -1561,6 +1561,7 @@ function updatePanel() {
   const ab = curAbil(P), cd = abilCd(P);
   $('p-abil').innerHTML = `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>
     <div class="small" title="Voltar à vila: fique parado 1,5s">[R] Vila: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${ridingFlyer(P) ? ` · [V] Voar: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
+  padFixDom($('p-abil'));
   if (!G.dirty) return;
   G.dirty = false;
   const rc = race(P), sub = P.subclass ? subInfo(P.subclass) : null;
@@ -1611,12 +1612,13 @@ function updatePanel() {
         <div class="phm">${HM_KEYS.map(k => (pt.hms || []).includes(k) ? `<span class="hmk" title="${HMS[k].nome}">${HMS[k].icon}</span>`
           : P.hms.includes(k) && canLearn(pt.pid, k) ? `<button class="hmt" data-teach="${i}:${k}" title="Ensinar ${HMS[k].mo} ${HMS[k].nome}">+${HMS[k].icon}</button>` : '').join('')}</div></div>`;
     }).join('')}</div>${P.bag.doce && P.petIdx >= 0 ? `<button data-candy="1" class="candy">🍬 Dar Doce Raro ao ativo (×${P.bag.doce})</button>` : ''}`
-    : '<div class="small">Enfraqueça um Pokémon, mire nele e aperte <b>F</b> para jogar uma Pokébola. Companheiros sobem de nível e evoluem!</div>')
+    : '<div class="small">Enfraqueça um Pokémon, mire nele e aperte <b>[F]</b> para jogar uma Pokébola. Companheiros sobem de nível e evoluem!</div>')
     + (P.hms.length ? `<div class="small keyit">Itens-chave: ${P.hms.map(k => `<span title="${HMS[k].desc}">${HMS[k].icon} ${HMS[k].mo} ${HMS[k].nome}</span>`).join(' ')}</div>` : '');
   if (NET.mode === 'host') $('p-room').innerHTML = `<h4>Multiplayer</h4><div class="room">Código da sala: <b>${NET.room}</b> <button data-copy="1">Copiar</button></div><div class="small">Seus amigos escolhem "Entrar em sala" e digitam este código.</div>`;
   else if (NET.mode === 'client') $('p-room').innerHTML = `<h4>Multiplayer</h4><div class="room">Conectado à sala <b>${NET.room}</b></div>`;
   else $('p-room').innerHTML = '';
   $('p-room').innerHTML += '<button data-save="1" class="savebtn" title="Baixa um arquivo .json com seu personagem (Ctrl+S)">Salvar em arquivo <small>Ctrl+S</small></button>';
+  padFixDom($('panel'));
 }
 
 $('panel').addEventListener('click', ev => {

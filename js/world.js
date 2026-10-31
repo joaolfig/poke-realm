@@ -104,6 +104,7 @@ function renderNPC() {
     }
   }
   $('npc').innerHTML = `<div class="npc-head"><span>${n.icon} <b>${n.nome}</b></span><span>🪙 ${P.gold}</span><button data-act="close" title="Fechar (Esc)">✕</button></div>${body}`;
+  padFixDom($('npc'));
 }
 
 $('npc').addEventListener('click', ev => {

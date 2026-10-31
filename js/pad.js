@@ -27,6 +27,8 @@ function setPad(on) {
   if (!on) { padNav(false); mouse.down = false; for (const k in PAD.moveK) K[k] = false; }
   renderPadToggles();
   renderPadHelp();
+  renderHelpHint();
+  if (G) G.dirty = true;
 }
 function renderPadToggles() {
   document.querySelectorAll('[data-padtoggle]').forEach(b => { b.textContent = `🎮 Controle: ${PAD.on ? 'ligado' : 'desligado'}`; b.classList.toggle('good', PAD.on); });
@@ -164,10 +166,40 @@ function padTick(dt) {
 function drawPadReticle() {
   if (!PAD.on || PAD.nav || !G || !G.P || state !== 'play') return;
   const x = mouse.x, y = mouse.y;
-  ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(x, y, 9, 0, 7); ctx.moveTo(x - 14, y); ctx.lineTo(x - 5, y); ctx.moveTo(x + 5, y); ctx.lineTo(x + 14, y);
-  ctx.moveTo(x, y - 14); ctx.lineTo(x, y - 5); ctx.moveTo(x, y + 5); ctx.lineTo(x, y + 14); ctx.stroke();
+  // contorno preto grosso + amarelo vivo por cima: aparece em grama, areia, neve e masmorras escuras
+  const shape = () => {
+    ctx.beginPath(); ctx.arc(x, y, 10, 0, 7);
+    ctx.moveTo(x - 17, y); ctx.lineTo(x - 6, y); ctx.moveTo(x + 6, y); ctx.lineTo(x + 17, y);
+    ctx.moveTo(x, y - 17); ctx.lineTo(x, y - 6); ctx.moveTo(x, y + 6); ctx.lineTo(x, y + 17);
+  };
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 6; shape(); ctx.stroke();
+  ctx.strokeStyle = '#ffe14a'; ctx.lineWidth = 2.5; shape(); ctx.stroke();
+  ctx.fillStyle = '#ff3b3b'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.lineCap = 'butt';
 }
 
 window.addEventListener('gamepadconnected', () => { PAD.hint = 0; });
 document.addEventListener('DOMContentLoaded', () => { setPad(PAD.on); });
+
+/* ---------- dicas na tela: troca as teclas pelos botões do controle ---------- */
+const PAD_LBL = { E: 'A', 'Espaço': 'RB', Q: 'X', 1: 'X', F: 'Y', 2: 'LB', 3: '↑', X: '↓', R: '←', V: '→', M: 'L3', T: 'R3', H: 'View', Shift: 'LT', Esc: 'B' };
+const PAD_RE = /\[(E|Espaço|Q|F|R|V|X|T|M|H|Shift|Esc|1|2|3)\]|\((T|Esc)\)/g;
+const padText = s => (PAD.on && typeof s === 'string' ? s.replace(PAD_RE, (m, a, b) => (a ? `[${PAD_LBL[a]}]` : `(${PAD_LBL[b]})`)) : s);
+// aplica nos textos e dicas (title) de um pedaço da interface
+function padFixDom(root) {
+  if (!PAD.on || !root) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n = w.nextNode(); n; n = w.nextNode()) if (PAD_RE.test(n.nodeValue)) { PAD_RE.lastIndex = 0; n.nodeValue = padText(n.nodeValue); }
+  PAD_RE.lastIndex = 0;
+  root.querySelectorAll('[title]').forEach(el => { const t = el.getAttribute('title'); if (PAD_RE.test(t)) { PAD_RE.lastIndex = 0; el.setAttribute('title', padText(t)); } PAD_RE.lastIndex = 0; });
+}
+// linha de atalhos no fim do painel (teclado ou controle) + botões de som e controle
+function renderHelpHint() {
+  const el = document.querySelector('.help-hint');
+  if (!el) return;
+  const som = ['🔇 Som: desligado', '🔈 Som: só efeitos', '🔊 Som: música e efeitos'][typeof soundMode === 'number' ? soundMode : 2];
+  el.innerHTML = (PAD.on ? '<kbd>View</kbd> controles · <kbd>Start</kbd> menu · <kbd>L3</kbd> mapa' : '<kbd>H</kbd> controles · <kbd>N</kbd> música/som · <kbd>M</kbd> mapa')
+    + `<button data-sound class="savebtn">${som}</button><button data-padtoggle class="savebtn">🎮 Controle: ${PAD.on ? 'ligado' : 'desligado'}</button>`;
+}
+document.addEventListener('click', ev => { if (ev.target.closest('[data-sound]')) { const t = cycleSound(); if (G && G.toasts) G.toasts.push({ text: t, color: '#e5e7eb', t: 1.8 }); renderHelpHint(); } });

@@ -123,7 +123,10 @@ function solidAt(x, y, swim) {
   if (SOLIDK[TT[i]]) return true;
   if (TT[i] === TK.WATERFALL) return !(sw & 2);
   if (!(sw & 1) && TT[i] !== TK.BRIDGE && (WET[i] > 0 || TT[i] === TK.SEA) && wetAt(x, y) > DEEP_T) return true;
-  if (inTown(x, y)) for (const b of BUILDINGS) if (Math.abs(x - b.x) < b.w / 2 - 4 && Math.abs(y - b.y) < b.h / 2 - 4) return true;
+  if (inTown(x, y)) {
+    if ((x / 44) ** 2 + ((y + 2) / 22) ** 2 < 1) return true; // chafariz da praça
+    for (const b of BUILDINGS) if (Math.abs(x - b.x) < b.w / 2 - 4 && Math.abs(y - b.y) < b.h / 2 - 4) return true;
+  }
   return false;
 }
 const solidR = (x, y, r, swim) => solidAt(x - r, y - r, swim) || solidAt(x + r, y - r, swim) || solidAt(x - r, y + r, swim) || solidAt(x + r, y + r, swim);
