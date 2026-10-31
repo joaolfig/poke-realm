@@ -26,7 +26,7 @@ const CLASSES = {
     nome: 'Ladino', icon: '🗡️', hd: 8, ac: 12, crit: 19, dieAdj: -2, attrs: { POD: 2, AGI: 4, VIG: 1 },
     spr: { h: '#111827', b: '#374151', d: '#1f2937' },
     desc: 'Ataques rápidos. Crítico em 19-20 com Ataque Furtivo.',
-    wpn: { shots: 1, speed: 560, life: 0.6, size: 5, rate: 3.8, shape: 'dagger', color: '#cbd5e1' },
+    wpn: { shots: 1, speed: 560, life: 0.6, size: 5, rate: 3.0, shape: 'dagger', color: '#cbd5e1' },
     abil: { nome: 'Manto Sombrio', cd: 9, desc: 'Manto: invisível por 3s (inimigos te ignoram e você fica mais rápido) e o próximo ataque é crítico.' },
     weapons: ['Adaga', 'Adaga Afiada', 'Punhal Élfico', 'Adaga Envenenada', 'Lâmina Sombria', 'Presa da Noite', 'Beijo da Morte'], wicon: '🗡️',
   },

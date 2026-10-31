@@ -78,7 +78,7 @@ const SUBCLASSES = {
       abil: { nome: 'Crânio Ceifador', cd: 4.5, desc: 'Crânio: explosão no cursor que causa (1 + nível/5)d10 + Poder/2 em área e cura você em 20% do dano causado.' } },
   ],
   ladino: [
-    { id: 'assassino', nome: 'Assassino', icon: '🗡️', desc: 'Margem de crítico +1 e críticos causam +50% de dano.',
+    { id: 'assassino', nome: 'Assassino', icon: '🗡️', desc: 'Margem de crítico +1 e críticos causam +30% de dano.',
       abil: { nome: 'Frasco de Veneno', cd: 5, desc: 'Veneno: arremessa um frasco no cursor; a nuvem causa (1 + nível/6)d6 a cada 0,5s por 4s em quem estiver dentro.' } },
     { id: 'trapaceiro', nome: 'Trapaceiro', icon: '🎭', desc: '10% de chance de esquivar de qualquer ataque.',
       abil: { nome: 'Prisma Ilusório', cd: 7, desc: 'Prisma: você se teleporta até o cursor e deixa uma ilusão que atrai os inimigos por 4s. Fica invisível por 2s e o próximo ataque é crítico.' } },

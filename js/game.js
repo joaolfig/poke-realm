@@ -837,7 +837,7 @@ function playerHit(e, b) {
   if (P.tempTypeT > 0) dmg += d(4);
   if (hasS(P, 'guerra')) dmg += d(6);
   if (crit && P.cls === 'ladino') dmg += roll(Math.ceil(P.lvl / 4), 6);
-  if (crit && hasS(P, 'assassino')) dmg = Math.round(dmg * 1.5);
+  if (crit && hasS(P, 'assassino')) dmg = Math.round(dmg * 1.3);
   dmg = Math.max(1, dmg);
   if (!hit) dmg = Math.max(1, Math.floor(dmg / 2));
   const res = typed(P, e, dmg, pType(P));
