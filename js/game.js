@@ -1179,6 +1179,7 @@ function handleEvent(m, local) {
     case 'chat': {
       G.chat.push({ name: m.name, text: m.text, sys: m.sys, t: G.time });
       if (G.chat.length > 7) G.chat.shift();
+      logPush({ name: m.sys ? '' : m.name, text: m.text, color: m.sys ? '#fcd34d' : '#e5e7eb', chat: !m.sys });
       if (!m.sys) {
         const who = local ? G.P : G.remotes.get(m.from);
         if (who) who.bubble = { text: m.text, t: 5 };
@@ -1316,7 +1317,7 @@ function update(dt) {
   G.texts = G.texts.filter(t => t.t < t.life);
   for (const f of G.fx) { f.life -= dt; f.r = f.R * (1 - f.life / f.max); }
   G.fx = G.fx.filter(f => f.life > 0);
-  for (const t of G.toasts) { t.t -= dt; if (!t.logged) { t.logged = 1; if (!t.big) { const l = G.chat[G.chat.length - 1]; if (l && l.log && l.text === t.text) { l.n = (l.n || 1) + 1; l.t = G.time; } else { G.chat.push({ text: t.text, log: 1, color: t.color, t: G.time }); if (G.chat.length > 9) G.chat.shift(); } t.t = 0; } G.toastLog = G.toastLog || []; const last = G.toastLog[0]; if (last && last.text === t.text) last.n = (last.n || 1) + 1; else G.toastLog.unshift({ text: t.text, color: t.color, at: G.time }); G.toastLog.length = Math.min(G.toastLog.length, 30); if (!$('tlog').classList.contains('hidden')) renderToastLog(); } }
+  for (const t of G.toasts) { t.t -= dt; if (!t.logged) { t.logged = 1; if (!t.big) { const l = G.chat[G.chat.length - 1]; if (l && l.log && l.text === t.text) { l.n = (l.n || 1) + 1; l.t = G.time; } else { G.chat.push({ text: t.text, log: 1, color: t.color, t: G.time }); if (G.chat.length > 9) G.chat.shift(); } t.t = 0; } G.toastLog = G.toastLog || []; const last = G.toastLog[0]; if (last && last.text === t.text) last.n = (last.n || 1) + 1; else G.toastLog.unshift({ text: t.text, color: t.color, at: G.time }); G.toastLog.length = Math.min(G.toastLog.length, 30); if (!$('tlog').classList.contains('hidden')) renderToastLog(); logPush({ text: t.text, color: t.color, big: t.big }); } }
   G.toasts = G.toasts.filter(t => t.t > 0);
   G.banner = Math.max(0, G.banner - dt);
   G.shake = Math.max(0, G.shake - dt * 20);
@@ -1849,7 +1850,8 @@ function drawHUD(ox, oy) {
   // chat da sala + log dos avisos comuns: mesma fonte, quebrando na largura da caixa de vida (nada fica para fora)
   ctx.textAlign = 'left'; ctx.font = '13px Barlow Semi Condensed, system-ui';
   let chy = H - 160;
-  for (let i = G.chat.length - 1; i >= 0 && chy > H * 0.45; i--) {
+  const chatOpen = !$('chat-in').classList.contains('hidden'); // com o chat aberto, o histórico rolável mostra tudo
+  for (let i = G.chat.length - 1; i >= 0 && chy > H * 0.45 && !chatOpen; i--) {
     const c = G.chat[i], age = G.time - c.t;
     const txt = c.log ? c.text + (c.n > 1 ? ` (×${c.n})` : '') : c.sys ? c.text : `${c.name}: ${c.text}`;
     const lines = wrapText(txt, 296, 3);
@@ -2069,8 +2071,24 @@ window.addEventListener('keydown', ev => {
 });
 window.addEventListener('keyup', ev => { K[ev.code] = false; });
 window.addEventListener('blur', () => { for (const k in K) K[k] = false; mouse.down = false; });
-function openChat() { const c = $('chat-in'); c.classList.remove('hidden'); c.value = ''; for (const k in K) K[k] = false; c.focus(); }
-function closeChat() { const c = $('chat-in'); c.classList.add('hidden'); c.blur(); }
+function openChat() { const c = $('chat-in'); c.classList.remove('hidden'); c.value = ''; for (const k in K) K[k] = false; renderChatLog(true); $('chatlog').classList.remove('hidden'); c.focus(); }
+$('chatlog').addEventListener('click', () => { if (!$('chat-in').classList.contains('hidden')) $('chat-in').focus(); }); // clicar no histórico não fecha a digitação
+function closeChat() { const c = $('chat-in'); c.classList.add('hidden'); c.blur(); $('chatlog').classList.add('hidden'); }
+// histórico do chat: mensagens dos jogadores e todos os avisos (até 200), rolável quando o chat está aberto
+function logPush(e) {
+  const L = G.fullLog = G.fullLog || [], last = L[L.length - 1];
+  if (last && !e.chat && last.text === e.text) { last.n = (last.n || 1) + 1; last.at = G.time; }
+  else { L.push({ ...e, at: G.time }); if (L.length > 200) L.shift(); }
+  if (!$('chatlog').classList.contains('hidden')) renderChatLog();
+}
+function renderChatLog(force) {
+  const box = $('chatlog'), atEnd = force || box.scrollTop + box.clientHeight >= box.scrollHeight - 8;
+  const L = G.fullLog || [];
+  const hhmm = s => { const m = Math.floor(s / 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
+  box.innerHTML = L.length ? L.map(e => `<div class="cl${e.big ? ' big' : ''}${e.chat ? ' msg' : ''}"><em>${hhmm(e.at)}</em><span style="color:${e.color || '#d6d0c4'}">${e.name ? `<b>${esc(e.name)}:</b> ` : ''}${esc(e.text)}${e.n > 1 ? ` (×${e.n})` : ''}</span></div>`).join('')
+    : '<div class="cl"><span>Nada por aqui ainda.</span></div>';
+  if (atEnd) box.scrollTop = box.scrollHeight; // só desce sozinho se você não estiver lendo lá em cima
+}
 
 cv.addEventListener('mousemove', ev => { const r = cv.getBoundingClientRect(); mouse.x = ev.clientX - r.left; mouse.y = ev.clientY - r.top; });
 cv.addEventListener('mousedown', ev => { if (ev.button === 0) mouse.down = true; if (document.activeElement) document.activeElement.blur(); });

@@ -217,6 +217,9 @@
   .dstats div { background: var(--well); border: 2px solid #000; box-shadow: 0 0 0 1px var(--line); padding: 10px; text-align: center; }
   .dstats span { display: block; font: 600 11px var(--px); color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
   .dstats b { font: 700 28px var(--px); color: var(--gold); }
+  #chatlog { position: fixed; left: 12px; bottom: 190px; width: min(460px, 60vw); max-height: 42vh; overflow-y: auto; z-index: 5; background: rgba(11, 12, 14, .9); border: 2px solid #000; box-shadow: 0 0 0 1px var(--line-hi); padding: 6px 8px; font-size: 13px; line-height: 1.3; }
+  #chatlog .cl { display: flex; gap: 6px; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,.05); } #chatlog .cl em { color: #6b7280; font-style: normal; flex: none; font-size: 11px; padding-top: 1px; }
+  #chatlog .cl.big span { font-weight: 700; } #chatlog .cl.msg { background: rgba(255,255,255,.04); }
   #chat-in { position: fixed; left: 12px; bottom: 150px; width: 300px; z-index: 5; background: rgba(11, 12, 14, .94); border: 2px solid #000; box-shadow: 0 0 0 1px var(--gold); color: var(--text); padding: 8px 10px; font: inherit; outline: none; }
   .tbadge { display: inline-block; padding: 0 6px; font: 600 12px/17px var(--px); color: #111; text-shadow: none; vertical-align: middle; border: 1px solid #000; box-shadow: inset 0 -2px 0 rgba(0,0,0,.25); }
   .ptype { grid-column: 1 / -1; margin-top: 4px; font-size: 13px; color: var(--dim); }
@@ -300,7 +303,7 @@
       <h3>Teclado e mouse <span class="small">[H] fecha</span></h3>
       <kbd>WASD</kbd> mover · <kbd>Mouse</kbd> mirar/atirar · <kbd>Espaço</kbd> habilidade<br>
       <kbd>E</kbd> falar / portal / HM · <kbd>Shift</kbd> rolamento (talento) · <kbd>F</kbd> Poké Ball · <kbd>G</kbd> trocar bola · <kbd>C</kbd> trocar Pokémon · <kbd>Q</kbd> poção · <kbd>Z</kbd> Talismã de Abra (fuga) · <kbd>X</kbd> montar · <kbd>V</kbd> voar (HM Fly)<br><kbd>3</kbd> cristal · <kbd>R</kbd> última cidade · <kbd>T</kbd> tiro automático<br>
-      <kbd>Enter</kbd> chat · <kbd>M</kbd> mapa · <kbd>N</kbd> música/som · <kbd>Ctrl+S</kbd> salvar arquivo<br>
+      <kbd>Enter</kbd> chat (com o histórico de mensagens e avisos para rolar) · <kbd>M</kbd> mapa · <kbd>N</kbd> música/som · <kbd>Ctrl+S</kbd> salvar arquivo<br>
       Clique num item para equipar (cristais: usar). <b>Botão direito solta o item no chão</b> (fica 3 min, seus amigos podem pegar). Mate um Pokémon Alfa para abrir um portal de masmorra. Fale com Sildo na vila para seguir a história. Passe o mouse num companheiro para ver habilidade e HMs; HMs compradas na loja só podem ser ensinadas a quem as aprende nos jogos.
     </div>
 </div>
@@ -308,6 +311,7 @@
 <div id="npc" class="hidden"></div>
 <div id="padinfo" class="hidden"></div>
 <div id="ptip" class="hidden"></div>
+<div id="chatlog" class="hidden"></div>
 <input id="chat-in" class="hidden" maxlength="120" placeholder="Mensagem (Enter envia, Esc cancela)" autocomplete="off">
 
 <div id="menu" class="overlay">
@@ -376,23 +380,23 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=156"></script>
-<script src="js/data.js?v=156"></script>
-<script src="js/rules.js?v=156"></script>
-<script src="js/items.js?v=156"></script>
-<script src="js/dungeon.js?v=156"></script>
-<script src="js/net.js?v=156"></script>
-<script src="js/map.js?v=156"></script>
-<script src="js/world.js?v=156"></script>
-<script src="js/story.js?v=156"></script>
-<script src="js/hm.js?v=156"></script>
-<script src="js/allies.js?v=156"></script>
-<script src="js/town.js?v=156"></script>
-<script src="js/geo.js?v=156"></script>
-<script src="js/regions.js?v=156"></script>
-<script src="js/audio.js?v=156"></script>
-<script src="js/pad.js?v=156"></script>
-<script src="js/pvp.js?v=156"></script>
-<script src="js/game.js?v=156"></script>
+<script src="js/pokedex.js?v=157"></script>
+<script src="js/data.js?v=157"></script>
+<script src="js/rules.js?v=157"></script>
+<script src="js/items.js?v=157"></script>
+<script src="js/dungeon.js?v=157"></script>
+<script src="js/net.js?v=157"></script>
+<script src="js/map.js?v=157"></script>
+<script src="js/world.js?v=157"></script>
+<script src="js/story.js?v=157"></script>
+<script src="js/hm.js?v=157"></script>
+<script src="js/allies.js?v=157"></script>
+<script src="js/town.js?v=157"></script>
+<script src="js/geo.js?v=157"></script>
+<script src="js/regions.js?v=157"></script>
+<script src="js/audio.js?v=157"></script>
+<script src="js/pad.js?v=157"></script>
+<script src="js/pvp.js?v=157"></script>
+<script src="js/game.js?v=157"></script>
 </body>
 </html>
