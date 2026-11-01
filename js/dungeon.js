@@ -136,7 +136,25 @@ function genDungeon(id, theme, seed, zone, floor = 0) {
       for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) grid[(py + j) * DG_W + px + i] = 0;
     }
   }
-  return { id, theme, seed, zone, grid, rooms, side, chests, mod, hz, floor, mods, wx: mods.includes('chuva') ? 'chuva' : mods.includes('areia') ? 'areia' : '', ox: DG_BASE + id * DG_SPACING, oy: 0, done: false, doneT: 0, emptyT: 0, ent: { x: 0, y: 0 }, bossId: 0, mini: null };
+  // enigma: uma sala de luta tem a saída selada; placas de pressão ou runas em ordem abrem a porta e revelam um baú
+  let pz = null;
+  if (!gs && !floor && fights.length && R() < 0.65) {
+    const r = fights[Math.floor(R() * fights.length)], kind = R() < 0.5 ? 'placas' : 'runas', n = kind === 'placas' ? 3 : 4;
+    const ay = (r.y + r.h / 2) | 0, door = [];
+    for (let i = r.x + r.w; i <= r.x + r.w + 1; i++) for (let j = ay - 3; j <= ay + 2; j++) if (grid[j * DG_W + i] === 1) { grid[j * DG_W + i] = 3; door.push(j * DG_W + i); }
+    const pts = [];
+    for (let k = 0; k < 200 && pts.length < n; k++) {
+      const tx = r.x + 2 + Math.floor(R() * (r.w - 4)), ty = r.y + 2 + Math.floor(R() * (r.h - 4));
+      if (grid[ty * DG_W + tx] !== 1 || pts.some(p => Math.abs(p[0] - tx) + Math.abs(p[1] - ty) < 5)) continue;
+      pts.push([tx, ty]);
+    }
+    if (door.length && pts.length === n) {
+      const order = pts.map((_, i) => i); for (let i = n - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+      pz = { kind, room: rooms.indexOf(r), door, order, lit: [], step: 0, done: false, showT: -1, pts: pts.map(([tx, ty]) => ({ x: DG_BASE + id * DG_SPACING + (tx + 0.5) * TILE, y: (ty + 0.5) * TILE })) };
+      chests.push({ x: DG_BASE + id * DG_SPACING + (r.x + r.w / 2) * TILE, y: (r.y + r.h / 2) * TILE, i: chests.length, pz: 1 });
+    } else for (const c of door) grid[c] = 1;
+  }
+  return { id, theme, seed, zone, grid, rooms, side, chests, mod, hz, floor, mods, pz, wx: mods.includes('chuva') ? 'chuva' : mods.includes('areia') ? 'areia' : '', ox: DG_BASE + id * DG_SPACING, oy: 0, done: false, doneT: 0, emptyT: 0, ent: { x: 0, y: 0 }, bossId: 0, mini: null };
 }
 
 function walkable(x, y) {
@@ -145,7 +163,8 @@ function walkable(x, y) {
   if (!dg) return false;
   const tx = Math.floor((x - dg.ox) / TILE), ty = Math.floor((y - dg.oy) / TILE);
   if (tx < 0 || ty < 0 || tx >= DG_W || ty >= DG_H) return false;
-  return dg.grid[ty * DG_W + tx] >= 1;
+  const g = dg.grid[ty * DG_W + tx];
+  return g >= 1 && g !== 3; // 3 = porta selada do enigma
 }
 // tipo de terreno perigoso sob o ponto (ou null)
 function hazardAt(x, y) {
@@ -288,7 +307,7 @@ function hostOnKill(e) {
 }
 
 /* ---------- Rede ---------- */
-const dungeonsToNet = () => [...G.dungeons.values()].map(d => [d.id, d.theme, d.seed, d.zone, d.done ? 1 : 0, d.ent.x, d.ent.y, d.floor || 0]);
+const dungeonsToNet = () => [...G.dungeons.values()].map(d => [d.id, d.theme, d.seed, d.zone, d.done ? 1 : 0, d.ent.x, d.ent.y, d.floor || 0, d.pz && d.pz.done ? 1 : 0]);
 const portalsToNet = () => G.portals.map(p => [p.id, p.x, p.y, p.theme, Math.round(p.ttl), p.dg, p.exit]);
 function dungeonsFromNet(dgs, pos) {
   const seen = new Set();
@@ -297,6 +316,7 @@ function dungeonsFromNet(dgs, pos) {
     let dg = G.dungeons.get(a[0]);
     if (!dg) { dg = genDungeon(a[0], a[1], a[2], a[3], a[7] || 0); G.dungeons.set(a[0], dg); }
     dg.done = !!a[4]; dg.ent = { x: a[5], y: a[6] };
+    if (a[8] && dg.pz && !dg.pz.done) pzOpen(dg, true);
   }
   for (const id of [...G.dungeons.keys()]) if (!seen.has(id)) G.dungeons.delete(id);
   G.portals = (pos || []).map(a => ({ id: a[0], x: a[1], y: a[2], theme: a[3], ttl: a[4], dg: a[5], exit: a[6] }));
@@ -339,6 +359,11 @@ function renderDungeonFloor(dg, ox, oy) {
       ctx.fillStyle = th.floor[h < 0.5 ? 0 : 1];
       ctx.fillRect(sx, sy, TILE, TILE);
       if (h > 0.97) { ctx.fillStyle = th.accent; ctx.globalAlpha = 0.25; ctx.fillRect(sx + 10, sy + 12, 6, 6); ctx.globalAlpha = 1; }
+    } else if (g === 3) {
+      // porta selada: grades com brilho do tema
+      ctx.fillStyle = th.floor[0]; ctx.fillRect(sx, sy, TILE, TILE);
+      ctx.fillStyle = '#1f2937'; for (let k = 3; k < TILE; k += 8) ctx.fillRect(sx + k, sy, 4, TILE);
+      ctx.globalAlpha = 0.35 + 0.25 * Math.sin(G.time * 4); ctx.fillStyle = th.accent; ctx.fillRect(sx, sy, TILE, TILE); ctx.globalAlpha = 1;
     } else if (ty + 1 < DG_H && dg.grid[(ty + 1) * DG_W + tx] >= 1) {
       // face frontal da parede, dá sensação de altura
       ctx.fillStyle = th.top;
@@ -395,7 +420,7 @@ function nearDgChest(P) {
   const dg = dungeonAt(P.x);
   if (!dg || !dg.chests) return null;
   dg.opened = dg.opened || new Set();
-  return dg.chests.find(c => !dg.opened.has(c.i) && Math.hypot(c.x - P.x, c.y - P.y) < 50) || null;
+  return dg.chests.find(c => !dg.opened.has(c.i) && !(c.pz && !(dg.pz && dg.pz.done)) && Math.hypot(c.x - P.x, c.y - P.y) < 50) || null;
 }
 function openDgChest(P, c) {
   const dg = dungeonAt(P.x);
@@ -403,6 +428,7 @@ function openDgChest(P, c) {
   const items = [genItem(clamp(dg.zone + randi(0, 2), 0, 6)), potion()];
   if (Math.random() < 0.5) items.push(ballItem());
   if (dg.zone >= 3 && Math.random() < 0.25) items.push(statPot());
+  if (c.pz) items.push(stone(pick(TYPES)), Math.random() < 0.5 ? statPot() : genItem(clamp(dg.zone + 2, 0, 6))); // prêmio do enigma
   G.bags.push({ x: c.x, y: c.y + 30, items, life: 120 });
   burst(c.x, c.y, '#facc15', 30);
   G.toasts.push({ text: '💰 Baú aberto!', color: '#facc15', t: 2.5 });
@@ -413,6 +439,7 @@ function drawDgChests(ox, oy) {
   if (!dg || !dg.chests) return;
   dg.opened = dg.opened || new Set();
   for (const c of dg.chests) {
+    if (c.pz && !(dg.pz && dg.pz.done)) continue;
     const x = c.x + ox, y = c.y + oy, open = dg.opened.has(c.i);
     if (x < -40 || y < -40 || x > W + 40 || y > H + 40) continue;
     ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x - 15, y + 9, 30, 5);
@@ -567,4 +594,75 @@ function drawTowerShop(ox, oy) {
   if (NPC_SPR.loja) ctx.drawImage(NPC_SPR.loja, x - 18, y - 18, 36, 36);
   ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = '#e9d5ff';
   outlined('🛒 Mercadora da Torre', x, y - 26);
+}
+
+/* ---------- Enigmas das masmorras ----------
+ * Placas: pise nas 3 placas (ficam acesas; o grupo pode dividir). Runas: elas brilham numa ordem quando você entra
+ * na sala; toque nelas na mesma ordem (errou, apagam e mostram a ordem de novo).
+ * Cada toque vira um evento de rede, então todo mundo vê o mesmo estado; ao resolver, a porta abre e surge um baú.
+ */
+const RUNE_GLYPH = ['▲', '●', '■', '◆'];
+function pzTick(dt) {
+  const P = G.P, dg = P && dungeonAt(P.x), pz = dg && dg.pz;
+  if (!pz || pz.done) return;
+  const room = dg.rooms[pz.room], inside = inRoom(dg, room, P.x, P.y);
+  if (pz.kind === 'runas') {
+    if (inside && pz.showT < 0) pz.showT = 0;
+    if (pz.showT >= 0) pz.showT += dt;
+  }
+  const i = pz.pts.findIndex(p => Math.hypot(p.x - P.x, p.y - P.y) < 22);
+  if (i >= 0 && G.pzStand !== i && !(pz.kind === 'runas' && pz.showT >= 0 && pz.showT < pz.order.length * 0.7 + 0.3)) emitEvent({ t: 'pz', dg: dg.id, i });
+  G.pzStand = i;
+}
+function pzEvent(m) {
+  const dg = G.dungeons.get(m.dg), pz = dg && dg.pz;
+  if (!pz || pz.done) return;
+  const p = pz.pts[m.i];
+  if (pz.kind === 'placas') {
+    if (pz.lit[m.i]) return;
+    pz.lit[m.i] = true; burst(p.x, p.y, THEMES[dg.theme].accent, 14); sfx('pick');
+    if (pz.lit.filter(Boolean).length >= pz.pts.length) pzOpen(dg);
+  } else if (pz.order[pz.step] === m.i) {
+    pz.lit[m.i] = true; pz.step++; burst(p.x, p.y, '#fde68a', 16); sfx('pick');
+    if (pz.step >= pz.pts.length) pzOpen(dg);
+  } else if (!pz.lit[m.i]) {
+    pz.lit = []; pz.step = 0; pz.showT = 0; // errou: apaga e mostra a ordem de novo
+    text(p.x, p.y - 30, '✖ Ordem errada!', '#fca5a5', 14); sfx('hit');
+  }
+}
+function pzOpen(dg, quiet) {
+  const pz = dg.pz;
+  pz.done = true;
+  for (const c of pz.door) dg.grid[c] = 1;
+  dg.mini = null;
+  if (quiet) return;
+  const r = roomCenter(dg, dg.rooms[pz.room]);
+  burst(r.x, r.y, '#facc15', 40);
+  G.toasts.push({ text: '🔓 O enigma foi resolvido! A porta se abriu e um baú apareceu na sala.', color: '#facc15', t: 4, big: 1 });
+  sfx('lvl');
+}
+function drawPuzzle(ox, oy) {
+  const P = G.P, dg = P && dungeonAt(P.x), pz = dg && dg.pz;
+  if (!pz) return;
+  const acc = THEMES[dg.theme].accent;
+  pz.pts.forEach((p, i) => {
+    const x = p.x + ox, y = p.y + oy;
+    if (pz.kind === 'placas') {
+      ctx.fillStyle = '#374151'; ctx.fillRect(x - 13, y - 13, 26, 26);
+      ctx.fillStyle = pz.lit[i] || pz.done ? acc : '#6b7280'; ctx.fillRect(x - 10, y - 10, 20, 20);
+      if (pz.lit[i] && Math.random() < 0.1) G.parts.push({ x: p.x + rand(-8, 8), y: p.y - 6, vx: 0, vy: -25, life: 0.5, color: acc, size: 2 });
+    } else {
+      // na hora de mostrar a ordem, cada runa brilha na sua vez
+      const show = pz.showT >= 0 && pz.showT < pz.order.length * 0.7 + 0.3 && pz.order[Math.floor(pz.showT / 0.7)] === i && pz.showT % 0.7 < 0.55;
+      const on = show || pz.lit[i] || pz.done;
+      ctx.fillStyle = '#292524'; ctx.beginPath(); ctx.arc(x, y, 15, 0, 7); ctx.fill();
+      if (on) { ctx.fillStyle = show ? 'rgba(253,230,138,.5)' : `${acc}66`; ctx.beginPath(); ctx.arc(x, y, 22, 0, 7); ctx.fill(); }
+      ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = on ? (show ? '#fef3c7' : acc) : '#78716c';
+      ctx.fillText(RUNE_GLYPH[i], x, y + 6);
+    }
+  });
+  if (pz.done || !inRoom(dg, dg.rooms[pz.room], P.x, P.y)) return;
+  ctx.font = 'bold 14px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fde68a'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+  outlined(pz.kind === 'placas' ? `🧩 A saída está selada: pise nas placas para abrir (${pz.lit.filter(Boolean).length}/${pz.pts.length})`
+    : `🧩 A saída está selada: toque as runas na ordem em que elas brilharam (${pz.step}/${pz.pts.length})`, W / 2, 96);
 }

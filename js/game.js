@@ -1206,6 +1206,7 @@ function handleEvent(m, local) {
       break;
     case 'bag': { const b = G.bags.find(x => x.id === m.id); if (b) b.items = m.items; break; }
     case 'cut': cutTile(m.i); break;
+    case 'pz': pzEvent(m); break;
     case 'buff': {
       const P = G.P;
       if (P && P.pvp && !local) break;
@@ -1251,6 +1252,7 @@ function update(dt) {
   dexTick(dt);
   exploreTick(dt);
   hazardTick(dt);
+  pzTick(dt);
 
   for (const r of G.remotes.values()) {
     if (r.tx === undefined) continue;
@@ -1443,6 +1445,7 @@ function render() {
   }
   drawPortals(ox, oy);
   drawDgChests(ox, oy);
+  drawPuzzle(ox, oy);
   drawTowerShop(ox, oy);
 
   // entidades ordenadas por Y
