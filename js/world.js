@@ -335,7 +335,7 @@ function genQuests(P, g = 'guilda') {
       q.x = Math.round(pt[0]); q.y = Math.round(pt[1]);
       q.desc = `Caçada: derrote ${POKE[q.pid] ? POKE[q.pid].name : 'o Pokémon'} Procurado (🎯 no mapa)`;
     } else if (k === 'duoAlfa') {
-      q.need = need(2 + Math.floor(z / 2)); diff = 2; // mesma recompensa de um contrato de Alfa comum (sem bônus por ser em dupla)
+      q.need = need(3 + z); diff = 2; // ~1,6× mais Alfas que o contrato individual
       q.desc = `👥 Em dupla: derrotem ${q.need} Pokémon Alfa (só conta com outro jogador perto de você)`;
     } else if (k === 'duoCaca') {
       q.pid = pick(pool); q.need = 1; q.duo = 1; diff = 2.4; // igual à caçada comum
@@ -372,7 +372,8 @@ function genQuests(P, g = 'guilda') {
       q.desc = `Descubra o ponto de voo "${l.nome}" (🎯 no mapa)`;
     }
     q.desc = `<span class="qtier t${idx}">${T.n}</span> ${q.desc}<div class="small"><i>${who}: "${why}."</i></div>`;
-    q.xp = Math.round(xpNeed(P.lvl) * (0.1 + 0.06 * diff) * T.r);
+    // dupla: dá mais trabalho e rende 30% a mais de XP que o contrato individual equivalente (o ouro é o mesmo)
+    q.xp = Math.round(xpNeed(P.lvl) * (0.1 + 0.06 * diff) * T.r * (k === 'duoAlfa' || k === 'duoCaca' ? 1.3 : 1));
     q.gold = Math.round((30 + z * 25) * diff * T.r);
     q.bonus = idx === 2 ? (Math.random() < 0.5 ? 'statpot' : 'item') : idx === 1 ? pick(['stone', 'item', 'ball']) : pick(['ball', 'stone', null]);
     return q;
@@ -440,7 +441,7 @@ function hostBounty(m) {
   if (G.enemies.some(e => e.bountyT !== undefined && e.pid === m.pid && Math.hypot(e.x - m.x, e.y - m.y) < 1200)) return;
   const b = hostSpawn(m.pid, m.zone, 1, m.x, m.y);
   bountyMod(b, m.tier || 0);
-  if (m.duo) { b.maxHp = Math.round(b.maxHp * 2.2); b.hp = b.maxHp; b.name = `Procurado gigante: ${b.p.name}`; }
+  if (m.duo) { b.maxHp = Math.round(b.maxHp * 2.2); b.hp = b.maxHp; b.name = `Procurado gigante: ${b.p.name}`; for (let i = 0; i < 3; i++) hostSpawn(pick(ZONE_POOLS[m.zone]), m.zone, 1, m.x + rand(-160, 160), m.y + rand(-160, 160)); } // escolta de Alfas
   b.bkey = key;
   for (let i = 0; i < 2 + (m.tier || 0); i++) hostSpawn(pick(ZONE_POOLS[m.zone]), m.zone, 0, m.x + rand(-120, 120), m.y + rand(-120, 120));
   emitEvent({ t: 'toast', text: `🎯 ${b.name} apareceu!`, color: '#fca5a5', big: 1 });
