@@ -906,6 +906,8 @@ function playerHit(e, b) {
   hitText(e, res.dmg, res.eff, crit, hit);
   if (!crit) sfx(res.eff > 1 ? 'hitSE' : 'hit');
   if ((sp === 3 && Math.random() < 0.35) || (sp === 4 && Math.random() < 0.4)) inflict(e, 2);
+  // Forma Selvagem: causa os mesmos status que o Pokémon em que o Druida virou (mesma chance por acerto)
+  if (P.wildT > 0 && !sp) { const ab = petAbility(P.wildPid); if (ab && !e.dead && e.hp > 0 && !e.st && Math.random() < ab.ch) { const st = stPick(ab.st); if (st === 2 && P.wildType === 'electric') e.shockT = G.time + STATUS[2].dur; inflict(e, st); } }
   // dano elemental extra das armas encantadas
   for (const et of MA(P, 'etype')) {
     const x = typed(P, e, d(6), et);
