@@ -189,8 +189,8 @@ const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armad
   + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
 const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
-const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
-const fireRate = P => CLASSES[P.cls].wpn.rate * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
+const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (pst(P, 2) ? 0.6 : 1) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
+const fireRate = P => CLASSES[P.cls].wpn.rate * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
 // XP por nível = abates desejados × XP médio de um abate na zona recomendada para aquele nível.
@@ -347,6 +347,7 @@ function eShot(e, a, spd, o = {}) {
 function spawnEB(e, b) {
   G.eb.push({
     x: b[1], y: b[2], a0: b[3], a: b[3], spd: b[4], r: b[5], life: b[6], wave: b[7], home: b[8], t: 0,
+    stc: e && (e.alfa || e.boss) ? 1 : 0,
     color: e ? e.color : '#fff', atk: e ? e.atk : 5, dice: e ? e.dice : [1, 6, 0], src: e ? e.name : 'um Pokémon', type: e ? e.type : 'normal',
   });
 }
@@ -662,7 +663,8 @@ function addCosmetic(s, own) {
 
 function playerShoot() {
   const P = G.P, w = CLASSES[P.cls].wpn;
-  for (let i = 0; i < w.shots; i++) shootBullet(P.aim, { ph: i * Math.PI });
+  const ca = pst(P, 6) ? rand(-0.45, 0.45) : 0; // confuso: a mira treme
+  for (let i = 0; i < w.shots; i++) shootBullet(P.aim + ca, { ph: i * Math.PI });
   if (hasT(P, 'atirador')) { P.alt = -P.alt; shootBullet(P.aim + P.alt); }
   if (Math.random() < 0.5) sfx('shoot');
 }
@@ -865,7 +867,7 @@ function playerHit(e, b) {
       : roll(w.dice[0] * (crit ? 2 : 1), w.dice[1]) + A(P, 'POD') + w.bonus + M(P, 'dmg');
   if (P.furia > 0) dmg += d(6);
   if (P.seloT > 0) dmg += d(6);
-  dmg = Math.round(dmg * infernal(P));
+  dmg = Math.round(dmg * infernal(P) * (pst(P, 3) ? 0.8 : 1));
   if (P.tempTypeT > 0) dmg += d(4);
   if (hasS(P, 'guerra')) dmg += d(6);
   if (crit && P.cls === 'ladino') dmg += roll(Math.ceil(P.lvl / 4), 6);
@@ -916,6 +918,7 @@ function enemyAttack(b) {
   let dmg = Math.max(1, Math.round((roll(b.dice[0] * (crit ? 2 : 1), b.dice[1]) + b.dice[2]) * eff));
   if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (!dmg) { text(P.x, P.y - 34, 'Escudo!', '#93c5fd', 12); return; } }
   P.hp -= dmg; P.sinceHit = 0;
+  if (b.stc && P.hp > 0 && PST_BY_TYPE[b.type] && Math.random() < PLAYER_ST_CH) playerStatus(P, PST_BY_TYPE[b.type]);
   G.shake = Math.min(8, G.shake + 2 + dmg * 0.3);
   const tag = graze ? ' (bloqueado)' : crit ? ' CRÍTICO' : eff > 1 ? ' super efetivo' : eff < 1 ? ' resistido' : '';
   text(P.x, P.y - 34, `-${dmg}${tag}`, graze ? '#cbd5e1' : eff > 1 ? '#ff5e5e' : eff < 1 ? '#fda4af' : '#f87171', graze ? 11 : crit || eff > 1 ? 16 : 14);
@@ -926,10 +929,11 @@ function enemyAttack(b) {
 function usePotion() {
   const P = G.P;
   if (P && P.pvp) { text(P.x, P.y - 40, 'Sem poções na arena!', '#fca5a5', 12); return; }
-  if (!P || P.pots.hp <= 0 || P.hp >= maxHP(P)) return;
+  if (!P || P.pots.hp <= 0 || (P.hp >= maxHP(P) && !(P.pstT > 0))) return; // com status a poção serve mesmo de vida cheia
   const h = Math.round(Math.max(roll(2, 4) + 2, maxHP(P) * 0.3) * (hasT(P, 'alquimista') ? 1.5 : 1));
   P.hp = Math.min(maxHP(P), P.hp + h);
   text(P.x, P.y - 34, `+${h}`, '#86efac', 15);
+  curePlayerStatus(P);
   P.pots.hp--;
   sfx('pot');
   G.dirty = true;
@@ -1023,6 +1027,7 @@ function updatePlayer(dt) {
     if (P.auraT <= 0) { P.auraT = 4; emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: 2 + Math.floor(P.lvl / 2), name: P.name, quiet: 1 }); }
   }
   P.sinceHit += dt;
+  updatePlayerStatus(P, dt);
 
   const inV = !inDg && inTown(P.x, P.y);
   const regenK = (hasT(P, 'regeneracao') ? 2.5 : 1) * (1 + M(P, 'regen'));
@@ -1119,6 +1124,7 @@ function handleEvent(m, local) {
       if (P && Math.hypot(P.x - m.x, P.y - m.y) < (m.r || 220)) {
         const before = P.hp;
         P.hp = Math.min(maxHP(P), P.hp + m.amt);
+        if (!m.quiet || m.r) curePlayerStatus(P); // curas do Clérigo, Paladino e Santuário tiram o status
         const h = Math.round(P.hp - before);
         if (h > 0 && !(m.quiet && local)) text(P.x, P.y - 34, local ? `+${h}` : `+${h} (${m.name})`, '#86efac', m.quiet ? 11 : 15);
       }
@@ -1534,6 +1540,10 @@ function drawHUD(ox, oy) {
   }
   if (P) hy = drawStoryHUD(hy, ox, oy);
   if (P) hy = drawQuestHUD(hy, ox, oy);
+  if (P && P.pstT > 0 && PST[P.pst]) {
+    hy += 20; ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = PST[P.pst].color;
+    outlined(`${PST[P.pst].label}: ${Math.ceil(P.pstT)}s (poção ou cura tira)`, 12, hy);
+  }
   if (P && P.tempTypeT > 0) {
     hy += 20; ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = TYPE_COLORS[P.tempType];
     outlined(`💎 Tipo ${TYPE_PT[P.tempType]}: ${Math.ceil(P.tempTypeT)}s`, 12, hy);

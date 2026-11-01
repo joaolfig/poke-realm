@@ -298,7 +298,46 @@ const ABIL = [
 ];
 const ABIL_BY_ID = {};
 for (const a of ABIL) for (const id of a.ids) ABIL_BY_ID[id] = a;
-const TYPE_ABIL = { electric: { nome: 'Faísca', st: 2, ch: 0.05 }, fire: { nome: 'Brasa', st: 3, ch: 0.06 }, poison: { nome: 'Toxina', st: 4, ch: 0.07 }, ice: { nome: 'Toque Gélido', st: 5, ch: 0.03 }, psychic: { nome: 'Mente Confusa', st: 6, ch: 0.04 } };
+// por tipo (quando a espécie não tem habilidade própria): quase todo companheiro causa algum status
+const TYPE_ABIL = {
+  electric: { nome: 'Faísca', st: 2, ch: 0.05 }, fire: { nome: 'Brasa', st: 3, ch: 0.06 }, poison: { nome: 'Toxina', st: 4, ch: 0.07 },
+  ice: { nome: 'Toque Gélido', st: 5, ch: 0.03 }, psychic: { nome: 'Mente Confusa', st: 6, ch: 0.04 },
+  bug: { nome: 'Ferrão', st: 4, ch: 0.05 }, grass: { nome: 'Pó Venenoso', st: 4, ch: 0.04 }, ghost: { nome: 'Lambida', st: 2, ch: 0.05 },
+  dragon: { nome: 'Sopro do Dragão', st: 2, ch: 0.04 }, fairy: { nome: 'Beijo Doce', st: 6, ch: 0.05 }, dark: { nome: 'Provocação', st: 6, ch: 0.04 },
+  fighting: { nome: 'Soco Dinâmico', st: 6, ch: 0.04 }, normal: { nome: 'Pancada', st: 2, ch: 0.03 }, flying: { nome: 'Furacão', st: 6, ch: 0.03 },
+};
+// ---------- status no jogador (golpes de Alfas e chefes) ----------
+// 2 paralisado (mais lento e atira menos), 3 queimado (dano por segundo e bate menos), 4 envenenado (dano por segundo), 6 confuso (mira treme)
+const PLAYER_ST_CH = 0.05;
+const PST = {
+  2: { label: '⚡ Paralisado', dur: 4, color: '#fde047' },
+  3: { label: '🔥 Queimado', dur: 4, color: '#fb923c', dot: 0.025 },
+  4: { label: '☠ Envenenado', dur: 6, color: '#c084fc', dot: 0.02 },
+  6: { label: '💫 Confuso', dur: 3, color: '#f9a8d4' },
+};
+// qual status cada tipo de ataque pode causar no jogador
+const PST_BY_TYPE = { electric: 2, normal: 2, dragon: 2, fire: 3, poison: 4, bug: 4, grass: 4, psychic: 6, ghost: 6, fairy: 6, dark: 6, fighting: 6 };
+const pst = (P, st) => P && P.pstT > 0 && P.pst === st;
+function playerStatus(P, st) {
+  if (!P || !PST[st] || P.pstT > 0 || P.pvp) return;
+  P.pst = st; P.pstT = PST[st].dur; P.pdotT = 1;
+  text(P.x, P.y - 50, PST[st].label + '!', PST[st].color, 15);
+  sfx('hurt');
+}
+function curePlayerStatus(P) { if (P && P.pstT > 0) { P.pstT = 0; P.pst = 0; text(P.x, P.y - 50, '✨ Curado!', '#86efac', 13); } }
+function updatePlayerStatus(P, dt) {
+  if (!(P.pstT > 0)) return;
+  P.pstT -= dt;
+  const S = PST[P.pst];
+  if (S && S.dot && (P.pdotT -= dt) <= 0) {
+    P.pdotT = 1;
+    // queimadura e veneno machucam, mas não matam sozinhos
+    const dmg = Math.max(1, Math.min(P.hp - 1, Math.round(maxHP(P) * S.dot)));
+    if (dmg > 0) { P.hp -= dmg; text(P.x, P.y - 34, `-${dmg}`, S.color, 12); }
+  }
+  if (Math.random() < 0.3) G.parts.push({ x: P.x + rand(-12, 12), y: P.y + rand(-16, 8), vx: 0, vy: -30, life: 0.5, color: S ? S.color : '#fff', size: 2 });
+  if (P.pstT <= 0) P.pst = 0;
+}
 function petAbility(pid) {
   if (ABIL_BY_ID[pid]) return ABIL_BY_ID[pid];
   const p = POKE[pid];
