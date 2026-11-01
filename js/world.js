@@ -349,7 +349,7 @@ function genQuests(P, g = 'guilda') {
       q.desc = q.need > 1 ? `Conclua ${q.need} masmorras (derrote os chefes)` : 'Conclua uma masmorra (derrote o chefe)';
     } else if (k === 'captura') {
       const p = POKE[pick(pool)]; q.type = p ? mainType(p) : 'normal'; q.need = need(1 + Math.floor(z / 3)); diff = 1.6;
-      q.desc = `Capture ${q.need} Pokémon do tipo ${TYPE_PT[q.type]} (zona ${z} ou acima)`;
+      q.desc = `Capture ${q.need} Pokémon do tipo ${TYPE_PT[q.type]} em ${ZONES[z].nome} ou mais adiante`;
     } else if (k === 'evento') {
       q.need = need(idx === 2 ? 1.3 : 1); diff = 2;
       q.desc = q.need > 1 ? `Complete ${q.need} eventos do mundo` : 'Complete um evento do mundo';
@@ -392,10 +392,10 @@ function genQuests(P, g = 'guilda') {
       q.desc = `Pesquisa de campo: capture ${q.need} espécies diferentes em ${ZONES[z].nome}`;
     } else if (k === 'noturno') {
       q.need = need(2); diff = 1.8;
-      q.desc = `Capture ${q.need} Pokémon durante a noite (zona ${z} ou acima)`;
+      q.desc = `Capture ${q.need} Pokémon durante a noite em ${ZONES[z].nome} ou mais adiante`;
     } else if (k === 'bolaboa') {
       q.need = need(2); diff = 1.6;
-      q.desc = `Capture ${q.need} Pokémon usando Great Ball ou Ultra Ball (zona ${z} ou acima)`;
+      q.desc = `Capture ${q.need} Pokémon usando Great Ball ou Ultra Ball em ${ZONES[z].nome} ou mais adiante`;
     } else if (k === 'coleta') {
       const p = POKE[pick(pool)]; q.type = p ? mainType(p) : 'normal'; q.need = need(5 + z * 2); diff = 1.4;
       q.desc = `Colete ${q.need} ${MATERIAL[q.type]} de Pokémon do tipo ${TYPE_PT[q.type]}`;
@@ -793,10 +793,10 @@ const DEX_IDS = [], DEX_WHERE = {};
 function buildDex() {
   const where = {};
   const add = (id, w) => { if (!id) return; (where[id] = where[id] || new Set()).add(w); };
-  for (let z = 1; z <= 5; z++) { for (const id of ZONE_POOLS[z] || []) add(id, `Zona ${z}`); for (const id of WATER_POOLS[z] || []) add(id, `Água · zona ${z}`); }
+  for (let z = 1; z <= 5; z++) { for (const id of ZONE_POOLS[z] || []) add(id, ZONES[z].nome); for (const id of WATER_POOLS[z] || []) add(id, `na água de ${ZONES[z].nome}`); }
   for (const id of NIGHT_POOL) add(id, 'à noite');
-  for (const id of REGION.babies || []) add(id, 'Zona 1 (bem raro)');
-  for (const id of otherBabies(REGION)) add(id, 'Zona 1 (raríssimo)');
+  for (const id of REGION.babies || []) add(id, `${ZONES[1].nome} (bem raro)`);
+  for (const id of otherBabies(REGION)) add(id, `${ZONES[1].nome} (raríssimo)`);
   for (const id of RARE_POOL) add(id, 'raro (eventos)');
   for (const id of MIGRATION_POOL) add(id, 'migração (eventos)');
   for (const k of Object.keys(THEMES)) { const t = THEMES[k]; if (!t.story) continue; for (const id of t.pool) add(id, t.nome); add(t.boss, t.nome); }

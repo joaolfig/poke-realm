@@ -555,7 +555,7 @@ function renderTowerNPC(P) {
   return `<p class="fala">"Lá dentro, cada andar é mais difícil que o anterior. A cada 5 andares há um guardião, e quem o vence pode recomeçar dali. Se cair, você volta para cá, sem perder nada."</p>
     <div class="small">Seu recorde em ${REGION.nome}: <b>andar ${towerBest(P) || '—'}</b> · checkpoint: ${ck ? 'andar ' + (ck + 1) : 'nenhum ainda'}</div>
     <h4>Começar no andar</h4>
-    ${starts.map(f => `<div class="shoprow"><span>🗼 Andar ${f} <i>(${f === 1 ? 'nível da zona 5' : `+${Math.round((Math.pow(1.08, f - 1) - 1) * 100)}% de força`})</i></span><button data-act="torre:${f}" class="good">Abrir portal</button></div>`).join('')}
+    ${starts.map(f => `<div class="shoprow"><span>🗼 Andar ${f} <i>(${f === 1 ? `nível de ${ZONES[5].nome}` : `+${Math.round((Math.pow(1.08, f - 1) - 1) * 100)}% de força`})</i></span><button data-act="torre:${f}" class="good">Abrir portal</button></div>`).join('')}
     <div class="small">O grupo entra junto pelo portal. Cada andar dá itens; os guardiões dão mais.</div>`;
 }
 
