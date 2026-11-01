@@ -969,7 +969,7 @@ function enemyAttack(b) {
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
   if (eff > 1) eff = 1 + (eff - 1) * 0.6; // super efetivo no herói: ×1,6 (duplo ×2,8), para o tipo não decidir sozinho quem sobrevive
   eff *= ZONE_DMG[b.zone || 1];
-  if ((b.zone || 1) === 1 && P.lvl <= 2) eff *= P.lvl === 1 ? 0.6 : 0.8; // começo mais seguro: no Nv 1 a zona 1 bate 40% menos (Nv 2: 20%)
+  if ((b.zone || 1) === 1 && P.lvl <= 3) eff *= [0, 0.6, 0.75, 0.9][P.lvl]; // começo mais seguro: na zona 1, −40% no Nv 1, −25% no Nv 2, −10% no Nv 3
   if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type) || (P.lin && LIN[P.lin].resist.includes(b.type))) eff *= 0.5;
   eff *= linTaken(P, b.type); // linhagem
   eff *= wxBoost(P.x, P.y, b.type); // clima
@@ -2656,7 +2656,7 @@ const grpN = () => 1 + 0.4 * (nPlayers() - 1);
 
 // dificuldade média do começo ao fim (medido com uma IA que desvia das balas): o começo era fácil demais
 // e o fim perigoso demais, então o dano dos tiros inimigos varia por zona
-const ZONE_DMG = [1, 1.1, 1.25, 1.15, 0.85, 0.72]; // zona 1 leve para quem começa no Nv 1 // zona 5 aliviada depois de teste em jogo (estava um pouco difícil demais)
+const ZONE_DMG = [1, 0.9, 1.25, 1.15, 0.85, 0.72]; // zona 1 leve para quem começa no Nv 1 // zona 5 aliviada depois de teste em jogo (estava um pouco difícil demais)
 
 // Clérigo em grupo: cada outro jogador perto dele na hora da cura aumenta a cura em 10% (até +30%)
 const clericChoir = P => 1 + 0.1 * Math.min(3, [...G.remotes.values()].filter(r => !r.dead && r.name && Math.hypot(r.tx - P.x, r.ty - P.y) < 260).length);
