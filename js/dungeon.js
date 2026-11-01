@@ -118,12 +118,36 @@ function genDungeon(id, theme, seed, zone, floor = 0) {
     carve(mx - 1, up ? sy + h : r.y + r.h - 1, 3, 7);
     chests.push({ x: DG_BASE + id * DG_SPACING + (sx + w / 2) * TILE, y: (sy + h / 2) * TILE, i: chests.length });
   }
-  // terreno perigoso nas salas de luta das masmorras comuns
+  // terreno perigoso nas salas de luta das masmorras comuns (ácido: em todas as salas e mais espalhado)
+  const acid = hz === 'acido';
+  // poça arredondada (borda irregular) de raio rx x ry tiles
+  const puddle = (cx, cy, rx, ry) => {
+    for (let j = Math.floor(cy - ry); j <= cy + ry; j++) for (let i = Math.floor(cx - rx); i <= cx + rx; i++) {
+      if (i < 1 || j < 1 || i >= DG_W - 1 || j >= DG_H - 1) continue;
+      const q = ((i + 0.5 - cx) / rx) ** 2 + ((j + 0.5 - cy) / ry) ** 2;
+      if (q < 0.75 + R() * 0.5 && grid[j * DG_W + i] === 1) grid[j * DG_W + i] = 2;
+    }
+  };
   if (!gs && !floor) for (const r of fights) {
-    if (R() < 0.45) continue;
-    for (let k = 0; k < 2 + Math.floor(R() * 3); k++) {
-      const px = r.x + 2 + Math.floor(R() * (r.w - 6)), py = r.y + 2 + Math.floor(R() * (r.h - 6)), pw = 2 + Math.floor(R() * 3), ph = 2 + Math.floor(R() * 2);
-      for (let j = py; j < py + ph; j++) for (let i = px; i < px + pw; i++) if (grid[j * DG_W + i] === 1) grid[j * DG_W + i] = 2;
+    if (!acid && R() < 0.45) continue;
+    const n = acid ? 4 + Math.floor(R() * 4) : 2 + Math.floor(R() * 3);
+    for (let k = 0; k < n; k++) {
+      if (acid) puddle(r.x + 2.5 + R() * (r.w - 5), r.y + 2.5 + R() * (r.h - 5), 1 + R() * 1.8, 1 + R() * 1.3);
+      else {
+        const px = r.x + 2 + Math.floor(R() * (r.w - 6)), py = r.y + 2 + Math.floor(R() * (r.h - 6)), pw = 2 + Math.floor(R() * 3), ph = 2 + Math.floor(R() * 2);
+        for (let j = py; j < py + ph; j++) for (let i = px; i < px + pw; i++) if (grid[j * DG_W + i] === 1) grid[j * DG_W + i] = 2;
+      }
+    }
+  }
+  // sala do chefe: poças nas laterais limitam por onde dá para desviar; o centro (onde ele começa) e a entrada ficam livres
+  if (!gs && !floor) {
+    const b = rooms[rooms.length - 1], bcx = b.x + b.w / 2, bcy = b.y + b.h / 2;
+    let made = 0;
+    for (let k = 0; k < 40 && made < (acid ? 6 : 4); k++) {
+      const cx = b.x + 2.5 + R() * (b.w - 5), cy = b.y + 2.5 + R() * (b.h - 5);
+      if (Math.abs(cx - bcx) < 5 && Math.abs(cy - bcy) < 4) continue; // centro
+      if (cx < b.x + 6 && Math.abs(cy - bcy) < 5) continue;           // entrada (corredor chega pela esquerda)
+      puddle(cx, cy, 1.2 + R() * 1.5, 1 + R() * 1.2); made++;
     }
   }
   // pilares para se proteger dos tiros
