@@ -2071,7 +2071,7 @@ window.addEventListener('keydown', ev => {
 });
 window.addEventListener('keyup', ev => { K[ev.code] = false; });
 window.addEventListener('blur', () => { for (const k in K) K[k] = false; mouse.down = false; });
-function openChat() { const c = $('chat-in'); c.classList.remove('hidden'); c.value = ''; for (const k in K) K[k] = false; renderChatLog(true); $('chatlog').classList.remove('hidden'); c.focus(); }
+function openChat() { const c = $('chat-in'); c.classList.remove('hidden'); c.value = ''; for (const k in K) K[k] = false; $('chatlog').classList.remove('hidden'); renderChatLog(true); c.focus(); }
 $('chatlog').addEventListener('click', () => { if (!$('chat-in').classList.contains('hidden')) $('chat-in').focus(); }); // clicar no histórico não fecha a digitação
 function closeChat() { const c = $('chat-in'); c.classList.add('hidden'); c.blur(); $('chatlog').classList.add('hidden'); }
 // histórico do chat: mensagens dos jogadores e todos os avisos (até 200), rolável quando o chat está aberto
@@ -2085,7 +2085,7 @@ function renderChatLog(force) {
   const box = $('chatlog'), atEnd = force || box.scrollTop + box.clientHeight >= box.scrollHeight - 8;
   const L = G.fullLog || [];
   const hhmm = s => { const m = Math.floor(s / 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
-  box.innerHTML = L.length ? L.map(e => `<div class="cl${e.big ? ' big' : ''}${e.chat ? ' msg' : ''}"><em>${hhmm(e.at)}</em><span style="color:${e.color || '#d6d0c4'}">${e.name ? `<b>${esc(e.name)}:</b> ` : ''}${esc(e.text)}${e.n > 1 ? ` (×${e.n})` : ''}</span></div>`).join('')
+  box.innerHTML = L.length ? L.map(e => `<div class="cl${e.big ? ' imp' : ''}${e.chat ? ' msg' : ''}"><em>${hhmm(e.at)}</em><span style="color:${e.color || '#d6d0c4'}">${e.name ? `<b>${esc(e.name)}:</b> ` : ''}${esc(e.text)}${e.n > 1 ? ` (×${e.n})` : ''}</span></div>`).join('')
     : '<div class="cl"><span>Nada por aqui ainda.</span></div>';
   if (atEnd) box.scrollTop = box.scrollHeight; // só desce sozinho se você não estiver lendo lá em cima
 }
