@@ -39,7 +39,7 @@ const GYM_STYLE = {
 const REGIONS = {
   kanto: {
     nome: 'Kanto', sub: 'Gerações I · onde tudo começou', vila: 'Vila Alvorada',
-    guia: { nome: 'Professora Alecrim', spr: { h: '#9ca3af', b: '#f1f5f9', d: '#64748b' } },
+    guia: { nome: 'Professor Carvalho', spr: { h: '#9ca3af', b: '#f1f5f9', d: '#64748b' } },
     artesao: 'Mestre Ferro-Velho',
     zonas: [['Campos de Alvorada', 'campo'], ['Monte Lunar e Bosques', 'floresta'], ['Zona Safári', 'pantano'], ['Terras Assombradas', 'sombrio'], ['Estrada da Vitória', 'montanha']],
     pools: {
@@ -68,7 +68,7 @@ const REGIONS = {
     final: { nome: 'Laboratório Secreto da Equipe Rubra', lider: 'O Clone', boss: 150, type: 'psychic' },
     historia: {
       prologo: `A <b>Equipe Rubra</b> anda roubando Pokémon pelas estradas de Kanto, e ninguém sabe para quê.
-        A Professora Alecrim acredita que os oito líderes de ginásio sabem de alguma coisa. Vença cada um, ganhe a confiança deles e descubra o plano da Rubra.`,
+        O Professor Carvalho acredita que os oito líderes de ginásio sabem de alguma coisa. Vença cada um, ganhe a confiança deles e descubra o plano da Rubra.`,
       caps: [
         ['Granito, o líder de pedra, desconfia de forasteiros. Prove seu valor na Cidade de Pedra, seguindo a estrada ao norte da vila.', 'Granito conta que a Rubra comprou todas as Pedras-Lua da região. "Para que alguém precisa de tantas?"'],
         ['A Líder Marisa viu barcos da Rubra no rio. Ela só fala com quem vencer suas cascatas.', 'Marisa mostra um mapa molhado: a Rubra leva os Pokémon roubados para o norte, passando pelo Monte Lunar.'],
@@ -86,7 +86,7 @@ const REGIONS = {
 
   johto: {
     nome: 'Johto', sub: 'Geração II · tradição e lendas', vila: 'Vila dos Ventos',
-    guia: { nome: 'Professor Ipê', spr: { h: '#78350f', b: '#fef3c7', d: '#b45309' } },
+    guia: { nome: 'Professor Elm', spr: { h: '#78350f', b: '#fef3c7', d: '#b45309' } },
     artesao: 'Artesã das Bolas',
     zonas: [['Trilhas do Vento', 'campo'], ['Bosque Antigo', 'floresta'], ['Costa Oeste e Monte Mortar', 'montanha'], ['Caminho Gelado', 'neve'], ['Pico Prateado e Redemoinhos', 'sombrio']],
     pools: {
@@ -115,7 +115,7 @@ const REGIONS = {
     final: { nome: 'Ilhas do Redemoinho', lider: 'Guardião dos Mares', boss: 249, type: 'water' },
     historia: {
       prologo: `Os sinos das torres antigas de Johto pararam de tocar. Dizem que os <b>Corvos da Meia-Noite</b> roubaram as plumas sagradas que acalmam o Guardião dos Mares.
-        O Professor Ipê pede que você percorra os oito ginásios: cada líder guarda um pedaço da lenda.`,
+        O Professor Elm pede que você percorra os oito ginásios: cada líder guarda um pedaço da lenda.`,
       caps: [
         ['Plumo, o líder dos pássaros, viu os Corvos voando para o oeste. Ele treina na Cidade Violeta, a noroeste da vila.', 'Plumo mostra uma pena prateada caída no ginásio. "Isso não é de nenhum pássaro comum. É uma pluma sagrada."'],
         ['O Líder Zumbi cuida do bosque onde a pluma foi achada. Os Corvos estão capturando os insetos de lá.', 'Zumbi encontra um bilhete dos Corvos: "Com as plumas, chamaremos o Guardião e controlaremos o mar."'],
@@ -134,7 +134,7 @@ const REGIONS = {
   hoenn: {
     nome: 'Hoenn', sub: 'Geração III · mar, vulcões e céu', vila: 'Vila Musgo',
     hmGym: { 1: 'cut', 2: 'flash', 3: 'smash', 4: 'surf' },
-    guia: { nome: 'Professora Restinga', spr: { h: '#92400e', b: '#bbf7d0', d: '#15803d' } },
+    guia: { nome: 'Professor Birch', spr: { h: '#92400e', b: '#bbf7d0', d: '#15803d' } },
     artesao: 'Ferreiro do Vulcão',
     zonas: [['Litoral Tropical', 'campo'], ['Selva Densa', 'floresta'], ['Deserto e Céu do Norte', 'deserto'], ['Vulcão Rubro', 'vulcao'], ['Ilhas do Alto-Mar', 'montanha']],
     pools: {
@@ -163,7 +163,7 @@ const REGIONS = {
     final: { nome: 'Caverna do Abismo', lider: 'Titã dos Oceanos', boss: 382, type: 'water' },
     historia: {
       prologo: `A <b>Seita das Marés</b> quer expandir os oceanos e afogar a terra firme. Para isso, procura um orbe antigo capaz de despertar o <b>Titã dos Oceanos</b>.
-        A Professora Restinga quer que você siga a trilha dos oito ginásios de Hoenn e chegue antes deles.`,
+        O Professor Birch quer que você siga a trilha dos oito ginásios de Hoenn e chegue antes deles.`,
       caps: [
         ['O Líder Rocha estuda fósseis nas cavernas. A Seita escavou ilegalmente perto do ginásio dele, na Cidade de Rocha, a noroeste.', 'Rocha mostra marcas de escavação: "Eles procuravam uma pedra azul, brilhante. Não era fóssil."'],
         ['Breno, o surfista lutador, conhece cada onda da costa. Os barcos da Seita andam rondando a praia dele.', 'Breno pegou um mapa marítimo da Seita com um X em cima do Vulcão Rubro, ao norte.'],
@@ -181,7 +181,7 @@ const REGIONS = {
 
   sinnoh: {
     nome: 'Sinnoh', sub: 'Geração IV · neve, mitos e o tempo', vila: 'Vila Orvalho',
-    guia: { nome: 'Professor Pinheiro', spr: { h: '#e5e7eb', b: '#1f2937', d: '#111827' } },
+    guia: { nome: 'Professor Rowan', spr: { h: '#e5e7eb', b: '#1f2937', d: '#111827' } },
     artesao: 'Artesão das Placas',
     zonas: [['Planícies Frescas', 'campo'], ['Bosque Eterno', 'floresta'], ['Monte Coronet', 'montanha'], ['Neves do Norte', 'neve'], ['Pilar Lendário', 'sombrio']],
     pools: {
@@ -210,7 +210,7 @@ const REGIONS = {
     final: { nome: 'Pilar do Tempo', lider: 'Senhor do Tempo', boss: 483, type: 'steel' },
     historia: {
       prologo: `A <b>Ordem do Vazio</b> acredita que o mundo é imperfeito e quer recomeçar o tempo do zero. Para isso, vai capturar os três espíritos dos lagos e invocar o <b>Senhor do Tempo</b>.
-        O Professor Pinheiro pede que você visite os oito ginásios de Sinnoh: os líderes guardam pistas dos mitos antigos.`,
+        O Professor Rowan pede que você visite os oito ginásios de Sinnoh: os líderes guardam pistas dos mitos antigos.`,
       caps: [
         ['Rocco, filho de mineiros, encontrou placas antigas na mina. A Ordem quer essas placas. O ginásio dele fica na Cidade do Carvão, ao norte da vila.', 'As placas falam de um pilar no alto do Monte Coronet, onde o tempo "pode ser reescrito".'],
         ['Gardênia cuida do bosque onde dorme uma árvore milenar. A Ordem anda cortando galhos por lá.', 'Gardênia descobre que a Ordem procura <b>três lagos</b>: o do Saber, o da Emoção e o da Vontade.'],
@@ -228,7 +228,7 @@ const REGIONS = {
 
   unova: {
     nome: 'Unova', sub: 'Geração V · verdade e ideais', vila: 'Vila Nuvem',
-    guia: { nome: 'Professora Acácia', spr: { h: '#a16207', b: '#e0f2fe', d: '#0369a1' } },
+    guia: { nome: 'Professora Juniper', spr: { h: '#a16207', b: '#e0f2fe', d: '#0369a1' } },
     artesao: 'Engenheira Lírio',
     zonas: [['Planícies do Sul', 'campo'], ['Floresta dos Cata-Ventos', 'floresta'], ['Deserto do Repouso', 'deserto'], ['Norte Gelado', 'neve'], ['Caminho dos Gigantes', 'montanha']],
     pools: {
@@ -256,7 +256,7 @@ const REGIONS = {
     final: { nome: 'Castelo dos Ideais', lider: 'Dragão da Verdade', boss: 643, type: 'dragon' },
     historia: {
       prologo: `A <b>Ordem da Verdade</b> prega que treinadores devem libertar seus Pokémon, mas por trás dos discursos há um plano para dominar Unova com um dragão lendário.
-        A Professora Acácia pede que você enfrente os oito ginásios e descubra o que a Ordem esconde.`,
+        A Professora Juniper pede que você enfrente os oito ginásios e descubra o que a Ordem esconde.`,
       caps: [
         ['Os Trigêmeos Chef servem batalhas junto com o almoço na Cidade Estriada, ao norte da vila. Um membro da Ordem discursou lá ontem.', 'Os trigêmeos guardaram o panfleto da Ordem: "A verdade despertará o dragão branco."'],
         ['A Curadora Lenora cuida do museu, onde fica uma pedra escura muito antiga. A Ordem quer roubá-la.', 'A pedra do museu foi trocada por uma falsa. A Ordem já levou a Pedra da Verdade.'],
