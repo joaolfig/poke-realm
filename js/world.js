@@ -7,7 +7,7 @@ const NPCS = [
   { id: 'guilda', nome: 'Mestre da Guilda', icon: '📜', x: 140, y: 140, spr: { h: '#e5e7eb', b: '#1d4ed8', d: '#1e3a8a' }, fala: 'O reino precisa de heróis. Escolha um contrato.' },
   { id: 'sildo', nome: 'Sildo Invernal', icon: '🛡️', x: 0, y: -205, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
   { id: 'torre', nome: 'Guardião da Torre', icon: '🗼', x: 0, y: 150, t2: 1, spr: { h: '#e5e7eb', b: '#6d28d9', d: '#2e1065' }, fala: '' },
-  { id: 'pc', nome: 'PC', icon: '💻', x: -82, y: -40, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
+  { id: 'pc', nome: 'Banco Pokémon', icon: '💻', x: -72, y: 58, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
   { id: 'dex', nome: 'Pesquisadora Íris', icon: '📖', x: 60, y: 205, spr: { h: '#7c2d12', b: '#f8fafc', d: '#0f766e' }, fala: '' },
   { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '', show: P => storyOver(P) },
 ];
@@ -631,9 +631,9 @@ function weatherTick(dt) {
     else if (G.wxSeen && !isNight()) G.toasts.push({ text: '🌤 O tempo abriu.', color: '#e5e7eb', t: 2.5 });
     G.wxSeen = k;
   }
-  if (w && w.chip && !P.pvp && !w.chip.includes(pType(P)) && (G.wxChipT = (G.wxChipT || 2) - dt) <= 0) {
+  if (w && w.chip && !P.pvp && !w.chip.includes(pType(P)) && !(M(P, 'wx' + w.k) > 0) && (G.wxChipT = (G.wxChipT || 2) - dt) <= 0) {
     G.wxChipT = 2;
-    const dmg = Math.max(0, Math.min(P.hp - 1, Math.round(maxHP(P) * 0.015))); // incomoda, mas não mata
+    const dmg = Math.max(0, Math.min(P.hp - 1, Math.round(maxHP(P) * 0.015 * (1 - Math.min(1, M(P, 'wxcapa')))))); // incomoda, mas não mata
     if (dmg > 0) { P.hp -= dmg; text(P.x, P.y - 34, `-${dmg} ${w.icon}`, w.color, 12); }
   }
 }

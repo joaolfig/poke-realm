@@ -172,7 +172,7 @@ const curAbil = P => (P.subclass && subInfo(P.subclass) && subInfo(P.subclass).a
 const petSlots = P => Math.min(4, 1 + tRank(P, 'equipe'));
 const hasS = (P, id) => P.subclass === id;
 const race = P => RACES[P.race] || RACES.humano;
-const wxSlow = P => { const w = P && G && G.wx && weatherAt(P.x, P.y); return w && w.slow && pType(P) !== 'ice' ? w.slow : 1; };
+const wxSlow = P => { const w = P && G && G.wx && weatherAt(P.x, P.y); if (!w || !w.slow || pType(P) === 'ice' || M(P, 'wx' + w.k) > 0) return 1; return 1 - (1 - w.slow) * (1 - Math.min(1, M(P, 'wxcapa'))); };
 // Tiefling: +20% de dano com menos da metade da vida
 const infernal = P => (P.race !== 'tiefling' ? 1 : P.hp < maxHP(P) / 2 ? 1.25 : 1.1);
 const pType = P => (P.tempTypeT > 0 ? P.tempType : P.ptype);
@@ -678,6 +678,7 @@ function playerShoot() {
 // aplica a tabela de tipos a um ataque aliado
 function typed(P, e, dmg, atkType, pet) {
   let eff = typeEff(atkType, e.p.types);
+  if (!pet) { const w = weatherAt(e.x, e.y), b = wxBoost(e.x, e.y, atkType); if (w && b < 1) dmg *= (M(P, 'wx' + w.k) > 0 ? 1 / b : 1 + (1 / b - 1) * Math.min(1, M(P, 'wxcapa'))); }
   if (!pet && eff > 0 && eff < 1 && hasT(P, 'persistencia')) eff = 1 - (1 - eff) / 2;
   if (!pet && eff === 0 && hasT(P, 'quebra')) eff = 0.3;
   dmg *= wxBoost(e.x, e.y, atkType); // clima
@@ -877,6 +878,7 @@ function playerHit(e, b) {
   if (P.furia > 0) dmg += d(6);
   if (P.seloT > 0) dmg += d(6);
   dmg = Math.round(dmg * infernal(P) * (pst(P, 3) ? 0.8 : 1));
+  { const w = weatherAt(P.x, P.y); if (w) dmg = Math.round(dmg * (1 + M(P, 'wx' + w.k))); } // encantamento de clima
   if (P.tempTypeT > 0) dmg += d(4);
   if (hasS(P, 'guerra')) dmg += d(6);
   if (crit && P.cls === 'ladino') dmg += roll(Math.ceil(P.lvl / 4), 6);
@@ -1636,7 +1638,7 @@ function drawHUD(ox, oy) {
   if (P && !G.npcOpen) {
     let hint = null, col = '#fef3c7';
     if (G.nearPortal) { const p = G.nearPortal; hint = p.exit ? '[E] Sair da masmorra' : `[E] Entrar: ${THEMES[p.theme].nome}`; col = p.exit ? '#facc15' : THEMES[p.theme].accent; }
-    else if (G.nearNPC) hint = `[E] Falar com ${G.nearNPC.nome}`;
+    else if (G.nearNPC) hint = G.nearNPC.id === 'pc' ? '[E] Acessar o Banco Pokémon' : G.nearNPC.id === 'tshop' ? '[E] Ver a loja da Torre' : `[E] Falar com ${G.nearNPC.nome}`;
     else if (!gateOpen() && [[0, -40], [0, 40], [-40, 0], [40, 0]].some(([dx, dy]) => tileKind(P.x + dx, P.y + dy) === TK.GATE)) { hint = `🏅 Portão da Liga: abre com 7 insígnias (você tem ${badgeCount(P)})`; col = '#fcd34d'; }
     else if (G.nearHM) { hint = hmHint(P, G.nearHM); col = G.nearHM.k === 'chest' || petKnows(P, G.nearHM.k) ? '#86efac' : '#cbd5e1'; }
     if (hint) { ctx.textAlign = 'center'; ctx.font = 'bold 16px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 4; ctx.fillStyle = col; outlined(hint, W / 2, H / 2 + 70); }

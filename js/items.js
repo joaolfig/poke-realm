@@ -137,6 +137,21 @@ function rollAffixes(it) {
   return it;
 }
 const fullName = (base, it) => (it.sfx ? `${base} ${it.sfx}` : base);
+// Encantamentos de clima e de status: podem vir em anéis e amuletos (30% de chance), somados aos afixos normais
+const ENCHANTS = [
+  { nome: '✧ da Tempestade', mod: { wxchuva: 0.2 } }, { nome: '✧ Solar', mod: { wxsol: 0.2 } },
+  { nome: '✧ das Areias', mod: { wxareia: 0.2 } }, { nome: '✧ Glacial', mod: { wxneve: 0.2 } },
+  { nome: '✧ do Viajante', mod: { wxcapa: 0.5 } },
+  { nome: '✧ Isolante', mod: { stimm: ['2'] } }, { nome: '✧ Refratário', mod: { stimm: ['3'] } },
+  { nome: '✧ Antídoto', mod: { stimm: ['4'] } }, { nome: '✧ da Mente Clara', mod: { stimm: ['6'] } },
+  { nome: '✧ da Recuperação', mod: { stcut: 0.5 } },
+];
+function enchant(it, en = pick(ENCHANTS)) {
+  it.mods = it.mods || {};
+  mergeMods(it.mods, scaleMods(en.mod, 1 + Math.max(0, it.tier - 2) * 0.1));
+  it.name = `${it.name} ${en.nome}`;
+  return it;
+}
 
 function genItem(tier, slot) {
   const P = G.P;
@@ -160,6 +175,7 @@ function genItem(tier, slot) {
     if (nome === 'elem') { const ty = pick(TYPES); mod = { etype: [ty], resist: [ty] }; nome = `Amuleto de ${TYPE_PT[ty]}`; }
     it = { slot: 'amuleto', tier, name: nome, mods: scaleMods(mod, 0.6 + tier * 0.2) };
   }
+  if ((it.slot === 'anel' || it.slot === 'amuleto') && tier >= 1 && Math.random() < 0.3) enchant(it);
   return it;
 }
 // Itens míticos: só caem na Torre Infinita. Partem de um Artefato e ficam mais fortes quanto mais alto o andar.
@@ -192,7 +208,11 @@ const MOD_TXT = {
   rate: v => `+${pct(v)} cadência`, speed: v => `+${pct(v)} velocidade`, hp: v => `+${pct(v)} PV`, regen: v => `+${pct(v)} regeneração`,
   cd: v => `-${pct(v)} recarga`, range: v => `+${pct(v)} alcance`, steal: v => `${pct(v)} roubo de vida`, pierce: () => 'tiros perfurantes',
   etype: a => `+1d6 de dano ${tlist(a)}`, resist: a => `resiste a ${tlist(a)}`, gold: v => `+${pct(v)} ouro`, xp: v => `+${pct(v)} XP`,
-  cap: v => `+${v} na captura`, pet: v => `+${pct(v)} dano do companheiro`, loot: v => `+${pct(v)} saque`, dodge: v => `${pct(v)} de esquiva`,
+  cap: v => `+${v} na captura`,
+  wxchuva: v => `na chuva: +${pct(v)} de dano e sem penalidade`, wxsol: v => `no sol forte: +${pct(v)} de dano e sem penalidade`,
+  wxareia: v => `na areia: +${pct(v)} de dano e não perde vida`, wxneve: v => `na nevasca: +${pct(v)} de dano, sem lentidão nem perda de vida`,
+  wxcapa: v => `efeitos ruins do clima −${pct(v)}`, stimm: a => `imune a ${a.map(s => ({ 2: 'paralisia', 3: 'queimadura', 4: 'veneno', 6: 'confusão' })[s]).join(' e ')}`,
+  stcut: v => `status duram −${pct(v)}`, pet: v => `+${pct(v)} dano do companheiro`, loot: v => `+${pct(v)} saque`, dodge: v => `${pct(v)} de esquiva`,
 };
 const modsDesc = m => (m ? Object.keys(m).map(k => MOD_TXT[k] && MOD_TXT[k](m[k])).filter(Boolean).join(' · ') : '');
 function itemDesc(it) {

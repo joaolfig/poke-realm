@@ -371,7 +371,8 @@ function drawShock(x, y, w, h) {
 function playerStatus(P, st, type) {
   if (!P || !PST[st] || P.pstT > 0 || P.pvp) return;
   if (stImmune([pType(P)], st)) { text(P.x, P.y - 50, `Imune (tipo ${TYPE_PT[pType(P)]})`, '#93c5fd', 12); return; }
-  P.pst = st; P.pstT = PST[st].dur; P.pdotT = 1; P.pstShock = st === 2 && type === 'electric';
+  if (MA(P, 'stimm').includes(String(st))) { text(P.x, P.y - 50, 'Imune (encantamento)', '#93c5fd', 12); return; }
+  P.pst = st; P.pstT = PST[st].dur * (1 - Math.min(0.75, M(P, 'stcut'))); P.pdotT = 1; P.pstShock = st === 2 && type === 'electric';
   text(P.x, P.y - 50, PST[st].label + '!', PST[st].color, 15);
   sfx('hurt');
 }
