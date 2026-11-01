@@ -276,13 +276,13 @@ function rollLoot(m) {
     for (let i = 0; i < 3; i++) items.push(genItem(randi(4, 6)));
     items.push(relic(m.pid), monStone(m), potion(), potion(), consItem('ultra'), consItem('ultra'), consItem('doce'), consItem('doce'), statPot(), statPot());
   } else if (m.kind === 3) {
-    items.push(genItem(zoneTier(m.zone, 1.5)), genItem(zoneTier(m.zone, 0.5)), monStone(m), potion(), great(), consItem('doce'));
+    items.push(genItem(zoneTier(m.zone, 1.75)), genItem(zoneTier(m.zone, 0.75)), monStone(m), potion(), great(), consItem('doce'));
     maybe(0.4, ultra); maybe(z >= 2 ? 0.35 : 0.15, statPot);
   } else if (m.kind === 4) {
     items.push(genItem(tier() + 1), monStone(m), ballItem(), great(), consItem('doce'));
     maybe(0.25, statPot);
   } else if (m.kind === 1) {
-    items.push(genItem(tier() + 1), potion());
+    items.push(genItem(zoneTier(z, 0.9 + (tes ? 0.5 : 0))), potion()); // Alfa: meio degrau acima dos comuns, abaixo dos chefes (tem muitos pelo mapa)
     maybe(0.5, ballItem); maybe(0.3, () => monStone(m)); maybe(0.25, () => consItem('doce')); maybe(0.25, great); maybe((z >= 2 ? 0.06 : 0.02) + (m.st >= 10 ? 0.5 : 0), statPot);
   } else {
     const r = Math.random();
