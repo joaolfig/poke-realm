@@ -1564,11 +1564,9 @@ function drawToasts(topY = 12) {
   const n = big.filter(x => x.text === t.text).length;
   ctx.save();
   ctx.font = '600 15px Barlow Semi Condensed, system-ui';
-  // largura até a barra de status do topo (para não ficar embaixo dela)
-  const hb = $('hud-top').getBoundingClientRect(), cb = $('c').getBoundingClientRect();
-  const room = clamp((hb.left - cb.left) * (W / cb.width) - 48, 200, 560);
+  const room = Math.min(460, W * 0.4);
   const lines = wrapText(t.text + (n > 1 ? ` (×${n})` : ''), room, 5);
-  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 30, x = 10, y = 10, h = lines.length * 19 + 6;
+  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 30, x = 10, y = topY, h = lines.length * 19 + 6;
   ctx.globalAlpha = Math.min(1, t.t * 1.5);
   ctx.fillStyle = 'rgba(13,14,16,.96)'; ctx.fillRect(x, y, w, h);
   ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
@@ -1614,6 +1612,7 @@ function drawHUD(ox, oy) {
   drawPadReticle();
   try { drawTargetCard(); } catch (e) { /* o cartão nunca pode travar o desenho do jogo */ }
   if (autofire) { hy += 18; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fde047'; outlined('TIRO AUTOMÁTICO (T)', 12, hy); }
+  G.hudY = hy; // a caixinha de avisos importantes fica logo abaixo destas linhas
 
   if (G.banner > 0 && name) {
     ctx.globalAlpha = Math.min(1, G.banner);
@@ -1739,17 +1738,20 @@ function drawHUD(ox, oy) {
     }
   }
 
+  // chat da sala + log dos avisos comuns: mesma fonte, quebrando na largura da caixa de vida (nada fica para fora)
   ctx.textAlign = 'left'; ctx.font = '13px Barlow Semi Condensed, system-ui';
-  G.chat.forEach((c, i) => {
-    const age = G.time - c.t;
+  let chy = H - 160;
+  for (let i = G.chat.length - 1; i >= 0 && chy > H * 0.45; i--) {
+    const c = G.chat[i], age = G.time - c.t;
+    const txt = c.log ? c.text + (c.n > 1 ? ` (×${c.n})` : '') : c.sys ? c.text : `${c.name}: ${c.text}`;
+    const lines = wrapText(txt, 296, 3);
     ctx.globalAlpha = age > 20 ? Math.max(0.25, 1 - (age - 20) / 5) : 1;
-    const y = H - 160 - (G.chat.length - 1 - i) * 18;
-    ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = c.log ? '#cfc9bd' : c.sys ? '#fcd34d' : '#e5e7eb';
-    if (c.log) { ctx.fillStyle = c.color || '#cfc9bd'; ctx.fillRect(12, y - 9, 5, 5); ctx.fillStyle = '#cfc9bd'; outlined(c.text + (c.n > 1 ? ` (×${c.n})` : ''), 22, y); }
-    else outlined(c.sys ? c.text : `${c.name}: ${c.text}`, 12, y);
-  });
+    ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = c.log ? '#d6d0c4' : c.sys ? '#fcd34d' : '#e5e7eb';
+    for (let k = lines.length - 1; k >= 0; k--) { outlined(lines[k], 12, chy); chy -= 16; }
+    chy -= 2;
+  }
   ctx.globalAlpha = 1;
-  drawToasts();
+  drawToasts((G.hudY || 22) + 10);
 }
 
 /* ---------- Painel lateral ---------- */
