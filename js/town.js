@@ -105,6 +105,12 @@ function rebuildTownDecor() {
       g.sy = decorSy(g);
       gates.push(g);
     }
+    // árvores e pedras do mapa coladas no portão (por fora da cidade) viram grama
+    const clearK = [TK.TREE, TK.PINE, TK.DTREE, TK.DEAD, TK.ROCK, TK.BOULDER];
+    for (const g of gates) for (let dx = -80; dx <= 80; dx += 16) for (let dy = -96; dy <= 64; dy += 16) {
+      const i = tileIdx(t.x + g.x + dx, t.y + g.y + dy);
+      if (i >= 0 && clearK.includes(TT[i])) TT[i] = TK.GRASS;
+    }
     // enfeites (árvores, barris, postes...) que cairiam em cima ou na frente de um portão somem nesta cidade
     for (const d of TOWN_DECOR) {
       d.hide = d.hide || {};
