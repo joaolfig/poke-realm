@@ -567,7 +567,7 @@ function startEvent() {
     announce(`✨ Um ${e.p.name} raro foi avistado! Ele foge — enfraqueça e capture (é fácil de pegar).`, '#67e8f9');
   } else {
     G.event = { kind, x: 0, y: 0, ttl: 120, zone: pz, label: 'Noite Sombria' };
-    announce('🌙 A noite caiu: Pokémon Fantasma e Sombrio surgem, todo XP vale +50%, Baús da Lua brilham pelo mapa e fogos-fátuos flutuam nos campos.', '#a78bfa');
+    announce('🌙 A noite caiu: Pokémon Fantasma e Sombrio surgem, todo XP vale +50% e fogos-fátuos flutuam nos campos.', '#a78bfa');
   }
 }
 
@@ -1051,7 +1051,8 @@ function nightHost(ev, dt) {
   if (!ev.chests) {
     ev.chests = 1;
     const list = [];
-    for (const pl of pls) for (let k = 0; k < 2; k++) { const s = evSpot(pl); if (s) list.push({ id: `${G.time | 0}_${list.length}`, x: Math.round(s.x), y: Math.round(s.y), z: s.z }); }
+    // 50% de chance por noite (para cada jogador); quando surgem, ficam longe: entre 50 e 300 m (1 m = 32 px)
+    for (const pl of pls) if (Math.random() < 0.5) for (let k = 0; k < 2; k++) { const s = farSpot(pl, 1600, 9600); if (s) list.push({ id: `${G.time | 0}_${list.length}`, x: Math.round(s.x), y: Math.round(s.y), z: s.z, for: pl.id || null }); }
     if (list.length) emitEvent({ t: 'moonch', l: list });
   }
   ev.moonT = (ev.moonT === undefined ? 15 : ev.moonT) - dt;
@@ -1077,7 +1078,19 @@ function moonAlfaLoot(m) {
 // Baús da Lua
 // Baús da Lua e fogos-fátuos só aparecem quando já está bem escuro (o anoitecer leva ~25 s)
 const deepNight = () => isNight() && (G.nightK || 0) > 0.97;
-function moonChestEvent(m) { G.moonCh = (G.moonCh || []).concat(m.l); }
+function moonChestEvent(m) {
+  G.moonCh = (G.moonCh || []).concat(m.l);
+  const P = G.P;
+  if (P && m.l.some(c => Math.hypot(c.x - P.x, c.y - P.y) < 10000)) G.toasts.push({ text: '🌙 Um brilho prateado surgiu ao longe... Baús da Lua apareceram em algum canto do mapa (somem ao amanhecer).', color: '#c4b5fd', t: 6, big: 1 });
+}
+// ponto em terra firme a uma distância entre rMin e rMax do jogador
+function farSpot(pl, rMin, rMax) {
+  for (let k = 0; k < 60; k++) {
+    const a = Math.random() * 6.28, r = rand(rMin, rMax), x = pl.x + Math.cos(a) * r, y = pl.y + Math.sin(a) * r, z = zoneAt(x, y);
+    if (z >= 1 && z <= 5 && !solidAt(x, y) && !isWater(x, y)) return { x, y, z };
+  }
+  return null;
+}
 const moonChOpen = c => (G.moonOpen = G.moonOpen || new Set()).has(c.id);
 function nearMoonChest(P) {
   if (!deepNight() || inDungeonArea(P.x)) return null;
