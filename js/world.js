@@ -7,9 +7,9 @@ const NPCS = [
   { id: 'guilda', nome: 'Mestre da Guilda', icon: '📜', x: 140, y: 140, spr: { h: '#e5e7eb', b: '#1d4ed8', d: '#1e3a8a' }, fala: 'O reino precisa de heróis. Escolha um contrato.' },
   { id: 'sildo', nome: 'Sildo Invernal', icon: '🛡️', x: 0, y: -205, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
   { id: 'torre', nome: 'Guardião da Torre', icon: '🗼', x: 0, y: 150, t2: 1, spr: { h: '#e5e7eb', b: '#6d28d9', d: '#2e1065' }, fala: '' },
-  { id: 'pc', nome: 'Banco Pokémon', icon: '💻', x: -72, y: 58, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
+  { id: 'pc', nome: 'Banco Pokémon', icon: '💻', x: -82, y: 22, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
   { id: 'dex', nome: 'Pesquisadora Íris', icon: '📖', x: 60, y: 205, spr: { h: '#7c2d12', b: '#f8fafc', d: '#0f766e' }, fala: '' },
-  { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '', show: P => storyOver(P) },
+  { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, t2: 1, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '', show: P => storyOver(P) },
 ];
 const NPC_SPR = {};
 function buildNPCSprites() {
@@ -30,8 +30,8 @@ function rebuildTownNPCs() {
   NPCS2.length = 0;
   const t = TOWNS[1];
   if (!t) return;
-  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex', 'pc', 'torre'].includes(n.id))
-    NPCS2.push({ ...n, x: n.x + t.x, y: n.y + t.y, town: 1, nome: n.id === 'sildo' ? `Assistente ${REGION.guia.nome.split(' ').pop()}` : n.nome, show: null });
+  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex', 'pc', 'torre', 'gundo'].includes(n.id))
+    NPCS2.push({ ...n, x: n.x + t.x, y: n.y + t.y, town: 1, nome: n.id === 'sildo' ? `Assistente ${REGION.guia.nome.split(' ').pop()}` : n.nome, show: n.id === 'gundo' ? n.show : null });
 }
 const allNPCs = () => NPCS.filter(n => !n.t2).concat(NPCS2); // o guardião da torre só existe na 2ª cidade
 function nearNPC(P) {
