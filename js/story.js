@@ -51,6 +51,8 @@ function storyMod(e, ch) {
   if (!s) return;
   e.story = ch;
   e.name = `${s.nome} (${e.p.name})`;
+  // o chefe final é o mais forte da história (era quase igual ao 8º líder)
+  if (ch === STORY.length - 1 && e.kind === 3) { e.maxHp = Math.round(e.maxHp * 1.5); e.hp = e.maxHp; }
   if (e.kind === 1) {
     e.boss = true;
     e.maxHp = Math.round(e.maxHp * 2.2); e.hp = e.maxHp;
