@@ -121,6 +121,10 @@ const TALENTS = {
   mobilidade: { nome: 'Mobilidade', icon: '👟', desc: '+20% de velocidade de movimento.' },
   sortudo: { nome: 'Sortudo', icon: '🎲', desc: 'Seus ataques rolam 2d20 e ficam com o maior.' },
   regeneracao: { nome: 'Regeneração', icon: '💚', desc: 'Regeneração de PV 2,5× maior.' },
+  // talentos de tipo: só aparecem para os tipos (naturais) que ganham de verdade com eles
+  couraca: { nome: 'Couraça Elemental', icon: '🛡️', max: 2, types: ['rock', 'grass', 'ice', 'fire', 'flying', 'bug', 'psychic', 'dark'], desc: 'Golpes super efetivos em você causam 20% menos dano (no nível 2: 35% menos).' },
+  persistencia: { nome: 'Persistência', icon: '🪨', types: ['poison', 'bug', 'grass', 'normal', 'rock', 'fire', 'electric', 'ice'], desc: 'Seus golpes pouco efetivos perdem só metade do dano que perderiam (½ vira ¾, ¼ vira ⅝).' },
+  quebra: { nome: 'Quebra-Imunidade', icon: '🔨', types: ['electric', 'normal', 'poison', 'psychic'], desc: 'Contra alvos imunes ao seu tipo, você ainda causa 30% do dano.' },
   // antigos: continuam funcionando em saves velhos, mas não são mais oferecidos
   robusto: { nome: 'Robusto', icon: '💪', off: 1, desc: '+2 PV máximos por nível.' },
   maos: { nome: 'Mãos Ligeiras', icon: '⚡', off: 1, desc: '+20% de cadência de tiro.' },

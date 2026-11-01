@@ -244,9 +244,12 @@ function loadSave() {
 /* ---------- Talentos e subclasses ---------- */
 function ensureTalentOffer(P) {
   if (P.talentOffer || P.talentPending <= 0) return;
-  const pool = Object.keys(TALENTS).filter(k => !TALENTS[k].off && tRank(P, k) < (TALENTS[k].max || 1)).sort(() => Math.random() - 0.5);
+  const pool = Object.keys(TALENTS).filter(k => !TALENTS[k].off && tRank(P, k) < (TALENTS[k].max || 1) && (!TALENTS[k].types || TALENTS[k].types.includes(P.ptype))).sort(() => Math.random() - 0.5);
   if (!pool.length) { P.talentPending = 0; return; }
   P.talentOffer = pool.slice(0, 3);
+  // pelo menos uma opção de tipo, quando o seu tipo tem acesso a alguma
+  const typed = pool.filter(k => TALENTS[k].types);
+  if (typed.length && !P.talentOffer.some(k => TALENTS[k].types)) P.talentOffer[P.talentOffer.length - 1] = pick(typed);
   G.toasts.push({ text: '✨ Talento disponível! Escolha no painel ao lado.', color: '#c4b5fd', t: 4 });
   G.dirty = true;
 }
@@ -673,8 +676,10 @@ function playerShoot() {
 }
 
 // aplica a tabela de tipos a um ataque aliado
-function typed(P, e, dmg, atkType) {
+function typed(P, e, dmg, atkType, pet) {
   let eff = typeEff(atkType, e.p.types);
+  if (!pet && eff > 0 && eff < 1 && hasT(P, 'persistencia')) eff = 1 - (1 - eff) / 2;
+  if (!pet && eff === 0 && hasT(P, 'quebra')) eff = 0.3;
   dmg *= wxBoost(e.x, e.y, atkType); // clima
   if (eff > 1 && hasT(P, 'adepto')) eff *= 1.5;
   return { dmg: eff === 0 ? 0 : Math.max(1, Math.round(dmg * eff)), eff };
@@ -916,6 +921,7 @@ function enemyAttack(b) {
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
   if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type)) eff *= 0.5;
   eff *= wxBoost(P.x, P.y, b.type); // clima
+  if (eff > 1 && tRank(P, 'couraca')) eff *= tRank(P, 'couraca') >= 2 ? 0.65 : 0.8; // Couraça Elemental
   if (graze) eff *= 0.34;
   if (P.furia > 0 && hasS(P, 'barbaro')) eff *= 0.5;
   if (P.seloT > 0) eff *= 0.75;
@@ -1786,7 +1792,7 @@ function updatePanel() {
   }
   if (P.talentOffer) {
     choose += `<h4>Escolha um talento <span class="pts">novo!</span></h4>` + P.talentOffer.map(id =>
-      `<button class="tal" data-tal="${id}"><b>${TALENTS[id].icon} ${TALENTS[id].nome}${TALENTS[id].max ? ` ${tRank(P, id) + 1}/${TALENTS[id].max}` : ''}</b><span>${TALENTS[id].desc}</span></button>`).join('');
+      `<button class="tal" data-tal="${id}"><b>${TALENTS[id].icon} ${TALENTS[id].nome}${TALENTS[id].max ? ` ${tRank(P, id) + 1}/${TALENTS[id].max}` : ''}${TALENTS[id].types ? ` <i class="tbadge" style="background:${TYPE_COLORS[P.ptype]}">do seu tipo</i>` : ''}</b><span>${TALENTS[id].desc}</span></button>`).join('');
   }
   if (P.talents.length || sub) {
     choose += `<h4>Talentos</h4><div class="tchips">${sub ? `<span class="subchip" title="${sub.desc}">${sub.icon} ${sub.nome}</span>` : ''}${[...new Set(P.talents)].map(id => `<span title="${TALENTS[id].desc}">${TALENTS[id].icon} ${TALENTS[id].nome}${tRank(P, id) > 1 ? ' ×' + tRank(P, id) : ''}</span>`).join('')}</div>`;

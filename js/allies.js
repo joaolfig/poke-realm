@@ -270,7 +270,7 @@ function allyHit(e, a, sp) {
   if (P.subclass === 'feras') dmg *= 1.5;
   const ab = !a.ghost && petAbility(a.pid);
   dmg *= abilDmgMul(ab) * hmDmgMul(a.pid);
-  const r = typed(P, e, Math.max(1, Math.round(dmg)), a.type);
+  const r = typed(P, e, Math.max(1, Math.round(dmg)), a.type, true);
   dealDamage(e, r.dmg);
   hitText(e, r.dmg, r.eff, false, true);
   // habilidade do companheiro (ex.: Canção de Ninar do Jigglypuff faz dormir)
