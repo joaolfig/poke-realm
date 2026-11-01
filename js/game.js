@@ -2485,10 +2485,11 @@ function linTick(P, dt) {
     if (P.nightRoll) G.toasts.push({ text: P.lin === 'vampiro' ? '🦇 A noite chama o seu sangue... a transformação começou.' : '🐺 A lua está subindo... você sente a fera despertar.', color: '#c4b5fd', t: 4 });
   }
   if (!isNight() && (G.nightK || 0) < 0.02) { P.nightSeen = false; P.nightRoll = false; }
-  P.transK = P.nightRoll ? (G.nightK || 0) : 0;
+  // começa com ~40% do anoitecer e completa quando a noite fecha de vez (~15 s, mais rápido que o anoitecer de ~25 s)
+  P.transK = P.nightRoll ? clamp(((G.nightK || 0) - 0.4) / 0.6, 0, 1) : 0;
   const kind = P.lin === 'vampiro' ? 'bat' : 'wolf';
-  if (P.transK >= 0.97 && !P.lform) startLForm(P, kind);
-  else if (P.transK < 0.97 && P.lform) endLForm(P);
+  if (P.transK >= 0.995 && !P.lform) startLForm(P, kind);
+  else if (P.transK < 0.995 && P.lform) endLForm(P);
   if (isBat(P)) { P.lform.pid = batPid(P); if (Math.random() < 0.08) G.parts.push({ x: P.x + rand(-14, 14), y: P.y + rand(-8, 8), vx: rand(-20, 20), vy: -20, life: 0.5, color: '#7c3aed', size: 2 }); }
   else if (isWolf(P) && Math.random() < 0.2) G.parts.push({ x: P.x + rand(-16, 16), y: P.y + rand(-10, 10), vx: 0, vy: -25, life: 0.4, color: '#dc2626', size: 2 });
 }
