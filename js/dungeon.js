@@ -349,6 +349,15 @@ function renderDungeonFloor(dg, ox, oy) {
   }
 }
 
+// nível recomendado de uma masmorra: ginásio/final = nível do capítulo; torre = andar; comum = faixa da zona
+function dgLevelTxt(dg) {
+  if (!dg) return '';
+  if (dg.floor) return `Andar ${dg.floor} (Nv 30)`;
+  const st = THEMES[dg.theme] && THEMES[dg.theme].story;
+  if (st && STORY[st] && STORY[st].lvl) return `Nv ${STORY[st].lvl}+`;
+  const z = clamp(dg.zone, 1, 5);
+  return `Nv ${ZONE_LVL[z]}–${ZONE_LVL_MAX[z]}`;
+}
 function drawPortals(ox, oy) {
   for (const p of G.portals) {
     const x = p.x + ox, y = p.y + oy;
@@ -363,7 +372,7 @@ function drawPortals(ox, oy) {
     }
     ctx.restore();
     ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = col;
-    const s = `${p.exit ? 'Saída' : THEMES[p.theme].nome} · ${Math.ceil(p.ttl)}s`;
+    const s = `${p.exit ? 'Saída' : `${THEMES[p.theme].nome} · ${dgLevelTxt(G.dungeons.get(p.dg))}`} · ${Math.ceil(p.ttl)}s`;
     ctx.strokeText(s, x, y - 46); ctx.fillText(s, x, y - 46);
   }
 }
