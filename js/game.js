@@ -532,7 +532,7 @@ function hostSpawning(dt) {
   const night = !water && isNight() && Math.random() < 0.5 ? NIGHT_POOL.filter(id => POKE[id]) : [];
   const rainy = !water && !night.length && weatherAt(x, y) === WEATHER.chuva && Math.random() < 0.3;
   // zona 1: bebês da região ~3%; outros bebês ~0,6% (raríssimos)
-  const br = z === 1 && !water ? Math.random() : 1, own = br < 0.03 && REGION.babies && REGION.babies.length, other = !own && br < 0.036;
+  const br = z === 1 && !water ? Math.random() : 1, own = br < 0.03 && REGION.babies && REGION.babies.length, other = br >= 0.03 && br < 0.036;
   const baby = own || other;
   const pid = own ? pick(REGION.babies) : other ? pick(otherBabies(REGION)) : water || rainy ? pick(WATER_POOLS[z]) : night.length ? pick(night) : pick(ZONE_POOLS[z]);
   if (!POKE[pid]) return;
