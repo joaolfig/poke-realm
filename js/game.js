@@ -188,7 +188,7 @@ const maxHP = P => {
 const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armadura ? P.equip.armadura.ac : 0)
   + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
 const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
-const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 1 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
+const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
 const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
 const fireRate = P => CLASSES[P.cls].wpn.rate * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
@@ -870,6 +870,7 @@ function playerHit(e, b) {
   if (hasS(P, 'guerra')) dmg += d(6);
   if (crit && P.cls === 'ladino') dmg += roll(Math.ceil(P.lvl / 4), 6);
   if (crit && hasS(P, 'assassino')) dmg = Math.round(dmg * 1.3);
+  if (crit && P.race === 'elfo') dmg = Math.round(dmg * 1.5); // precisão élfica
   dmg = Math.max(1, dmg);
   if (!hit) dmg = Math.max(1, Math.floor(dmg / 2));
   const res = typed(P, e, dmg, pType(P));
