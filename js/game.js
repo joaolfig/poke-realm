@@ -1444,12 +1444,12 @@ function render() {
       const r = it.r, x = r.x + ox, y = r.y + oy, hide = r.invis && G.P && G.P.pvp; // rival invisível na arena: só um vulto
       let lift = 0;
       if (hide) { drawPlayerSprite(r.cls, x, y, r.face || 1, 0, 0.07, r.aim || 0, r.ptype); continue; }
-      const rw = r.mount < 0 ? -r.mount : 0; // Druida na Forma Selvagem
+      const rw = r.mount < 0 ? Math.floor(-r.mount / 4) : 0, rk = r.mount < 0 ? -r.mount % 4 : 0; // Druida na Forma Selvagem (Pokémon e tamanho)
       if (r.mount > 0) lift = drawMount(r.mount, r.x, r.y, x, y, r.face || 1, r.moving, G.time); else waterOver(r.x, r.y + 16, x, y + 16, 30);
       const rt = pstTint(r.pst || 0);
       if (r.pst) drawStatusAura(r.pst, x, y);
       if (rt) ctx.filter = rt;
-      if (!rw || !drawWildForm(rw, r.x, r.y, x, y, r.face || 1, r.moving, r.invis ? 0.4 : 1, r.ptype)) drawPlayerSprite(r.cls, x, y - lift, r.face || 1, r.mount ? 0 : r.moving ? Math.floor(r.walk * 8) % 2 : 0, r.invis ? (G.P && G.P.pvp ? 0.07 : 0.4) : 1, r.aim || 0, r.ptype);
+      if (!rw || !drawWildForm(rw, r.x, r.y, x, y, r.face || 1, r.moving, r.invis ? 0.4 : 1, r.ptype, rk)) drawPlayerSprite(r.cls, x, y - lift, r.face || 1, r.mount ? 0 : r.moving ? Math.floor(r.walk * 8) % 2 : 0, r.invis ? (G.P && G.P.pvp ? 0.07 : 0.4) : 1, r.aim || 0, r.ptype);
       ctx.filter = 'none';
       if (r.pst === 7) drawShock(x, y - lift - 4, 30, 40);
       ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.textAlign = 'center';
@@ -1472,7 +1472,7 @@ function render() {
       const tint = pstTint(P.pstT > 0 ? P.pst : 0);
       if (P.pstT > 0) drawStatusAura(P.pst, x, y);
       if (tint) ctx.filter = tint;
-      if (!(P.wildT > 0 && drawWildForm(P.wildPid, P.x, P.y, x, y, P.face, P.moving, P.invis > 0 ? 0.4 : 1, pType(P)))) drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
+      if (!(P.wildT > 0 && drawWildForm(P.wildPid, P.x, P.y, x, y, P.face, P.moving, P.invis > 0 ? 0.4 : 1, pType(P), wildSizeK(P)))) drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
       ctx.filter = 'none';
       if (pst(P, 2) && P.pstShock) drawShock(x, y - lift - 4, 30, 40);
       if (!mpid) grassOver(P.x, P.y + 14, x, y + 18, 28);

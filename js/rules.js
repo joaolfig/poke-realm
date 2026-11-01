@@ -97,9 +97,9 @@ const SUBCLASSES = {
       abil: { nome: 'Aljava Arcana', cd: 5, desc: 'Aljava: dispara 3 flechas arcanas que atravessam até 2 inimigos em leque ((2 + nível/4)d8 + Poder) que podem paralisar.' } },
   ],
   druida: [
-    { id: 'lua', nome: 'Círculo da Lua', icon: '🌙', desc: 'A Forma Selvagem dura 18s, dá +50% de PV (em vez de 30%) e cura 25% da vida ao transformar.',
+    { id: 'lua', nome: 'Círculo da Lua', icon: '🌙', desc: 'A Forma Selvagem fica bem maior, dura 18s, dá +50% de PV (em vez de 30%) e cura 25% da vida ao transformar.',
       abil: { nome: 'Forma Selvagem Lunar', cd: 28, desc: 'Forma Selvagem: vira o seu companheiro líder por 18s, com +50% de PV, e se cura em 25% da vida ao transformar.' } },
-    { id: 'terra', nome: 'Círculo da Terra', icon: '🌱', desc: 'Ao transformar, raízes brotam em volta por 6s: curam você e os aliados e deixam os inimigos lentos.',
+    { id: 'terra', nome: 'Círculo da Terra', icon: '🌱', desc: 'A Forma Selvagem fica um pouco maior e, ao transformar, raízes brotam em volta por 6s: curam você e os aliados e deixam os inimigos lentos.',
       abil: { nome: 'Forma Selvagem da Terra', cd: 24, desc: 'Forma Selvagem: vira o seu companheiro líder por 12s (+30% de PV) e faz brotar raízes que curam (1 + nível/6)d6 + Vigor/2 por segundo e deixam os inimigos lentos.' } },
   ],
 };

@@ -224,8 +224,8 @@ function sendPlayerState() {
 }
 
 const myType = P => (pType(P) !== P.ptype ? pType(P) : '');
-// montaria (id do Pokémon) ou, na Forma Selvagem do Druida, o Pokémon em que ele virou (id negativo)
-const netMount = P => (P.wildT > 0 ? -P.wildPid : mountPid(P));
+// montaria (id do Pokémon) ou, na Forma Selvagem do Druida, -(id × 4 + tamanho) do Pokémon em que ele virou
+const netMount = P => (P.wildT > 0 ? -(P.wildPid * 4 + wildSizeK(P)) : mountPid(P));
 
 function netTick(dt) {
   NET.t += dt;
