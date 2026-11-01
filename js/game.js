@@ -194,8 +194,8 @@ const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armad
 const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
 const outOfCombat = P => P.sinceHit > 4 && G.time - (P.shotT === undefined ? -99 : P.shotT) > 4 && !P.pvp;
-const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (outOfCombat(P) ? 1.3 : 1) * (pst(P, 2) ? 0.85 : 1) * wxSlow(P) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
-const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
+const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (outOfCombat(P) ? 1.3 : 1) * (pst(P, 2) ? 0.85 : 1) * wxSlow(P) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (P.lin === 'lobisomem' ? 1.05 : 1) * (isBat(P) ? 1.25 : 1) * (1 + M(P, 'speed'));
+const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWolf(P) ? 1.3 : 1) * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
 // XP por nível = abates desejados × XP médio de um abate na zona recomendada para aquele nível.
@@ -235,7 +235,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'wseed', 'expR', 'bless', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quests', 'qOffers', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'wseed', 'expR', 'bless', 'lin', 'tq', 'moon', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quests', 'qOffers', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -620,6 +620,7 @@ function onKill(m) {
   questProgress('especie', { pid: m.pid });
   if (!inDungeonArea(m.x)) questProgress('zona', { zone: m.zone });
   if (m.kind === 1) { questProgress('alfa'); storyAlfa(P, m); }
+  linKill(P); templeKill(P, m);
   G.dirty = true;
 }
 
@@ -710,6 +711,7 @@ function abilHit(e, dmg, type, slow) {
   const P = G.P, r = typed(P, e, Math.max(1, Math.round(dmg)), type || pType(P));
   dealDamage(e, r.dmg, slow || 0);
   hitText(e, r.dmg, r.eff, false, true);
+  linSteal1(P, r.dmg);
   return r.dmg;
 }
 const aimPoint = (P, max) => { const mw = mouseWorld(); let dx = mw.x - P.x, dy = mw.y - P.y; const dd = Math.hypot(dx, dy); if (dd > max) { dx *= max / dd; dy *= max / dd; } return { x: P.x + dx, y: P.y + dy }; };
@@ -718,6 +720,8 @@ const enemiesNear = (x, y, r) => G.enemies.filter(e => e.hp > 0 && !e.dead && Ma
 function useAbility() {
   const P = G.P;
   if (P.abilCd > 0) return;
+  if (isWolf(P)) { text(P.x, P.y - 40, '🐺 Na fúria não dá para usar o especial', '#fca5a5', 12); return; }
+  if (P.lform && CLASSES[P.cls] === CLASSES.druida) { text(P.x, P.y - 40, 'Você já está transformado', '#fca5a5', 12); return; }
   if (!inDungeonArea(P.x) && inTown(P.x, P.y)) { text(P.x, P.y - 40, '🕊️ A vila é zona de paz', '#fef3c7', 12); return; }
   P.abilCd = abilCd(P); P.shotT = G.time;
   const mw = mouseWorld(), tp = pType(P), lv = P.lvl, pod = A(P, 'POD');
@@ -902,7 +906,9 @@ function playerHit(e, b) {
   dmg = Math.max(1, dmg);
   if (!hit) dmg = Math.max(1, Math.floor(dmg / 2));
   const res = typed(P, e, dmg, pType(P));
+  if (isWolf(P)) res.dmg = Math.round(res.dmg * 1.15);
   dealDamage(e, res.dmg, sp === 2 ? 3 : 0);
+  linSteal1(P, res.dmg);
   hitText(e, res.dmg, res.eff, crit, hit);
   if (!crit) sfx(res.eff > 1 ? 'hitSE' : 'hit');
   if ((sp === 3 && Math.random() < 0.35) || (sp === 4 && Math.random() < 0.4)) inflict(e, 2);
@@ -938,7 +944,8 @@ function enemyAttack(b) {
   const graze = !crit && r + b.atk < AC(P);
   let eff = typeEff(b.type, [pType(P)]);
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
-  if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type)) eff *= 0.5;
+  if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type) || (P.lin && LIN[P.lin].resist.includes(b.type))) eff *= 0.5;
+  eff *= linTaken(P, b.type); // linhagem
   eff *= wxBoost(P.x, P.y, b.type); // clima
   if (eff > 1 && tRank(P, 'couraca')) eff *= tRank(P, 'couraca') >= 2 ? 0.65 : 0.8; // Couraça Elemental
   if (graze) eff *= 0.34;
@@ -960,6 +967,7 @@ function enemyAttack(b) {
 function usePotion() {
   const P = G.P;
   if (P && P.pvp) { text(P.x, P.y - 40, 'Sem poções na arena!', '#fca5a5', 12); return; }
+  if (P && isWolf(P)) { text(P.x, P.y - 40, '🐺 A fera não bebe poções', '#fca5a5', 12); return; }
   if (!P || P.pots.hp <= 0 || (P.hp >= maxHP(P) && !(P.pstT > 0))) return; // com status a poção serve mesmo de vida cheia
   const h = Math.round(Math.max(roll(2, 4) + 2, maxHP(P) * 0.3) * (hasT(P, 'alquimista') ? 1.5 : 1));
   P.hp = Math.min(maxHP(P), P.hp + h);
@@ -1074,12 +1082,14 @@ function updatePlayer(dt) {
   P.sinceHit += dt;
   updatePlayerStatus(P, dt);
   wildTick(P, dt);
+  linTick(P, dt);
   if (outOfCombat(P) && P.moving && Math.random() < 0.25) G.parts.push({ x: P.x + rand(-8, 8), y: P.y + 16, vx: rand(-15, 15), vy: -10, life: 0.35, color: '#e7dcc4', size: 2 });
 
   const inV = !inDg && inTown(P.x, P.y);
   const regenK = (hasT(P, 'regeneracao') ? 2.5 : 1) * (1 + M(P, 'regen'));
   const noRegen = inDg && (dungeonAt(P.x) || {}).mods && dungeonAt(P.x).mods.includes('semcura');
-  if ((P.sinceHit > 5 || inV) && !noRegen) P.hp = Math.min(maxHP(P), P.hp + (0.3 + A(P, 'VIG') * 0.2 + P.lvl * 0.05) * (inV ? 12 : 1) * regenK * dt);
+  const sunBurn = P.lin === 'vampiro' && !inV && !isNight() && !inDg; // vampiro: de dia só se cura roubando vida
+  if ((P.sinceHit > 5 || inV) && !noRegen && !sunBurn) P.hp = Math.min(maxHP(P), P.hp + (0.3 + A(P, 'VIG') * 0.2 + P.lvl * 0.05) * (inV ? 12 : 1) * regenK * dt);
 
   P.shootCd -= dt;
   // a vila é zona de paz: ninguém ataca de dentro dela
@@ -1480,7 +1490,7 @@ function render() {
       if (P.graceT > 0) { ctx.strokeStyle = 'rgba(253,230,138,.95)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x, y - 24 + Math.sin(G.time * 4) * 1.5, 10, 3.5, 0, 0, 7); ctx.stroke(); }
       if (P.seloT > 0) { ctx.strokeStyle = 'rgba(253,230,138,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 30 + Math.sin(G.time * 8) * 2, 0, 7); ctx.stroke(); }
       if (P.furia > 0) { ctx.fillStyle = 'rgba(239,68,68,.25)'; ctx.beginPath(); ctx.arc(x, y, 24 + Math.sin(G.time * 15) * 3, 0, 7); ctx.fill(); }
-      const mpid = P.wildT > 0 ? 0 : mountPid(P);
+      const mpid = P.wildT > 0 || P.lform ? 0 : mountPid(P);
       let lift = 0;
       if (mpid) {
         lift = drawMount(mpid, P.x, P.y, x, y, P.face > 0 ? 1 : -1, P.moving, G.time);
@@ -1489,7 +1499,8 @@ function render() {
       const tint = pstTint(P.pstT > 0 ? P.pst : 0);
       if (P.pstT > 0) drawStatusAura(P.pst, x, y);
       if (tint) ctx.filter = tint;
-      if (!(P.wildT > 0 && drawWildForm(P.wildPid, P.x, P.y, x, y, P.face, P.moving, P.invis > 0 ? 0.4 : 1, pType(P), wildSizeK(P)))) drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
+      const lin = P.lin && (P.lform || P.wildT <= 0 || !P.wildT) && drawLinHero(P, x, y - lift, P.invis > 0 ? 0.4 : 1);
+      if (!lin && !(P.wildT > 0 && drawWildForm(P.wildPid, P.x, P.y, x, y, P.face, P.moving, P.invis > 0 ? 0.4 : 1, pType(P), wildSizeK(P)))) drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
       ctx.filter = 'none';
       if (pst(P, 2) && P.pstShock) drawShock(x, y - lift - 4, 30, 40);
       if (!mpid) grassOver(P.x, P.y + 14, x, y + 18, 28);
@@ -1848,7 +1859,7 @@ function updatePanel() {
   const ab = curAbil(P), cd = abilCd(P);
   $('p-abil').innerHTML = `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>
     ${blessPhase(P) ? `<div class="small" title="${blessOf(P) ? BLESS[blessOf(P)].desc : 'Escolha uma bênção no templo da 2ª cidade'}">✝ Bênção: ${blessOf(P) ? `${BLESS[blessOf(P)].icon} ${BLESS[blessOf(P)].nome}` : `nenhuma (escolha no templo de ${esc(TOWNS[1] ? townName(TOWNS[1]) : 'a 2ª cidade')})`}</div>` : ''}
-    ${blessBuffs(P)}<div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Fly: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
+    ${blessBuffs(P)}${linBuffs(P)}<div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Fly: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
   padFixDom($('p-abil'));
   if (!G.dirty) return;
   G.dirty = false;
@@ -2338,4 +2349,100 @@ const blessBuffs = P => {
   if (P.ferasT > 0) l.push(`🐾 +${Math.round(P.ferasK * 100)}% companheiros`);
   if (P.ritmoT > 0) l.push(`🎵 +${Math.round(P.ritmoK * 100)}% cadência`);
   return l.length ? `<div class="small" style="color:#fde68a">${l.join(' · ')}</div>` : '';
+};
+
+/* ============ Linhagens: Vampiro e Lobisomem (missão do templo da 2ª cidade) ============
+ * Ficam por cima da raça. As formas noturnas têm prioridade sobre a Forma Selvagem do Druida:
+ * quando começam, encerram a Forma Selvagem, e enquanto duram não dá para trocar de forma.
+ * Vampiro: rouba 4% do dano causado; resiste a Veneno e Sombrio; de dia não regenera fora das cidades;
+ *   a cada anoitecer, 33% de chance de virar morcego aos poucos (Zubat/Golbat/Crobat pelo nível) até o amanhecer:
+ *   rouba 8%, +25% de velocidade, voa por cima da água, mas recebe +15% de dano.
+ * Lobisomem: +5% de velocidade e faro (baús escondidos aparecem de mais longe).
+ *   À noite a Lua enche aos poucos (e mais rápido a cada abate) e o herói vai virando fera na tela;
+ *   em 100% vira o lobo da região por 12s: +30% de cadência, +15% de dano, uivo que deixa os inimigos lentos,
+ *   sem poções nem especial. De dia a Lua esvazia devagar. Fogo e Fada causam +10% nele.
+ */
+const LIN = {
+  vampiro: { nome: 'Vampiro', icon: '🧛', resist: ['poison', 'dark'], fraco: ['fire'] },
+  lobisomem: { nome: 'Lobisomem', icon: '🐺', resist: [], fraco: ['fire', 'fairy'] },
+};
+const WOLF_PID = { kanto: 59, johto: 217, hoenn: 262, sinnoh: 405, unova: 571 };
+// morcego do vampiro: Zubat, Golbat e Crobat pelo nível (em Unova, Woobat e Swoobat)
+const batPid = P => (REGION_ID === 'unova' ? (P.lvl < 16 ? 527 : 528) : P.lvl < 10 ? 41 : P.lvl < 22 ? 42 : 169);
+const wolfPid = () => WOLF_PID[REGION_ID] || 59;
+const isBat = P => !!(P.lform && P.lform.kind === 'bat');
+const isWolf = P => !!(P.lform && P.lform.kind === 'wolf');
+const linSteal = P => (P.lin !== 'vampiro' ? 0 : isBat(P) ? 0.08 : 0.04);
+// dano recebido: fraquezas da linhagem e o morcego mais frágil
+const linTaken = (P, type) => (P.lin && LIN[P.lin].fraco.includes(type) ? 1.1 : 1) * (isBat(P) ? 1.15 : 1);
+function linSteal1(P, dmg) {
+  const k = linSteal(P);
+  if (!k || dmg <= 0) return;
+  P.vampAcc = (P.vampAcc || 0) + dmg * k;
+  if (P.vampAcc >= 1) { const h = Math.floor(P.vampAcc); P.vampAcc -= h; P.hp = Math.min(maxHP(P), P.hp + h); }
+}
+function startLForm(P, kind) {
+  if (P.wildT > 0) endWild(P); // a forma da linhagem tem prioridade sobre a do Druida
+  P.riding = false;
+  const pid = kind === 'bat' ? batPid(P) : wolfPid();
+  ensurePoke(pid);
+  P.lform = { kind, pid, t: kind === 'wolf' ? 12 : 0 };
+  burst(P.x, P.y, kind === 'bat' ? '#7c3aed' : '#dc2626', 36); burst(P.x, P.y, '#111827', 24);
+  if (kind === 'wolf') {
+    for (const e of enemiesNear(P.x, P.y, 190)) e.slowT = Math.max(e.slowT || 0, 2);
+    G.fx.push({ k: 'ring', x: P.x, y: P.y, r: 0, R: 190, life: 0.7, max: 0.7, color: '#dc2626' }); G.shake = Math.min(10, G.shake + 6);
+    G.toasts.push({ text: '🐺 A lua cheia tomou conta: FÚRIA DA LUA! (12s, sem poções nem especial)', color: '#fca5a5', t: 4, big: 1 });
+  } else G.toasts.push({ text: '🦇 A noite chamou o seu sangue: você virou morcego até o amanhecer!', color: '#c4b5fd', t: 5, big: 1 });
+  sfx('boss');
+}
+function endLForm(P) {
+  const k = P.lform && P.lform.kind;
+  P.lform = null;
+  burst(P.x, P.y, k === 'bat' ? '#7c3aed' : '#dc2626', 22);
+  text(P.x, P.y - 44, k === 'bat' ? '🦇 O dia nasceu: você voltou a ser você' : '🐺 A fúria passou', '#cbd5e1', 12);
+}
+function linTick(P, dt) {
+  if (!P.lin) { if (P.lform) endLForm(P); return; }
+  const night = isNight() && !inDungeonArea(P.x);
+  if (P.lin === 'vampiro') {
+    // a transformação vem aos poucos (~10 s) e, ao amanhecer, volta aos poucos (~6 s)
+    if (night && !P.nightSeen) { P.nightSeen = true; if (Math.random() < 0.33) { P.batGrow = true; G.toasts.push({ text: '🦇 A noite chama o seu sangue... você está virando morcego.', color: '#c4b5fd', t: 4 }); } }
+    if (P.batGrow && !isBat(P)) { P.batK = Math.min(1, (P.batK || 0) + dt / 10); if (P.batK >= 1) { P.batGrow = false; startLForm(P, 'bat'); } }
+    if (!night) { P.nightSeen = false; P.batGrow = false; if (isBat(P)) endLForm(P); }
+    if (!P.batGrow && !isBat(P)) P.batK = Math.max(0, (P.batK || 0) - dt / 6);
+    if (isBat(P)) { P.lform.pid = batPid(P); if (Math.random() < 0.08) G.parts.push({ x: P.x + rand(-14, 14), y: P.y + rand(-8, 8), vx: rand(-20, 20), vy: -20, life: 0.5, color: '#7c3aed', size: 2 }); }
+  } else {
+    if (isWolf(P)) {
+      if ((P.lform.t -= dt) <= 0) { endLForm(P); P.moon = 0; }
+      else if (Math.random() < 0.2) G.parts.push({ x: P.x + rand(-16, 16), y: P.y + rand(-10, 10), vx: 0, vy: -25, life: 0.4, color: '#dc2626', size: 2 });
+      return;
+    }
+    // a Lua enche sozinha à noite (~75 s) e mais rápido a cada abate; de dia esvazia devagar
+    P.moon = clamp((P.moon || 0) + (night ? dt * 1.33 : -dt * 2), 0, 100);
+    if (P.moon >= 100) startLForm(P, 'wolf');
+    else if (P.moon > 20 && Math.random() < P.moon / 900) G.parts.push({ x: P.x + rand(-10, 10), y: P.y + rand(-14, 10), vx: rand(-10, 10), vy: -15, life: 0.5, color: Math.random() < 0.5 ? '#57534e' : '#dc2626', size: 2 });
+  }
+}
+function linKill(P) {
+  if (P.lin === 'lobisomem' && !isWolf(P) && isNight()) P.moon = Math.min(100, (P.moon || 0) + 6);
+}
+// desenho do herói com a linhagem: forma completa, ou o lobisomem se formando aos poucos
+function drawLinHero(P, x, y, alpha) {
+  if (P.lform) return drawWildForm(P.lform.pid, P.x, P.y, x, y, P.face, P.moving, alpha, pType(P), isWolf(P) ? 1 : 0);
+  const wolf = P.lin === 'lobisomem', k = wolf ? (P.moon || 0) / 100 : P.batK || 0;
+  if (k < 0.15) return false;
+  // meio gente, meio fera: o Pokémon vai aparecendo e crescendo por cima do herói
+  const m = (k - 0.15) / 0.85;
+  drawPlayerSprite(P.cls, x + (k > 0.8 ? rand(-1, 1) : 0), y, P.face, P.moving ? Math.floor(P.walk * 8) % 2 : 0, alpha * (1 - m * 0.85), P.aim, pType(P));
+  drawWildForm(wolf ? wolfPid() : batPid(P), P.x, P.y, x, y, P.face, P.moving, alpha * m * 0.9, null, 0, (wolf ? 0.55 : 0.5) + m * (wolf ? 0.6 : 0.5));
+  if (!wolf && Math.random() < m * 0.3) G.parts.push({ x: P.x + rand(-14, 14), y: P.y + rand(-14, 10), vx: rand(-15, 15), vy: -20, life: 0.6, color: '#7c3aed', size: 3 }); // névoa roxa
+  if (k > 0.5) { ctx.fillStyle = `rgba(${wolf ? '220,38,38' : '168,85,247'},${(0.5 + Math.sin(G.time * 8) * 0.3) * m})`; ctx.fillRect(x - 5, y - 8, 3, 2); ctx.fillRect(x + 2, y - 8, 3, 2); } // olhos brilhando
+  return true;
+}
+const linBuffs = P => {
+  if (!P.lin) return '';
+  const L = LIN[P.lin];
+  const s = P.lin === 'vampiro' ? (isBat(P) ? '🦇 Morcego até o amanhecer · rouba 8%' : `rouba 4% do dano${isNight() ? '' : ' · de dia não regenera fora das cidades'}`)
+    : isWolf(P) ? `🐺 Fúria da Lua ${Math.ceil(P.lform.t)}s` : `🌕 Lua ${Math.floor(P.moon || 0)}%${isNight() ? '' : ' (só enche à noite)'}`;
+  return `<div class="small" style="color:#fca5a5">${L.icon} ${L.nome}: ${s}</div>`;
 };

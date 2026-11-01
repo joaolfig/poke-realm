@@ -225,7 +225,7 @@ function sendPlayerState() {
 
 const myType = P => (pType(P) !== P.ptype ? pType(P) : '');
 // montaria (id do Pokémon) ou, na Forma Selvagem do Druida, -(id × 4 + tamanho) do Pokémon em que ele virou
-const netMount = P => (P.wildT > 0 ? -(P.wildPid * 4 + wildSizeK(P)) : mountPid(P));
+const netMount = P => (P.lform ? -(P.lform.pid * 4 + (isWolf(P) ? 1 : 0)) : P.wildT > 0 ? -(P.wildPid * 4 + wildSizeK(P)) : mountPid(P));
 
 function netTick(dt) {
   NET.t += dt;

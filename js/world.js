@@ -162,6 +162,7 @@ $('npc').addEventListener('click', ev => {
   if (act === 'heal') { P.hp = maxHP(P); burst(P.x, P.y, '#f9a8d4', 20); sfx('pot'); }
   else if (act === 'gift') { P.pots.hp = Math.max(P.pots.hp, 2); P.giftT = 300; sfx('pick'); }
   else if (act === 'buy') buyItem(P, arg);
+  else if (act === 'tq') templeAct(P, arg);
   else if (act === 'bless' && BLESS[arg] && BLESS[arg].subs.includes(blessPhase(P))) { P.bless = arg; burst(P.x, P.y, '#fde68a', 24); sfx('lvl'); G.toasts.push({ text: `✝ Bênção ativa: ${BLESS[arg].nome}`, color: '#fde68a', t: 3 }); saveGame(); }
   else if (act === 'sellbulk') {
     let g = 0, n = 0;
@@ -888,7 +889,7 @@ function drawXChests(ox, oy) {
   if (!P) return;
   for (const c of XCHESTS) {
     const open = xOpen(P, c), d = Math.hypot(c.x - P.x, c.y - P.y);
-    if (c.kind === 'esc' && !open && d > 170) continue; // escondido: só aparece de perto
+    if (c.kind === 'esc' && !open && d > (P.lin === 'lobisomem' ? 320 : 170)) continue; // escondido: só aparece de perto (o faro do lobisomem vê de longe)
     const x = c.x + ox, y = c.y + oy;
     if (x < -40 || y < -40 || x > W + 40 || y > H + 40) continue;
     const gold = c.kind === 'gua';
@@ -921,13 +922,51 @@ function exploreCheck(P) {
 /* ============ Templo (2ª cidade): o Clérigo escolhe a bênção ativa ============ */
 function renderTemple(P) {
   const ph = blessPhase(P);
-  if (!ph) return '<p class="fala">"A luz acolhe todos os viajantes. Mas só os Clérigos conseguem carregar as bênçãos deste templo para a batalha."</p>';
+  if (!ph) return '<p class="fala">"A luz acolhe todos os viajantes. Só os Clérigos carregam as bênçãos deste templo para a batalha... mas há outra coisa guardada aqui embaixo."</p>' + renderLinQuest(P);
   const phName = ph === 'clerigo' ? 'Clérigo' : subInfo(ph).nome, cur = blessOf(P);
   const opts = Object.entries(BLESS).filter(([, b]) => b.subs.includes(ph));
   let h = `<p class="fala">"Escolha a bênção que vai junto com as suas curas. Você pode trocar sempre que voltar aqui."</p>
     <h4>Bênçãos do ${esc(phName)}</h4>`;
   h += opts.map(([id, b]) => `<div class="shoprow"><span>${b.icon} <b>${b.nome}</b><br><i>${b.desc}</i></span>
     ${cur === id ? '<button disabled>Ativa ✓</button>' : `<button data-act="bless:${id}" class="good">Escolher</button>`}</div>`).join('');
+  h += renderLinQuest(P, true);
   h += `<div class="small">As bênçãos valem para quem você cura (Tomo, Santuário e Hino). Em você mesmo valem menos (escudo pela metade, bônus de dano em 35%).${ph === 'clerigo' ? ` No Nv ${SUB_LVL}, cada subclasse libera bênçãos mais fortes.` : ''}</div>`;
   return h;
+}
+
+/* ---------- Missão do templo: as maldições do Sangue e da Lua ---------- */
+// P.tq = etapa (0 nada, 1 caçada noturna, 2 relicário, 3 escolha, 4 feita) · P.tqN = progresso
+const TQ_NIGHT = 12, TQ_LVL = 12, TQ_UNDO = 1500;
+function renderLinQuest(P, cleric) {
+  const s = P.tq || 0, hd = '<h4>As maldições do templo</h4>';
+  if (s === 0) {
+    if (P.lvl < TQ_LVL) return cleric ? '' : `<div class="small">Volte quando estiver no Nv ${TQ_LVL} ou mais.</div>`;
+    return `${hd}<div class="quest cur"><p class="fala">"Embaixo deste templo dormem duas maldições antigas: o <b>Sangue</b> e a <b>Lua</b>. Elas escolhem quem tem coragem de libertá-las... e cobram um preço. Quer tentar?"</p>
+      <div class="small">Recompensa: virar <b>🧛 Vampiro</b> ou <b>🐺 Lobisomem</b> (fica por cima da sua raça).</div></div><button data-act="tq:start" class="good">🕯️ Aceitar a missão</button>`;
+  }
+  if (s === 1) return `${hd}<div class="quest cur"><b>🌙 Caçada noturna</b><p class="fala">"As maldições só acordam com sangue derramado sob a lua. Derrote Pokémon durante a noite."</p>
+    <div class="qbar"><div style="width:${Math.min(100, (P.tqN || 0) / TQ_NIGHT * 100)}%"></div></div><div class="small">${P.tqN || 0}/${TQ_NIGHT} derrotados à noite</div></div>`;
+  if (s === 2) return `${hd}<div class="quest cur"><b>⚱️ O relicário</b><p class="fala">"Elas acordaram. Agora preciso do relicário que as prende: ele sempre aparece no fundo de uma masmorra. Derrote o chefe de qualquer masmorra e traga."</p>
+    <div class="small">🎯 Conclua uma masmorra (derrote o chefe)</div></div>`;
+  if (s === 3) return `${hd}<div class="quest cur"><b>🕯️ O pacto</b><p class="fala">"O relicário está aberto. Escolha qual maldição vai carregar. Ela fica com você em todas as regiões."</p>
+    <div class="shoprow"><span>🧛 <b>Pacto do Sangue: Vampiro</b><br><i>Rouba 4% do dano que causa. Resiste a Veneno e Sombrio. De dia não regenera fora das cidades e leva +10% de Fogo. A cada anoitecer, 33% de chance de virar morcego aos poucos (${REGION_ID === 'unova' ? 'Woobat, Swoobat' : 'Zubat, Golbat, Crobat'}) até o amanhecer: rouba 8%, +25% de velocidade e voa sobre a água, mas leva +15% de dano.</i></span><button data-act="tq:vampiro" class="good">Escolher</button></div>
+    <div class="shoprow"><span>🐺 <b>Pacto da Lua: Lobisomem</b><br><i>+5% de velocidade e faro para baús escondidos. À noite a Lua enche aos poucos (mais rápido a cada abate) e você vai virando fera. Em 100%, vira ${POKE[wolfPid()] ? POKE[wolfPid()].name : 'o lobo da região'} por 12s: +30% de cadência, +15% de dano e uivo que deixa os inimigos lentos, sem poções nem especial. Leva +10% de Fogo e de Fada.</i></span><button data-act="tq:lobisomem" class="good">Escolher</button></div></div>`;
+  const L = LIN[P.lin];
+  return `${hd}<div class="quest"><p class="fala">"${L ? `A maldição do ${L.nome} corre em você.` : 'Você não carrega maldição nenhuma.'} Se quiser se livrar dela e escolher de novo, eu faço o ritual... mas não é de graça."</p>
+    <button data-act="tq:undo" ${P.gold < TQ_UNDO ? 'disabled' : ''}>Desfazer o pacto (${TQ_UNDO} 🪙)</button></div>`;
+}
+function templeAct(P, a) {
+  if (a === 'start' && !P.tq && P.lvl >= TQ_LVL) { P.tq = 1; P.tqN = 0; G.toasts.push({ text: `🕯️ Missão do templo: derrote ${TQ_NIGHT} Pokémon durante a noite.`, color: '#c4b5fd', t: 5, big: 1 }); }
+  else if ((a === 'vampiro' || a === 'lobisomem') && P.tq === 3) {
+    P.lin = a; P.tq = 4; P.moon = 0; P.nightSeen = isNight();
+    burst(P.x, P.y, a === 'vampiro' ? '#7c3aed' : '#dc2626', 40);
+    G.toasts.push({ text: a === 'vampiro' ? '🧛 Você selou o Pacto do Sangue. A noite agora é sua.' : '🐺 Você selou o Pacto da Lua. Cuidado quando ela encher...', color: '#fca5a5', t: 6, big: 1 });
+    sfx('boss');
+  } else if (a === 'undo' && P.tq === 4 && P.gold >= TQ_UNDO) { P.gold -= TQ_UNDO; P.lin = null; P.tq = 3; if (P.lform) endLForm(P); sfx('pot'); }
+  else return;
+  saveGame();
+}
+function templeKill(P, m) {
+  if (P.tq === 1 && isNight()) { P.tqN = (P.tqN || 0) + 1; if (P.tqN >= TQ_NIGHT) { P.tq = 2; G.toasts.push({ text: '🕯️ As maldições acordaram! Agora conclua uma masmorra para achar o relicário.', color: '#c4b5fd', t: 6, big: 1 }); sfx('lvl'); } }
+  else if (P.tq === 2 && m.kind === 3) { P.tq = 3; G.toasts.push({ text: `⚱️ Você achou o relicário! Leve à Sacerdotisa Aurora em ${TOWNS[1] ? townName(TOWNS[1]) : 'na 2ª cidade'}.`, color: '#c4b5fd', t: 6, big: 1 }); sfx('lvl'); }
 }

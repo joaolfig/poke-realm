@@ -171,7 +171,7 @@ const rideFlies = pid => FLY_RIDE.has(pid) || (canRide(pid) && petIsFlyer(pid));
 function toggleRide() {
   const P = G.P;
   if (P.riding) { P.riding = false; text(P.x, P.y - 44, 'Desmontou', '#cbd5e1', 12); return; }
-  if (P.wildT > 0) return text(P.x, P.y - 44, 'Na Forma Selvagem não dá para montar', '#fca5a5', 12);
+  if (P.wildT > 0 || P.lform) return text(P.x, P.y - 44, 'Transformado não dá para montar', '#fca5a5', 12);
   const pt = activePet(P);
   if (!pt || !G.allies.some(a => a.pet)) return G.toasts.push({ text: 'Chame um companheiro grande para montar (Arcanine, Rapidash, Onix, Lapras...).', color: '#fca5a5', t: 3 });
   if (!canRide(pt.pid)) return G.toasts.push({ text: `${pt.name} é pequeno demais para carregar você.`, color: '#fca5a5', t: 2.5 });
@@ -232,10 +232,10 @@ function wildTick(P, dt) {
   else if (Math.random() < 0.12) G.parts.push({ x: P.x + rand(-16, 16), y: P.y + rand(-10, 14), vx: rand(-10, 10), vy: -30, life: 0.6, color: Math.random() < 0.5 ? '#86efac' : TYPE_COLORS[P.wildType], size: 3 });
 }
 // desenha o Druida transformado: o Pokémon no lugar do herói, com os pés no mesmo ponto
-function drawWildForm(pid, wx, wy, x, y, face, moving, alpha, ptype, sk) {
+function drawWildForm(pid, wx, wy, x, y, face, moving, alpha, ptype, sk, mul = 1) {
   const p = POKE[pid];
   if (!p || !p.img) { ensurePoke(pid); return false; }
-  const ih = p.img.height, k = clamp(1.9, 44 / ih, 92 / ih) * WILD_SIZE[sk || 0], w = p.img.width * k, h = ih * k;
+  const ih = p.img.height, k = clamp(1.9, 44 / ih, 92 / ih) * WILD_SIZE[sk || 0] * mul, w = p.img.width * k, h = ih * k;
   if (ptype) {
     ctx.strokeStyle = TYPE_COLORS[ptype]; ctx.lineWidth = 2; ctx.globalAlpha = (0.6 + Math.sin(G.time * 6) * 0.2) * alpha;
     ctx.beginPath(); ctx.ellipse(x, y + 16, Math.max(20, w * 0.36), 7, 0, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
