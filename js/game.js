@@ -196,9 +196,9 @@ const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
 // XP por nível = abates desejados × XP médio de um abate na zona recomendada para aquele nível.
 // Assim o ritmo cresce suave e não trava na troca de zona (Nv 1-6 zona 1, 7-13 zona 2, 14-20 zona 3, 21-25 zona 4, 26+ zona 5).
-// XP para passar de cada nível (1→2 ... 29→30), calibrada pelo tempo medido em jogo: ~3 min por nível só com abates
-// na zona recomendada (o XP por abate cresce com a zona, por isso a tabela sobe junto). Total ~1 h 30 até o Nv 30.
-const XP_TABLE = [2320, 2320, 2320, 2320, 2320, 2320, 6400, 6400, 6400, 6400, 6400, 6400, 6400, 6790, 6790, 6790, 6790, 6790, 6790, 6790, 10160, 10160, 10160, 10160, 10160, 14160, 14160, 14160, 14160];
+// XP para passar de cada nível (1→2 ... 29→30), calibrada pelo tempo medido em jogo só com abates na zona recomendada:
+// ~2 min por nível nas zonas 1 e 5, ~3 min nas zonas 2 a 4 (o XP por abate cresce com a zona). Total ~1 h 20 até o Nv 30.
+const XP_TABLE = [1550, 1550, 1550, 1550, 1550, 1550, 6400, 6400, 6400, 6400, 6400, 6400, 6400, 6790, 6790, 6790, 6790, 6790, 6790, 6790, 10160, 10160, 10160, 10160, 10160, 9440, 9440, 9440, 9440];
 const xpNeed = l => XP_TABLE[clamp(l, 1, MAX_LVL - 1) - 1];
 
 // raça, classe e tipo são sorteados
