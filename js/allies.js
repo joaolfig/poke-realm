@@ -463,6 +463,53 @@ function teamEdit(P, fn) {
   P.petIdx = P.petAct.length ? P.petAct[0] : -1;
   G.dirty = true; saveGame();
 }
+// janela do PC (mesmo visual da Pokédex): clique num cartão para selecionar; com um da equipe e um do PC, troca
+function openPC(n) {
+  G.pcRef = n; G.pcSelT = -1; G.pcSelB = -1;
+  $('pcwin').classList.remove('hidden');
+  renderPCWin();
+  const P = G.P;
+  loadPokedex([...P.pets, ...(P.box || [])].map(m => m.pid)).then(() => { if (!$('pcwin').classList.contains('hidden')) renderPCWin(); });
+  sfx('open');
+}
+function closePC() { $('pcwin').classList.add('hidden'); G.pcRef = null; }
+function pcCard(m, attr, sel) {
+  if (!m) return `<div class="dexc pcempty" ${attr}><span>vaga livre</span></div>`;
+  const p = POKE[m.pid], ty = (p ? p.types : [m.type]).map(t => `<i class="dt" style="background:${TYPE_COLORS[t]}"></i>`).join('');
+  return `<div class="dexc pccard ${sel ? 'sel' : ''}" ${attr} title="${esc(m.name)} · Nv ${m.lvl}"><em>Nv ${m.lvl}</em>
+    <img src="${petIconUrl(m.pid) || dexIcon(m.pid)}" alt=""><span>${esc(m.name)}</span><div class="dts">${ty}</div></div>`;
+}
+function renderPCWin() {
+  const P = G.P; if (!P) return;
+  P.box = P.box || [];
+  const cap = petCap(P), tS = G.pcSelT, bS = G.pcSelB, full = P.pets.length >= cap;
+  const team = Array.from({ length: cap }, (_, i) => pcCard(P.pets[i], `data-pct="${i}"`, tS === i)).join('');
+  const box = P.box.map((m, i) => pcCard(m, `data-pcb="${i}"`, bS === i)).join('');
+  const tm = P.pets[tS], bm = P.box[bS];
+  let hint = 'Clique num Pokémon da equipe ou do PC para escolher.';
+  let btns = '';
+  if (tm && bm) { hint = `Trocar <b>${esc(tm.name)}</b> (equipe) por <b>${esc(bm.name)}</b> (PC)?`; btns = '<button data-pca="trocar" class="good">⇄ Trocar</button>'; }
+  else if (tm) { hint = `<b>${esc(tm.name)}</b> selecionado. Escolha alguém do PC para trocar, ou guarde no PC.`; btns = `<button data-pca="guardar" ${P.pets.length <= 1 ? 'disabled title="Fique com pelo menos um"' : ''}>⬇ Guardar no PC</button>`; }
+  else if (bm) { hint = full ? `<b>${esc(bm.name)}</b> selecionado. A equipe está cheia: escolha quem sai.` : `<b>${esc(bm.name)}</b> selecionado.`; btns = full ? '' : '<button data-pca="pegar" class="good">⬆ Levar para a equipe</button>'; }
+  $('pcwin').innerHTML = `<div class="dexhead"><span class="dextitle">💻 PC · Armazenamento</span><button data-pca="x" title="Fechar (Esc)">✕</button></div>
+    <h4>Equipe ${P.pets.length}/${cap}</h4><div class="pcteam">${team}</div>
+    <div class="pcact"><span>${hint}</span><span>${btns}</span></div>
+    <h4>PC · ${P.box.length} Pokémon</h4>
+    <div class="dexgrid pcgrid">${box || '<div class="small">O PC está vazio. Quando a equipe estiver cheia, os Pokémon capturados vêm para cá.</div>'}</div>`;
+}
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('[data-pct],[data-pcb],[data-pca]');
+  if (!t || !G || !G.P || $('pcwin').classList.contains('hidden')) return;
+  const P = G.P;
+  if (t.dataset.pct !== undefined) { const i = +t.dataset.pct; if (!P.pets[i]) { if (G.pcSelB >= 0) pcAct(P, 'pegar', G.pcSelB); } else G.pcSelT = G.pcSelT === i ? -1 : i; }
+  else if (t.dataset.pcb !== undefined) { const i = +t.dataset.pcb; G.pcSelB = G.pcSelB === i ? -1 : i; }
+  else if (t.dataset.pca === 'x') return closePC();
+  else if (t.dataset.pca === 'guardar') pcAct(P, 'guardar', G.pcSelT);
+  else if (t.dataset.pca === 'pegar') pcAct(P, 'pegar', G.pcSelB);
+  else if (t.dataset.pca === 'trocar') { G.pcSel = G.pcSelT; pcAct(P, 'pegar', G.pcSelB); }
+  sfx('ui');
+  renderPCWin();
+});
 function pcAct(P, act, i) {
   P.box = P.box || [];
   if (act === 'sel') { G.pcSel = G.pcSel === i ? -1 : i; return; }
@@ -471,7 +518,7 @@ function pcAct(P, act, i) {
     if (!m) return;
     if (P.pets.length <= 1) return G.toasts.push({ text: 'Fique com pelo menos um Pokémon na equipe.', color: '#fca5a5', t: 2.5 });
     teamEdit(P, () => { P.pets.splice(i, 1); P.box.push(m); });
-    G.pcSel = -1;
+    G.pcSel = -1; G.pcSelT = -1;
     G.toasts.push({ text: `💻 ${m.name} foi guardado no PC.`, color: '#93c5fd', t: 2.5 });
   } else if (act === 'pegar') {
     const m = P.box[i];
@@ -479,14 +526,15 @@ function pcAct(P, act, i) {
     if (P.pets.length < petCap(P)) {
       teamEdit(P, () => { P.box.splice(i, 1); P.pets.push(m); });
       G.toasts.push({ text: `💻 ${m.name} entrou na equipe.`, color: '#86efac', t: 2.5 });
+      G.pcSelB = -1;
     } else if (G.pcSel >= 0 && P.pets[G.pcSel]) {
       const out = P.pets[G.pcSel];
       teamEdit(P, () => { P.pets[G.pcSel] = m; P.box[i] = out; });
       G.toasts.push({ text: `💻 Troca feita: ${m.name} entrou, ${out.name} foi para o PC.`, color: '#86efac', t: 3 });
-      G.pcSel = -1;
+      G.pcSel = -1; G.pcSelT = -1; G.pcSelB = -1;
     } else G.toasts.push({ text: 'Equipe cheia: escolha primeiro quem sai da equipe.', color: '#fca5a5', t: 2.5 });
   }
-  loadPokedex([...P.pets, ...P.box].map(m => m.pid)).then(() => { if (G.npcOpen === 'pc') renderNPC(); });
+  loadPokedex([...P.pets, ...P.box].map(m => m.pid)).then(() => { if (!$('pcwin').classList.contains('hidden')) renderPCWin(); });
 }
 function renderPC(P) {
   P.box = P.box || [];

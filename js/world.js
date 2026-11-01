@@ -63,7 +63,8 @@ function drawNPC(n, ox, oy) {
 }
 
 /* ---------- Diálogo ---------- */
-function openNPC(id) { G.npcOpen = id; G.npcRef = G.nearNPC && G.nearNPC.id === id ? G.nearNPC : NPCS.find(n => n.id === id); $('npc').classList.remove('hidden'); renderNPC(); sfx('open'); }
+function openNPC(id) {
+  if (id === 'pc') return openPC(G.nearNPC && G.nearNPC.id === 'pc' ? G.nearNPC : NPCS.find(n => n.id === 'pc')); G.npcOpen = id; G.npcRef = G.nearNPC && G.nearNPC.id === id ? G.nearNPC : NPCS.find(n => n.id === id); $('npc').classList.remove('hidden'); renderNPC(); sfx('open'); }
 function closeNPC() { G.npcOpen = null; G.npcRef = null; $('npc').classList.add('hidden'); }
 
 // loja de Poké Balls (a antiga curandeira): bolas e vagas extras de companheiro
@@ -569,6 +570,7 @@ function updateWorld(dt) {
   if (P) {
     P.giftT = Math.max(0, (P.giftT || 0) - dt);
     G.nearNPC = nearNPC(P);
+    if (G.pcRef && Math.hypot(G.pcRef.x - P.x, G.pcRef.y - P.y) > 110) closePC();
     if (G.npcOpen && G.npcOpen !== 'fly') {
       const n = G.npcRef || NPCS.find(x => x.id === G.npcOpen);
       if (!n || Math.hypot(n.x - P.x, n.y - P.y) > 110) closeNPC();

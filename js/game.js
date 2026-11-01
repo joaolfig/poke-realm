@@ -1890,7 +1890,8 @@ window.addEventListener('keydown', ev => {
   if (state !== 'play' || !G || !G.P) { if (ev.code === 'KeyN') $('menu-err').textContent = cycleSound(); return; }
   K[ev.code] = true;
   const P = G.P;
-  if (ev.code === 'Escape' && G.npcOpen) closeNPC();
+  if (ev.code === 'Escape' && G.pcRef) closePC();
+  else if (ev.code === 'Escape' && G.npcOpen) closeNPC();
   else if (ev.code === 'Space') { ev.preventDefault(); useAbility(); }
   else if (ev.code === 'KeyQ' || ev.code === 'Digit1') usePotion();
   else if (ev.code === 'KeyX') toggleRide();
