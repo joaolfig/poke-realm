@@ -82,8 +82,8 @@ const REGIONS = {
       prologo: `A <b>Equipe Rocket</b> anda roubando Pokémon pelas estradas de Kanto, e ninguém sabe para quê.
         O Professor Carvalho acredita que os oito líderes de ginásio sabem de alguma coisa. Vença cada um, ganhe a confiança deles e descubra o plano da Equipe Rocket.`,
       caps: [
-        ['Brock, o líder de pedra, desconfia de forasteiros. Prove seu valor na Cidade de Pewter, seguindo a estrada ao norte da vila.', 'Brock conta que a Equipe Rocket comprou todas as Pedras-Lua da região. "Para que alguém precisa de tantas?"'],
-        ['A Líder Misty viu barcos da Equipe Rocket no rio. Ela só fala com quem vencer suas cascatas.', 'Misty mostra um mapa molhado: a Equipe Rocket leva os Pokémon roubados para o norte, passando pelo Monte Lunar.'],
+        ['Brock, o líder de pedra, desconfia de forasteiros. Prove seu valor na Cidade de Pewter, seguindo a estrada ao sul da vila.', 'Brock conta que a Equipe Rocket comprou todas as Pedras-Lua da região. "Para que alguém precisa de tantas?"'],
+        ['A Líder Misty viu barcos da Equipe Rocket no rio. Ela só fala com quem vencer suas cascatas.', 'Misty mostra um mapa molhado: a Equipe Rocket leva os Pokémon roubados para o sul, passando pelo Monte Lunar.'],
         ['O Tenente Surge guarda a usina que abastece Kanto. A Equipe Rocket tentou sabotá-la ontem à noite.', 'Surge prendeu um capanga, que repetia sem parar: "o chefe vai criar o Pokémon mais forte do mundo".'],
         ['Erika cuida da estufa onde se fazem os remédios da região. Agentes da Equipe Rocket foram vistos rondando por lá.', 'Erika descobre que a Equipe Rocket roubou amostras genéticas da estufa. Eles não querem só roubar Pokémon. Querem criar um.'],
         ['O ninja Koga conhece todos os segredos do pântano. Dizem que a Equipe Rocket tem um esconderijo lá.', 'Koga derruba uma parede falsa e revela anotações de um laboratório: "Projeto Mewtwo, fase final".'],
@@ -139,9 +139,9 @@ const REGIONS = {
       prologo: `Os sinos das torres antigas de Johto pararam de tocar. Dizem que os capangas da <b>Equipe Rocket</b> roubaram as plumas sagradas que acalmam Lugia.
         O Professor Elm pede que você percorra os oito ginásios: cada líder guarda um pedaço da lenda.`,
       caps: [
-        ['Falkner, o líder dos pássaros, viu os capangas da Equipe Rocket voando para o oeste. Ele treina na Cidade de Violet, a noroeste da vila.', 'Falkner mostra uma pena prateada caída no ginásio. "Isso não é de nenhum pássaro comum. É uma pluma sagrada."'],
+        ['Falkner, o líder dos pássaros, viu os capangas da Equipe Rocket voando para o norte. Ele treina na Cidade de Violet, a noroeste da vila.', 'Falkner mostra uma pena prateada caída no ginásio. "Isso não é de nenhum pássaro comum. É uma pluma sagrada."'],
         ['O Líder Bugsy cuida do bosque onde a pluma foi achada. Os capangas da Equipe Rocket estão capturando os insetos de lá.', 'Bugsy encontra um bilhete da Equipe Rocket: "Com as plumas, chamaremos Lugia e controlaremos o mar."'],
-        ['Whitney e sua Miltank seguram as fazendas da região. Os capangas da Equipe Rocket querem os rebanhos para alimentar seus Pokémon.', 'Whitney conta que os capangas da Equipe Rocket usam uma rádio pirata para dar ordens. O sinal vem das ruínas ao norte.'],
+        ['Whitney e sua Miltank seguram as fazendas da região. Os capangas da Equipe Rocket querem os rebanhos para alimentar seus Pokémon.', 'Whitney conta que os capangas da Equipe Rocket usam uma rádio pirata para dar ordens. O sinal vem das ruínas a oeste.'],
         ['Morty, o vidente, fala com os espíritos das torres queimadas. Eles sabem onde estão as plumas.', 'Os espíritos sussurram: duas plumas já estão com os capangas da Equipe Rocket. Falta uma, escondida no farol.'],
         ['O Mestre Chuck treina no dojô da montanha. Os capangas da Equipe Rocket tentaram recrutar os lutadores dele à força.', 'Chuck expulsa os capangas da Equipe Rocket do dojô e descobre o nome do chefe deles: <b>o Executivo Archer</b>.'],
         ['Jasmine cuida do farol, e a Ampharos do farol adoeceu. Sem a luz, os barcos da Equipe Rocket navegam sem ser vistos.', 'Com o farol aceso de novo, Jasmine vê os barcos da Equipe Rocket indo para as Ilhas Whirl.'],
@@ -252,13 +252,13 @@ const REGIONS = {
       prologo: `A <b>Equipe Galáctica</b> acredita que o mundo é imperfeito e quer recomeçar o tempo do zero. Para isso, vai capturar os três espíritos dos lagos e invocar <b>Dialga</b>.
         O Professor Rowan pede que você visite os oito ginásios de Sinnoh: os líderes guardam pistas dos mitos antigos.`,
       caps: [
-        ['Roark, filho de mineiros, encontrou placas antigas na mina. A Equipe Galáctica quer essas placas. O ginásio dele fica na Cidade de Oreburgh, ao norte da vila.', 'As placas falam de um pilar no alto do Monte Coronet, onde o tempo "pode ser reescrito".'],
+        ['Roark, filho de mineiros, encontrou placas antigas na mina. A Equipe Galáctica quer essas placas. O ginásio dele fica na Cidade de Oreburgh, a noroeste da vila.', 'As placas falam de um pilar no alto do Monte Coronet, onde o tempo "pode ser reescrito".'],
         ['Gardenia cuida do bosque onde dorme uma árvore milenar. A Equipe Galáctica anda cortando galhos por lá.', 'Gardenia descobre que a Equipe Galáctica procura <b>três lagos</b>: Acuity, Verity e Valor.'],
         ['Maylene medita na montanha e sente a aura dos Pokémon. Ela sentiu algo errado no Lago Acuity.', 'O Lago Acuity está vazio: a Equipe Galáctica já capturou o primeiro espírito.'],
         ['O lutador Crasher Wake vigia o grande pântano. Os barcos da Equipe Galáctica passam por ali rumo ao segundo lago.', 'Crasher Wake chegou tarde: o espírito do Lago Verity também foi levado.'],
         ['Fantina, a atriz, fala com os mortos no velório da cidade. Os fantasmas viram para onde levaram os espíritos.', 'Os fantasmas apontam o caminho: a base da Equipe Galáctica fica embaixo das muralhas da cidade de ferro.'],
         ['O Líder Byron protege as muralhas. A Equipe Galáctica cavou túneis por baixo delas.', 'Byron derruba os túneis, mas a Equipe Galáctica já fugiu levando o terceiro espírito.'],
-        ['Candice patina no lago gelado ao norte. É de lá que se sobe até o Spear Pillar.', 'Candice mostra a trilha na neve: "O chefe da Equipe Galáctica subiu ontem. Ele vai invocar Dialga."'],
+        ['Candice patina no lago gelado a oeste. É de lá que se sobe até o Spear Pillar.', 'Candice mostra a trilha na neve: "O chefe da Equipe Galáctica subiu ontem. Ele vai invocar Dialga."'],
         ['Volkner, o líder entediado, acendeu a cidade inteira para guiar você até o pico. Mas antes quer uma luta de verdade.', 'Volkner finalmente se diverte: "Vai lá. Se alguém pode parar o tempo de acabar, é você."'],
       ],
       final: [`No alto do <b>Spear Pillar</b>, a Equipe Galáctica invocou <b>Dialga</b>, e o próprio tempo começou a rachar. Enfrente o lendário e liberte os espíritos.`,
@@ -307,13 +307,13 @@ const REGIONS = {
       prologo: `A <b>Equipe Plasma</b> prega que treinadores devem libertar seus Pokémon, mas por trás dos discursos há um plano para dominar Unova com um dragão lendário.
         A Professora Juniper pede que você enfrente os oito ginásios e descubra o que a Equipe Plasma esconde.`,
       caps: [
-        ['Cilan, Chili e Cress servem batalhas junto com o almoço na Cidade de Striaton, ao norte da vila. Um membro da Equipe Plasma discursou lá ontem.', 'Os trigêmeos guardaram o panfleto da Equipe Plasma: "A verdade despertará o dragão branco."'],
+        ['Cilan, Chili e Cress servem batalhas junto com o almoço na Cidade de Striaton, ao sul da vila. Um membro da Equipe Plasma discursou lá ontem.', 'Os trigêmeos guardaram o panfleto da Equipe Plasma: "A verdade despertará o dragão branco."'],
         ['A Curadora Lenora cuida do museu, onde fica uma pedra escura muito antiga. A Equipe Plasma quer roubá-la.', 'A pedra do museu foi trocada por uma falsa. A Equipe Plasma já levou a Pedra da Verdade.'],
         ['O artista Burgh pinta no meio da colmeia. Ele viu a Equipe Plasma escondendo algo na Pinwheel Forest.', 'Burgh desenha o rosto do líder da Equipe Plasma, um jovem chamado <b>N.</b>, que fala com os Pokémon.'],
         ['Elesa ilumina a cidade dos parques de diversão. A Equipe Plasma montou um palanque na frente do ginásio dela.', 'Elesa ouviu N. dizer que vai acordar o dragão "no castelo, quando tiver o apoio do povo".'],
         ['Clay controla as minas do deserto. A Equipe Plasma anda cavando atrás de uma passagem para o castelo.', 'Clay fecha as minas, mas confirma: o castelo da Equipe Plasma fica além do Caminho dos Gigantes.'],
-        ['Skyla dispara pelos céus num canhão. Do alto, ela consegue ver o castelo escondido.', 'Skyla viu a torre do castelo surgindo do chão, no extremo norte.'],
-        ['Brycen, ex-ator, treina numa pista de gelo. Ele sabe atravessar a nevasca do norte.', 'Brycen abre o caminho pela nevasca: "O dragão já está despertando. Corra."'],
+        ['Skyla dispara pelos céus num canhão. Do alto, ela consegue ver o castelo escondido.', 'Skyla viu a torre do castelo surgindo do chão, no extremo sul.'],
+        ['Brycen, ex-ator, treina numa pista de gelo. Ele sabe atravessar a nevasca do sul.', 'Brycen abre o caminho pela nevasca: "O dragão já está despertando. Corra."'],
         ['O Prefeito Drayden e seus dragões guardam a última passagem. Prove que pode enfrentar um dragão de verdade.', 'Drayden entrega a você a escama de um dragão ancestral: "Ela vai te proteger do fogo branco."'],
       ],
       final: [`N. despertou <b>Reshiram</b> no <b>Castelo de N</b>. Entre no castelo e mostre que a amizade entre treinadores e Pokémon também é uma verdade.`,
