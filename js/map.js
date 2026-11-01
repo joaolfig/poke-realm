@@ -132,6 +132,8 @@ const tIdx = (ix, iy) => (ix < 0 || iy < 0 || ix >= NX || iy >= NY ? -1 : iy * N
 function tileIdx(x, y) { return tIdx(Math.floor(x / TILE) + OX, Math.floor(y / TILE) + OY); }
 function tileKind(x, y) { const i = tileIdx(x, y); return i < 0 ? TK.SEA : TT[i]; }
 function zoneAt(x, y) { const i = tileIdx(x, y); return i < 0 ? -1 : TZ[i]; }
+// zona usada só para as cores: dentro das cidades, a do bioma em volta
+function visZone(x, y) { const z = zoneAt(x, y); if (z !== 0) return z; const t = townAt(x, y); return t && t.vz ? t.vz : z; }
 // profundidade da água: média 3x3 dos tiles de água, interpolada e com um pouco de ruído (bordas orgânicas)
 const SHALLOW_T = 0.22, DEEP_T = 0.62;
 function wetAt(x, y) {
@@ -199,7 +201,13 @@ function buildWorld() {
   const onPath = new Uint8Array(NX * NY);
   // 1ª passada: zona, rotas e bioma
   const town2T = [];
-  for (const t of TOWNS) if (t.i) t.z = zoneRaw(t.x, t.y);
+  for (const t of TOWNS) {
+    if (t.i) t.z = zoneRaw(t.x, t.y);
+    const cnt = {};
+    for (let k = 0; k < 16; k++) { const z = zoneRaw(t.x + Math.cos(k * 0.39) * (VILA_R + 120), t.y + Math.sin(k * 0.39) * (VILA_R + 120)); if (z >= 1 && z <= 5) cnt[z] = (cnt[z] || 0) + 1; }
+    const best = Object.keys(cnt).map(Number).sort((a, b) => cnt[b] - cnt[a])[0] || 1;
+    t.vz = ZONES[best] && !ZONES[best].fog ? best : 1;
+  }
   for (let iy = 0; iy < NY; iy++) for (let ix = 0; ix < NX; ix++) {
     const i = iy * NX + ix, wx = (ix - OX + 0.5) * TILE, wy = (iy - OY + 0.5) * TILE;
     TV[i] = Math.floor(hash(ix * 3 + 7, iy * 5 + 1) * 4);
@@ -512,7 +520,7 @@ function groundChunk(cx, cy) {
       if (!HARDK.has(k2)) { k = k2; sx = ax; sy = ay; }
     }
     const nt = nearestTown(wx, wy), dc = Math.hypot(wx - nt.x, wy - nt.y), town = dc < VILA_R + 20 && (dc < 112 || k === TK.PATH || k === TK.PLAZA);
-    const col = town ? cobble(wx, wy, dc) : groundCol(k, zoneAt(sx, sy), wx, wy, px + cx * 977, py + cy * 613), o = (py * n + px) * 4;
+    const col = town ? cobble(wx, wy, dc) : groundCol(k, visZone(sx, sy), wx, wy, px + cx * 977, py + cy * 613), o = (py * n + px) * 4;
     D[o] = col[0]; D[o + 1] = col[1]; D[o + 2] = col[2]; D[o + 3] = 255;
   }
   g.putImageData(img, 0, 0);
@@ -588,7 +596,7 @@ function renderOverworld(ox, oy) {
   for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
     const i = tIdx(tx + OX, ty + OY), sx = tx * TILE + ox, sy = ty * TILE + oy;
     if (i < 0) continue;
-    const k = TT[i], z = TZ[i];
+    const k = TT[i], z = TZ[i] === 0 ? visZone((tx + 0.5) * TILE, (ty + 0.5) * TILE) : TZ[i];
     if (k === TK.TALL) {
       const nt = (a, b) => { const j = tIdx(a + OX, b + OY); return j < 0 || TT[j] !== TK.TALL; };
       const edge = (nt(tx, ty - 1) ? 1 : 0) | (nt(tx + 1, ty) ? 2 : 0) | (nt(tx, ty + 1) ? 4 : 0) | (nt(tx - 1, ty) ? 8 : 0);
@@ -620,8 +628,9 @@ function renderOverworld(ox, oy) {
     const i = tIdx(tx + OX, ty + OY);
     if (i < 0 || !OBJK[TT[i]]) continue;
     const k = TT[i];
-    if (k === TK.TREE || k === TK.DTREE || k === TK.PINE) ctx.drawImage(treeImg(k, TZ[i], TV[i] & 3), tx * TILE + ox - 16, ty * TILE + oy - 46);
-    else ctx.drawImage(tileImg(k, TZ[i], TV[i]), tx * TILE + ox, ty * TILE + oy - 12);
+    const vz = TZ[i] === 0 ? visZone((tx + 0.5) * TILE, (ty + 0.5) * TILE) : TZ[i];
+    if (k === TK.TREE || k === TK.DTREE || k === TK.PINE) ctx.drawImage(treeImg(k, vz, TV[i] & 3), tx * TILE + ox - 16, ty * TILE + oy - 46);
+    else ctx.drawImage(tileImg(k, vz, TV[i]), tx * TILE + ox, ty * TILE + oy - 12);
   }
   drawChests(ox, oy);
   drawLandmarks(ox, oy);

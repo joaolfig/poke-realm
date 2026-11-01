@@ -634,7 +634,9 @@ function weatherTick(dt) {
 }
 // camada de clima por cima do mundo
 function drawWeather() {
-  const P = G.P, w = P && weatherAt(G.cam.x, G.cam.y);
+  const P = G.P;
+  let w = P && weatherAt(G.cam.x, G.cam.y);
+  if (P && !w && !isNight() && !inDungeonArea(G.cam.x)) { const t = townAt(G.cam.x, G.cam.y); if (t && G.wx) w = WEATHER[G.wx[t.vz]] || null; }
   if (!w) return;
   const t = G.time;
   ctx.save();
