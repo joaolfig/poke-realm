@@ -1064,7 +1064,7 @@ function nightHost(ev, dt) {
     if (!s || !pool.length) return;
     const e = hostSpawn(pick(pool), s.z, 1, s.x, s.y);
     moonMod(e);
-    emitEvent({ t: 'toast', text: `🌕 Um ${e.name} uivou sob a lua! Derrote-o para pegar o tesouro dele.`, color: '#c4b5fd', big: 1 });
+    emitEvent({ t: 'toast', text: `🌕 Um ${e.name} surgiu na escuridão! Derrote-o para pegar o tesouro dele.`, color: '#c4b5fd', big: 1 });
   }
 }
 // todos: tesouro do Alfa noturno (cada jogador perto ganha o seu)
