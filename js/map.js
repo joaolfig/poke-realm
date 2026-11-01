@@ -161,6 +161,15 @@ function solidAt(x, y, swim) {
     if ((lx / 44) ** 2 + ((ly + 2) / 22) ** 2 < 1) return true; // chafariz da praça
     for (const b of BUILDINGS) if (Math.abs(lx - b.x) < b.w / 2 - 4 && Math.abs(ly - b.y) < b.h / 2 - 4) return true;
   }
+  // cercas dos portões das cidades: sólidas dos dois lados, só a passagem do meio fica livre
+  for (const t of TOWNS) {
+    const dx = x - t.x, dy = y - t.y;
+    if (Math.abs(Math.hypot(dx, dy) - (VILA_R - 8)) > 70) continue;
+    for (const g of (typeof TOWN_GATES !== 'undefined' && TOWN_GATES[t.i]) || []) {
+      const rx = dx - g.x, ry = dy - g.y, along = Math.abs(rx * g.tx + ry * g.ty), across = Math.abs(-rx * g.ty + ry * g.tx);
+      if (along > 40 && along < 104 && across < 7) return true;
+    }
+  }
   return false;
 }
 const solidR = (x, y, r, swim) => solidAt(x - r, y - r, swim) || solidAt(x + r, y - r, swim) || solidAt(x - r, y + r, swim) || solidAt(x + r, y + r, swim);

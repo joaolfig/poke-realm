@@ -9,7 +9,7 @@ const NPCS = [
   { id: 'torre', nome: 'Guardião da Torre', icon: '🗼', x: 0, y: 150, t2: 1, spr: { h: '#e5e7eb', b: '#6d28d9', d: '#2e1065' }, fala: '' },
   { id: 'pc', nome: 'Banco Pokémon', icon: '💻', x: -62, y: -50, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
   { id: 'dex', nome: 'Pesquisadora Íris', icon: '📖', x: 60, y: 205, spr: { h: '#7c2d12', b: '#f8fafc', d: '#0f766e' }, fala: '' },
-  { id: 'grupo', nome: 'Mural de Grupo', icon: '📌', x: 150, y: 30, spr: { h: '#78350f', b: '#a16207', d: '#451a03' }, fala: '' }, // mural de madeira (desenhado à parte)
+  { id: 'grupo', nome: 'Mural de Grupo', icon: '📌', x: 178, y: -6, spr: { h: '#78350f', b: '#a16207', d: '#451a03' }, fala: '' }, // mural de madeira (desenhado à parte)
   { id: 'templo', nome: 'Sacerdotisa Aurora', icon: '⛪', x: -150, y: 30, t2: 1, spr: { h: '#fde68a', b: '#f8fafc', d: '#ca8a04' }, fala: '' },
   { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, t2: 1, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '' },
 ];
