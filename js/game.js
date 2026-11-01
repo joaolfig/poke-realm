@@ -195,7 +195,7 @@ const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.e
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
 const outOfCombat = P => P.sinceHit > 4 && G.time - (P.shotT === undefined ? -99 : P.shotT) > 4 && !P.pvp;
 const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (outOfCombat(P) ? 1.3 : 1) * (pst(P, 2) ? 0.85 : 1) * wxSlow(P) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
-const fireRate = P => curWpn(P).rate * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
+const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
 // XP por nível = abates desejados × XP médio de um abate na zona recomendada para aquele nível.
@@ -235,7 +235,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'wseed', 'expR', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'wseed', 'expR', 'bless', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -783,14 +783,14 @@ function useAbility() {
     }
     case 'clerigo': { // Tomo: cura em área
       const amt = roll(2 + Math.floor(lv / 3), 8) + A(P, 'VIG');
-      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.max(1, amt), name: P.name }); break;
+      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.max(1, amt), name: P.name, bl: blessOf(P) }); break;
     }
     case 'vida': // Santuário (Sacerdote): área de cura contínua
       G.zones.push({ k: 'santuario', x: P.x, y: P.y, r: 150, t: 6, wait: 0, every: 1, tick: 0 });
       fxAt(P.x, P.y, 150, '#fde68a'); sfx('pot'); break;
     case 'guerra': // Hino de Batalha (Bardo): fúria para o grupo e paralisia em volta
       emitEvent({ t: 'buff', k: 'furia', x: Math.round(P.x), y: Math.round(P.y), dur: 5, name: P.name });
-      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: d(8) + Math.floor(lv / 2), name: P.name, quiet: 1 });
+      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: d(8) + Math.floor(lv / 2), name: P.name, quiet: 1, bl: blessOf(P) });
       for (const e of enemiesNear(P.x, P.y, 170)) if (!e.boss || Math.random() < 0.5) inflict(e, 2);
       fxAt(P.x, P.y, 170, '#f97316'); sfx('boom'); break;
     case 'patrulheiro': // Aljava: flechada pesada que perfura e deixa lento
@@ -827,7 +827,7 @@ function updateZones(dt) {
     if (z.k === 'veneno') {
       for (const e of enemiesNear(z.x, z.y, z.r)) abilHit(e, roll(1 + Math.floor(P.lvl / 6), 6), 'poison');
     } else if (z.k === 'santuario' || z.k === 'raizes') {
-      emitEvent({ t: 'heal', x: Math.round(z.x), y: Math.round(z.y), amt: Math.round((roll(1 + Math.floor(P.lvl / 6), 6) + Math.floor(A(P, 'VIG') / 2)) * (z.k === 'raizes' ? 1 : 1.5)), name: P.name, quiet: 1, r: z.r });
+      emitEvent({ t: 'heal', x: Math.round(z.x), y: Math.round(z.y), amt: Math.round((roll(1 + Math.floor(P.lvl / 6), 6) + Math.floor(A(P, 'VIG') / 2)) * (z.k === 'raizes' ? 1 : 1.5)), name: P.name, quiet: 1, r: z.r, bl: z.k === 'santuario' ? blessOf(P) : null });
       for (const e of enemiesNear(z.x, z.y, z.r)) e.slowT = Math.max(e.slowT || 0, 1.2);
     } else if (z.k === 'armadilha') {
       if (!enemiesNear(z.x, z.y, 60).length && z.t > 0) continue;
@@ -979,6 +979,13 @@ function playerDie(src) {
   if (P.pvp || inArena(P.x, P.y)) return pvpLeave(true, src); // na arena ninguém morre de verdade
   const tdg = inDungeonArea(P.x) && dungeonAt(P.x);
   if (tdg && tdg.floor) return towerFall(P, tdg, src); // nem na torre
+  if (P.graceT > 0) { // Graça Salvadora de um Clérigo aliado
+    P.graceT = 0; P.graceCd = 180; P.hp = Math.round(maxHP(P) * 0.3); P.sinceHit = 0; P.dodgeT = 1.5; P.pstT = 0;
+    burst(P.x, P.y, '#fde68a', 40); burst(P.x, P.y, '#ffffff', 24); sfx('lvl');
+    G.toasts.push({ text: `🕊️ A Graça Salvadora de ${P.graceBy || 'um Clérigo'} te salvou de ${src}!`, color: '#fde68a', t: 5, big: 1 });
+    emitEvent({ t: 'chat', sys: 1, text: `🕊️ ${P.name} foi salvo da morte pela Graça Salvadora de ${P.graceBy || 'um Clérigo'}.` });
+    return;
+  }
   burst(P.x, P.y, '#ef4444', 40);
   sfx('die');
   try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignora */ }
@@ -1048,6 +1055,8 @@ function updatePlayer(dt) {
   P.breathCd = Math.max(0, P.breathCd - dt);
   P.furia = Math.max(0, P.furia - dt);
   P.hasteT = Math.max(0, (P.hasteT || 0) - dt);
+  P.ritmoT = Math.max(0, (P.ritmoT || 0) - dt); P.ferasT = Math.max(0, (P.ferasT || 0) - dt);
+  P.graceT = Math.max(0, (P.graceT || 0) - dt); P.graceCd = Math.max(0, (P.graceCd || 0) - dt);
   P.invis = Math.max(0, P.invis - dt);
   P.recallCd = Math.max(0, P.recallCd - dt);
   if (P.tempTypeT > 0) {
@@ -1160,6 +1169,7 @@ function handleEvent(m, local) {
         const before = P.hp;
         P.hp = Math.min(maxHP(P), P.hp + m.amt);
         if (!m.quiet || m.r) curePlayerStatus(P); // curas do Clérigo, Paladino e Santuário tiram o status
+        if (m.bl && BLESS[m.bl]) blessApply(P, m, before + m.amt - maxHP(P), local);
         const h = Math.round(P.hp - before);
         if (h > 0 && !(m.quiet && local)) text(P.x, P.y - 34, local ? `+${h}` : `+${h} (${m.name})`, '#86efac', m.quiet ? 11 : 15);
       }
@@ -1463,6 +1473,7 @@ function render() {
       const P = it.me, x = P.x + ox, y = P.y + oy;
       for (const g of G.trail || []) drawPlayerSprite(g.cls, g.x + ox, g.y + oy, g.face, 1, Math.max(0, g.t / 0.28) * 0.45, P.aim, null); // sem o anel do tipo nos fantasmas
       if (P.shield > 0) { ctx.strokeStyle = 'rgba(147,197,253,.85)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.stroke(); }
+      if (P.graceT > 0) { ctx.strokeStyle = 'rgba(253,230,138,.95)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x, y - 24 + Math.sin(G.time * 4) * 1.5, 10, 3.5, 0, 0, 7); ctx.stroke(); }
       if (P.seloT > 0) { ctx.strokeStyle = 'rgba(253,230,138,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 30 + Math.sin(G.time * 8) * 2, 0, 7); ctx.stroke(); }
       if (P.furia > 0) { ctx.fillStyle = 'rgba(239,68,68,.25)'; ctx.beginPath(); ctx.arc(x, y, 24 + Math.sin(G.time * 15) * 3, 0, 7); ctx.fill(); }
       const mpid = P.wildT > 0 ? 0 : mountPid(P);
@@ -1832,7 +1843,8 @@ function updatePanel() {
     <div class="ptype" title="Seu tipo define o que é super efetivo nos seus ataques e quais ataques te acertam forte">Tipo: ${typeBadge(pType(P))}${P.tempTypeT > 0 ? ` <span class="small">cristal ${Math.ceil(P.tempTypeT)}s (natural: ${TYPE_PT[P.ptype]})</span>` : ''}</div>`;
   const ab = curAbil(P), cd = abilCd(P);
   $('p-abil').innerHTML = `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>
-    <div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Fly: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
+    ${blessPhase(P) ? `<div class="small" title="${blessOf(P) ? BLESS[blessOf(P)].desc : 'Escolha uma bênção no templo da 2ª cidade'}">✝ Bênção: ${blessOf(P) ? `${BLESS[blessOf(P)].icon} ${BLESS[blessOf(P)].nome}` : `nenhuma (escolha no templo de ${esc(TOWNS[1] ? townName(TOWNS[1]) : 'a 2ª cidade')})`}</div>` : ''}
+    ${blessBuffs(P)}<div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Fly: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
   padFixDom($('p-abil'));
   if (!G.dirty) return;
   G.dirty = false;
@@ -1875,13 +1887,14 @@ function updatePanel() {
   $('p-pets').innerHTML = `<h4>Companheiros <span class="small" title="Fora da Pokébola / máximo ao mesmo tempo">${P.petAct.length}/${petSlots(P)} fora · ${P.pets.length}/${petCap(P)}</span></h4>` + (P.pets.length
     ? `<div class="pets">${P.pets.map((pt, i) => {
       const ev = evoLevel(pt.pid);
-      const eevee = pt.pid === EEVEE;
-      const evt = eevee ? (pt.lvl >= EEVEE_LVL ? 'aperte ✨ para evoluir (depende do seu tipo)' : `evolui no Nv ${EEVEE_LVL} (depende do seu tipo)`) : ev === undefined ? '' : ev ? (pt.lvl >= ev ? 'pronto para evoluir!' : `evolui no Nv ${ev}`) : 'forma final';
+      const sTxt = stoneTxt(pt), sReady = stoneOpts(pt.pid).some(o => pt.lvl >= o[1] && hasCrystal(P, o[2]) >= 0);
+      const lTxt = ev === undefined ? '' : ev ? (pt.lvl >= ev ? 'pronto para evoluir!' : `evolui no Nv ${ev}`) : sTxt ? '' : 'forma final';
+      const evt = [lTxt, sTxt].filter(Boolean).join(' · ');
       const on = P.petAct.includes(i);
       return `<div class="pet ${on ? 'on' : ''}" data-pet="${i}" title="${esc(pt.name)} (${TYPE_PT[pt.type]}) · ${evt}\nClique: ${on ? 'guardar' : 'chamar'}${i === P.petIdx ? ' · líder (HMs e montaria)' : ''} · Botão direito 2×: soltar">
         <img src="${petIconUrl(pt.pid)}" alt=""><span>${esc(pt.name)} <b>Nv ${pt.lvl}</b></span>${typeBadge(pt.type)}
         <div class="pxp"><div style="width:${pt.lvl >= PET_MAX ? 100 : Math.min(100, pt.xp / petNeed(pt.lvl) * 100)}%"></div></div><i>${evt}</i>
-        <div class="phm">${eevee && pt.lvl >= EEVEE_LVL ? `<button class="hmt pulse" data-eevee="${i}" title="Evoluir: vira a evolução do seu tipo atual (natural ou de cristal)">✨</button>` : ''}${HM_KEYS.map(k => (pt.hms || []).includes(k) ? `<span class="hmk" title="${HMS[k].nome}">${HMS[k].icon}</span>`
+        <div class="phm">${sReady ? `<button class="hmt pulse" data-stoneevo="${i}" title="Dar o cristal: ${pt.name} ${sTxt} (o cristal é consumido)">💎</button>` : ''}${HM_KEYS.map(k => (pt.hms || []).includes(k) ? `<span class="hmk" title="${HMS[k].nome}">${HMS[k].icon}</span>`
           : P.hms.includes(k) && canLearn(pt.pid, k) ? `<button class="hmt${P.hmTeach === k ? ' pulse' : ''}" data-teach="${i}:${k}" title="Ensinar ${HMS[k].mo} ${HMS[k].nome}">+${HMS[k].icon}</button>` : '').join('')}</div></div>`;
     }).join('')}</div>${P.bag.doce && P.petIdx >= 0 ? `<button data-candy="1" class="candy">🍬 Dar Doce Raro ao ativo (×${P.bag.doce})</button>` : ''}`
     : '<div class="small">Enfraqueça um Pokémon, mire nele e aperte <b>[F]</b> para jogar uma Poké Ball. Companheiros sobem de nível e evoluem!</div>')
@@ -1895,7 +1908,7 @@ function updatePanel() {
 }
 
 $('panel').addEventListener('click', ev => {
-  const t = ev.target.closest('[data-attr],[data-inv],[data-eq],[data-pot],[data-ball],[data-copy],[data-tal],[data-sub],[data-pet],[data-candy],[data-save],[data-teach],[data-eevee]');
+  const t = ev.target.closest('[data-attr],[data-inv],[data-eq],[data-pot],[data-ball],[data-copy],[data-tal],[data-sub],[data-pet],[data-candy],[data-save],[data-teach],[data-stoneevo]');
   if (!t || !G || !G.P) return;
   const P = G.P;
   if (t.dataset.attr) {
@@ -1908,7 +1921,7 @@ $('panel').addEventListener('click', ev => {
     }
   } else if (t.dataset.tal) chooseTalent(t.dataset.tal);
   else if (t.dataset.sub) chooseSubclass(t.dataset.sub);
-  else if (t.dataset.pet !== undefined && !ev.target.closest('[data-teach],[data-eevee]')) { togglePet(P, +t.dataset.pet); saveGame(); }
+  else if (t.dataset.pet !== undefined && !ev.target.closest('[data-teach],[data-stoneevo]')) { togglePet(P, +t.dataset.pet); saveGame(); }
   else if (t.dataset.inv !== undefined) {
     const i = +t.dataset.inv, it = P.inv[i];
     if (it && ev.shiftKey) { it.locked = !it.locked; G.toasts.push({ text: `${it.locked ? '🔒 Travado' : '🔓 Destravado'}: ${it.name}`, color: '#e5e7eb', t: 2 }); sfx('ui'); }
@@ -1920,7 +1933,7 @@ $('panel').addEventListener('click', ev => {
   } else if (t.dataset.pot) usePotion();
   else if (t.dataset.candy) giveCandy();
   else if (t.dataset.save) exportSave();
-  else if (t.dataset.eevee !== undefined) eeveeEvolve(+t.dataset.eevee);
+  else if (t.dataset.stoneevo !== undefined) crystalEvolve(+t.dataset.stoneevo);
   else if (t.dataset.teach) { const [i, k] = t.dataset.teach.split(':'); teachHM(+i, k); }
   else if (t.dataset.ball) { P.ballSel = t.dataset.ball; G.toasts.push({ text: `F agora joga: ${BALLS[P.ballSel].nome}`, color: '#e5e7eb', t: 2 }); }
   else if (t.dataset.copy) { if (navigator.clipboard) navigator.clipboard.writeText(NET.room); G.toasts.push({ text: 'Código copiado!', color: '#86efac', t: 2 }); }
@@ -2300,3 +2313,23 @@ function renderToastLog() {
   $('tlog').innerHTML = `<div class="dexhead"><span class="dextitle">📜 Avisos recentes</span><span class="small">[L] fecha</span></div>
     ${L.length ? L.map(t => `<div class="tlrow"><i style="background:${t.color || '#e5e7eb'}"></i><span>${esc(t.text)}${t.n > 1 ? ` <b>(×${t.n})</b>` : ''}</span><em>${Math.max(0, Math.round((G.time - t.at) / 60))} min</em></div>`).join('') : '<div class="small">Nenhum aviso ainda.</div>'}`;
 }
+
+/* ---------- Bênçãos do Clérigo: efeito em quem recebe a cura (no próprio Clérigo, metade) ---------- */
+function blessApply(P, m, over, self) {
+  const k = self ? 0.5 : 1, mh = maxHP(P), b = m.bl;
+  if (b === 'escudo' || b === 'escudo2') {
+    const big = b === 'escudo2', cap = mh * (big ? 0.25 : 0.15) * k, min = m.quiet ? 0 : mh * (big ? 0.1 : 0.08) * k;
+    const add = Math.max(over, min);
+    if (add > 0) { P.shield = Math.round(Math.min(cap, Math.max(P.shield || 0, 0) + add)); P.shieldT = 5; }
+  } else if (b === 'feras' || b === 'feras2') { P.ferasT = 6; P.ferasK = (b === 'feras2' ? 0.3 : 0.2) * k; }
+  else if (b === 'ritmo') { P.ritmoT = 6; P.ritmoK = 0.2 * k; }
+  else if (b === 'graca' && !self && !(P.graceCd > 0)) { if (!(P.graceT > 0)) text(P.x, P.y - 50, `🕊️ Graça Salvadora (${m.name})`, '#fde68a', 12); P.graceT = 8; P.graceBy = m.name; }
+}
+const blessBuffs = P => {
+  const l = [];
+  if (P.graceT > 0) l.push(`🕊️ Protegido ${Math.ceil(P.graceT)}s`);
+  else if (P.graceCd > 0) l.push(`🕊️ Graça em ${Math.ceil(P.graceCd)}s`);
+  if (P.ferasT > 0) l.push(`🐾 +${Math.round(P.ferasK * 100)}% companheiros`);
+  if (P.ritmoT > 0) l.push(`🎵 +${Math.round(P.ritmoK * 100)}% cadência`);
+  return l.length ? `<div class="small" style="color:#fde68a">${l.join(' · ')}</div>` : '';
+};

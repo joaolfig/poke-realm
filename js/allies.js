@@ -19,14 +19,16 @@ const MOVES = {
 };
 
 /* ---------- Evolução (PokeAPI: pokemon-species -> evolution-chain) ---------- */
-const EVO_KEY = 'pkr_evo_v1';
+const EVO_KEY = 'pkr_evo_v2'; // v2: guarda também o tipo do cristal das evoluções por pedra
 let EVO = null;
 const evoLoading = new Set();
 function evoCache() {
   if (!EVO) { try { EVO = JSON.parse(localStorage.getItem(EVO_KEY) || '{}'); } catch (e) { EVO = {}; } }
   return EVO;
 }
-// guarda, para cada Pokémon, as evoluções possíveis: [[id, nível do companheiro], ...]
+// pedras de evolução dos jogos -> cristal do tipo que o jogador entrega ao companheiro
+const STONE_TYPE = { 'fire-stone': 'fire', 'water-stone': 'water', 'thunder-stone': 'electric', 'leaf-stone': 'grass', 'ice-stone': 'ice', 'moon-stone': 'fairy', 'sun-stone': 'fire', 'shiny-stone': 'fairy', 'dusk-stone': 'dark', 'dawn-stone': 'psychic' };
+// guarda, para cada Pokémon, as evoluções possíveis: [[id, nível do companheiro, tipo do cristal (só nas por pedra)], ...]
 async function loadEvo(pid) {
   const C = evoCache();
   if (C[pid] || evoLoading.has(pid)) return;
@@ -45,7 +47,8 @@ async function loadEvo(pid) {
       const det = (c.evolution_details || [])[0] || {};
       // níveis dos jogos comprimidos para o nosso ritmo; evoluções por pedra/troca viram nível fixo
       const lv = det.min_level ? Math.ceil(det.min_level * 0.6) : f[1] === 0 ? 14 : 22;
-      return [idOf(c.species.url), clamp(lv, 3, 28)];
+      const st = det.trigger && det.trigger.name === 'use-item' && det.item && STONE_TYPE[det.item.name];
+      return st ? [idOf(c.species.url), clamp(lv, 3, 28), st] : [idOf(c.species.url), clamp(lv, 3, 28)];
     }) : [];
     const classic = opts.filter(o => o[0] <= 809);
     if (classic.length) opts = classic;
@@ -54,10 +57,40 @@ async function loadEvo(pid) {
     if (G) G.dirty = true;
   } catch (e) { /* sem internet: tenta de novo depois */ } finally { evoLoading.delete(pid); }
 }
+// nível da evolução automática (as por pedra não contam: precisam do cristal)
 function evoLevel(pid) {
+  if (pid === EEVEE) return 0;
   const o = evoCache()[pid];
   if (!o) return undefined;
-  return o.length ? Math.min(...o.map(x => x[1])) : 0;
+  const lv = o.filter(x => !x[2]);
+  return lv.length ? Math.min(...lv.map(x => x[1])) : 0;
+}
+// evoluções por cristal: [[id, nível mínimo, tipo], ...] (o Eevee vira a evolução do tipo do cristal)
+const stoneOpts = pid => (pid === EEVEE ? Object.entries(EEVEE_EVO).map(([t, id]) => [id, EEVEE_LVL, t]) : (evoCache()[pid] || []).filter(x => x[2]));
+const hasCrystal = (P, t) => P.inv.findIndex(it => it && it.slot === 'pedra' && it.type === t);
+// texto curto para o cartão do companheiro
+function stoneTxt(pt) {
+  const so = stoneOpts(pt.pid);
+  if (!so.length) return '';
+  const ts = [...new Set(so.map(o => TYPE_PT[o[2]]))], lv = Math.min(...so.map(o => o[1]));
+  return `evolui com Cristal de ${ts.join(', ').replace(/, ([^,]*)$/, ' ou $1')}${pt.lvl < lv ? ` (a partir do Nv ${lv})` : ''}`;
+}
+// entrega o cristal (consome) e o companheiro evolui
+function crystalEvolve(i) {
+  const P = G.P, pt = P.pets[i];
+  if (!pt || G.evo) return;
+  const so = stoneOpts(pt.pid);
+  const ok = so.filter(o => pt.lvl >= o[1] && hasCrystal(P, o[2]) >= 0);
+  if (!ok.length) {
+    const lv = Math.min(...so.map(o => o[1]));
+    return G.toasts.push({ text: pt.lvl < lv ? `${pt.name} só aceita o cristal a partir do Nv ${lv}.` : `Você precisa de um ${stoneTxt(pt).replace('evolui com ', '')} na mochila.`, color: '#fca5a5', t: 3.5 });
+  }
+  const [id, , t] = ok[0], k = hasCrystal(P, t);
+  P.inv[k] = null;
+  G.evo = { pt, ids: [id], t: 3.2, ready: false };
+  loadPokedex([id]).then(() => { if (G && G.evo && G.evo.pt === pt) G.evo.ready = true; });
+  G.toasts.push({ text: `💎 ${pt.name} absorveu o Cristal de ${TYPE_PT[t]} e está evoluindo!`, color: TYPE_COLORS[t], t: 3.5, big: 1 });
+  sfx('boss'); G.dirty = true; saveGame();
 }
 
 function petGainXP(n) {
@@ -94,26 +127,14 @@ function giveCandy() {
   saveGame();
 }
 
-// Eevee não evolui sozinho: a partir do Nv EEVEE_LVL o jogador aperta para evoluir, e ele vira
-// a evolução do tipo que o herói tem NAQUELE momento (o natural ou o do cristal ativo)
+// Eevee: evolui com o cristal do tipo da evolução (Água, Elétrico, Fogo, Psíquico, Sombrio, Planta, Gelo ou Fada)
 const EEVEE = 133, EEVEE_LVL = 14;
 const EEVEE_EVO = { water: 134, electric: 135, fire: 136, psychic: 196, dark: 197, grass: 470, ice: 471, fairy: 700 };
-function eeveeEvolve(i) {
-  const P = G.P, pt = P.pets[i];
-  if (!pt || pt.pid !== EEVEE || G.evo) return;
-  if (pt.lvl < EEVEE_LVL) return G.toasts.push({ text: `${pt.name} só pode evoluir a partir do Nv ${EEVEE_LVL}.`, color: '#fca5a5', t: 3 });
-  const t = pType(P), id = EEVEE_EVO[t];
-  if (!id) return G.toasts.push({ text: `${pt.name} não reage ao tipo ${TYPE_PT[t]}. Ele só evolui se você estiver com um destes tipos (natural ou de um cristal): ${Object.keys(EEVEE_EVO).map(k => TYPE_PT[k]).join(', ')}.`, color: '#fca5a5', t: 7 });
-  G.evo = { pt, ids: [id], t: 3.2, ready: false };
-  loadPokedex([id]).then(() => { if (G && G.evo && G.evo.pt === pt) G.evo.ready = true; });
-  G.toasts.push({ text: `✨ ${pt.name} sente a sua energia do tipo ${TYPE_PT[t]} e está evoluindo!`, color: '#fde047', t: 3.5, big: 1 });
-  sfx('boss');
-}
 function checkEvolve(pt) {
   if (G.evo || pt.pid === EEVEE) return;
   const opts = evoCache()[pt.pid];
   if (!opts) { loadEvo(pt.pid); return; }
-  const ids = opts.filter(o => o[1] <= pt.lvl).map(o => o[0]);
+  const ids = opts.filter(o => o[1] <= pt.lvl && !o[2]).map(o => o[0]); // as por pedra esperam o cristal
   if (!ids.length) return;
   G.evo = { pt, ids, t: 3.2, ready: false };
   loadPokedex(ids).then(() => { if (G && G.evo && G.evo.pt === pt) G.evo.ready = true; });
@@ -316,6 +337,7 @@ function allyHit(e, a, sp) {
   const nPets = G.allies.filter(x => x.pet).length;
   let dmg = petDmg(a) * (1 + M(P, 'pet')) * (sp ? 1.5 : 1) * (a.ghost ? 1 : [1, 0.8, 0.7, 0.62][Math.max(0, nPets - 1)] || 0.62);
   if (P.subclass === 'feras') dmg *= 1.5;
+  if (P.ferasT > 0) dmg *= 1 + P.ferasK; // Bênção das Feras (Clérigo)
   const ab = !a.ghost && petAbility(a.pid);
   dmg *= abilDmgMul(ab) * hmDmgMul(a.pid);
   const r = typed(P, e, Math.max(1, Math.round(dmg)), a.type, true);

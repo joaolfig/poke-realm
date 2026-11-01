@@ -103,6 +103,22 @@ const SUBCLASSES = {
       abil: { nome: 'Forma Selvagem da Terra', cd: 24, desc: 'Forma Selvagem: vira o seu companheiro líder por 12s (+30% de PV) e faz brotar raízes que curam (1 + nível/6)d6 + Vigor/2 por segundo e deixam os inimigos lentos.' } },
   ],
 };
+/* ============ Bênçãos do Clérigo ============
+ * Cada fase do Clérigo tem as suas bênçãos; ele escolhe UMA ativa no templo da 2ª cidade.
+ * A bênção vai junto com as curas dele (Tomo, Santuário e Hino) e vale para quem for curado.
+ * No próprio Clérigo ela vale pela metade (é uma classe de suporte), e a Graça Salvadora nunca o protege
+ * (a morte continua definitiva para quem joga sozinho).
+ */
+const BLESS = {
+  escudo: { nome: 'Escudo da Fé', icon: '🛡️', subs: ['clerigo'], desc: 'A cura que passaria da vida máxima vira escudo (no mínimo 8% da vida) por 5s, até 15% da vida máxima.' },
+  feras: { nome: 'Bênção das Feras', icon: '🐾', subs: ['clerigo'], desc: 'Os companheiros de quem você cura causam +20% de dano por 6s.' },
+  escudo2: { nome: 'Escudo da Fé Maior', icon: '🛡️', subs: ['vida'], desc: 'A cura que passaria da vida máxima vira escudo (no mínimo 10% da vida) por 5s, até 25% da vida máxima.' },
+  graca: { nome: 'Graça Salvadora', icon: '🕊️', subs: ['vida'], desc: 'Os ALIADOS que você cura ficam protegidos por 8s: um golpe fatal os deixa com 30% da vida em vez de matar. Cada jogador só pode ser salvo uma vez a cada 3 minutos. Não protege você.' },
+  feras2: { nome: 'Bênção das Feras Maior', icon: '🐾', subs: ['guerra'], desc: 'Os companheiros de quem você cura causam +30% de dano por 6s.' },
+  ritmo: { nome: 'Ritmo Sagrado', icon: '🎵', subs: ['guerra'], desc: 'Quem você cura atira 20% mais rápido por 6s.' },
+};
+const blessPhase = P => (P.cls !== 'clerigo' ? null : P.subclass || 'clerigo');
+const blessOf = P => (P.bless && BLESS[P.bless] && BLESS[P.bless].subs.includes(blessPhase(P)) ? P.bless : null);
 const subInfo = id => Object.values(SUBCLASSES).flat().find(s => s.id === id);
 
 /* ============ Talentos (níveis 4, 8, 12 ... 28) ============

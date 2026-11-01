@@ -9,6 +9,7 @@ const NPCS = [
   { id: 'torre', nome: 'Guardião da Torre', icon: '🗼', x: 0, y: 150, t2: 1, spr: { h: '#e5e7eb', b: '#6d28d9', d: '#2e1065' }, fala: '' },
   { id: 'pc', nome: 'Banco Pokémon', icon: '💻', x: -62, y: -50, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
   { id: 'dex', nome: 'Pesquisadora Íris', icon: '📖', x: 60, y: 205, spr: { h: '#7c2d12', b: '#f8fafc', d: '#0f766e' }, fala: '' },
+  { id: 'templo', nome: 'Sacerdotisa Aurora', icon: '⛪', x: -150, y: 30, t2: 1, spr: { h: '#fde68a', b: '#f8fafc', d: '#ca8a04' }, fala: '' },
   { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, t2: 1, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '' },
 ];
 const NPC_SPR = {};
@@ -30,7 +31,7 @@ function rebuildTownNPCs() {
   NPCS2.length = 0;
   const t = TOWNS[1];
   if (!t) return;
-  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex', 'pc', 'torre', 'gundo'].includes(n.id))
+  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex', 'pc', 'torre', 'gundo', 'templo'].includes(n.id))
     NPCS2.push({ ...n, x: n.x + t.x, y: n.y + t.y, town: 1, nome: n.id === 'sildo' ? `Assistente ${REGION.guia.nome.split(' ').pop()}` : n.nome, show: n.id === 'gundo' ? n.show : null });
 }
 const allNPCs = () => NPCS.filter(n => !n.t2).concat(NPCS2); // o guardião da torre só existe na 2ª cidade
@@ -128,6 +129,8 @@ function renderNPC() {
     body += renderDexNPC(P);
   } else if (n.id === 'pc') {
     body += renderPC(P);
+  } else if (n.id === 'templo') {
+    body += renderTemple(P);
   } else if (n.id === 'torre') {
     body += renderTowerNPC(P);
   } else if (n.id === 'tshop') {
@@ -166,6 +169,7 @@ $('npc').addEventListener('click', ev => {
   if (act === 'heal') { P.hp = maxHP(P); burst(P.x, P.y, '#f9a8d4', 20); sfx('pot'); }
   else if (act === 'gift') { P.pots.hp = Math.max(P.pots.hp, 2); P.giftT = 300; sfx('pick'); }
   else if (act === 'buy') buyItem(P, arg);
+  else if (act === 'bless' && BLESS[arg] && BLESS[arg].subs.includes(blessPhase(P))) { P.bless = arg; burst(P.x, P.y, '#fde68a', 24); sfx('lvl'); G.toasts.push({ text: `✝ Bênção ativa: ${BLESS[arg].nome}`, color: '#fde68a', t: 3 }); saveGame(); }
   else if (act === 'sellbulk') {
     let g = 0, n = 0;
     const k = arg === 'pedra' ? 'pedra' : +arg;
@@ -882,4 +886,18 @@ function exploreCheck(P) {
     G.toasts.push({ text: `🗺️ ${g.pc}% de ${REGION.nome} explorado! Recompensa: ${regTitle(g.txt)}`, color: '#93c5fd', t: 6, big: 1 });
     sfx('lvl'); saveGame();
   }
+}
+
+/* ============ Templo (2ª cidade): o Clérigo escolhe a bênção ativa ============ */
+function renderTemple(P) {
+  const ph = blessPhase(P);
+  if (!ph) return '<p class="fala">"A luz acolhe todos os viajantes. Mas só os Clérigos conseguem carregar as bênçãos deste templo para a batalha."</p>';
+  const phName = ph === 'clerigo' ? 'Clérigo' : subInfo(ph).nome, cur = blessOf(P);
+  const opts = Object.entries(BLESS).filter(([, b]) => b.subs.includes(ph));
+  let h = `<p class="fala">"Escolha a bênção que vai junto com as suas curas. Você pode trocar sempre que voltar aqui."</p>
+    <h4>Bênçãos do ${esc(phName)}</h4>`;
+  h += opts.map(([id, b]) => `<div class="shoprow"><span>${b.icon} <b>${b.nome}</b><br><i>${b.desc}</i></span>
+    ${cur === id ? '<button disabled>Ativa ✓</button>' : `<button data-act="bless:${id}" class="good">Escolher</button>`}</div>`).join('');
+  h += `<div class="small">As bênçãos valem para quem você cura (Tomo, Santuário e Hino). Em você mesmo, valem pela metade.${ph === 'clerigo' ? ` No Nv ${SUB_LVL}, cada subclasse libera bênçãos mais fortes.` : ''}</div>`;
+  return h;
 }
