@@ -119,8 +119,11 @@ function renderNPC() {
     body += '<h4>Comprar</h4>' + shopList(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}${s.tier !== undefined ? ` <i style="color:${TIER_COLORS[s.tier]}">${TIER_NAMES[s.tier]}</i>` : ''}</span>
       <button data-act="buy:${s.id}" ${P.gold < s.preco ? 'disabled' : ''}>${s.preco} 🪙</button></div>`).join('');
     const inv = P.inv.map((it, i) => it ? `<div class="sellrow"><button class="sell" data-act="sell:${i}" title="${esc(it.name)}" ${it.locked ? 'disabled' : ''}>${itemIcon(it)} ${esc(it.name)} → ${sellPrice(it)} 🪙</button><button data-act="lock:${i}" title="${it.locked ? 'Destravar' : 'Travar: não vende nem solta'}">${it.locked ? '🔒' : '🔓'}</button></div>` : '').join('');
-    const cheap = P.inv.filter(it => it && it.tier <= 1 && !it.myth && it.slot !== 'pedra' && !it.locked);
-    body += `<h4>Vender</h4>${cheap.length ? `<button data-act="sellcheap" class="good">💰 Vender tudo Comum/Incomum (${cheap.length} itens · ${cheap.reduce((s, it) => s + sellPrice(it), 0)} 🪙)</button>` : ''}${inv || '<div class="small">Mochila vazia.</div>'}`;
+    // vender em lote: cristais, ou equipamentos até a raridade escolhida (nunca Míticos nem travados)
+    const lot = k => P.inv.filter(it => it && !it.locked && !it.myth && (k === 'pedra' ? it.slot === 'pedra' : it.slot !== 'pedra' && it.tier <= k));
+    const lotBtn = (k, txt) => { const L = lot(k); return L.length ? `<button data-act="sellbulk:${k}">${txt} (${L.length} · ${L.reduce((s, it) => s + sellPrice(it), 0)} 🪙)</button>` : ''; };
+    const bulk = lotBtn('pedra', '💎 Vender cristais') + [0, 1, 2, 3, 4].map(k => lotBtn(k, `Até ${TIER_NAMES[k]}`)).join('');
+    body += `<h4>Vender</h4>${bulk ? `<div class="bulk">${bulk}</div><div class="small">Vender em lote nunca vende itens travados 🔒 nem Míticos.</div>` : ''}${inv || '<div class="small">Mochila vazia.</div>'}`;
   } else if (n.id === 'dex') {
     body += renderDexNPC(P);
   } else if (n.id === 'pc') {
@@ -163,9 +166,10 @@ $('npc').addEventListener('click', ev => {
   if (act === 'heal') { P.hp = maxHP(P); burst(P.x, P.y, '#f9a8d4', 20); sfx('pot'); }
   else if (act === 'gift') { P.pots.hp = Math.max(P.pots.hp, 2); P.giftT = 300; sfx('pick'); }
   else if (act === 'buy') buyItem(P, arg);
-  else if (act === 'sellcheap') {
+  else if (act === 'sellbulk') {
     let g = 0, n = 0;
-    P.inv.forEach((it, i) => { if (it && it.tier <= 1 && !it.myth && it.slot !== 'pedra' && !it.locked) { g += sellPrice(it); n++; P.inv[i] = null; } });
+    const k = arg === 'pedra' ? 'pedra' : +arg;
+    P.inv.forEach((it, i) => { if (it && !it.locked && !it.myth && (k === 'pedra' ? it.slot === 'pedra' : it.slot !== 'pedra' && it.tier <= k)) { g += sellPrice(it); n++; P.inv[i] = null; } });
     if (n) { P.gold += g; G.toasts.push({ text: `💰 Vendeu ${n} itens por ${g} 🪙`, color: '#facc15', t: 3 }); sfx('pick'); }
   } else if (act === 'lock') {
     const it = P.inv[+arg];
