@@ -44,19 +44,42 @@ function gymMini(e, gs) {
   e.speed *= 0.85;
   e.cdBoss = Math.max(1.1, 1.75 - gs * 0.07);
 }
+const pick2 = (R, a) => a[Math.floor(R() * a.length)];
+// formatos de sala (tiram pedaços do retângulo)
+function shapeRoom(grid, x, y, w, h, shape) {
+  const off = (i, j) => { if (i > 0 && j > 0 && i < DG_W - 1 && j < DG_H - 1) grid[j * DG_W + i] = 0; };
+  if (shape === 'oval') { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (((i + 0.5 - x - w / 2) / (w / 2)) ** 2 + ((j + 0.5 - y - h / 2) / (h / 2)) ** 2 > 1) off(i, j); }
+  else if (shape === 'cruz') { const cw = Math.floor(w / 3.2), ch = Math.floor(h / 3.2); for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if ((i < x + cw || i >= x + w - cw) && (j < y + ch || j >= y + h - ch)) off(i, j); }
+  else if (shape === 'poco') { const pw = Math.max(2, Math.floor(w / 5)), ph = Math.max(2, Math.floor(h / 5)), px = x + Math.floor(w / 2 - pw / 2), py = y + Math.floor(h / 2 - ph / 2) - ph - 1; for (let j = py; j < py + ph; j++) for (let i = px; i < px + pw; i++) off(i, j); for (let j = py + 2 * ph + 2; j < py + 3 * ph + 2; j++) for (let i = px; i < px + pw; i++) off(i, j); }
+}
+// terreno perigoso conforme o tema: lava queima, ácido envenena, gelo e espinhos só machucam
+const DG_HAZARD = { fire: 'lava', ghost: 'acido', ice: 'gelo', water: 'acido', psychic: 'espinhos', electric: 'espinhos', mine: 'espinhos', grass: 'acido', dragon: 'lava' };
+const HAZ = {
+  lava: { c1: '#9a3412', c2: '#f97316', st: 3, nome: 'lava' }, acido: { c1: '#3f6212', c2: '#a3e635', st: 4, nome: 'ácido' },
+  gelo: { c1: '#155e75', c2: '#a5f3fc', st: 0, nome: 'gelo cortante' }, espinhos: { c1: '#44403c', c2: '#d6d3d1', st: 0, nome: 'espinhos' },
+};
+const DG_MODS = {
+  escuro: '🌑 Escura: sem Flash você mal enxerga', frenesi: '💢 Frenesi: os Pokémon são mais rápidos e atacam mais',
+  infestada: '🐛 Infestada: o dobro de Pokémon nas salas', rica: '💰 Rica: salas de tesouro extras',
+};
 function genDungeon(id, theme, seed, zone) {
   const R = mulberry32(seed), grid = new Uint8Array(DG_W * DG_H), rooms = [];
   const carve = (x, y, w, h) => {
     for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (i > 0 && j > 0 && i < DG_W - 1 && j < DG_H - 1) grid[j * DG_W + i] = 1;
   };
   let cx = 3;
-  const gs = gymStage(theme), kinds = ['start', ...Array(gs ? gymFights(gs) : 3).fill('fight'), 'boss'];
+  const gs = gymStage(theme), kinds = ['start', ...Array(gs ? gymFights(gs) : 2 + Math.floor(R() * 3)).fill('fight'), 'boss'];
+  // modificador da masmorra comum (sai da semente: igual para todos)
+  const mod = !gs && zone >= 2 && R() < 0.6 ? pick2(R, ['escuro', 'frenesi', 'infestada', 'rica']) : '';
+  const hz = DG_HAZARD[theme] || 'espinhos';
   for (const kind of kinds) {
     const w = kind === 'start' ? 10 : kind === 'boss' ? 24 : gs ? 16 + Math.floor(R() * 4) : 14 + Math.floor(R() * 6);
     const h = kind === 'start' ? 10 : kind === 'boss' ? 22 : gs ? 15 + Math.floor(R() * 5) : 12 + Math.floor(R() * 6);
     const y = clamp(Math.floor(DG_H / 2 - h / 2 + (R() - 0.5) * 16), 2, DG_H - h - 2);
-    rooms.push({ x: cx, y, w, h, kind, state: 0 });
+    const shape = kind === 'fight' ? pick2(R, ['ret', 'ret', 'oval', 'cruz', 'poco']) : kind === 'boss' ? pick2(R, ['ret', 'oval']) : 'ret';
+    rooms.push({ x: cx, y, w, h, kind, state: 0, shape });
     carve(cx, y, w, h);
+    shapeRoom(grid, cx, y, w, h, shape);
     cx += w + (gs ? 6 + Math.floor(R() * 3) : 6 + Math.floor(R() * 5));
   }
   // corredores em L entre salas consecutivas
@@ -65,6 +88,28 @@ function genDungeon(id, theme, seed, zone) {
     const ax = (a.x + a.w / 2) | 0, ay = (a.y + a.h / 2) | 0, bx = (b.x + b.w / 2) | 0, by = (b.y + b.h / 2) | 0;
     carve(Math.min(ax, bx), ay - 2, Math.abs(bx - ax) + 1, 4);
     carve(bx - 2, Math.min(ay, by) - 2, 4, Math.abs(by - ay) + 4);
+  }
+  // salas de tesouro: ramos acima ou abaixo de algumas salas de luta, com um baú
+  const side = [], chests = [];
+  const fights = rooms.filter(r => r.kind === 'fight');
+  const nSide = gs ? 0 : (mod === 'rica' ? 2 : R() < 0.6 ? 1 : 0);
+  for (let k = 0; k < nSide && fights.length; k++) {
+    const r = fights[Math.floor(R() * fights.length)], up = R() < 0.5;
+    const w = 9, h = 7, sx = (r.x + r.w / 2 - w / 2) | 0, sy = up ? r.y - h - 6 : r.y + r.h + 6;
+    if (sy < 2 || sy + h > DG_H - 2 || side.some(s => s.x === sx)) continue;
+    side.push({ x: sx, y: sy, w, h, kind: 'tesouro', state: 0 });
+    carve(sx, sy, w, h);
+    const mx = (r.x + r.w / 2) | 0;
+    carve(mx - 1, up ? sy + h : r.y + r.h - 1, 3, 7);
+    chests.push({ x: DG_BASE + id * DG_SPACING + (sx + w / 2) * TILE, y: (sy + h / 2) * TILE, i: chests.length });
+  }
+  // terreno perigoso nas salas de luta das masmorras comuns
+  if (!gs) for (const r of fights) {
+    if (R() < 0.45) continue;
+    for (let k = 0; k < 2 + Math.floor(R() * 3); k++) {
+      const px = r.x + 2 + Math.floor(R() * (r.w - 6)), py = r.y + 2 + Math.floor(R() * (r.h - 6)), pw = 2 + Math.floor(R() * 3), ph = 2 + Math.floor(R() * 2);
+      for (let j = py; j < py + ph; j++) for (let i = px; i < px + pw; i++) if (grid[j * DG_W + i] === 1) grid[j * DG_W + i] = 2;
+    }
   }
   // pilares para se proteger dos tiros
   for (const r of rooms) {
@@ -76,7 +121,7 @@ function genDungeon(id, theme, seed, zone) {
       for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) grid[(py + j) * DG_W + px + i] = 0;
     }
   }
-  return { id, theme, seed, zone, grid, rooms, ox: DG_BASE + id * DG_SPACING, oy: 0, done: false, doneT: 0, emptyT: 0, ent: { x: 0, y: 0 }, bossId: 0, mini: null };
+  return { id, theme, seed, zone, grid, rooms, side, chests, mod, hz, ox: DG_BASE + id * DG_SPACING, oy: 0, done: false, doneT: 0, emptyT: 0, ent: { x: 0, y: 0 }, bossId: 0, mini: null };
 }
 
 function walkable(x, y) {
@@ -85,7 +130,14 @@ function walkable(x, y) {
   if (!dg) return false;
   const tx = Math.floor((x - dg.ox) / TILE), ty = Math.floor((y - dg.oy) / TILE);
   if (tx < 0 || ty < 0 || tx >= DG_W || ty >= DG_H) return false;
-  return dg.grid[ty * DG_W + tx] === 1;
+  return dg.grid[ty * DG_W + tx] >= 1;
+}
+// tipo de terreno perigoso sob o ponto (ou null)
+function hazardAt(x, y) {
+  const dg = dungeonAt(x);
+  if (!dg) return null;
+  const tx = Math.floor((x - dg.ox) / TILE), ty = Math.floor((y - dg.oy) / TILE);
+  return dg.grid[ty * DG_W + tx] === 2 ? HAZ[dg.hz] : null;
 }
 const walkableR = (x, y, r) => walkable(x - r, y - r) && walkable(x + r, y - r) && walkable(x - r, y + r) && walkable(x + r, y + r);
 function inRoom(dg, r, x, y) {
@@ -120,6 +172,11 @@ function spawnRoom(dg, r) {
   const th = THEMES[dg.theme];
   const pool = th.pool.filter(id => POKE[id]);
   const fallback = ZONE_POOLS[clamp(dg.zone, 1, 5)];
+  if (r.kind === 'tesouro') {
+    // às vezes um Alfa guarda o baú
+    if (Math.random() < 0.5) { const c = roomCenter(dg, r); const e = hostSpawn(pick(pool.length ? pool : fallback), dg.zone, 1, c.x, c.y - 40); e.dg = dg.id; e.cd = rand(1, 2); }
+    return;
+  }
   if (r.kind === 'boss') {
     const c = roomCenter(dg, r);
     const b = hostSpawn(POKE[th.boss] ? th.boss : pick(fallback), dg.zone, 3, c.x + 120, c.y);
@@ -150,14 +207,24 @@ function spawnRoom(dg, r) {
     }
     if (nB) emitEvent({ t: 'toast', text: `⚔ Pokémon de ${STORY[gs] ? STORY[gs].nome : 'o líder'} bloqueiam o caminho!`, color: th.accent });
   } else {
-    const n = 3 + dg.zone + randi(0, 1);
-    for (let i = 0; i < n; i++) {
-      const p = roomPos(dg, r);
-      const e = hostSpawn(pick(pool.length ? pool : fallback), dg.zone, Math.random() < 0.04 ? 1 : 0, p.x, p.y);
-      e.dg = dg.id;
-      e.maxHp = Math.round(e.maxHp * 1.3); e.hp = e.maxHp; // reforço de masmorra
-      e.cd = rand(1.5, 2.8); // tempo para o grupo reagir ao entrar na sala
-    }
+    // variantes de sala: bando, elite (Alfa + poucos), enxame (muitos e fracos) ou emboscada (chegam em ondas)
+    const v = pick(['bando', 'bando', 'elite', 'enxame', 'emboscada']);
+    const src = pool.length ? pool : fallback, inf = dg.mod === 'infestada' ? 2 : 1;
+    const wave = (n, alfa, hpK) => {
+      for (let i = 0; i < n; i++) {
+        const p = roomPos(dg, r);
+        const e = hostSpawn(pick(src), dg.zone, alfa && i === 0 ? 1 : Math.random() < 0.04 ? 1 : 0, p.x, p.y);
+        e.dg = dg.id;
+        e.maxHp = Math.round(e.maxHp * 1.3 * hpK); e.hp = e.maxHp; // reforço de masmorra
+        e.cd = rand(1.5, 2.8); // tempo para o grupo reagir ao entrar na sala
+        if (dg.mod === 'frenesi') { e.speed *= 1.25; e.cdBoss = 0.8; }
+      }
+    };
+    const base = 3 + dg.zone + randi(0, 1);
+    if (v === 'elite') wave((2 + Math.floor(dg.zone / 2)) * inf, true, 1);
+    else if (v === 'enxame') wave(Math.round(base * 1.7) * inf, false, 0.55);
+    else if (v === 'emboscada') { wave(Math.ceil(base / 2) * inf, false, 1); setTimeout(() => { if (G.dungeons.get(dg.id)) { wave(Math.ceil(base / 2) * inf, false, 1); emitEvent({ t: 'toast', text: '⚠ Emboscada! Mais Pokémon chegaram!', color: '#fca5a5' }); } }, 2500); }
+    else wave(base * inf, false, 1);
   }
 }
 
@@ -176,7 +243,7 @@ function hostDungeons(dt) {
   const pls = allPlayers();
   for (const dg of [...G.dungeons.values()]) {
     const inside = pls.filter(p => dungeonAt(p.x) === dg);
-    for (const r of dg.rooms) {
+    for (const r of dg.rooms.concat(dg.side || [])) {
       if (r.state || r.kind === 'start') continue;
       if (inside.some(p => inRoom(dg, r, p.x, p.y))) { r.state = 1; spawnRoom(dg, r); }
     }
@@ -227,7 +294,7 @@ function usePortal(P, p) {
   if (!dg) return;
   burst(P.x, P.y, THEMES[p.theme].accent, 24);
   if (p.exit) { P.x = dg.ent.x + rand(-40, 40); P.y = dg.ent.y + rand(-40, 40); }
-  else { const c = roomCenter(dg, dg.rooms[0]); P.x = c.x + rand(-30, 30); P.y = c.y + rand(-30, 30); }
+  else { const c = roomCenter(dg, dg.rooms[0]); P.x = c.x + rand(-30, 30); P.y = c.y + rand(-30, 30); if (dg.mod) G.toasts.push({ text: `🌀 ${THEMES[dg.theme].nome} · ${DG_MODS[dg.mod]}`, color: THEMES[dg.theme].accent, t: 5, big: 1 }); }
   G.cam.x = P.x; G.cam.y = P.y;
   burst(P.x, P.y, THEMES[p.theme].accent, 24);
   sfx('pot');
@@ -244,12 +311,16 @@ function renderDungeonFloor(dg, ox, oy) {
   for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
     const sx = dg.ox + tx * TILE + ox, sy = dg.oy + ty * TILE + oy;
     const g = dg.grid[ty * DG_W + tx];
-    if (g === 1) {
+    if (g === 2) {
+      const z = HAZ[dg.hz], k = 0.5 + 0.5 * Math.sin(G.time * 3 + tx * 0.7 + ty * 1.3);
+      ctx.fillStyle = z.c1; ctx.fillRect(sx, sy, TILE, TILE);
+      ctx.globalAlpha = 0.35 + 0.35 * k; ctx.fillStyle = z.c2; ctx.fillRect(sx + 4, sy + 4, TILE - 8, TILE - 8); ctx.globalAlpha = 1;
+    } else if (g === 1) {
       const h = hash(tx + dg.id * 991, ty);
       ctx.fillStyle = th.floor[h < 0.5 ? 0 : 1];
       ctx.fillRect(sx, sy, TILE, TILE);
       if (h > 0.97) { ctx.fillStyle = th.accent; ctx.globalAlpha = 0.25; ctx.fillRect(sx + 10, sy + 12, 6, 6); ctx.globalAlpha = 1; }
-    } else if (ty + 1 < DG_H && dg.grid[(ty + 1) * DG_W + tx] === 1) {
+    } else if (ty + 1 < DG_H && dg.grid[(ty + 1) * DG_W + tx] >= 1) {
       // face frontal da parede, dá sensação de altura
       ctx.fillStyle = th.top;
       ctx.fillRect(sx, sy + 12, TILE, TILE - 12);
@@ -289,4 +360,50 @@ function dungeonMinimap(dg) {
     dg.mini = c;
   }
   return dg.mini;
+}
+
+/* ---------- Baús das salas de tesouro (cada jogador abre o seu) ---------- */
+function nearDgChest(P) {
+  const dg = dungeonAt(P.x);
+  if (!dg || !dg.chests) return null;
+  dg.opened = dg.opened || new Set();
+  return dg.chests.find(c => !dg.opened.has(c.i) && Math.hypot(c.x - P.x, c.y - P.y) < 50) || null;
+}
+function openDgChest(P, c) {
+  const dg = dungeonAt(P.x);
+  dg.opened.add(c.i);
+  const items = [genItem(clamp(dg.zone + randi(0, 2), 0, 6)), potion()];
+  if (Math.random() < 0.5) items.push(ballItem());
+  if (dg.zone >= 3 && Math.random() < 0.25) items.push(statPot());
+  G.bags.push({ x: c.x, y: c.y + 30, items, life: 120 });
+  burst(c.x, c.y, '#facc15', 30);
+  G.toasts.push({ text: '💰 Baú aberto!', color: '#facc15', t: 2.5 });
+  sfx('lvl');
+}
+function drawDgChests(ox, oy) {
+  const P = G.P, dg = P && dungeonAt(P.x);
+  if (!dg || !dg.chests) return;
+  dg.opened = dg.opened || new Set();
+  for (const c of dg.chests) {
+    const x = c.x + ox, y = c.y + oy, open = dg.opened.has(c.i);
+    if (x < -40 || y < -40 || x > W + 40 || y > H + 40) continue;
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x - 15, y + 9, 30, 5);
+    ctx.fillStyle = '#7c4a1e'; ctx.fillRect(x - 14, y - 6, 28, 16);
+    ctx.fillStyle = open ? '#3a2410' : '#a0642a'; ctx.fillRect(x - 14, y - (open ? 16 : 12), 28, open ? 6 : 8);
+    ctx.fillStyle = '#facc15'; ctx.fillRect(x - 3, y - 4, 6, 6);
+    if (!open && Math.random() < 0.08) G.parts.push({ x: c.x + rand(-12, 12), y: c.y - 10, vx: 0, vy: -25, life: 0.6, color: '#fde047', size: 2 });
+  }
+}
+// terreno perigoso: machuca quem pisa (e lava/ácido podem causar status)
+function hazardTick(dt) {
+  const P = G.P;
+  if (!P || !inDungeonArea(P.x) || (G.hzT = (G.hzT || 0) - dt) > 0) return;
+  const z = hazardAt(P.x, P.y);
+  if (!z || P.dodgeT > 0) return;
+  G.hzT = 0.5;
+  const dmg = Math.max(1, Math.round(maxHP(P) * 0.025));
+  P.hp -= dmg; P.sinceHit = 0;
+  text(P.x, P.y - 34, `-${dmg} ${z.nome}`, z.c2, 12);
+  if (z.st && Math.random() < 0.15) playerStatus(P, z.st);
+  if (P.hp <= 0) playerDie(z.nome);
 }

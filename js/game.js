@@ -1185,6 +1185,7 @@ function update(dt) {
   else { updateEnemiesClient(dt); for (const p of G.portals) p.ttl -= dt; }
   weatherTick(dt);
   dexTick(dt);
+  hazardTick(dt);
 
   for (const r of G.remotes.values()) {
     if (r.tx === undefined) continue;
@@ -1348,6 +1349,7 @@ function render() {
     }
   }
   drawPortals(ox, oy);
+  drawDgChests(ox, oy);
 
   // entidades ordenadas por Y
   const ents = [];
@@ -1452,7 +1454,7 @@ function render() {
   const flash = G.P && petKnows(G.P, 'flash');
   if (inDg) {
     const dg = dungeonAt(cam.x);
-    if (dg && DARK_THEMES.includes(dg.theme)) drawNight(ox, oy, flash ? 460 : 175, 'rgba(0,0,0,0.88)');
+    if (dg && (DARK_THEMES.includes(dg.theme) || dg.mod === 'escuro')) drawNight(ox, oy, flash ? 460 : 175, 'rgba(0,0,0,0.88)');
   } else {
     const fog = (ZONES[zoneAt(cam.x, cam.y)] || {}).fog && !flash;
     // à noite e na névoa quase não se enxerga sem Flash
@@ -1894,6 +1896,7 @@ window.addEventListener('keydown', ev => {
   else if (ev.code === 'KeyS' && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); K.KeyS = false; exportSave(); }
   else if (ev.code === 'KeyE') {
     if (G.npcOpen) closeNPC();
+    else if (nearDgChest(P)) openDgChest(P, nearDgChest(P));
     else if (G.nearPortal) usePortal(P, G.nearPortal);
     else if (G.nearNPC) openNPC(G.nearNPC.id);
     else if (G.nearHM) useHMTile(P, G.nearHM);
