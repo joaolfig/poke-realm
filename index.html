@@ -334,18 +334,35 @@
   .tb-sm.badge { position: relative; }
   body.mobile #chat-in { top: 56px; bottom: auto; left: 50%; transform: translateX(-50%); width: min(460px, 80vw); z-index: 9; font-size: 16px; }
   body.mobile #chatlog { top: 104px; bottom: auto; left: 50%; transform: translateX(-50%); max-height: 45vh; }
-  /* menu inicial compacto: o botão de jogar aparece sem precisar rolar */
+  /* menu inicial compacto no celular: herói, região, modo e jogar cabem numa tela deitada sem rolar */
   body.mobile .overlay { padding: 6px max(10px, env(safe-area-inset-right)) 6px max(10px, env(safe-area-inset-left)); }
-  body.mobile .logo { margin: 0 0 6px; } body.mobile h1 { font-size: 30px; } body.mobile .sub, body.mobile .credit { display: none; }
-  body.mobile .menu-box { padding: 10px 12px; } body.mobile .menu-grid { gap: 12px; } body.mobile .field { margin-bottom: 10px; }
-  body.mobile #hero { gap: 10px; padding: 8px; } body.mobile #hero .small { font-size: 12.5px; }
-  body.mobile #btn-start { position: sticky; bottom: 0; z-index: 2; box-shadow: 0 -6px 14px rgba(0,0,0,.6); }
-  body.mobile .overlay button, body.mobile .modes label { min-height: 42px; }
-  #t-sheet { position: fixed; z-index: 12; left: 50%; bottom: 8px; transform: translateX(-50%); width: min(520px, 94vw); max-height: 80vh; overflow-y: auto; touch-action: pan-y;
-    background: rgba(20, 21, 24, .98); border: 3px solid #000; box-shadow: 0 0 0 1px var(--gold), 0 10px 40px rgba(0,0,0,.7); padding: 10px 12px; font-size: 14px; }
-  #t-sheet.hidden { display: none; }
-  #t-sheet .shb { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; } #t-sheet .shb button { flex: 1 1 140px; min-height: 44px; }
-  #t-sheet button.bad { background: #6e2219; }
+  body.mobile .logo, body.mobile .sub, body.mobile .credit, body.mobile #btn-pad { display: none; }
+  body.mobile .menu-box { padding: 8px 10px; }
+  body.mobile .menu-grid { grid-template-columns: 1.15fr 1fr; gap: 10px; }
+  body.mobile #load { font-size: 12px; margin: 0 0 4px; }
+  body.mobile .overlay h3 { margin: 0 0 4px; font-size: 11px; }
+  body.mobile .field { margin-bottom: 6px; }
+  /* herói: figura pequena, só o essencial (a habilidade em 2 linhas) */
+  body.mobile #hero { grid-template-columns: 60px 1fr; gap: 8px; padding: 6px; margin-bottom: 6px; }
+  body.mobile .hero-pic { width: 60px; height: 60px; } body.mobile .hero-pic canvas { width: 54px; height: 54px; left: 1px; top: 2px; }
+  body.mobile .hero-line { margin-bottom: 2px; }
+  body.mobile #hero .hero-info > .small:nth-child(2), body.mobile #hero > .small { display: none !important; }
+  body.mobile #hero .small { font-size: 12px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  body.mobile .hero-stats { grid-template-columns: repeat(5, 1fr); margin: 4px 0 0; gap: 3px; } body.mobile .hero-stats span { padding: 1px 4px; font-size: 11px; } body.mobile .hero-stats b { font-size: 13px; }
+  body.mobile .hero-stats .free { grid-column: auto; }
+  /* sortear e nome lado a lado; jogar sempre visível */
+  body.mobile .newchar { display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: end; }
+  body.mobile .newchar > h3, body.mobile #hero, body.mobile #new-warn, body.mobile #btn-start { grid-column: 1 / -1; }
+  body.mobile #btn-roll { margin: 0; white-space: nowrap; } body.mobile .newchar .field { margin: 0 !important; } body.mobile .newchar .field h3 { display: none; }
+  body.mobile #name, body.mobile #join-code { padding: 6px 8px; font-size: 16px; }
+  body.mobile #new-warn { font-size: 11.5px; margin: 0; }
+  body.mobile #btn-start { position: sticky; bottom: 0; z-index: 2; margin: 0; padding: 8px; font-size: 16px; box-shadow: 0 -6px 14px rgba(0,0,0,.6); }
+  body.mobile #maps button { padding: 6px 2px; font-size: 13px; }
+  body.mobile .modes label { padding: 6px 2px; font-size: 13px; }
+  body.mobile #btn-cont { padding: 8px; font-size: 16px; } body.mobile #btn-cont small { font-size: 11px; }
+  body.mobile .saved-empty { padding: 6px 8px; font-size: 12px; }
+  body.mobile #btn-import { margin-top: 4px; padding: 6px; font-size: 12px; }
+  body.mobile .overlay button, body.mobile .modes label { min-height: 38px; }
   #rotate { display: none; }
   @media (orientation: portrait) { body.mobile #rotate { display: flex; position: fixed; inset: 0; z-index: 50; background: var(--bg); align-items: center; justify-content: center; text-align: center; font: 700 26px/1.4 var(--px); color: var(--gold); }
     body.mobile #rotate span { font: 500 15px var(--ui); color: var(--dim); } }
@@ -459,24 +476,24 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=219"></script>
-<script src="js/data.js?v=219"></script>
-<script src="js/rules.js?v=219"></script>
-<script src="js/items.js?v=219"></script>
-<script src="js/dungeon.js?v=219"></script>
-<script src="js/net.js?v=219"></script>
-<script src="js/map.js?v=219"></script>
-<script src="js/world.js?v=219"></script>
-<script src="js/story.js?v=219"></script>
-<script src="js/hm.js?v=219"></script>
-<script src="js/allies.js?v=219"></script>
-<script src="js/town.js?v=219"></script>
-<script src="js/geo.js?v=219"></script>
-<script src="js/regions.js?v=219"></script>
-<script src="js/audio.js?v=219"></script>
-<script src="js/pad.js?v=219"></script>
-<script src="js/pvp.js?v=219"></script>
-<script src="js/game.js?v=219"></script>
-<script src="js/touch.js?v=219"></script>
+<script src="js/pokedex.js?v=220"></script>
+<script src="js/data.js?v=220"></script>
+<script src="js/rules.js?v=220"></script>
+<script src="js/items.js?v=220"></script>
+<script src="js/dungeon.js?v=220"></script>
+<script src="js/net.js?v=220"></script>
+<script src="js/map.js?v=220"></script>
+<script src="js/world.js?v=220"></script>
+<script src="js/story.js?v=220"></script>
+<script src="js/hm.js?v=220"></script>
+<script src="js/allies.js?v=220"></script>
+<script src="js/town.js?v=220"></script>
+<script src="js/geo.js?v=220"></script>
+<script src="js/regions.js?v=220"></script>
+<script src="js/audio.js?v=220"></script>
+<script src="js/pad.js?v=220"></script>
+<script src="js/pvp.js?v=220"></script>
+<script src="js/game.js?v=220"></script>
+<script src="js/touch.js?v=220"></script>
 </body>
 </html>
