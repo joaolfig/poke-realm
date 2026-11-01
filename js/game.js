@@ -405,6 +405,7 @@ function updateEnemiesHost(dt) {
   const T = allPlayers().filter(t => !t.invis && zoneAt(t.x, t.y) !== 0).concat(G.decoys.map(d => ({ x: d.x, y: d.y })));
   for (const e of G.enemies) {
     e.t += dt; e.flash = Math.max(0, e.flash - dt);
+    if (e.dash) { bossDash(e, dt); continue; }
     if (e.stT > 0) {
       e.stT -= dt;
       if (e.st === 3 || e.st === 4) { e.dotT -= dt; if (e.dotT <= 0) { e.dotT = 1; applyHit(e, (e.st === 3 ? d(4) : d(3)) + e.zone, e.stBy || null); if (e.dead) continue; } }
@@ -439,9 +440,13 @@ function updateEnemiesHost(dt) {
       e.cd -= dt;
       const ang = e.st === 6 ? Math.random() * 6.28 : Math.atan2(dy, dx);
       if (e.boss) {
+        // fúria: abaixo de metade da vida
+        if (!e.rage && e.hp < e.maxHp / 2) { e.rage = 1; emitEvent({ t: 'toast', text: `💢 ${e.name} ficou furioso!`, color: '#fca5a5' }); }
+        e.sigT = (e.sigT === undefined ? rand(2.5, 4) : e.sigT) - dt;
+        if (e.sigT <= 0 && dd < 620 && e.st !== 6) { bossSig(e, tgt); e.sigT = (e.legend ? 5 : 6.5) * (e.rage ? 0.65 : 1); e.cd = Math.max(e.cd, 1.2); }
         e.phaseT += dt;
         if (e.phaseT > BOSS_PH[e.phase].dur) { e.phase = (e.phase + 1) % BOSS_PH.length; e.phaseT = 0; }
-        if (e.cd <= 0) { BOSS_PH[e.phase].f(e, ang); e.cd = BOSS_PH[e.phase].cd * (e.kind === 3 ? 1.3 : e.cdBoss || 1); }
+        if (e.cd <= 0) { BOSS_PH[e.phase].f(e, ang); e.cd = BOSS_PH[e.phase].cd * (e.kind === 3 ? 1.3 : e.cdBoss || 1) * (e.rage ? 0.85 : 1); }
       } else if (e.cd <= 0 && dd < 460) {
         const pt = PAT[e.type];
         if (!(e.st === 2 && Math.random() < 0.4)) pt.f(e, ang);
@@ -1210,6 +1215,7 @@ function handleEvent(m, local) {
     }
     case 'pvpinv': case 'pvpok': case 'pvpout': case 'pvpaoe': pvpEvent(m); break;
     case 'decoy': G.decoys.push({ x: m.x, y: m.y, t: m.dur, cls: m.cls, ptype: m.ptype }); break;
+    case 'tele': teleEvent(m); break;
     case 'met': G.meteors.push({ x: m.x, y: m.y, r: m.r, t: m.delay, max: m.delay, zone: m.zone || 1 }); break;
     case 'evdone': onEventDone(m); break;
   }
@@ -1406,6 +1412,7 @@ function render() {
   } else renderOverworld(ox, oy);
 
   drawMeteors(ox, oy);
+  drawTeles(ox, oy);
   for (const z of G.zones) {
     const x = z.x + ox, y = z.y + oy, pulse = 1 + Math.sin(G.time * 6) * 0.04;
     const col = z.k === 'veneno' ? '163,230,53' : z.k === 'santuario' ? '253,230,138' : z.k === 'raizes' ? '134,239,172' : '251,191,36';
@@ -2446,3 +2453,113 @@ const linBuffs = P => {
     : isWolf(P) ? `🐺 Fúria da Lua ${Math.ceil(P.lform.t)}s` : `🌕 Lua ${Math.floor(P.moon || 0)}%${isNight() ? '' : ' (só enche à noite)'}`;
   return `<div class="small" style="color:#fca5a5">${L.icon} ${L.nome}: ${s}</div>`;
 };
+
+/* ============ Golpes de assinatura dos chefes ============
+ * Todo chefe (líderes de ginásio, chefes de masmorra, lendários, Procurados e o vilão final) usa de tempos em tempos
+ * um golpe próprio do seu tipo, sempre avisado no chão (círculos ou faixas vermelhas que enchem) antes de acertar.
+ * O host escolhe o golpe e manda o aviso para todos; cada jogador calcula o próprio dano quando o aviso estoura.
+ * Com menos de metade da vida o chefe fica furioso e usa o golpe com mais frequência.
+ */
+const sigPct = e => (e.legend ? 0.32 : 0.14 + 0.03 * clamp(e.zone, 1, 5)); // fração da vida máxima do jogador
+const near2 = (t, r) => { const a = Math.random() * 6.28, d = Math.random() * r; return [t.x + Math.cos(a) * d, t.y + Math.sin(a) * d]; };
+const tC = (x, y, r, delay) => ({ s: 'c', x: Math.round(x), y: Math.round(y), r, d: +delay.toFixed(2) });
+const tL = (x, y, a, len, w, delay) => ({ s: 'l', x: Math.round(x), y: Math.round(y), a: +a.toFixed(3), len, w, d: +delay.toFixed(2) });
+const BOSS_SIG = {
+  fire: { nome: '🔥 Erupção', f: (e, t) => Array.from({ length: 5 }, () => tC(...near2(t, 170), 70, 1.3)) },
+  water: { nome: '🌊 Hidro Bomba', f: (e, t, a) => [tL(e.x, e.y, a, 720, 80, 1.0), tL(e.x, e.y, a + 0.5, 600, 60, 1.25), tL(e.x, e.y, a - 0.5, 600, 60, 1.25)] },
+  electric: { nome: '⚡ Trovão', f: (e, t) => [0.9, 1.35, 1.8, 2.25].map(d => tC(...near2(t, 70), 65, d)) },
+  grass: { nome: '🍃 Tempestade de Folhas', f: (e, t, a) => [-0.4, 0, 0.4].map(k => tL(e.x, e.y, a + k, 620, 60, 1.1)) },
+  ice: { nome: '❄ Nevasca', f: (e, t, a) => [0, 1, 2, 3].map(k => tL(e.x, e.y, a + 0.4 + k * Math.PI / 2, 560, 70, 1.2)) },
+  ground: { nome: '🌍 Terremoto', f: e => [tC(e.x, e.y, 240, 1.5)] },
+  rock: { nome: '🪨 Deslizamento', f: (e, t) => Array.from({ length: 7 }, (_, i) => tC(...near2(t, 230), 60, 1.1 + i * 0.08)) },
+  psychic: { nome: '🔮 Psíquico', f: (e, t) => [tC(t.x, t.y, 125, 1.25)] },
+  ghost: { nome: '👻 Sombra Ardilosa', tp: 1, f: e => [tC(e.x, e.y, 145, 1.0)] },
+  dark: { nome: '🌑 Emboscada', tp: 1, f: e => [tC(e.x, e.y, 145, 1.0)] },
+  fighting: { nome: '👊 Investida', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 540, 95, 0.95)] },
+  normal: { nome: '💥 Investida', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 540, 95, 0.95)] },
+  dragon: { nome: '🐉 Cometa Draco', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 540, 95, 0.95), ...Array.from({ length: 3 }, () => tC(...near2(t, 140), 90, 1.6))] },
+  poison: { nome: '☠ Bomba de Lodo', st: 4, f: (e, t) => Array.from({ length: 4 }, () => tC(...near2(t, 150), 85, 1.2)) },
+  flying: { nome: '🌪 Furacão', f: (e, t, a) => [tL(t.x - Math.cos(a + 0.8) * 300, t.y - Math.sin(a + 0.8) * 300, a + 0.8, 600, 60, 1.1), tL(t.x - Math.cos(a - 0.8) * 300, t.y - Math.sin(a - 0.8) * 300, a - 0.8, 600, 60, 1.1)] },
+  bug: { nome: '🐝 Enxame', f: (e, t) => Array.from({ length: 9 }, (_, i) => tC(...near2(t, 260), 45, 1.0 + (i % 3) * 0.25)) },
+  steel: { nome: '⚙ Chuva de Aço', f: (e, t) => { const o = []; for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) if ((i + j) % 2 === 0) o.push(tC(t.x + i * 120, t.y + j * 120, 60, 1.2)); return o; } },
+  fairy: { nome: '🌙 Lua Mágica', f: (e, t) => Array.from({ length: 6 }, (_, i) => tC(t.x + Math.cos(i * 1.047) * 150, t.y + Math.sin(i * 1.047) * 150, 62, 1.2)) },
+};
+// host: usa o golpe de assinatura
+function bossSig(e, t) {
+  const S = BOSS_SIG[e.type] || BOSS_SIG.normal;
+  if (S.tp) { // some e reaparece atrás do alvo
+    const a = Math.random() * 6.28, nx = t.x + Math.cos(a) * 110, ny = t.y + Math.sin(a) * 110;
+    if (!e.dg || walkableR(nx, ny, 16)) { e.x = nx; e.y = ny; }
+  }
+  const a = Math.atan2(t.y - e.y, t.x - e.x);
+  const list = S.f(e, t, a);
+  if (S.dash) e.dash = { a, wait: 0.75, t: 0.4, spd: 1300 };
+  emitEvent({ t: 'tele', l: list, nm: S.nome, bx: Math.round(e.x), by: Math.round(e.y), src: e.name, ty: e.type, pct: +sigPct(e).toFixed(3), st: S.st || 0 });
+}
+// host: investida (o chefe espera o aviso encher e então dispara na linha)
+function bossDash(e, dt) {
+  const d = e.dash;
+  if (d.wait > 0) { d.wait -= dt; e.moving = false; return; }
+  const nx = e.x + Math.cos(d.a) * d.spd * dt, ny = e.y + Math.sin(d.a) * d.spd * dt;
+  if (e.dg ? walkableR(nx, ny, Math.min(e.r, 18)) : true) { e.x = nx; e.y = ny; clampWorld(e); }
+  else d.t = 0;
+  e.moving = true;
+  if ((d.t -= dt) <= 0) e.dash = null;
+}
+// todos: avisos no chão
+function teleEvent(m) {
+  G.teles = G.teles || [];
+  for (const o of m.l) G.teles.push({ ...o, t: o.d, max: o.d, ty: m.ty, pct: m.pct, src: m.src, st: m.st });
+  const P = G.P;
+  if (P && Math.hypot(P.x - m.bx, P.y - m.by) < 900) { text(m.bx, m.by - 70, m.nm, '#fca5a5', 18); sfx('boss'); }
+}
+function teleHits(o, x, y) {
+  if (o.s === 'c') return Math.hypot(x - o.x, y - o.y) < o.r + 10;
+  const dx = x - o.x, dy = y - o.y, u = dx * Math.cos(o.a) + dy * Math.sin(o.a), v = -dx * Math.sin(o.a) + dy * Math.cos(o.a);
+  return u > -10 && u < o.len + 10 && Math.abs(v) < o.w / 2 + 10;
+}
+function updateTeles(dt) {
+  const P = G.P;
+  for (const o of G.teles || []) {
+    o.t -= dt;
+    if (o.t > 0) continue;
+    o.dead = true;
+    const cx = o.s === 'c' ? o.x : o.x + Math.cos(o.a) * o.len / 2, cy = o.s === 'c' ? o.y : o.y + Math.sin(o.a) * o.len / 2;
+    burst(cx, cy, TYPE_COLORS[o.ty] || '#fca5a5', o.s === 'c' ? 18 : 26);
+    G.fx.push(o.s === 'c' ? { k: 'ring', x: o.x, y: o.y, r: 0, R: o.r, life: 0.35, max: 0.35, color: TYPE_COLORS[o.ty] || '#fca5a5', fill: true } : { k: 'ring', x: cx, y: cy, r: 0, R: o.w, life: 0.3, max: 0.3, color: TYPE_COLORS[o.ty] || '#fca5a5' });
+    if (P && Math.hypot(P.x - cx, P.y - cy) < 700) G.shake = Math.min(9, G.shake + 3);
+    if (!P || P.dodgeT > 0 || P.pvp || !teleHits(o, P.x, P.y)) continue;
+    let eff = typeEff(o.ty, [pType(P)]);
+    if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); continue; }
+    if (race(P).resist.includes(o.ty) || MA(P, 'resist').includes(o.ty) || (P.lin && LIN[P.lin].resist.includes(o.ty))) eff *= 0.5;
+    eff *= linTaken(P, o.ty) * (P.seloT > 0 ? 0.75 : 1) * (P.graceT > 0 ? 0.9 : 1) * (P.race === 'draconato' ? 0.9 : 1);
+    let dmg = Math.max(1, Math.round(maxHP(P) * o.pct * Math.min(eff, 1.5) * rand(0.9, 1.1)));
+    if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; }
+    if (dmg <= 0) continue;
+    P.hp -= dmg; P.sinceHit = 0;
+    text(P.x, P.y - 34, `-${dmg}`, '#f87171', 17); sfx('hit');
+    const st = o.st || PST_BY_TYPE[o.ty];
+    if (st && P.hp > 0 && Math.random() < (o.st ? 1 : 0.35)) playerStatus(P, stPick(st), o.ty);
+    if (P.hp <= 0) playerDie(o.src || 'um chefe');
+  }
+  if (G.teles) G.teles = G.teles.filter(o => !o.dead);
+}
+function drawTeles(ox, oy) {
+  for (const o of G.teles || []) {
+    const k = 1 - o.t / o.max, col = TYPE_COLORS[o.ty] || '#ef4444';
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    if (o.s === 'c') {
+      const x = o.x + ox, y = o.y + oy;
+      ctx.fillStyle = 'rgba(220,38,38,.16)'; ctx.beginPath(); ctx.arc(x, y, o.r, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(239,68,68,.35)'; ctx.beginPath(); ctx.arc(x, y, o.r * k, 0, 7); ctx.fill();
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.arc(x, y, o.r, 0, 7); ctx.stroke();
+    } else {
+      ctx.translate(o.x + ox, o.y + oy); ctx.rotate(o.a);
+      ctx.fillStyle = 'rgba(220,38,38,.16)'; ctx.fillRect(0, -o.w / 2, o.len, o.w);
+      ctx.fillStyle = 'rgba(239,68,68,.35)'; ctx.fillRect(0, -o.w / 2, o.len * k, o.w);
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.strokeRect(0, -o.w / 2, o.len, o.w);
+    }
+    ctx.restore();
+  }
+}

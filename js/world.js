@@ -637,6 +637,7 @@ function updateWorld(dt) {
     }
   } else if (G.npcOpen) closeNPC();
   updateMeteors(dt);
+  updateTeles(dt);
 }
 
 /* ============ Clima por zona ============
