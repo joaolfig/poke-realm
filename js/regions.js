@@ -82,7 +82,7 @@ const REGIONS = {
       prologo: `A <b>Equipe Rocket</b> anda roubando Pokémon pelas estradas de Kanto, e ninguém sabe para quê.
         O Professor Carvalho acredita que os oito líderes de ginásio sabem de alguma coisa. Vença cada um, ganhe a confiança deles e descubra o plano da Equipe Rocket.`,
       caps: [
-        ['Brock, o líder de pedra, desconfia de forasteiros. Prove seu valor na Cidade de Pewter, seguindo a estrada ao sul da vila.', 'Brock conta que a Equipe Rocket comprou todas as Pedras-Lua da região. "Para que alguém precisa de tantas?"'],
+        ['Brock, o líder de pedra, desconfia de forasteiros. Prove seu valor na Cidade de Pewter, seguindo a estrada a sudeste da vila.', 'Brock conta que a Equipe Rocket comprou todas as Pedras-Lua da região. "Para que alguém precisa de tantas?"'],
         ['A Líder Misty viu barcos da Equipe Rocket no rio. Ela só fala com quem vencer suas cascatas.', 'Misty mostra um mapa molhado: a Equipe Rocket leva os Pokémon roubados para o sul, passando pelo Monte Lunar.'],
         ['O Tenente Surge guarda a usina que abastece Kanto. A Equipe Rocket tentou sabotá-la ontem à noite.', 'Surge prendeu um capanga, que repetia sem parar: "o chefe vai criar o Pokémon mais forte do mundo".'],
         ['Erika cuida da estufa onde se fazem os remédios da região. Agentes da Equipe Rocket foram vistos rondando por lá.', 'Erika descobre que a Equipe Rocket roubou amostras genéticas da estufa. Eles não querem só roubar Pokémon. Querem criar um.'],
