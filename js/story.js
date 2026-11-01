@@ -183,7 +183,7 @@ function storyAct(P, arg) {
   } else if (arg === 'next' && st.done) {
     const ch = st.ch;
     // a história não dá dinheiro: recompensa em XP, item, Doce Raro, atributo e HMs
-    const last = ch === STORY.length - 1, xp = Math.round(xpNeed(P.lvl) * 0.35);
+    const last = ch === STORY.length - 1, xp = Math.round(xpNeed(STORY[ch].lvl || P.lvl) * 0.35); // valor fixo do capítulo (não depende do seu nível: fazer a história cedo ou tarde dá o mesmo)
     const it = last ? { slot: 'amuleto', tier: 6, name: `Medalha do Campeão de ${REGION.nome}`, relic: 1, mods: { hp: 0.15, dmg: 2, cd: 0.15, regen: 0.5 } } : genItem(clamp(Math.round(ch * 0.7) + 1, 0, 6));
     const i = P.inv.indexOf(null);
     if (i >= 0) P.inv[i] = it; else G.bags.push({ x: P.x, y: P.y + 30, items: [it], life: 120 });
