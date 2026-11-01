@@ -198,12 +198,16 @@ const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (outOfCombat(P) ? 1.3 : 1) * (p
 const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWolf(P) ? 1.3 : 1) * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
-// XP por nível = abates desejados × XP médio de um abate na zona recomendada para aquele nível.
-// Assim o ritmo cresce suave e não trava na troca de zona (Nv 1-6 zona 1, 7-13 zona 2, 14-20 zona 3, 21-25 zona 4, 26+ zona 5).
-// XP para passar de cada nível (1→2 ... 29→30), calibrada pelo tempo medido em jogo só com abates na zona recomendada:
-// ~2 min por nível nas zonas 1 e 5, ~3 min nas zonas 2 a 4 (o XP por abate cresce com a zona). Total ~1 h 20 até o Nv 30.
-// os primeiros níveis sobem mais rápido (Nv 1→2 em ~40 s, chegando aos ~2 min do Nv 6)
-const XP_TABLE = [600, 850, 1100, 1300, 1450, 1550, 6400, 6400, 6400, 6400, 6400, 6400, 6400, 6790, 6790, 6790, 6790, 6790, 6790, 6790, 10160, 10160, 10160, 10160, 10160, 9440, 9440, 9440, 9440];
+// XP para cada nível: cresce nível a nível também dentro da mesma zona, porque o herói mata mais rápido a cada nível
+// (os inimigos de uma zona dão sempre o mesmo XP). A média de cada zona é a calibrada em jogo (~2 min por nível nas
+// zonas 1 e 5, ~3 min nas zonas 2 a 4); a zona 1 começa mais rápida para os primeiros níveis passarem logo.
+const XP_TABLE = [
+  600, 850, 1100, 1300, 1450, 1550, // zona 1 (Nv 1-6)
+  5200, 5600, 6000, 6400, 6800, 7200, 7600, // zona 2 (Nv 7-13)
+  5500, 5900, 6350, 6800, 7250, 7700, 8050, // zona 3 (Nv 14-20)
+  8800, 9500, 10200, 10800, 11500, // zona 4 (Nv 21-25)
+  8600, 9200, 9700, 10260, // zona 5 (Nv 26-29 → 30)
+];
 const xpNeed = l => XP_TABLE[clamp(l, 1, MAX_LVL - 1) - 1];
 
 // raça, classe e tipo são sorteados
