@@ -799,14 +799,14 @@ function useAbility() {
     }
     case 'clerigo': { // Tomo: cura em área
       const amt = roll(2 + Math.floor(lv / 3), 8) + A(P, 'VIG');
-      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.max(1, amt), name: P.name, bl: blessOf(P) }); break;
+      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.max(1, Math.round(amt * clericChoir(P))), name: P.name, bl: blessOf(P), r: 260 }); break;
     }
     case 'vida': // Santuário (Sacerdote): área de cura contínua
       G.zones.push({ k: 'santuario', x: P.x, y: P.y, r: 150, t: 6, wait: 0, every: 1, tick: 0 });
       fxAt(P.x, P.y, 150, '#fde68a'); sfx('pot'); break;
     case 'guerra': // Hino de Batalha (Bardo): fúria para o grupo e paralisia em volta
       emitEvent({ t: 'buff', k: 'furia', x: Math.round(P.x), y: Math.round(P.y), dur: 5, name: P.name });
-      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: d(8) + Math.floor(lv / 2), name: P.name, quiet: 1, bl: blessOf(P) });
+      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.round((d(8) + Math.floor(lv / 2)) * clericChoir(P)), name: P.name, quiet: 1, bl: blessOf(P), r: 260 });
       for (const e of enemiesNear(P.x, P.y, 170)) if (!e.boss || Math.random() < 0.5) inflict(e, 2);
       fxAt(P.x, P.y, 170, '#f97316'); sfx('boom'); break;
     case 'patrulheiro': // Aljava: flechada pesada que perfura e deixa lento
@@ -2383,8 +2383,8 @@ function blessApply(P, m, over, self) {
     const big = b === 'escudo2', cap = mh * (big ? 0.25 : 0.2) * k, min = m.quiet ? 0 : mh * 0.1 * k;
     const add = Math.max(over, min);
     if (add > 0) { P.shield = Math.round(Math.min(cap, Math.max(P.shield || 0, 0) + add)); P.shieldT = 5; }
-  } else if (b === 'feras' || b === 'feras2') { P.ferasT = 6; P.ferasK = (b === 'feras2' ? 0.3 : 0.2) * k; }
-  else if (b === 'ritmo') { P.ritmoT = 6; P.ritmoK = 0.2 * k; }
+  } else if (b === 'feras' || b === 'feras2') { P.ferasT = 6; P.ferasK = (b === 'feras2' ? 0.35 : 0.25) * k; }
+  else if (b === 'ritmo') { P.ritmoT = 6; P.ritmoK = 0.25 * k; }
   // Graça: no próprio Clérigo também, mas depois de salvá-lo ela só volta em 5 min (nos aliados, 90 s)
   else if (b === 'graca' && !(P.graceCd > 0)) { if (!(P.graceT > 0) && !self) text(P.x, P.y - 50, `🕊️ Graça Salvadora (${m.name})`, '#fde68a', 12); P.graceT = 8; P.graceBy = self ? null : m.name; P.graceSelf = self; }
 }
@@ -2643,3 +2643,6 @@ const grpN = () => 1 + 0.4 * (nPlayers() - 1);
 // dificuldade média do começo ao fim (medido com uma IA que desvia das balas): o começo era fácil demais
 // e o fim perigoso demais, então o dano dos tiros inimigos varia por zona
 const ZONE_DMG = [1, 1.35, 1.25, 1.05, 0.95, 0.88];
+
+// Clérigo em grupo: cada outro jogador perto dele na hora da cura aumenta a cura em 10% (até +30%)
+const clericChoir = P => 1 + 0.1 * Math.min(3, [...G.remotes.values()].filter(r => !r.dead && r.name && Math.hypot(r.tx - P.x, r.ty - P.y) < 260).length);

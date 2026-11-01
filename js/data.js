@@ -35,7 +35,7 @@ const CLASSES = {
     spr: { h: '#eab308', b: '#f1f5f9', d: '#cbd5e1' },
     desc: 'Suporte resistente. Cura a si e aos aliados próximos.',
     wpn: { shots: 1, speed: 400, life: 0.95, size: 7, rate: 2.1, shape: 'orb', color: '#fde68a' }, // suporte: menos dano, mais cura
-    abil: { nome: 'Tomo Sagrado', cd: 6, desc: 'Tomo: cura (2 + nível/3)d8 + Vigor em você e nos aliados próximos e tira paralisia, queimadura, veneno e confusão.' },
+    abil: { nome: 'Tomo Sagrado', cd: 6, desc: 'Tomo: cura (2 + nível/3)d8 + Vigor em você e nos aliados próximos (em área grande) e tira paralisia, queimadura, veneno e confusão. Cada outro jogador perto aumenta a cura em 10% (até +30%).' },
     weapons: ['Maça Simples', 'Maça de Ferro', 'Martelo Abençoado', 'Maça Radiante', 'Martelo do Alvorecer', 'Maça dos Santos', 'Martelo Divino'], wicon: '🔨',
   },
   patrulheiro: {
