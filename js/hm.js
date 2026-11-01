@@ -326,7 +326,7 @@ const pstTint = st => { st = st === 7 ? 2 : st; return st && PST[st] && Math.sin
 const pstNet = P => (P.pstT > 0 ? (P.pst === 2 && P.pstShock ? 7 : P.pst) : 0);
 // choque elétrico: raios em zigue-zague em volta do corpo, em descargas rápidas
 function drawShock(x, y, w, h) {
-  if ((G.time * 3.2) % 1 > 0.45) return;
+  if ((G.time * 0.8) % 1 > 0.2) return; // uma descarga curta a cada ~1,25s
   ctx.save();
   ctx.lineCap = 'round';
   for (let k = 0; k < 3; k++) {
