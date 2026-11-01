@@ -421,19 +421,46 @@ function tileImg(kind, z, v) {
     // objetos: desenhados com 12px a mais para cima
     const sh = () => { g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(16, 40, 13, 4, 0, 0, 7); g.fill(); };
     const circ = (col, x, y, r) => { g.fillStyle = col; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); };
+    // pedra facetada: contorno escuro, faces em 3 tons e brilho no topo (o formato varia com v)
+    const stone = (cx, cy, rw, rh, cols, seed) => {
+      const n = 8, pts = [];
+      for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2 - Math.PI / 2, k = 0.82 + hash(seed + i, 5) * 0.3; pts.push([cx + Math.cos(a) * rw * k, cy + Math.sin(a) * rh * k * (a > 0 && a < Math.PI ? 0.9 : 1)]); }
+      const path = () => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); };
+      path(); g.fillStyle = cols[0]; g.fill(); // contorno/base
+      g.save(); path(); g.clip();
+      g.fillStyle = cols[1]; g.beginPath(); g.ellipse(cx - 1, cy - 1, rw * 0.92, rh * 0.86, 0, 0, 7); g.fill(); // corpo
+      g.fillStyle = cols[2]; g.beginPath(); g.moveTo(cx - rw, cy - rh * 0.2); g.lineTo(cx - rw * 0.2, cy - rh); g.lineTo(cx + rw * 0.5, cy - rh * 0.9); g.lineTo(cx + rw * 0.1, cy - rh * 0.1); g.closePath(); g.fill(); // face de cima, iluminada
+      g.fillStyle = cols[0]; g.globalAlpha = 0.45; g.beginPath(); g.moveTo(cx + rw * 0.1, cy - rh * 0.1); g.lineTo(cx + rw, cy); g.lineTo(cx + rw, cy + rh); g.lineTo(cx - rw * 0.2, cy + rh); g.closePath(); g.fill(); g.globalAlpha = 1; // lado na sombra
+      g.restore();
+      g.strokeStyle = cols[0]; g.lineWidth = 1.5; path(); g.stroke();
+      px(cols[3], cx - rw * 0.45, cy - rh * 0.65, 3, 2); px(cols[3], cx - rw * 0.15, cy - rh * 0.8, 2, 1); // brilho
+    };
+    const ROCKC = zz === 4 ? ['#2a2433', '#4a4058', '#6b5f7d', '#a99bbd'] : zz === 3 ? ['#4a4136', '#7a6e5e', '#9c8f7b', '#d6cbb6'] : ['#3d3a35', '#6f6a60', '#938c80', '#cfc9bd'];
+    const moss = (x, y) => { if (zz === 1 || zz === 2) { px('#4f8a3a', x, y, 4, 2); px('#6cae4a', x + 1, y - 1, 2, 1); } };
     if (kind === TK.BOULDER) {
       sh();
-      circ('#6d665c', 16, 28, 13); circ('#8a8276', 14, 26, 11); circ('#aaa294', 11, 22, 4);
-      px('#5b554b', 20, 33, 6, 2);
+      stone(16, 28, 14, 12, ROCKC, v + 7);
+      moss(7, 33);
+      px(ROCKC[0], 18, 26, 1, 5); px(ROCKC[0], 18, 30, 4, 1); // risco na pedra
     } else if (kind === TK.CRACKED) {
+      // pedra rachada (Rock Smash): rachaduras claras e lascas no chão, para ver que dá para quebrar
       sh();
-      g.fillStyle = '#8a7a66'; g.beginPath(); g.ellipse(16, 30, 13, 10, 0, 0, 7); g.fill();
-      g.fillStyle = '#a8977f'; g.beginPath(); g.ellipse(12, 26, 5, 3, 0, 0, 7); g.fill();
-      g.strokeStyle = '#3f362b'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(10, 24); g.lineTo(15, 30); g.lineTo(13, 35); g.moveTo(15, 30); g.lineTo(22, 28); g.lineTo(24, 33); g.stroke();
+      stone(16, 29, 13, 11, ['#4a3e30', '#8a7a64', '#ab9a80', '#e8dcc4'], v + 3);
+      g.strokeStyle = '#2b2219'; g.lineWidth = 2; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(9, 22); g.lineTo(14, 29); g.lineTo(12, 36); g.moveTo(14, 29); g.lineTo(21, 27); g.lineTo(24, 33); g.moveTo(21, 27); g.lineTo(22, 21); g.stroke();
+      g.strokeStyle = 'rgba(255,236,190,.75)'; g.lineWidth = 1; // brilho dentro da rachadura
+      g.beginPath(); g.moveTo(10, 22); g.lineTo(14.5, 28.5); g.moveTo(15, 29); g.lineTo(21, 27); g.stroke();
+      px('#8a7a64', 4, 37, 3, 2); px('#ab9a80', 26, 38, 2, 2); px('#6f604c', 23, 39, 2, 1); // lascas
     } else if (kind === TK.CUTTREE) {
-      sh(); px('#6b4423', 14, 32, 4, 8);
-      circ('#1d5a24', 16, 26, 11); circ('#2f8f3a', 16, 25, 9); circ('#56b04a', 13, 21, 4);
-      px('#1d5a24', 15, 15, 2, 4); px('#e5e7eb', 21, 30, 4, 1); px('#e5e7eb', 22, 29, 1, 3);
+      // arbusto espinhoso (Cut): galhos finos e folhagem em tufos, com espinhos e a marca de corte no tronco
+      sh();
+      g.strokeStyle = '#5a3a1c'; g.lineWidth = 3; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(16, 40); g.lineTo(16, 27); g.moveTo(16, 33); g.lineTo(10, 26); g.moveTo(16, 31); g.lineTo(23, 24); g.stroke();
+      const lf = zz === 4 ? ['#2a2140', '#43356a', '#6b58a0'] : ['#1f4a22', '#2f7a36', '#5fae4c'];
+      for (const [x, y, r] of [[10, 23, 7], [22, 21, 7], [16, 17, 8], [13, 27, 5], [20, 28, 5]]) { circ(lf[0], x, y, r); circ(lf[1], x - 1, y - 1, r - 1.5); }
+      for (const [x, y] of [[13, 15], [20, 18], [8, 21], [17, 24]]) { px(lf[2], x, y, 2, 2); }
+      px('#e5e7eb', 6, 18, 2, 1); px('#e5e7eb', 26, 17, 2, 1); px('#e5e7eb', 15, 10, 1, 2); px('#e5e7eb', 24, 27, 2, 1); // espinhos
+      g.strokeStyle = '#f5f0e1'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(14, 35); g.lineTo(18, 32); g.stroke(); // marca de corte
     } else if (kind === TK.TREE || kind === TK.DTREE) {
       const cs = zz === 2 ? ['#1d4d24', '#2b6b33', '#3f8a44'] : zz === 4 ? ['#2b1f3a', '#3d2d52', '#57417a'] : zz === 3 ? ['#3b5a2c', '#4f7a3a', '#6f9a4a'] : ['#2a7a34', '#3c9a44', '#6cc25a'];
       sh(); px('#6b4423', 13, 28, 6, 12); px('#4e311a', 13, 28, 2, 12);
@@ -445,10 +472,11 @@ function tileImg(kind, z, v) {
       }
       px('#f1f5f9', 14, -1 + 1, 4, 3); px('#e2e8f0', 12, 13, 3, 2); px('#e2e8f0', 19, 22, 3, 2);
     } else if (kind === TK.ROCK) {
+      // pedra solta: uma maior e às vezes uma pedrinha ao lado
       sh();
-      g.fillStyle = '#7b7468'; g.beginPath(); g.ellipse(16, 32, 12, 9, 0, 0, 7); g.fill();
-      g.fillStyle = '#a8a092'; g.beginPath(); g.ellipse(12, 28, 5, 3, 0, 0, 7); g.fill();
-      px('#5b554b', 18, 34, 6, 2);
+      stone(15, 32, 11, 8, ROCKC, v + 11);
+      if (R(1) < 0.55) stone(26, 37, 4, 3, ROCKC, v + 19);
+      moss(9, 36);
     } else if (kind === TK.DEAD) {
       sh();
       g.strokeStyle = '#5b4a42'; g.lineWidth = 4; g.lineCap = 'round';
