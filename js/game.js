@@ -182,18 +182,18 @@ const curWpn = P => (P.wildT > 0 ? wildWpn(P.wildType) : CLASSES[P.cls].wpn);
 const A = (P, k) => P.attrs[k] / 2 + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus : 0);
 // valor mostrado no painel (pontos)
 const Araw = (P, k) => P.attrs[k] + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus * 2 : 0);
-// começo: vida e defesa extras que diminuem a cada nível e zeram no Nv 7 (no fim da zona 1 o herói fica como antes)
-let ROOKIE_HP = 50, ROOKIE_AC = 4; // calibrado na zona 1: sem bônus ~1,3 morte por partida até o Nv 7; com +50/+4, ~0,2
-const rookie = P => Math.max(0, (7 - P.lvl) / 6);
+// curva de vida: começa mais alta, cresce a cada nível começando devagar e acelerando até o ritmo normal no Nv 7
+// (onde a vida é a mesma de antes); daí em diante cresce normalmente. Sem trancos: o crescimento por nível só aumenta.
+const hpLvl = P => (P.lvl >= 7 ? P.lvl : P.lvl + 0.08 * (7 - P.lvl) ** 2);
 const maxHP = P => {
   const c = CLASSES[P.cls];
-  let h = 15 + rookie(P) * ROOKIE_HP + (c.hd / 2 + A(P, 'VIG')) * P.lvl + (P.race === 'anao' ? 2 * P.lvl : 0) + (hasT(P, 'robusto') ? 2 * P.lvl : 0);
+  let h = 15 + (c.hd / 2 + A(P, 'VIG')) * hpLvl(P) + (P.race === 'anao' ? 2 * P.lvl : 0) + (hasT(P, 'robusto') ? 2 * P.lvl : 0);
   if (hasS(P, 'barbaro')) h *= 1.25;
   if (P.wildT > 0) h *= hasS(P, 'lua') ? 1.5 : 1.3; // Forma Selvagem
   return Math.round(h * (1 + M(P, 'hp')));
 };
 const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armadura ? P.equip.armadura.ac : 0)
-  + Math.round(rookie(P) * ROOKIE_AC) + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
+  + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
 const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
 const outOfCombat = P => P.sinceHit > 4 && G.time - (P.shotT === undefined ? -99 : P.shotT) > 4 && !P.pvp;
