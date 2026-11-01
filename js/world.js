@@ -91,6 +91,7 @@ function shopList(P) {
     { id: 'pot', nome: 'Poção de Cura', icon: '❤️', preco: 25 },
     { id: 'doce', nome: 'Doce Raro (+1 nível do companheiro)', icon: '🍬', preco: 140 },
     { id: 'stone', nome: 'Cristal de tipo aleatório', icon: '💎', preco: 50 },
+    { id: 'abra', nome: 'Talismã de Abra (fuga instantânea para a cidade, [Z])', icon: '🌀', preco: 220 },
     { id: 'arma', nome: CLASSES[P.cls].weapons[tier], icon: CLASSES[P.cls].wicon, preco: 60 + tier * 45, tier },
     { id: 'armadura', nome: ARMORS[tier], icon: '🛡️', preco: 50 + tier * 40, tier },
     { id: 'anel', nome: 'Anel aleatório', icon: '💍', preco: 70 + tier * 30, tier },
@@ -857,7 +858,7 @@ function openXChest(P, c) {
   let items, gold;
   if (c.kind === 'gua') {
     const acc = genItem(5, pick(['anel', 'amuleto'])); if (!acc.name.includes('✧') && Math.random() < 0.5) enchant(acc);
-    items = [statPot(), genItem(clamp(z + 2, 0, 6)), acc, consItem('ultra'), consItem('ultra')]; gold = 400;
+    items = [statPot(), genItem(clamp(z + 2, 0, 6)), acc, consItem('ultra'), consItem('ultra'), consItem('abra')]; gold = 400;
   } else {
     items = [genItem(clamp(z + 1, 0, 6)), potion(), Math.random() < 0.5 ? ballItem() : consItem('grande')];
     if (Math.random() < 0.25) items.push(consItem('doce'));

@@ -225,7 +225,7 @@ function createPlayer(name, h) {
     name, cls: h.cls, race: h.race, ptype: h.type, subclass: null, lvl: 1, xp: 0, legends: 0, kills: 0, gold: 20,
     attrs: { ...h.attrs }, points: h.points || 0, attrV2: 1, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
     equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: null, amuleto: null },
-    inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0 }, ballSel: 'poke', story: { ch: 0, done: false },
+    inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0, abra: 1 }, ballSel: 'poke', story: { ch: 0, done: false },
     pets: [], petIdx: -1, petAct: [], stories: {}, hmsR: {}, quests: {}, qOffers: {}, hasteT: 0, slowCd: 0, hms: [], fly: ['vila'], chests: [], flyCd: 0,
     x: rand(-40, 40), y: rand(55, 80), hp: 1, shootCd: 0, abilCd: 0, breathCd: 0, furia: 0, invis: 0, nextCrit: false,
     recallCd: 0, dashCd: 0, dodgeT: 0, shield: 0, shieldT: 0, seloT: 0, sinceHit: 10, face: 1, walk: 0, moving: false, aim: 0, tempType: null, tempTypeT: 0, alt: 0.14, auraT: 0, giftT: 0,
@@ -1076,6 +1076,7 @@ function updatePlayer(dt) {
   P.graceT = Math.max(0, (P.graceT || 0) - dt); P.graceCd = Math.max(0, (P.graceCd || 0) - dt);
   P.invis = Math.max(0, P.invis - dt);
   P.recallCd = Math.max(0, P.recallCd - dt);
+  P.abraCd = Math.max(0, (P.abraCd || 0) - dt);
   if (P.tempTypeT > 0) {
     P.tempTypeT -= dt;
     if (P.tempTypeT <= 0) { P.tempType = null; G.toasts.push({ text: `O cristal se apagou. Você voltou a ser tipo ${TYPE_PT[P.ptype]}.`, color: '#cbd5e1', t: 3 }); }
@@ -1904,7 +1905,7 @@ function updatePanel() {
     return `<div class="slot" data-inv="${i}" style="border-color:${itemColor(it)}" title="${esc(it.name)} — ${itemDesc(it)}${it.slot === 'pedra' ? '' : ` (${TIER_NAMES[it.tier]})`}\n${hint} · Shift+clique: ${it.locked ? 'destravar' : 'travar (não vende nem solta)'} · Botão direito: soltar no chão">${itemIcon(it)}${better ? '<i class="up">▲</i>' : ''}${it.locked ? '<i class="lock">🔒</i>' : ''}</div>`;
   }).join('') + '</div>';
   const bsel = P.ballSel || 'poke';
-  $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}</button></div>
+  $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}</button><button data-abra="1" title="Talismã de Abra [Z]: te teletransporta na hora para a última cidade, até no meio de uma luta ou de uma masmorra. Vende no Mercador.">🌀 ×${P.bag.abra || 0}${P.abraCd > 0 ? ` (${Math.ceil(P.abraCd)}s)` : ''}</button></div>
     <div class="potrow balls">${Object.keys(BALLS).map(k => `<button data-ball="${k}" class="${bsel === k ? 'sel' : ''}" title="${BALLS[k].nome} (+${BALLS[k].bonus} na captura). Clique (ou [G]) para escolher qual o F joga.">${BALLS[k].icon} ×${ballCount(P, k)}</button>`).join('')}</div>`;
   $('p-pets').innerHTML = `<h4>Companheiros <span class="small" title="Fora da Pokébola / máximo ao mesmo tempo">${P.petAct.length}/${petSlots(P)} fora · ${P.pets.length}/${petCap(P)}</span></h4>` + (P.pets.length
     ? `<div class="pets">${P.pets.map((pt, i) => {
@@ -1930,7 +1931,7 @@ function updatePanel() {
 }
 
 $('panel').addEventListener('click', ev => {
-  const t = ev.target.closest('[data-attr],[data-inv],[data-eq],[data-pot],[data-ball],[data-copy],[data-tal],[data-sub],[data-pet],[data-candy],[data-save],[data-teach],[data-stoneevo]');
+  const t = ev.target.closest('[data-attr],[data-inv],[data-eq],[data-pot],[data-ball],[data-copy],[data-tal],[data-sub],[data-pet],[data-candy],[data-save],[data-teach],[data-stoneevo],[data-abra]');
   if (!t || !G || !G.P) return;
   const P = G.P;
   if (t.dataset.attr) {
@@ -1953,6 +1954,7 @@ $('panel').addEventListener('click', ev => {
     const i = P.inv.indexOf(null);
     if (i >= 0) { P.inv[i] = P.equip[t.dataset.eq]; P.equip[t.dataset.eq] = null; }
   } else if (t.dataset.pot) usePotion();
+  else if (t.dataset.abra) useAbra();
   else if (t.dataset.candy) giveCandy();
   else if (t.dataset.save) exportSave();
   else if (t.dataset.stoneevo !== undefined) crystalEvolve(+t.dataset.stoneevo);
@@ -2023,6 +2025,7 @@ window.addEventListener('keydown', ev => {
   else if (ev.code === 'Space') { ev.preventDefault(); useAbility(); }
   else if (ev.code === 'KeyQ' || ev.code === 'Digit1') usePotion();
   else if (ev.code === 'KeyX') toggleRide();
+  else if (ev.code === 'KeyZ' || ev.code === 'Digit2') useAbra();
   else if (ev.code === 'KeyV') { if (G.npcOpen === 'fly') closeNPC(); else openFly(); }
   else if (ev.code === 'KeyF') throwBall();
   else if (ev.code === 'KeyG') cycleBall();
@@ -2196,7 +2199,7 @@ async function startGame(saved) {
     if (!RACES[P.race]) P.race = 'humano';
     if (!TYPE_PT[P.ptype]) P.ptype = 'normal';
     if (!('amuleto' in P.equip)) P.equip.amuleto = null;
-    P.bag = Object.assign({ grande: 0, ultra: 0, doce: 0 }, P.bag || {});
+    P.bag = Object.assign({ grande: 0, ultra: 0, doce: 0, abra: 0 }, P.bag || {});
     delete P.bag.elixir;
     P.fly = P.fly || ['vila']; P.chests = P.chests || [];
     for (const pt of P.pets) pt.hms = (pt.hms || []).filter(k => HMS[k]);
@@ -2562,4 +2565,25 @@ function drawTeles(ox, oy) {
     }
     ctx.restore();
   }
+}
+
+/* ---------- Talismã de Abra: fuga de emergência ----------
+ * Como o Teleporte do Abra: tira você na hora de qualquer lugar (luta, masmorra, torre) e te leva para a última cidade.
+ * Você fica intocável por um instante enquanto some. Não funciona na arena PvP. Recarga de 20s entre usos.
+ */
+function useAbra() {
+  const P = G.P;
+  if (!P) return;
+  if (!(P.bag.abra > 0)) return G.toasts.push({ text: '🌀 Você não tem Talismã de Abra. O Mercador vende.', color: '#fca5a5', t: 2.5 });
+  if (P.pvp || inArena(P.x, P.y)) return text(P.x, P.y - 40, 'O talismã não funciona na arena', '#fca5a5', 12);
+  if (P.abraCd > 0) return text(P.x, P.y - 40, `🌀 Recarregando (${Math.ceil(P.abraCd)}s)`, '#fca5a5', 12);
+  if (!inDungeonArea(P.x) && inTown(P.x, P.y)) return text(P.x, P.y - 40, 'Você já está numa cidade', '#cbd5e1', 12);
+  const t = TOWNS[P.lastTown] || TOWNS[0];
+  P.bag.abra--; P.abraCd = 20; P.dodgeT = 1.2; P.riding = false; G.recall = null; P.dash = null;
+  burst(P.x, P.y, '#c084fc', 34); burst(P.x, P.y, '#fde68a', 16);
+  G.fx.push({ k: 'ring', x: P.x, y: P.y, r: 0, R: 90, life: 0.5, max: 0.5, color: '#c084fc' });
+  P.x = t.x + rand(-50, 50); P.y = t.y + rand(55, 80);
+  burst(P.x, P.y, '#c084fc', 34);
+  G.toasts.push({ text: `🌀 O Talismã de Abra te teletransportou para ${townName(t)}! (restam ${P.bag.abra})`, color: '#c4b5fd', t: 4 });
+  sfx('pot'); G.dirty = true; saveGame();
 }

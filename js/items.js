@@ -75,6 +75,7 @@ const CONS = {
   grande: { nome: 'Great Ball', icon: '🔵', bonus: 3 },
   ultra: { nome: 'Ultra Ball', icon: '🟡', bonus: 6 },
   doce: { nome: 'Doce Raro', icon: '🍬' },
+  abra: { nome: 'Talismã de Abra', icon: '🌀' }, // fuga de emergência ([Z])
   elixir: { nome: 'Elixir de Poder', icon: '🧪' },
   pPOD: { nome: 'Poção de Poder', icon: '🟥', stat: 'POD' },
   pAGI: { nome: 'Poção de Agilidade', icon: '🟩', stat: 'AGI' },
