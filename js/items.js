@@ -162,7 +162,7 @@ function enchant(it, en = pick(ENCHANTS)) {
 // Limitada pelo nível: quem corre cedo para uma zona alta não pega item de fim de jogo.
 function zoneTier(z, bonus = 0) {
   const P = G && G.P, byZone = (clamp(z || 1, 1, 5) - 1) * 1.25, byLvl = P ? (P.lvl - 1) / 29 * 5 + 1 : 5;
-  return clamp(Math.round(Math.min(byZone, byLvl) + bonus + rand(-0.6, 0.6)), 0, 6);
+  return clamp(Math.round(Math.min(byZone, byLvl) + bonus - 0.45 + rand(-0.6, 0.6)), 0, 6); // -0,45: prêmios um pouco mais modestos
 }
 function genItem(tier, slot) {
   const P = G.P;
