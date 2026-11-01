@@ -389,6 +389,7 @@ function capture(e, rollTxt, k = 'poke') {
   e.hp = 0; e.dead = true;
   const lvl = clamp(e.lvl || e.zone * 5 - 4, 1, 28); // o companheiro vem no nível em que foi capturado
   P.pets.push({ pid: e.pid, name: e.p.name, type: e.type, lvl, xp: 0 });
+  dexCatch(P, e.pid);
   if (P.petAct.length < petSlots(P)) { P.petAct.push(P.pets.length - 1); P.petIdx = P.petAct[0]; }
   loadEvo(e.pid);
   burst(e.x, e.y, '#f87171', 30);

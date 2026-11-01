@@ -6,6 +6,7 @@ const NPCS = [
   { id: 'ferreiro', nome: 'Ferreira Duna', icon: '🔨', x: -140, y: 136, spr: { h: '#ea580c', b: '#57534e', d: '#292524' }, fala: 'Traga ouro e eu deixo seu equipamento mais forte.' },
   { id: 'guilda', nome: 'Mestre da Guilda', icon: '📜', x: 140, y: 140, spr: { h: '#e5e7eb', b: '#1d4ed8', d: '#1e3a8a' }, fala: 'O reino precisa de heróis. Escolha um contrato.' },
   { id: 'sildo', nome: 'Sildo Invernal', icon: '🛡️', x: 0, y: -205, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
+  { id: 'dex', nome: 'Pesquisadora Íris', icon: '📖', x: 60, y: 205, spr: { h: '#7c2d12', b: '#f8fafc', d: '#0f766e' }, fala: '' },
   { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '', show: P => storyOver(P) },
 ];
 const NPC_SPR = {};
@@ -27,7 +28,7 @@ function rebuildTownNPCs() {
   NPCS2.length = 0;
   const t = TOWNS[1];
   if (!t) return;
-  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo'].includes(n.id))
+  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex'].includes(n.id))
     NPCS2.push({ ...n, x: n.x + t.x, y: n.y + t.y, town: 1, nome: n.id === 'sildo' ? `Assistente ${REGION.guia.nome.split(' ').pop()}` : n.nome, show: null });
 }
 const allNPCs = () => NPCS.concat(NPCS2);
@@ -104,6 +105,8 @@ function renderNPC() {
       <button data-act="buy:${s.id}" ${P.gold < s.preco ? 'disabled' : ''}>${s.preco} 🪙</button></div>`).join('');
     const inv = P.inv.map((it, i) => it ? `<button class="sell" data-act="sell:${i}" title="${esc(it.name)}">${itemIcon(it)} ${esc(it.name)} → ${sellPrice(it)} 🪙</button>` : '').join('');
     body += `<h4>Vender</h4>${inv || '<div class="small">Mochila vazia.</div>'}`;
+  } else if (n.id === 'dex') {
+    body += renderDexNPC(P);
   } else if (n.id === 'sildo' || n.id === 'gundo') {
     body += renderStoryNPC(n, P);
   } else if (n.id === 'ferreiro') {
@@ -153,6 +156,8 @@ $('npc').addEventListener('click', ev => {
   else if (act === 'abandon') { P.quest = null; }
   else if (act === 'claim') claimQuest(P);
   else if (act === 'story') storyAct(P, arg);
+  else if (act === 'dex') dexClaim(P, +arg);
+  else if (act === 'dexopen') { closeNPC(); toggleDex(); }
   else if (act === 'fly') { flyTo(P, arg); return; }
   else if (act === 'reforge') {
     const it = P.equip[arg], c = 40 + it.tier * 40;
@@ -628,4 +633,85 @@ function drawWeather() {
     for (let i = 0; i < 150; i++) { const x = ((i * 89.3 + Math.sin(t + i) * 30 + t * 40) % (W + 40)) - 20, y = ((i * 47.9 + t * 110) % (H + 40)) - 20; ctx.fillRect(x, y, i % 3 ? 2 : 3, i % 3 ? 2 : 3); }
   }
   ctx.restore();
+}
+
+/* ============ Pokédex por região ============
+ * Espécies da região: zonas, água, noite, raros, migração, ginásios e lendários.
+ * Visto = encontrou de perto. Capturado = pegou (lendários contam ao serem derrotados).
+ * A Pesquisadora (na vila e na 2ª cidade) dá recompensas e títulos pelo progresso.
+ */
+const DEX_IDS = [], DEX_WHERE = {};
+function buildDex() {
+  const where = {};
+  const add = (id, w) => { if (!id) return; (where[id] = where[id] || new Set()).add(w); };
+  for (let z = 1; z <= 5; z++) { for (const id of ZONE_POOLS[z] || []) add(id, `Zona ${z}`); for (const id of WATER_POOLS[z] || []) add(id, `Água · zona ${z}`); }
+  for (const id of NIGHT_POOL) add(id, 'à noite');
+  for (const id of RARE_POOL) add(id, 'raro (eventos)');
+  for (const id of MIGRATION_POOL) add(id, 'migração (eventos)');
+  for (const k of Object.keys(THEMES)) { const t = THEMES[k]; if (!t.story) continue; for (const id of t.pool) add(id, t.nome); add(t.boss, t.nome); }
+  for (const id of BOSSES) add(id, 'lendário (depois da história)');
+  replaceArr(DEX_IDS, Object.keys(where).map(Number).sort((a, b) => a - b));
+  for (const k of Object.keys(DEX_WHERE)) delete DEX_WHERE[k];
+  for (const id of DEX_IDS) DEX_WHERE[id] = [...where[id]].join(' · ');
+}
+const dexOf = P => { P.dexR = P.dexR || {}; return P.dexR[REGION_ID] = P.dexR[REGION_ID] || { s: [], c: [], claim: [] }; };
+function dexSee(P, pid) { const d = dexOf(P); if (DEX_WHERE[pid] && !d.s.includes(pid)) { d.s.push(pid); G.dirty = true; } }
+function dexCatch(P, pid) {
+  const d = dexOf(P);
+  dexSee(P, pid);
+  if (!DEX_WHERE[pid] || d.c.includes(pid)) return;
+  d.c.push(pid);
+  const pc = Math.floor(d.c.length / DEX_IDS.length * 100), next = DEX_GOALS.find(g => !d.claim.includes(g.pc) && pc >= g.pc);
+  G.toasts.push({ text: `📖 ${POKE[pid] ? POKE[pid].name : 'Novo Pokémon'} registrado na Pokédex (${d.c.length}/${DEX_IDS.length})${next ? ' · fale com a Pesquisadora!' : ''}`, color: '#a7f3d0', t: 3.5 });
+}
+// marca como vistos os Pokémon por perto
+function dexTick(dt) {
+  const P = G.P;
+  if (!P || (G.dexT = (G.dexT || 0) - dt) > 0) return;
+  G.dexT = 0.5;
+  for (const e of G.enemies) if (!e.dead && Math.abs(e.x - P.x) < 560 && Math.abs(e.y - P.y) < 400) dexSee(P, e.pid);
+}
+const regTitle = s => s.replace('{R}', REGION.nome);
+const DEX_GOALS = [
+  { pc: 10, txt: '5 Great Balls', give: P => { P.bag.grande += 5; } },
+  { pc: 25, txt: '3 Ultra Balls e +1 vaga de companheiro', give: P => { P.bag.ultra += 3; if (petCap(P) < PET_CAP_MAX) P.petCap = petCap(P) + 1; else P.bag.ultra += 3; } },
+  { pc: 50, txt: 'Amuleto do Colecionador e o título "Pesquisador(a) de {R}"', title: 'Pesquisador(a) de {R}',
+    give: P => giveItem(P, { slot: 'amuleto', tier: 4, name: 'Amuleto do Colecionador', mods: { cap: 2, xp: 0.1 } }) },
+  { pc: 75, txt: 'Poção de atributo, 5 Ultra Balls e o título "Colecionador(a) de {R}"', title: 'Colecionador(a) de {R}', give: P => { drinkStat(P, pick(ATTRS)); P.bag.ultra += 5; } },
+  { pc: 100, txt: 'Um item Artefato e o título "Mestre Pokémon de {R}"', title: 'Mestre Pokémon de {R}', give: P => giveItem(P, genItem(6)) },
+];
+function giveItem(P, it) { const i = P.inv.indexOf(null); if (i >= 0) P.inv[i] = it; else G.bags.push({ x: P.x, y: P.y + 30, items: [it], life: 120 }); }
+function dexClaim(P, pc) {
+  const d = dexOf(P), g = DEX_GOALS.find(x => x.pc === pc);
+  if (!g || d.claim.includes(pc) || d.c.length / DEX_IDS.length * 100 < pc) return;
+  d.claim.push(pc);
+  g.give(P);
+  if (g.title) { P.titles = P.titles || []; const t = regTitle(g.title); if (!P.titles.includes(t)) P.titles.push(t); P.title = t; }
+  G.toasts.push({ text: `🎁 Pokédex ${pc}%: ${regTitle(g.txt)}`, color: '#fde047', t: 5, big: 1 });
+  sfx('lvl'); saveGame();
+}
+const dexIcon = pid => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-vii/icons/${pid}.png`;
+const dexName = pid => (POKE[pid] || (typeof POKEDEX_PRELOAD !== 'undefined' && POKEDEX_PRELOAD[pid]) || {}).name || '???';
+function renderDex() {
+  const P = G.P, d = dexOf(P), box = $('dex');
+  const cells = DEX_IDS.map(pid => {
+    const c = d.c.includes(pid), s = c || d.s.includes(pid);
+    return `<div class="dexc ${c ? 'got' : s ? 'seen' : 'unk'}" title="${s ? `${esc(dexName(pid))} — ${DEX_WHERE[pid]}` : '??? — ainda não encontrado'}">
+      <img src="${dexIcon(pid)}" alt="" loading="lazy">${c ? '<i>●</i>' : ''}<span>${s ? esc(dexName(pid)) : '???'}</span></div>`;
+  }).join('');
+  box.innerHTML = `<h3>📖 Pokédex de ${REGION.nome} <span class="small">[P] fecha</span></h3>
+    <div class="small">${d.s.length} vistos · <b>${d.c.length}/${DEX_IDS.length}</b> capturados (${Math.floor(d.c.length / DEX_IDS.length * 100)}%) · passe o mouse para ver onde cada um aparece. Lendários contam ao serem derrotados.</div>
+    <div class="dexgrid">${cells}</div>`;
+}
+function toggleDex() {
+  const box = $('dex');
+  if (box.classList.contains('hidden')) { renderDex(); box.classList.remove('hidden'); } else box.classList.add('hidden');
+}
+function renderDexNPC(P) {
+  const d = dexOf(P), pc = d.c.length / DEX_IDS.length * 100;
+  return `<p class="fala">"Estou registrando todas as espécies de ${REGION.nome}. Cada Pokémon que você captura me ajuda muito, e eu sei recompensar quem ajuda!"</p>
+    <div class="small">Capturados: <b>${d.c.length}/${DEX_IDS.length}</b> (${Math.floor(pc)}%) · vistos: ${d.s.length}. Abra a Pokédex com <b>[P]</b>.</div>
+    ${DEX_GOALS.map(g => { const ok = d.claim.includes(g.pc), can = !ok && pc >= g.pc;
+      return `<div class="shoprow"><span>${ok ? '✅' : can ? '🎁' : '🔒'} <b>${g.pc}%</b>: ${regTitle(g.txt)}</span>${can ? `<button data-act="dex:${g.pc}" class="good">Receber</button>` : ''}</div>`; }).join('')}
+    <button data-act="dexopen">📖 Abrir a Pokédex</button>`;
 }

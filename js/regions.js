@@ -333,4 +333,5 @@ function setRegion(id) {
   if (typeof buildNPCSprites === 'function') buildNPCSprites();
   rebuildWorld();
   rebuildTownNPCs();
+  buildDex();
 }

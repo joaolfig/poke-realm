@@ -230,7 +230,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -588,7 +588,7 @@ function onKill(m) {
   if (m.kind === 3) questProgress('masmorra');
   if (m.st >= 10) questProgress('caca', { pid: m.pid });
   storyKill(m);
-  if (m.kind === 2) P.legends = (P.legends || 0) + 1; // lendário: conta para todos que estavam perto
+  if (m.kind === 2) { P.legends = (P.legends || 0) + 1; dexCatch(P, m.pid); } // lendário: conta para todos que estavam perto (e entra na Pokédex)
   rollLoot(m); // saque: cada jogador perto rola o seu, mesmo sem ter acertado
   const xp = Math.max(1, Math.round(m.xp * xpShare * (1 + M(P, 'xp'))));
   gainXP(xp);
@@ -1184,6 +1184,7 @@ function update(dt) {
   if (isHost()) { updateEnemiesHost(dt); hostSpawning(dt); hostBoss(dt); hostDungeons(dt); hostEvents(dt); hostWeather(dt); }
   else { updateEnemiesClient(dt); for (const p of G.portals) p.ttl -= dt; }
   weatherTick(dt);
+  dexTick(dt);
 
   for (const r of G.remotes.values()) {
     if (r.tx === undefined) continue;
@@ -1736,7 +1737,7 @@ function updatePanel() {
   if (!G.dirty) return;
   G.dirty = false;
   const rc = race(P), sub = P.subclass ? subInfo(P.subclass) : null;
-  $('p-head').innerHTML = `<div class="pname">${esc(P.name)}</div><div class="pcls" title="${rc.traco}">${rc.nome} ${c.nome}${sub ? ` (${sub.nome})` : ''} · Nível ${P.lvl}</div>`;
+  $('p-head').innerHTML = `<div class="pname">${esc(P.name)}</div>${P.title ? `<div class="ptitle">🏅 ${esc(P.title)}</div>` : ''}<div class="pcls" title="${rc.traco}">${rc.nome} ${c.nome}${sub ? ` (${sub.nome})` : ''} · Nível ${P.lvl}</div>`;
   let choose = '';
   if (P.lvl >= SUB_LVL && !P.subclass) {
     choose += `<h4>Escolha sua subclasse <span class="pts">nível ${SUB_LVL}!</span></h4>` + SUBCLASSES[P.cls].map(s =>
@@ -1898,6 +1899,7 @@ window.addEventListener('keydown', ev => {
   else if (ev.code === 'KeyT') autofire = !autofire;
   else if (ev.code === 'KeyM') { showMap = (showMap + 1) % 3; if (showMap === 2) G.toasts.push({ text: '🗺️ Mapa da região: só aparece o que você já explorou. [M] de novo esconde.', color: '#e5e7eb', t: 2.5 }); }
   else if (ev.code === 'KeyH') $('help').classList.toggle('hidden');
+  else if (ev.code === 'KeyP') toggleDex();
   else if (ev.code === 'ShiftLeft' || ev.code === 'ShiftRight') doDash();
   else if (ev.code === 'KeyN') G.toasts.push({ text: cycleSound(), color: '#e5e7eb', t: 1.8 });
   else if (ev.code === 'KeyR') {
