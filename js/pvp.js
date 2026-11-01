@@ -83,8 +83,8 @@ function pvpLeave(lost, by) {
 // Só vale na arena (nada disso muda o dano contra Pokémon).
 // PVP_K: fração do dano normal que chega no rival (baixa, para as lutas durarem e dar tempo de desviar).
 // PVP_CLS: ajuste do tiro básico por classe (medido no Nv 30): quem tem pouco alcance bate mais, o Mago (2 projéteis) bate menos.
-const PVP_K = 0.35;
-const PVP_CLS = { guerreiro: 1.25, mago: 0.62, ladino: 1.06, clerigo: 1.09, patrulheiro: 1.14 };
+const PVP_K = 0.45;
+const PVP_CLS = { guerreiro: 1.25, mago: 0.8, ladino: 1.06, clerigo: 1.0, patrulheiro: 1.04 };
 // de cada rajada (projéteis que saem juntos do mesmo ponto: leque, Bomba Arcana, flechas) no máximo PVP_VOLLEY acertam
 const PVP_VOLLEY = 3;
 // rivais da arena como alvos dos especiais de área (raio do Evocador, explosão do Necromante)
