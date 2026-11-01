@@ -184,13 +184,13 @@ const A = (P, k) => P.attrs[k] / 2 + (P.equip.anel && P.equip.anel.attr === k ? 
 const Araw = (P, k) => P.attrs[k] + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus * 2 : 0);
 const maxHP = P => {
   const c = CLASSES[P.cls];
-  let h = 15 + (c.hd / 2 + A(P, 'VIG')) * P.lvl + (P.race === 'anao' ? 2 * P.lvl : 0) + (hasT(P, 'robusto') ? 2 * P.lvl : 0);
+  let h = 15 + rookie(P) * ROOKIE_HP + (c.hd / 2 + A(P, 'VIG')) * P.lvl + (P.race === 'anao' ? 2 * P.lvl : 0) + (hasT(P, 'robusto') ? 2 * P.lvl : 0);
   if (hasS(P, 'barbaro')) h *= 1.25;
   if (P.wildT > 0) h *= hasS(P, 'lua') ? 1.5 : 1.3; // Forma Selvagem
   return Math.round(h * (1 + M(P, 'hp')));
 };
 const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armadura ? P.equip.armadura.ac : 0)
-  + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
+  + Math.round(rookie(P) * ROOKIE_AC) + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
 const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
 const outOfCombat = P => P.sinceHit > 4 && G.time - (P.shotT === undefined ? -99 : P.shotT) > 4 && !P.pvp;
@@ -230,7 +230,7 @@ function createPlayer(name, h) {
   const P = {
     name, cls: h.cls, race: h.race, ptype: h.type, subclass: null, lvl: 1, xp: 0, legends: 0, kills: 0, gold: 20,
     attrs: { ...h.attrs }, points: h.points || 0, attrV2: 1, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
-    equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: starterRing(), amuleto: null },
+    equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: null, amuleto: null },
     inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0, abra: 0 }, ballSel: 'poke', story: { ch: 0, done: false },
     pets: [], petIdx: -1, petAct: [], stories: {}, hmsR: {}, quests: {}, qOffers: {}, hasteT: 0, slowCd: 0, hms: [], fly: ['vila'], chests: [], flyCd: 0,
     x: rand(-40, 40), y: rand(55, 80), hp: 1, shootCd: 0, abilCd: 0, breathCd: 0, furia: 0, invis: 0, nextCrit: false,
@@ -326,7 +326,7 @@ function enemyStats(pid, zone, kind) {
     speed: (35 + (st.speed || 50) * 0.55) * (legend || dboss ? 0.6 : rare ? 1.5 : 1),
     scale: legend ? 4.2 : dboss ? 3.3 : clamp(1.7 + (p.height || 10) / 35, 1.7, 2.8) * (alfa || rare ? 1.3 : 1),
     xp: Math.round((p.exp || 100) * (0.4 + zone * 0.35) * (1 + (zone - 1) * 0.1) * (legend ? 45 : dboss ? 8 : alfa ? 3 : rare ? 4 : 1)),
-    cdMul: (zone === 1 ? 1.15 : zone === 2 ? 0.85 : zone >= 5 ? 1.1 : 1) / (1 + (zone - 1) * 0.2 + Math.max(0, zone - 2) * 0.1), // atacam mais rápido nas zonas altas (e um pouco mais no começo)
+    cdMul: (zone === 2 ? 0.85 : zone >= 5 ? 1.1 : 1) / (1 + (zone - 1) * 0.2 + Math.max(0, zone - 2) * 0.1), // atacam mais rápido nas zonas altas (e um pouco mais no começo)
     cdBoss: legend ? 0.6 : undefined, // lendários atacam mais rápido
   };
 }
@@ -1088,12 +1088,8 @@ function updatePlayer(dt) {
 
   P.abilCd = Math.max(0, P.abilCd - dt);
   P.dashCd = Math.max(0, (P.dashCd || 0) - dt); P.dodgeT = Math.max(0, (P.dodgeT || 0) - dt); P.seloT = Math.max(0, (P.seloT || 0) - dt);
-  // escudos que se recarregam sozinhos: Escudo Arcano do Mago (20% da vida, após 4 s sem dano)
-  // e o Anel Protetor dos Iniciantes (40% no Nv 1, 25% no Nv 2, após 3 s sem dano)
-  { const mh = maxHP(P), mage = P.cls === 'mago' ? mh * 0.2 : 0, ring = P.equip.anel && P.equip.anel.starter && P.lvl <= 2 ? mh * (P.lvl === 1 ? 0.4 : 0.25) : 0;
-    const cap = Math.max(mage, ring), wait = ring >= mage ? 3 : 4;
-    if (cap && P.sinceHit > wait && P.shield < cap) P.shield = Math.min(cap, (P.shield || 0) + cap * dt / 2);
-    if (cap && P.shield > 0) P.shieldT = Math.max(P.shieldT || 0, 0.5); }
+  // Mago: Escudo Arcano (absorve até 20% da vida e se recarrega depois de 4 s sem levar dano)
+  if (P.cls === 'mago') { const cap = maxHP(P) * 0.2; if (P.sinceHit > 4 && P.shield < cap) P.shield = Math.min(cap, (P.shield || 0) + cap * dt / 2); if (P.shield > 0) P.shieldT = Math.max(P.shieldT || 0, 0.5); }
   if ((P.shieldT = Math.max(0, (P.shieldT || 0) - dt)) <= 0) P.shield = 0;
   P.breathCd = Math.max(0, P.breathCd - dt);
   P.furia = Math.max(0, P.furia - dt);
@@ -2659,7 +2655,11 @@ const grpN = () => 1 + 0.4 * (nPlayers() - 1);
 
 // dificuldade média do começo ao fim (medido com uma IA que desvia das balas): o começo era fácil demais
 // e o fim perigoso demais, então o dano dos tiros inimigos varia por zona
-const ZONE_DMG = [1, 0.75, 1.25, 1.15, 0.85, 0.72]; // zona 1 leve para quem começa no Nv 1 // zona 5 aliviada depois de teste em jogo (estava um pouco difícil demais)
+const ZONE_DMG = [1, 1.1, 1.25, 1.15, 0.85, 0.72]; // zona 1 leve para quem começa no Nv 1 // zona 5 aliviada depois de teste em jogo (estava um pouco difícil demais)
 
 // Clérigo em grupo: cada outro jogador perto dele na hora da cura aumenta a cura em 10% (até +30%)
 const clericChoir = P => 1 + 0.1 * Math.min(3, [...G.remotes.values()].filter(r => !r.dead && r.name && Math.hypot(r.tx - P.x, r.ty - P.y) < 260).length);
+
+// começo: vida e defesa extras que diminuem a cada nível e zeram no Nv 7 (no fim da zona 1 o herói fica como antes)
+let ROOKIE_HP = 30, ROOKIE_AC = 3;
+const rookie = P => Math.max(0, (7 - P.lvl) / 6);
