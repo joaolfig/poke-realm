@@ -103,7 +103,15 @@ function shopList(P) {
     { id: 'armadura', nome: ARMORS[tier], icon: '🛡️', preco: 50 + tier * 40, tier },
     { id: 'anel', nome: 'Anel aleatório', icon: '💍', preco: 70 + tier * 30, tier },
     { id: 'amuleto', nome: 'Amuleto aleatório', icon: '📿', preco: 90 + tier * 40, tier },
+    ...bagUpgrade(P),
   ];
+}
+// mochila maior: 8 → 12 na vila (a partir do Nv 8), 12 → 16 só na loja da 2ª cidade
+function bagUpgrade(P) {
+  const n = P.inv.length, second = npcTown() === 1 || !TOWNS[1];
+  if (n < 12) return [{ id: 'mochila', nome: `Mochila maior <i>${n} → 12 espaços</i>`, icon: '🎒', preco: 600, lock: P.lvl < 8, why: 'a partir do Nv 8' }];
+  if (n < 16) return [{ id: 'mochila', nome: `Mochila maior <i>${n} → 16 espaços</i>`, icon: '🎒', preco: 2500, lock: !second, why: TOWNS[1] ? `só em ${townName(TOWNS[1])}` : '' }];
+  return [];
 }
 // preço de reencantar: intermediário (mais caro para itens raros e míticos)
 // base por raridade (Comum → Artefato); anel/amuleto ×1,3 (encantamento garantido); Mítico 1740
@@ -127,7 +135,7 @@ function renderNPC() {
       + `<div class="small">Você tem ${P.balls} Poké Ball, ${P.bag.grande} Great Ball e ${P.bag.ultra} Ultra Ball · ${P.pets.length}/${petCap(P)} companheiros${petCap(P) >= PET_CAP_MAX ? ' (máximo)' : ''}.</div>`;
   } else if (n.id === 'loja') {
     body += '<h4>Comprar</h4>' + shopList(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}${s.tier !== undefined ? ` <i style="color:${TIER_COLORS[s.tier]}">${TIER_NAMES[s.tier]}</i>` : ''}</span>
-      <button data-act="buy:${s.id}" ${P.gold < s.preco ? 'disabled' : ''}>${s.preco} 🪙</button></div>`).join('');
+      <button data-act="buy:${s.id}" ${s.lock || P.gold < s.preco ? 'disabled' : ''}>${s.lock ? s.why || 'travado' : s.preco + ' 🪙'}</button></div>`).join('');
     const inv = P.inv.map((it, i) => it ? `<div class="sellrow"><button class="sell" data-act="sell:${i}" title="${esc(it.name)}" ${it.locked ? 'disabled' : ''}>${itemIcon(it)} ${esc(it.name)} → ${sellPrice(it)} 🪙</button><button data-act="lock:${i}" title="${it.locked ? 'Destravar' : 'Travar: não vende nem solta'}">${it.locked ? '🔒' : '🔓'}</button></div>` : '').join('');
     // vender em lote: cristais, ou equipamentos até a raridade escolhida (nunca Míticos nem travados)
     const lot = k => P.inv.filter(it => it && !it.locked && !it.myth && (k === 'pedra' ? it.slot === 'pedra' : it.slot !== 'pedra' && it.tier <= k));
@@ -260,6 +268,7 @@ function buyItem(P, id) {
   else if (id === 'abra' && P.bag.abra >= 1) { G.toasts.push({ text: '🌀 Só dá para carregar um Talismã de Abra por vez.', color: '#fca5a5', t: 2.5 }); return; }
   else if (CONS[id]) P.bag[id]++;
   else if (id === 'statpot') drinkStat(P, pick(ATTRS));
+  else if (id === 'mochila') { const add = (P.inv.length < 12 ? 12 : 16) - P.inv.length; for (let k = 0; k < add; k++) P.inv.push(null); G.toasts.push({ text: `🎒 Mochila maior: agora cabem ${P.inv.length} itens!`, color: '#86efac', t: 3 }); G.dirty = true; }
   else if (id === 'cinto') { P.petCap = petCap(P) + 1; G.toasts.push({ text: `🎒 Agora você pode levar ${P.petCap} companheiros!`, color: '#86efac', t: 3 }); G.dirty = true; }
   P.gold -= s.preco;
   sfx('pick');
