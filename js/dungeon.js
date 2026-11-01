@@ -35,10 +35,10 @@ function gymMini(e, gs) {
   const s = STORY[gs];
   e.mini = gs; e.boss = true;
   e.name = `${s ? s.nome : 'Líder'} (${e.p.name})`;
-  e.maxHp = Math.round(e.maxHp * (1.8 + 0.12 * gs));
+  e.maxHp = Math.round(e.maxHp * (1.8 + 0.12 * gs) * grpK());
   // nunca mais forte que o Pokémon principal do líder (no máximo 70% da vida dele)
   const th = THEMES[gs === 9 ? 'final' : 'gym' + gs];
-  if (th && POKE[th.boss]) e.maxHp = Math.min(e.maxHp, Math.round(enemyStats(th.boss, e.zone, 3).maxHp * 1.2 * 0.7));
+  if (th && POKE[th.boss]) e.maxHp = Math.min(e.maxHp, Math.round(enemyStats(th.boss, e.zone, 3).maxHp * 1.2 * 0.7 * grpK()));
   e.hp = e.maxHp;
   e.scale *= 1.2; e.w *= 1.2; e.h *= 1.2; e.r *= 1.2;
   e.speed *= 0.85;
@@ -216,7 +216,7 @@ function spawnRoom(dg, r) {
     const c = roomCenter(dg, r);
     const b = hostSpawn(POKE[th.boss] ? th.boss : pick(fallback), dg.zone, 3, c.x + 120, c.y);
     b.dg = dg.id; dg.bossId = b.id;
-    b.maxHp = Math.round(b.maxHp * 1.2); b.hp = b.maxHp; // reforço de masmorra
+    b.maxHp = Math.round(b.maxHp * 1.2 * (th.story ? 1 : grpK())); b.hp = b.maxHp; // reforço de masmorra (e do grupo)
     if (th.story) storyMod(b, th.story);
     for (let i = 0; i < 2 + Math.floor(dg.zone / 2); i++) {
       const p = roomPos(dg, r);
@@ -255,7 +255,7 @@ function spawnRoom(dg, r) {
         if (dg.mod === 'frenesi') { e.speed *= 1.25; e.cdBoss = 0.8; }
       }
     };
-    const base = 3 + dg.zone + randi(0, 1);
+    const base = Math.round((3 + dg.zone + randi(0, 1)) * grpN()); // mais Pokémon por sala com mais jogadores
     if (v === 'elite') wave((2 + Math.floor(dg.zone / 2)) * inf, true, 1);
     else if (v === 'enxame') wave(Math.round(base * 1.7) * inf, false, 0.55);
     else if (v === 'emboscada') { wave(Math.ceil(base / 2) * inf, false, 1); setTimeout(() => { if (G.dungeons.get(dg.id)) { wave(Math.ceil(base / 2) * inf, false, 1); emitEvent({ t: 'toast', text: '⚠ Emboscada! Mais Pokémon chegaram!', color: '#fca5a5' }); } }, 2500); }

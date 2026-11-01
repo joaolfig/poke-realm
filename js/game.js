@@ -2380,9 +2380,9 @@ const blessBuffs = P => {
 /* ============ Linhagens: Vampiro e Lobisomem (missão do templo da 2ª cidade) ============
  * Ficam por cima da raça. As formas noturnas têm prioridade sobre a Forma Selvagem do Druida:
  * quando começam, encerram a Forma Selvagem, e enquanto duram não dá para trocar de forma.
- * Vampiro: rouba 4% do dano causado; resiste a Veneno e Sombrio; de dia não regenera fora das cidades;
+ * Vampiro: rouba 3% do dano causado; resiste a Veneno e Sombrio; de dia não regenera fora das cidades;
  *   a cada anoitecer, 33% de chance de virar morcego aos poucos (Zubat/Golbat/Crobat pelo nível) até o amanhecer:
- *   rouba 8%, +25% de velocidade, voa por cima da água, mas recebe +15% de dano.
+ *   rouba 6%, +25% de velocidade, voa por cima da água, mas recebe +15% de dano.
  * Lobisomem: +5% de velocidade e faro (baús escondidos aparecem de mais longe).
  *   À noite a Lua enche aos poucos (e mais rápido a cada abate) e o herói vai virando fera na tela;
  *   em 100% vira o lobo da região por 12s: +30% de cadência, +15% de dano, uivo que deixa os inimigos lentos,
@@ -2398,7 +2398,7 @@ const batPid = P => (REGION_ID === 'unova' ? (P.lvl < 16 ? 527 : 528) : P.lvl < 
 const wolfPid = () => WOLF_PID[REGION_ID] || 59;
 const isBat = P => !!(P.lform && P.lform.kind === 'bat');
 const isWolf = P => !!(P.lform && P.lform.kind === 'wolf');
-const linSteal = P => (P.lin !== 'vampiro' ? 0 : isBat(P) ? 0.08 : 0.04);
+const linSteal = P => (P.lin !== 'vampiro' ? 0 : isBat(P) ? 0.06 : 0.03);
 // dano recebido: fraquezas da linhagem e o morcego mais frágil
 const linTaken = (P, type) => (P.lin && LIN[P.lin].fraco.includes(type) ? 1.1 : 1) * (isBat(P) ? 1.15 : 1);
 function linSteal1(P, dmg) {
@@ -2468,7 +2468,7 @@ function drawLinHero(P, x, y, alpha) {
 const linBuffs = P => {
   if (!P.lin) return '';
   const L = LIN[P.lin];
-  const s = P.lin === 'vampiro' ? (isBat(P) ? '🦇 Morcego até o amanhecer · rouba 8%' : `rouba 4% do dano${isNight() ? '' : ' · de dia não regenera fora das cidades'}`)
+  const s = P.lin === 'vampiro' ? (isBat(P) ? '🦇 Morcego até o amanhecer · rouba 6%' : `rouba 3% do dano${isNight() ? '' : ' · de dia não regenera fora das cidades'}`)
     : isWolf(P) ? `🐺 Fúria da Lua ${Math.ceil(P.lform.t)}s` : `🌕 Lua ${Math.floor(P.moon || 0)}%${isNight() ? '' : ' (só enche à noite)'}`;
   return `<div class="small" style="color:#fca5a5">${L.icon} ${L.nome}: ${s}</div>`;
 };
@@ -2608,3 +2608,9 @@ function useAbra() {
 // contratos de dupla: distância média entre os parceiros (~50 m)
 const DUO_R = 1600;
 const duoNear = P => [...G.remotes.values()].some(r => !r.dead && r.name && Math.hypot(r.tx - P.x, r.ty - P.y) < DUO_R);
+
+// grupo: chefes (líderes, Procurados, chefes de masmorra) ganham +60% de vida por jogador a mais na sala (até 4)
+// e as salas de masmorra têm +40% de Pokémon por jogador a mais
+const nPlayers = () => clamp(1 + (G && G.remotes ? [...G.remotes.values()].filter(r => !r.dead && r.name).length : 0), 1, 4);
+const grpK = () => 1 + 0.6 * (nPlayers() - 1);
+const grpN = () => 1 + 0.4 * (nPlayers() - 1);

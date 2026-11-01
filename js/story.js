@@ -82,6 +82,9 @@ function storyMod(e, ch) {
   e.name = `${s.nome} (${e.p.name})`;
   // o chefe final é o mais forte da história (era quase igual ao 8º líder)
   if (ch === STORY.length - 1 && e.kind === 3) { e.maxHp = Math.round(e.maxHp * 1.5); e.hp = e.maxHp; }
+  // líderes: mais vida, para a luta durar o bastante e eles mostrarem os golpes (medido: caíam em 4-15 s nos primeiros ginásios)
+  else if (e.kind === 3) { e.maxHp = Math.round(e.maxHp * (ch <= 4 ? 1.6 : 1.25)); e.hp = e.maxHp; }
+  if (e.kind === 3 || e.kind === 1) { e.maxHp = Math.round(e.maxHp * grpK()); e.hp = e.maxHp; } // cresce com o grupo
   if (e.kind === 1) {
     e.boss = true;
     e.maxHp = Math.round(e.maxHp * 2.2); e.hp = e.maxHp;
