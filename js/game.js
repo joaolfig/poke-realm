@@ -1704,6 +1704,10 @@ function drawHUD(ox, oy) {
   const cx = P ? P.x : G.cam.x, cy = P ? P.y : G.cam.y;
   const dg = inDungeonArea(cx) ? dungeonAt(cx) : null;
   const name = areaName(cx, cy);
+  // fundo escuro suave atrás das linhas de informação (legíveis sobre grama clara e neve)
+  { const bh = (G.hudYLast || 40) + 10, gr = ctx.createLinearGradient(0, 0, 560, 0);
+    gr.addColorStop(0, 'rgba(8,9,12,.62)'); gr.addColorStop(0.75, 'rgba(8,9,12,.35)'); gr.addColorStop(1, 'rgba(8,9,12,0)');
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, 560, bh); }
   ctx.textAlign = 'left'; ctx.font = 'bold 14px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
   let hy = 22;
   if (dg && dg.floor) { outlined(`🗼 Torre Infinita · Andar ${dg.floor}`, 12, hy); if (dg.mods.length) { hy += 18; ctx.fillStyle = '#c4b5fd'; outlined(dg.mods.map(m => TOWER_MODS[m]).join(' · '), 12, hy); ctx.fillStyle = '#fff'; } }
@@ -1737,7 +1741,7 @@ function drawHUD(ox, oy) {
   try { drawTargetCard(); } catch (e) { /* o cartão nunca pode travar o desenho do jogo */ }
   if (autofire) { hy += 18; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fde047'; outlined('TIRO AUTOMÁTICO (T)', 12, hy); }
   if (P && catchUp(P) > 1 && !inDungeonArea(P.x)) { hy += 18; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#86efac'; outlined(`⏫ Recuperação: +50% de XP até o Nv ${STORY[P.story.ch].lvl}`, 12, hy); }
-  G.hudY = hy; // a caixinha de avisos importantes fica logo abaixo destas linhas
+  G.hudY = hy; G.hudYLast = hy; // a caixinha de avisos importantes fica logo abaixo destas linhas
 
   if (G.banner > 0 && name) {
     ctx.globalAlpha = Math.min(1, G.banner);
@@ -1895,7 +1899,7 @@ function updatePanel() {
   $('b-hp').style.background = S ? S.color : '';
   chip.classList.toggle('hidden', !S);
   if (S) { chip.style.background = S.color; chip.textContent = `${S.label} ${Math.ceil(P.pstT)}s · ${S.fx} · poção ou cura tira`; }
-  $('b-xp').style.width = (P.lvl >= MAX_LVL ? 100 : P.xp / need * 100) + '%'; $('t-xp').textContent = P.lvl >= MAX_LVL ? 'NÍVEL MÁXIMO' : `XP ${P.xp} / ${need}`;
+  $('b-xp').style.width = (P.lvl >= MAX_LVL ? 100 : P.xp / need * 100) + '%'; $('t-xp').textContent = P.lvl >= MAX_LVL ? `Nv ${P.lvl} · NÍVEL MÁXIMO` : `Nv ${P.lvl} · XP ${P.xp} / ${need}`;
   $('p-derived').innerHTML = `<div class="st" title="Classe de Armadura: o d20 inimigo + bônus precisa igualar ou superar"><span>CA</span><b>${AC(P)}</b></div>
     <div class="st" title="Bônus de acerto (d20 + isto contra a CA do inimigo)"><span>Acerto</span><b>+${toHit(P)}</b></div>
     <div class="st" title="Ouro"><span>Ouro</span><b style="color:var(--gold)">${P.gold}</b></div><div class="st" title="Insígnias conquistadas em todas as regiões"><span>Insígnias</span><b>${totalBadges(P)}</b></div><div class="st" title="Pokémon lendários derrotados"><span>Lendários</span><b>${P.legends || 0}</b></div>
@@ -1941,8 +1945,8 @@ function updatePanel() {
     return `<div class="slot" data-inv="${i}" style="border-color:${itemColor(it)}" title="${esc(it.name)} — ${itemDesc(it)}${it.slot === 'pedra' ? '' : ` (${TIER_NAMES[it.tier]})`}\n${hint} · Shift+clique: ${it.locked ? 'destravar' : 'travar (não vende nem solta)'} · Botão direito: soltar no chão">${itemIcon(it)}${better ? '<i class="up">▲</i>' : ''}${it.locked ? '<i class="lock">🔒</i>' : ''}</div>`;
   }).join('') + '</div>';
   const bsel = P.ballSel || 'poke';
-  $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}</button><button data-abra="1" title="Talismã de Abra [Z]: te teletransporta na hora para a última cidade, até no meio de uma luta ou de uma masmorra. Só no Mercador (1000 🪙), um por vez, 5 min de recarga.">🌀 ×${P.bag.abra || 0}${P.abraCd > 0 ? ` (${Math.ceil(P.abraCd / 60)} min)` : ''}</button></div>
-    <div class="potrow balls">${Object.keys(BALLS).map(k => `<button data-ball="${k}" class="${bsel === k ? 'sel' : ''}" title="${BALLS[k].nome} (+${BALLS[k].bonus} na captura). Clique (ou [G]) para escolher qual o F joga.">${BALLS[k].icon} ×${ballCount(P, k)}</button>`).join('')}</div>`;
+  $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}<kbd class="hk">Q</kbd></button><button data-abra="1" title="Talismã de Abra [Z]: te teletransporta na hora para a última cidade, até no meio de uma luta ou de uma masmorra. Só no Mercador (1000 🪙), um por vez, 5 min de recarga.">🌀 ×${P.bag.abra || 0}${P.abraCd > 0 ? ` (${Math.ceil(P.abraCd / 60)} min)` : ''}<kbd class="hk">Z</kbd></button></div>
+    <div class="potrow balls">${Object.keys(BALLS).map(k => `<button data-ball="${k}" class="${bsel === k ? 'sel' : ''}" title="${BALLS[k].nome} (+${BALLS[k].bonus} na captura). Clique (ou [G]) para escolher qual o F joga.">${BALLS[k].icon} ×${ballCount(P, k)}${bsel === k ? '<kbd class="hk">F</kbd>' : ''}</button>`).join('')}</div>`;
   $('p-pets').innerHTML = `<h4>Companheiros <span class="small" title="Fora da Pokébola / máximo ao mesmo tempo">${P.petAct.length}/${petSlots(P)} fora · ${P.pets.length}/${petCap(P)}</span></h4>` + (P.pets.length
     ? `<div class="pets">${P.pets.map((pt, i) => {
       const ev = evoLevel(pt.pid);
