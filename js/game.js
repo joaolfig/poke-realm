@@ -1458,6 +1458,7 @@ function render() {
     // à noite e na névoa quase não se enxerga sem Flash
     const nk = G.nightK || 0, ease = nk * nk * (3 - 2 * nk); // transição suave
     if (fog && ease < 0.99) drawNight(ox, oy, flash ? 380 : 180, flash ? 'rgba(70,60,90,0.6)' : 'rgba(45,38,60,0.84)', 1 - ease);
+    if (nk > 0.01 && nk < 0.99) { ctx.fillStyle = `rgba(251,146,60,${(0.22 * Math.sin(Math.PI * nk)).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } // pôr/nascer do sol
     if (ease > 0.01) drawNight(ox, oy, flash ? 420 : 150, flash ? 'rgba(8,6,30,0.62)' : 'rgba(4,3,16,0.88)', ease);
   }
   drawWeather();

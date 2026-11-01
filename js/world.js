@@ -595,8 +595,8 @@ function hostWeather(dt) {
 }
 // local (todo jogador): avisa quando o clima onde você está muda, e aplica o desgaste da areia/neve
 function weatherTick(dt) {
-  // anoitecer e amanhecer graduais (~8s) em vez de mudar de uma vez
-  G.nightK = clamp((G.nightK || 0) + (isNight() ? dt : -dt) / 8, 0, 1);
+  // anoitecer e amanhecer graduais (~25s), com céu de pôr/nascer do sol no meio
+  G.nightK = clamp((G.nightK || 0) + (isNight() ? dt : -dt) / 25, 0, 1);
   const P = G.P;
   if (!P) return;
   const w = weatherAt(P.x, P.y), k = w ? w.k : '';
