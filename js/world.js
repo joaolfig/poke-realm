@@ -109,7 +109,7 @@ function shopList(P) {
 // base por raridade (Comum → Artefato); anel/amuleto ×1,3 (encantamento garantido); Mítico 1740
 const REFORGE_BASE = [300, 540, 780, 846, 912, 978, 1044];
 const reforgeCost = it => Math.round(REFORGE_BASE[clamp(it.tier, 0, 6)] * (it.myth ? 5 / 3 : 1) * (it.slot === 'anel' || it.slot === 'amuleto' ? 1.3 : 1));
-const sellPrice = it => 8 + it.tier * 12 + (it.upg || 0) * 10 + (it.myth ? 150 + it.myth * 10 : 0);
+const sellPrice = it => (it.starter ? 25 : 0) + 8 + it.tier * 12 + (it.upg || 0) * 10 + (it.myth ? 150 + it.myth * 10 : 0);
 // vila: +4 · 2ª cidade: +6 (+8 depois da história) · loja da torre: +12
 const upgMax = (P, town = npcTown()) => (town === 2 ? 12 : town === 1 || !TOWNS[1] ? (storyOver(P) ? 8 : 6) : 4);
 const upgCost = it => Math.round(60 * ((it.upg || 0) + 1) * (1 + it.tier * 0.5));

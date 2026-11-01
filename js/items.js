@@ -220,6 +220,7 @@ function itemDesc(it) {
   let s = '';
   if (it.slot === 'arma') s = `${it.dice[0]}d${it.dice[1]}${it.bonus ? ' +' + it.bonus : ''} de dano`;
   else if (it.slot === 'armadura') s = `CA +${it.ac}`;
+  else if (it.slot === 'anel' && it.starter) return 'Barreira dos iniciantes: absorve 40% da vida no Nv 1 e 25% no Nv 2, recarregando após 3 s sem levar dano. Para de funcionar no Nv 3.';
   else if (it.slot === 'anel') s = `+${it.bonus} ${ATTR_NAMES[it.attr]}`;
   else if (it.slot === 'pedra') return `Você vira tipo ${TYPE_PT[it.type]} por 30s (ataque e defesa) e causa +1d4 de dano`;
   else if (it.slot === 'cons') return CONS[it.k].nome;
@@ -280,3 +281,6 @@ function rollLoot(m) {
   if (m.kind === 0 && m.zone >= 3 && Math.random() < 0.004) items.push(statPot());
   G.bags.push({ x: m.x + rand(-10, 10), y: m.y + rand(-10, 10), items, life: 90 });
 }
+
+// anel com que todo herói começa: barreira só nos níveis 1 e 2 (substitui a redução de dano escondida do começo)
+const starterRing = () => ({ slot: 'anel', tier: 0, name: 'Anel Protetor dos Iniciantes', starter: 1, attr: 'VIG', bonus: 0, mods: {} });

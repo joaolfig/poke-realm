@@ -230,7 +230,7 @@ function createPlayer(name, h) {
   const P = {
     name, cls: h.cls, race: h.race, ptype: h.type, subclass: null, lvl: 1, xp: 0, legends: 0, kills: 0, gold: 20,
     attrs: { ...h.attrs }, points: h.points || 0, attrV2: 1, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
-    equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: null, amuleto: null },
+    equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: starterRing(), amuleto: null },
     inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0, abra: 0 }, ballSel: 'poke', story: { ch: 0, done: false },
     pets: [], petIdx: -1, petAct: [], stories: {}, hmsR: {}, quests: {}, qOffers: {}, hasteT: 0, slowCd: 0, hms: [], fly: ['vila'], chests: [], flyCd: 0,
     x: rand(-40, 40), y: rand(55, 80), hp: 1, shootCd: 0, abilCd: 0, breathCd: 0, furia: 0, invis: 0, nextCrit: false,
@@ -969,7 +969,6 @@ function enemyAttack(b) {
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
   if (eff > 1) eff = 1 + (eff - 1) * 0.6; // super efetivo no herói: ×1,6 (duplo ×2,8), para o tipo não decidir sozinho quem sobrevive
   eff *= ZONE_DMG[b.zone || 1];
-  if ((b.zone || 1) === 1 && P.lvl <= 3) eff *= [0, 0.6, 0.75, 0.9][P.lvl]; // começo mais seguro: na zona 1, −40% no Nv 1, −25% no Nv 2, −10% no Nv 3
   if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type) || (P.lin && LIN[P.lin].resist.includes(b.type))) eff *= 0.5;
   eff *= linTaken(P, b.type); // linhagem
   eff *= wxBoost(P.x, P.y, b.type); // clima
@@ -1089,8 +1088,12 @@ function updatePlayer(dt) {
 
   P.abilCd = Math.max(0, P.abilCd - dt);
   P.dashCd = Math.max(0, (P.dashCd || 0) - dt); P.dodgeT = Math.max(0, (P.dodgeT || 0) - dt); P.seloT = Math.max(0, (P.seloT || 0) - dt);
-  // Mago: Escudo Arcano (absorve até 20% da vida e se recarrega depois de 4 s sem levar dano)
-  if (P.cls === 'mago') { const cap = maxHP(P) * 0.2; if (P.sinceHit > 4 && P.shield < cap) P.shield = Math.min(cap, (P.shield || 0) + cap * dt / 2); if (P.shield > 0) P.shieldT = Math.max(P.shieldT || 0, 0.5); }
+  // escudos que se recarregam sozinhos: Escudo Arcano do Mago (20% da vida, após 4 s sem dano)
+  // e o Anel Protetor dos Iniciantes (40% no Nv 1, 25% no Nv 2, após 3 s sem dano)
+  { const mh = maxHP(P), mage = P.cls === 'mago' ? mh * 0.2 : 0, ring = P.equip.anel && P.equip.anel.starter && P.lvl <= 2 ? mh * (P.lvl === 1 ? 0.4 : 0.25) : 0;
+    const cap = Math.max(mage, ring), wait = ring >= mage ? 3 : 4;
+    if (cap && P.sinceHit > wait && P.shield < cap) P.shield = Math.min(cap, (P.shield || 0) + cap * dt / 2);
+    if (cap && P.shield > 0) P.shieldT = Math.max(P.shieldT || 0, 0.5); }
   if ((P.shieldT = Math.max(0, (P.shieldT || 0) - dt)) <= 0) P.shield = 0;
   P.breathCd = Math.max(0, P.breathCd - dt);
   P.furia = Math.max(0, P.furia - dt);
