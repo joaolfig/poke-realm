@@ -541,7 +541,7 @@ function hostSpawning(dt) {
   const pl = pick(pls);
   let near = 0;
   for (const e of G.enemies) if (!e.boss && !e.dg && !e.ev && Math.hypot(e.x - pl.x, e.y - pl.y) < 1100) near++;
-  const zp = Math.max(1, zoneAt(pl.x, pl.y));
+  const zp = waterZone(pl.x, pl.y); // no mar, conta a zona da costa mais próxima
   // limite de Pokémon por perto: cresce com a zona (caótico no fim), mas cada tiro das zonas altas dói menos (ZONE_DMG)
   if (near >= [0, 12, 16, 20, 24, 28][Math.min(5, zp)] + (pls.length > 1 ? 5 : 0)) return;
   let x = 0, y = 0, water = false;
@@ -553,7 +553,7 @@ function hostSpawning(dt) {
   }
   if (!water && (solidAt(x, y) || isWater(x, y))) return;
   let z = zoneAt(x, y);
-  if (water && z < 1) z = zp;
+  if (water && z < 1) z = waterZone(x, y);
   if (z < 1 || z > zp + 1) return;
   const night = !water && isNight() && Math.random() < 0.5 ? NIGHT_POOL.filter(id => POKE[id]) : [];
   const rainy = !water && !night.length && weatherAt(x, y) === WEATHER.chuva && Math.random() < 0.3;
@@ -1722,6 +1722,7 @@ function drawHUD(ox, oy) {
   else {
     const z = zoneAt(cx, cy);
     if (z >= 0) outlined(`${REGION.nome} · ${name} ${z === ARENA_Z ? '(duelo entre jogadores)' : z ? `· Zona ${z}/5 · Nv ${ZONES[z].lvl}–${ZONES[z].lvlMax}` : '· área segura'}`, 12, hy);
+    else { const wz = waterZone(cx, cy); outlined(`${REGION.nome} · ${tileKind(cx, cy) === TK.SEA ? 'Mar' : 'Lago'} · Zona ${wz}/5 · Nv ${ZONES[wz].lvl}–${ZONES[wz].lvlMax}`, 12, hy); }
     const wxh = P && weatherAt(P.x, P.y);
     if (wxh) { hy += 18; ctx.fillStyle = wxh.color; outlined(`${wxh.icon} ${wxh.nome}: ${wxh.fx}`, 12, hy); ctx.fillStyle = '#fff'; }
   }
@@ -2674,3 +2675,21 @@ const ZONE_DMG = [1, 2.0, 1.3, 0.95, 0.38, 0.3]; // calibrado para ~1/3 de chanc
 
 // Clérigo em grupo: cada outro jogador perto dele na hora da cura aumenta a cura em 10% (até +30%)
 const clericChoir = P => 1 + 0.1 * Math.min(3, [...G.remotes.values()].filter(r => !r.dead && r.name && Math.hypot(r.tx - P.x, r.ty - P.y) < 260).length);
+
+// zona da água: rios e laguinhos já têm a da zona em volta; o mar e os lagos grandes usam a da costa mais próxima
+// (antes, quem surfava no mar sempre encontrava Pokémon da zona 1, mesmo ao lado da zona 5)
+const WZC = new Map();
+function waterZone(x, y) {
+  const z0 = zoneAt(x, y);
+  if (z0 >= 1 && z0 <= 5) return z0;
+  if (z0 === 0) return 1;
+  const key = Math.round(x / 256) + ',' + Math.round(y / 256) + REGION_ID;
+  if (WZC.has(key)) return WZC.get(key);
+  let z = 1;
+  search: for (const r of [160, 320, 520, 760, 1050, 1400, 1900, 2500]) for (let k = 0; k < 16; k++) {
+    const zz = zoneAt(x + Math.cos(k * 0.3927) * r, y + Math.sin(k * 0.3927) * r);
+    if (zz >= 1 && zz <= 5) { z = zz; break search; }
+  }
+  WZC.set(key, z);
+  return z;
+}
