@@ -52,11 +52,11 @@ function typeEff(atk, defs) {
 
 /* ============ Raças ============ */
 const RACES = {
-  humano: { nome: 'Humano', icon: '🧑', bonus: {}, points: 2, resist: [], traco: 'Versátil: começa com 2 pontos de atributo extras e ganha +1 ponto a cada 10 níveis.' },
-  elfo: { nome: 'Elfo', icon: '🧝', bonus: { AGI: 1 }, points: 0, resist: ['psychic'], traco: 'Vê inimigos no minimapa e atira 15% mais longe. Resiste a Psíquico.' },
+  humano: { nome: 'Humano', icon: '🧑', bonus: {}, points: 2, resist: [], traco: 'Versátil: começa com 2 pontos de atributo extras para pôr onde quiser.' },
+  elfo: { nome: 'Elfo', icon: '🧝', bonus: { AGI: 1 }, points: 0, resist: ['psychic'], traco: 'Olhos de elfo: atira 20% mais longe, +2 no acerto e vê inimigos no minimapa. Resiste a Psíquico.' },
   anao: { nome: 'Anão', icon: '🧔', bonus: { VIG: 1 }, points: 0, resist: ['poison', 'rock'], traco: 'Robusto: +2 PV por nível. Resiste a Veneno e Pedra.' },
-  halfling: { nome: 'Halfling', icon: '🍀', bonus: { AGI: 1 }, points: 0, resist: [], traco: 'Ágil e sortudo: +10% de velocidade, +1 na CA e rerola o 1 natural nos ataques.' },
-  tiefling: { nome: 'Tiefling', icon: '😈', bonus: { POD: 1 }, points: 0, resist: ['fire', 'dark'], traco: 'Fúria infernal: +20% de dano com menos da metade da vida. Resiste a Fogo e Sombrio.' },
+  halfling: { nome: 'Halfling', icon: '🍀', bonus: { AGI: 1 }, points: 0, resist: [], traco: 'Ágil e sortudo: +10% de velocidade, 8% de chance de esquivar, +1 na CA e rerola o 1 natural nos ataques.' },
+  tiefling: { nome: 'Tiefling', icon: '😈', bonus: { POD: 1 }, points: 0, resist: ['fire', 'dark'], traco: 'Fúria infernal: +10% de dano, +25% com menos da metade da vida. Resiste a Fogo e Sombrio.' },
   draconato: { nome: 'Draconato', icon: '🐲', bonus: { POD: 1 }, points: 0, resist: ['dragon', 'fire'], traco: 'Escamas: recebe 10% menos dano. Resiste a Dragão e Fogo.' },
 };
 

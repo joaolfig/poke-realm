@@ -101,7 +101,7 @@ function pvpShotDmg(P, o) {
     : sp ? roll(2 + Math.floor(P.lvl / 4), 8) + A(P, 'POD')
       : roll(w.dice[0], w.dice[1]) + A(P, 'POD') + w.bonus + M(P, 'dmg');
   // a Bomba Arcana (spell 1) solta 20 projéteis no mesmo ponto: cada um vale bem menos contra jogadores
-  let dmg = Math.max(1, Math.round(base * PVP_K * (sp ? 1 : PVP_CLS[P.cls] || 1) * (infernal(P) ? 1.2 : 1)));
+  let dmg = Math.max(1, Math.round(base * PVP_K * (sp ? 1 : PVP_CLS[P.cls] || 1) * infernal(P)));
   if (P.nextCrit && !sp) { dmg *= 2; P.nextCrit = false; } // Manto do Ladino: o próximo ataque é crítico também no rival
   return dmg;
 }
@@ -113,6 +113,7 @@ function pvpHitCheck(b) {
   if ((V.get(vk) || 0) >= PVP_VOLLEY) return false;
   V.set(vk, (V.get(vk) || 0) + 1);
   if (V.size > 40) V.delete(V.keys().next().value);
+  if (P.race === 'halfling' && Math.random() < 0.08) { text(P.x, P.y - 34, 'Esquiva!', '#93c5fd', 12); return true; }
   let dmg = Math.round(b.dmg * clamp(1 - (AC(P) - 12) * 0.03, 0.5, 1) * (P.race === 'draconato' ? 0.9 : 1));
   if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; }
   if (dmg > 0) {

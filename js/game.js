@@ -173,7 +173,7 @@ const petSlots = P => Math.min(4, 1 + tRank(P, 'equipe'));
 const hasS = (P, id) => P.subclass === id;
 const race = P => RACES[P.race] || RACES.humano;
 // Tiefling: +20% de dano com menos da metade da vida
-const infernal = P => P.race === 'tiefling' && P.hp < maxHP(P) / 2;
+const infernal = P => (P.race !== 'tiefling' ? 1 : P.hp < maxHP(P) / 2 ? 1.25 : 1.1);
 const pType = P => (P.tempTypeT > 0 ? P.tempType : P.ptype);
 // valor efetivo usado nas regras: cada 2 pontos de atributo valem 1 (o anel soma direto no efetivo)
 const A = (P, k) => P.attrs[k] / 2 + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus : 0);
@@ -187,12 +187,12 @@ const maxHP = P => {
 };
 const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armadura ? P.equip.armadura.ac : 0)
   + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
-const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
+const toHit = P => 2 + (P.race === 'elfo' ? 2 : 0) + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
 const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
 const fireRate = P => CLASSES[P.cls].wpn.rate * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
-const rangeMul = P => (P.race === 'elfo' ? 1.15 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
+const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
 // XP por nível = abates desejados × XP médio de um abate na zona recomendada para aquele nível.
 // Assim o ritmo cresce suave e não trava na troca de zona (Nv 1-6 zona 1, 7-13 zona 2, 14-20 zona 3, 21-25 zona 4, 26+ zona 5).
 const XP_KILLS = [4, 8, 12, 16, 20, 26, 32, 38, 44, 50, 56, 62, 66, 70, 74, 78, 82, 86, 90, 94, 96, 98, 100, 102, 104, 106, 108, 110, 112];
@@ -217,7 +217,7 @@ function startWeapon(cls) {
 function createPlayer(name, h) {
   const P = {
     name, cls: h.cls, race: h.race, ptype: h.type, subclass: null, lvl: 1, xp: 0, legends: 0, kills: 0, gold: 20,
-    attrs: { ...h.attrs }, points: h.points || 0, attrV2: 1, humV2: 1, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
+    attrs: { ...h.attrs }, points: h.points || 0, attrV2: 1, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
     equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: null, amuleto: null },
     inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0 }, ballSel: 'poke', story: { ch: 0, done: false },
     pets: [], petIdx: -1, petAct: [], stories: {}, hmsR: {}, quest: null, questOffer: null, hasteT: 0, slowCd: 0, hms: [], fly: ['vila'], chests: [], flyCd: 0,
@@ -229,7 +229,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'attrV2', 'humV2', 'lastTown', 'seenR', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -619,7 +619,6 @@ function gainXP(n, raw) {
     P.xp -= xpNeed(P.lvl);
     P.lvl++;
     P.points++; // 1 ponto de atributo por nível
-    if (P.race === 'humano' && P.lvl % 10 === 0) { P.points++; text(P.x, P.y - 70, '+1 ponto extra (Humano)', '#fde68a', 12); }
     if (P.lvl % 4 === 0) P.talentPending++;
     P.hp = maxHP(P);
     G.toasts.push({ text: `⭐ Nível ${P.lvl}!${P.lvl % 2 === 0 ? ' +1 ponto de atributo' : ''}`, color: '#fde047', t: 3 });
@@ -866,7 +865,7 @@ function playerHit(e, b) {
       : roll(w.dice[0] * (crit ? 2 : 1), w.dice[1]) + A(P, 'POD') + w.bonus + M(P, 'dmg');
   if (P.furia > 0) dmg += d(6);
   if (P.seloT > 0) dmg += d(6);
-  if (infernal(P)) dmg = Math.round(dmg * 1.2);
+  dmg = Math.round(dmg * infernal(P));
   if (P.tempTypeT > 0) dmg += d(4);
   if (hasS(P, 'guerra')) dmg += d(6);
   if (crit && P.cls === 'ladino') dmg += roll(Math.ceil(P.lvl / 4), 6);
@@ -904,7 +903,7 @@ function enemyAttack(b) {
   const P = G.P;
   const r = d(20), crit = r === 20;
   if (P.dodgeT > 0) return;
-  if (r === 1 || Math.random() < M(P, 'dodge') + (hasS(P, 'trapaceiro') ? 0.1 : 0)) { text(P.x, P.y - 34, 'Esquiva!', '#93c5fd', 12); return; }
+  if (r === 1 || Math.random() < M(P, 'dodge') + (hasS(P, 'trapaceiro') ? 0.1 : 0) + (P.race === 'halfling' ? 0.08 : 0)) { text(P.x, P.y - 34, 'Esquiva!', '#93c5fd', 12); return; }
   const graze = !crit && r + b.atk < AC(P);
   let eff = typeEff(b.type, [pType(P)]);
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
@@ -2017,9 +2016,6 @@ async function startGame(saved) {
     // saves antigos: atributos e pontos guardados passam para a escala nova (o dobro, mesmo poder)
     if (!saved.attrV2) { for (const k of ATTRS) P.attrs[k] = Math.min(ATTR_MAX, (P.attrs[k] || 0) * 2); P.points = (P.points || 0) * 2; }
     P.attrV2 = 1;
-    // Humano agora ganha +1 ponto a cada 10 níveis: saves antigos recebem os pontos que já teriam
-    if (!saved.humV2 && P.race === 'humano') P.points += Math.floor(P.lvl / 10);
-    P.humV2 = 1;
     P.petCap = Math.max(petCap(P), P.pets.length); // saves antigos tinham 4 vagas: ninguém perde companheiro
     if (!RACES[P.race]) P.race = 'humano';
     if (!TYPE_PT[P.ptype]) P.ptype = 'normal';
