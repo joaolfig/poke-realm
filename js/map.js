@@ -665,6 +665,19 @@ function renderOverworld(ox, oy) {
   drawLandmarks(ox, oy);
 }
 
+// árvores e pedras do mapa que ficam NA FRENTE de um portão de cidade são desenhadas de novo por cima dele
+function drawFrontObjs(wx, wy, ox, oy) {
+  const tx0 = Math.floor((wx - 70) / TILE), tx1 = Math.floor((wx + 70) / TILE), ty0 = Math.floor((wy - 40) / TILE), ty1 = Math.floor((wy + 60) / TILE);
+  for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
+    if ((ty + 1) * TILE <= wy + 4) continue; // atrás do portão: já está certo
+    const i = tIdx(tx + OX, ty + OY);
+    if (i < 0 || !OBJK[TT[i]]) continue;
+    const k = TT[i], vz = TZ[i] === 0 ? visZone((tx + 0.5) * TILE, (ty + 0.5) * TILE) : TZ[i];
+    if (k === TK.TREE || k === TK.DTREE || k === TK.PINE) ctx.drawImage(treeImg(k, vz, TV[i] & 3), tx * TILE + ox - 16, ty * TILE + oy - 46);
+    else ctx.drawImage(tileImg(k, vz, TV[i]), tx * TILE + ox, ty * TILE + oy - 12);
+  }
+}
+
 /* ---------- Água (campo contínuo desenhado em pedaços de 256px, pixels de 4px) ---------- */
 const WCH = 256, WRES = 4, WCACHE = new Map();
 const WPAL = {

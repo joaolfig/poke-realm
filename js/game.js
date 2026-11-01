@@ -1481,7 +1481,7 @@ function render() {
   for (const it of ents) {
     if (it.e) { drawEnemy(it.e, ox, oy); if (!it.e.dg && !it.e.fly) grassOver(it.e.x, it.e.y + it.e.h * 0.35, it.e.x + ox, it.e.y + oy + it.e.h * 0.42, it.e.w * 0.6); }
     else if (it.bld) drawBuilding(it.bld, ox + it.t.x, oy + it.t.y);
-    else if (it.deco) drawDecor(it.deco, ox + it.t.x, oy + it.t.y);
+    else if (it.deco) { drawDecor(it.deco, ox + it.t.x, oy + it.t.y); if (it.deco.k === 'gate') drawFrontObjs(it.t.x + it.deco.x, it.t.y + it.deco.y, ox, oy); }
     else if (it.n) drawNPC(it.n, ox, oy);
     else if (it.a) {
       const a = it.a;
