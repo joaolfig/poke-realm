@@ -198,15 +198,16 @@ const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (outOfCombat(P) ? 1.3 : 1) * (p
 const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWolf(P) ? 1.3 : 1) * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
-// XP para cada nível: cresce nível a nível também dentro da mesma zona, porque o herói mata mais rápido a cada nível
+// XP para cada nível: acompanha o dano do herói (medido: XP por segundo matando na zona recomendada, nível a nível).
+// Dentro de cada zona o herói mata mais rápido a cada nível: ~+13%/nível na zona 1, +6,6% na 2, +8% na 3, ~+4% na 4 e na 5.
 // (os inimigos de uma zona dão sempre o mesmo XP). A média de cada zona é a calibrada em jogo (~2 min por nível nas
 // zonas 1 e 5, ~3 min nas zonas 2 a 4); a zona 1 começa mais rápida para os primeiros níveis passarem logo.
 const XP_TABLE = [
   600, 850, 1100, 1300, 1450, 1550, // zona 1 (Nv 1-6)
   5200, 5600, 6000, 6400, 6800, 7200, 7600, // zona 2 (Nv 7-13)
-  5500, 5900, 6350, 6800, 7250, 7700, 8050, // zona 3 (Nv 14-20)
-  8800, 9500, 10200, 10800, 11500, // zona 4 (Nv 21-25)
-  8600, 9200, 9700, 10260, // zona 5 (Nv 26-29 → 30)
+  5300, 5750, 6200, 6700, 7250, 7800, 8550, // zona 3 (Nv 14-20)
+  9250, 9750, 10200, 10600, 11000, // zona 4 (Nv 21-25)
+  9000, 9300, 9600, 9860, // zona 5 (Nv 26-29 → 30)
 ];
 const xpNeed = l => XP_TABLE[clamp(l, 1, MAX_LVL - 1) - 1];
 
