@@ -298,9 +298,11 @@ function useStone(i) {
 /* ---------- Inimigos ---------- */
 // kind: 0 normal, 1 Alfa, 2 lendário, 3 chefe de masmorra, 4 raro (evento)
 function enemyStats(pid, zone, kind) {
-  const p = POKE[pid], st = p.stats;
-  const atk = Math.max(st.attack || 55, st['special-attack'] || 55);
-  const legend = kind === 2, dboss = kind === 3, alfa = kind === 1, rare = kind === 4;
+  const p = POKE[pid], legend = kind === 2, dboss = kind === 3, alfa = kind === 1, rare = kind === 4;
+  // chefes: ataque, defesa e vida base limitados a uma faixa normal (medido: Hariyama, Lucario, Steelix, Excadrill,
+  // Rampardos e Dialga matavam 75-100% das tentativas, os outros líderes 0-40%)
+  const st = legend || dboss ? { ...p.stats, hp: clamp(p.stats.hp || 60, 60, 105), defense: clamp(p.stats.defense || 60, 50, 105) } : p.stats;
+  const atk0 = Math.max(st.attack || 55, st['special-attack'] || 55), atk = legend || dboss ? clamp(atk0, 70, 105) : atk0;
   let type = p.types[0];
   if (type === 'normal' && p.types[1]) type = p.types[1];
   if (!PAT[type]) type = 'normal';
