@@ -779,3 +779,105 @@ document.addEventListener('click', ev => { const b = ev.target.closest('[data-de
 // clicar no título (no painel) troca entre os títulos conquistados, de qualquer região
 document.addEventListener('click', ev => { if (!ev.target.closest('[data-title]') || !G || !G.P) return; const P = G.P, T = P.titles || []; if (T.length < 2) return; P.title = T[(T.indexOf(P.title) + 1) % T.length]; G.dirty = true; saveGame(); });
 document.addEventListener('click', ev => { if (ev.target.closest('[data-dexopen]') && G && G.P) toggleDex(); });
+
+/* ============ Exploração: baús escondidos, baús do guardião e marcos de mapa explorado ============
+ * Além dos 6 baús selados (com anel de HM), cada personagem tem ~10 baús escondidos e 2 do guardião por região,
+ * em lugares sorteados para ele (fixos para aquele personagem). Os escondidos só aparecem de perto;
+ * os do guardião ficam em lugares remotos das zonas 4-5 e um chefe surge quando você chega.
+ */
+const XCHESTS = [];
+function rng32(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function buildExploreChests(P) {
+  XCHESTS.length = 0;
+  if (!P.wseed) P.wseed = randi(1, 1e9);
+  let h = P.wseed; for (const c of REGION_ID) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  const R = rng32(h), placed = SECRETS.map(s => [s.x, s.y]);
+  const far = (x, y, d) => placed.every(([a, b]) => Math.hypot(a - x, b - y) > d);
+  const place = (z, kind, n, minPath) => {
+    const pts = (ZPTS[z] || []).filter(([x, y]) => !inTown(x, y) && pathDist(x, y) > minPath && tileKind(x, y) !== TK.TALL || false);
+    for (let k = 0, tries = 0; k < n && tries < 400 && pts.length; tries++) {
+      const [x, y] = pts[Math.floor(R() * pts.length)];
+      if (!far(x, y, 700)) continue;
+      placed.push([x, y]);
+      XCHESTS.push({ id: `${REGION_ID}_${kind}${XCHESTS.length}`, kind, x, y, zone: z });
+      k++;
+    }
+  };
+  for (let z = 1; z <= 5; z++) place(z, 'esc', 2, 200);
+  place(4, 'gua', 1, 320); place(5, 'gua', 1, 320);
+}
+const xOpen = (P, c) => P.chests.includes(c.id);
+const guardAlive = c => G.enemies.some(e => e.kind === 3 && !e.dead && e.hp > 0 && !e.dg && Math.hypot(e.x - c.x, e.y - c.y) < 420);
+function nearXChest(P) {
+  if (inDungeonArea(P.x)) return null;
+  return XCHESTS.find(c => !xOpen(P, c) && Math.hypot(c.x - P.x, c.y - P.y) < 48) || null;
+}
+function openXChest(P, c) {
+  if (c.kind === 'gua' && guardAlive(c)) return G.toasts.push({ text: '👑 O guardião protege o baú. Derrote-o primeiro!', color: '#fca5a5', t: 2.5 });
+  P.chests.push(c.id);
+  const z = c.zone;
+  let items, gold;
+  if (c.kind === 'gua') {
+    const acc = genItem(5, pick(['anel', 'amuleto'])); if (!acc.name.includes('✧') && Math.random() < 0.5) enchant(acc);
+    items = [statPot(), genItem(clamp(z + 2, 0, 6)), acc, consItem('ultra'), consItem('ultra')]; gold = 400;
+  } else {
+    items = [genItem(clamp(z + 1, 0, 6)), potion(), Math.random() < 0.5 ? ballItem() : consItem('grande')];
+    if (Math.random() < 0.25) items.push(consItem('doce'));
+    gold = 30 * z;
+  }
+  P.gold += gold;
+  G.bags.push({ x: c.x, y: c.y + 16, items, life: 120 });
+  G.toasts.push({ text: c.kind === 'gua' ? `👑 Baú do guardião aberto! +${gold} 🪙 e tesouros raros` : `🎁 Baú escondido! +${gold} 🪙`, color: '#facc15', t: 4, big: c.kind === 'gua' ? 1 : 0 });
+  burst(c.x, c.y, '#facc15', 30); sfx('lvl'); saveGame();
+}
+// guardião: surge quando você chega perto (o host cria; o cliente pede)
+function exploreTick(dt) {
+  const P = G.P;
+  if (!P || inDungeonArea(P.x) || (G.xT = (G.xT || 0) - dt) > 0) return;
+  G.xT = 0.5;
+  G.guardSent = G.guardSent || new Set();
+  for (const c of XCHESTS) {
+    if (c.kind !== 'gua' || xOpen(P, c) || G.guardSent.has(c.id) || Math.hypot(c.x - P.x, c.y - P.y) > 520) continue;
+    G.guardSent.add(c.id);
+    const pid = pick((ZONE_POOLS[c.zone] || []).filter(id => POKE[id]));
+    if (!pid) continue;
+    if (isHost()) spawnGuardian(pid, c.zone, c.x, c.y);
+    else if (NET.host && NET.host.open) NET.host.send({ t: 'guard', pid, z: c.zone, x: Math.round(c.x), y: Math.round(c.y) });
+    G.toasts.push({ text: '👑 Um guardião protege um baú aqui perto!', color: '#fca5a5', t: 4, big: 1 });
+  }
+}
+function spawnGuardian(pid, z, x, y) { const e = hostSpawn(pid, z, 3, x + 60, y - 40); e.name = `Guardião (${e.p.name})`; }
+function drawXChests(ox, oy) {
+  const P = G.P;
+  if (!P) return;
+  for (const c of XCHESTS) {
+    const open = xOpen(P, c), d = Math.hypot(c.x - P.x, c.y - P.y);
+    if (c.kind === 'esc' && !open && d > 170) continue; // escondido: só aparece de perto
+    const x = c.x + ox, y = c.y + oy;
+    if (x < -40 || y < -40 || x > W + 40 || y > H + 40) continue;
+    const gold = c.kind === 'gua';
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x - 14, y + 8, 28, 5);
+    ctx.fillStyle = gold ? '#4c1d95' : '#7c4a1e'; ctx.fillRect(x - 13, y - 6, 26, 16);
+    ctx.fillStyle = open ? '#2a1a3a' : gold ? '#a78bfa' : '#a16207'; ctx.fillRect(x - 13, y - (open ? 14 : 12), 26, open ? 5 : 8);
+    ctx.fillStyle = '#facc15'; ctx.fillRect(x - 2, y - 5, 4, 5);
+    if (!open && Math.random() < (gold ? 0.15 : 0.05)) G.parts.push({ x: c.x + rand(-12, 12), y: c.y - 10, vx: 0, vy: -25, life: 0.7, color: gold ? '#c4b5fd' : '#fde047', size: 2 });
+  }
+}
+// marcos de exploração do mapa (porcentagem da TERRA revelada, por região)
+const EXPLORE_GOALS = [
+  { pc: 25, txt: '3 Great Balls e um Doce Raro', give: P => { P.bag.grande += 3; P.bag.doce += 1; } },
+  { pc: 50, txt: '5 Ultra Balls e uma Poção de Atributo', give: P => { P.bag.ultra += 5; drinkStat(P, pick(ATTRS)); } },
+  { pc: 75, txt: 'um anel ou amuleto encantado ✧', give: P => giveItem(P, enchant(genItem(5, pick(['anel', 'amuleto'])))) },
+  { pc: 95, txt: 'um Artefato e o título "Explorador(a) de {R}"', title: 'Explorador(a) de {R}', give: P => giveItem(P, genItem(6)) },
+];
+function landExplored() { return G.landTotal ? G.landSeen / G.landTotal * 100 : 0; }
+function exploreCheck(P) {
+  const pc = landExplored(); P.expR = P.expR || {}; const done = P.expR[REGION_ID] = P.expR[REGION_ID] || [];
+  for (const g of EXPLORE_GOALS) {
+    if (pc < g.pc || done.includes(g.pc)) continue;
+    done.push(g.pc); g.give(P);
+    if (g.title) { P.titles = P.titles || []; const t = regTitle(g.title); if (!P.titles.includes(t)) P.titles.push(t); P.title = t; }
+    G.toasts.push({ text: `🗺️ ${g.pc}% de ${REGION.nome} explorado! Recompensa: ${regTitle(g.txt)}`, color: '#93c5fd', t: 6, big: 1 });
+    sfx('lvl'); saveGame();
+  }
+}

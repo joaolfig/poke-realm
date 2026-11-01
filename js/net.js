@@ -129,6 +129,9 @@ function hostOnData(from, m) {
     case 'cap':
       hostRemoveCaptured(m.id);
       break;
+    case 'guard':
+      spawnGuardian(m.pid, m.z, m.x, m.y);
+      break;
     case 'tower':
       towerStart(m.f, m.x, m.y);
       break;

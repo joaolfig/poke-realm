@@ -232,7 +232,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'wseed', 'expR', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -1204,6 +1204,7 @@ function update(dt) {
   else { updateEnemiesClient(dt); for (const p of G.portals) p.ttl -= dt; }
   weatherTick(dt);
   dexTick(dt);
+  exploreTick(dt);
   hazardTick(dt);
 
   for (const r of G.remotes.values()) {
@@ -1667,6 +1668,7 @@ function drawHUD(ox, oy) {
   if (P && !G.npcOpen) {
     let hint = null, col = '#fef3c7';
     if (G.nearPortal) { const p = G.nearPortal; hint = p.exit ? '[E] Sair da masmorra' : `[E] Entrar: ${THEMES[p.theme].nome}`; col = p.exit ? '#facc15' : THEMES[p.theme].accent; }
+    else if (nearXChest(P)) hint = nearXChest(P).kind === 'gua' && guardAlive(nearXChest(P)) ? '👑 Derrote o guardião para abrir o baú' : '[E] Abrir o baú';
     else if (G.nearNPC) hint = G.nearNPC.id === 'pc' ? '[E] Acessar o Banco Pokémon' : G.nearNPC.id === 'tshop' ? '[E] Ver a loja da Torre' : `[E] Falar com ${G.nearNPC.nome}`;
     else if (!gateOpen() && [[0, -40], [0, 40], [-40, 0], [40, 0]].some(([dx, dy]) => tileKind(P.x + dx, P.y + dy) === TK.GATE)) { hint = `🏅 Portão da Liga: abre com 7 insígnias (você tem ${badgeCount(P)})`; col = '#fcd34d'; }
     else if (G.nearHM) { hint = hmHint(P, G.nearHM); col = G.nearHM.k === 'chest' || petKnows(P, G.nearHM.k) ? '#86efac' : '#cbd5e1'; }
@@ -1741,7 +1743,8 @@ function drawHUD(ox, oy) {
         ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000';
         for (const l of LANDMARKS) if (P.fly.includes(l.id)) { const [a, b] = toM(l.x, l.y); ctx.fillStyle = '#fef3c7'; ctx.fillRect(a - 2, b - 2, 4, 4); outlined(l.nome, a, b - 6); }
         ctx.font = '12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#cbd5e1';
-        outlined(`🗺️ ${REGION.nome} · ${Math.round(FOG.reduce((s, v) => s + v, 0) / FOG.length * 100)}% explorado · [M] esconde`, W / 2, my - 10);
+        const allC = SECRETS.length + XCHESTS.length, gotC = SECRETS.filter(s => P.chests.includes(s.id)).length + XCHESTS.filter(c => xOpen(P, c)).length;
+        outlined(`🗺️ ${REGION.nome} · ${Math.round(landExplored())}% explorado · Baús ${gotC}/${allC} · [M] esconde`, W / 2, my - 10);
       }
       const same = x => (dg ? dungeonAt(x) === dg : !inDungeonArea(x));
       if (P && P.race === 'elfo') {
@@ -1974,6 +1977,7 @@ window.addEventListener('keydown', ev => {
   else if (ev.code === 'KeyE') {
     if (G.npcOpen) closeNPC();
     else if (nearDgChest(P)) openDgChest(P, nearDgChest(P));
+    else if (nearXChest(P)) openXChest(P, nearXChest(P));
     else if (G.nearPortal) usePortal(P, G.nearPortal);
     else if (G.nearNPC) openNPC(G.nearNPC.id);
     else if (G.nearHM) useHMTile(P, G.nearHM);
@@ -2156,6 +2160,7 @@ async function startGame(saved) {
   P.hp = Math.min(Math.max(1, P.hp), maxHP(P));
   G.P = P;
   G.cam.x = P.x; G.cam.y = P.y;
+  buildExploreChests(P);
   initFog(P);
   G.dirty = true;
   state = 'play';

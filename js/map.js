@@ -126,7 +126,7 @@ function pathDist(x, y) {
 let TT = null, TZ = null, TV = null, WET = null, MINIMAP = null;
 // MINIMAP: 1 pixel = MAP_S px do mundo. Névoa: células de FOG_S px; KNOWN = mapa só com o que já foi visto
 const MAP_S = 64, FOG_S = 128, FOG_R = 720;
-let FOG = null, FOGW = 0, FOGH = 0, KNOWN = null, fogT = 0;
+let FOG = null, FOGW = 0, FOGH = 0, KNOWN = null, fogT = 0, FOGLAND = null;
 const ZPTS = { 1: [], 2: [], 3: [], 4: [], 5: [] };
 const tIdx = (ix, iy) => (ix < 0 || iy < 0 || ix >= NX || iy >= NY ? -1 : iy * NX + ix);
 function tileIdx(x, y) { return tIdx(Math.floor(x / TILE) + OX, Math.floor(y / TILE) + OY); }
@@ -633,6 +633,7 @@ function renderOverworld(ox, oy) {
     else ctx.drawImage(tileImg(k, vz, TV[i]), tx * TILE + ox, ty * TILE + oy - 12);
   }
   drawChests(ox, oy);
+  drawXChests(ox, oy);
   drawLandmarks(ox, oy);
 }
 
@@ -837,6 +838,9 @@ function enforceProgression() {
 function initFog(P) {
   FOGW = Math.ceil((WX1 - WX0) / FOG_S); FOGH = Math.ceil((WY1 - WY0) / FOG_S);
   FOG = new Uint8Array(FOGW * FOGH);
+  // células de terra (o mar e a arena não contam para a % explorada)
+  FOGLAND = new Uint8Array(FOGW * FOGH); G.landTotal = 0; G.landSeen = 0;
+  for (let j = 0; j < FOGH; j++) for (let i = 0; i < FOGW; i++) { const x = WX0 + (i + 0.5) * FOG_S, y = WY0 + (j + 0.5) * FOG_S, z = zoneAt(x, y), k = tileKind(x, y); if (z >= 0 && z <= 5 && k !== TK.SEA) { FOGLAND[j * FOGW + i] = 1; G.landTotal++; } }
   KNOWN = document.createElement('canvas');
   KNOWN.width = MINIMAP.width; KNOWN.height = MINIMAP.height;
   const k = KNOWN.getContext('2d');
@@ -857,6 +861,7 @@ function initFog(P) {
 function revealCell(i) {
   if (FOG[i]) return false;
   FOG[i] = 1;
+  if (FOGLAND && FOGLAND[i]) G.landSeen = (G.landSeen || 0) + 1;
   const r = FOG_S / MAP_S, x = (i % FOGW) * r, y = Math.floor(i / FOGW) * r;
   KNOWN.getContext('2d').drawImage(MINIMAP, x, y, r, r, x, y, r, r);
   return true;
@@ -868,7 +873,7 @@ function revealAround(x, y, R) {
   for (let j = Math.max(0, Math.floor(cy - rr)); j <= Math.min(FOGH - 1, Math.ceil(cy + rr)); j++)
     for (let i = Math.max(0, Math.floor(cx - rr)); i <= Math.min(FOGW - 1, Math.ceil(cx + rr)); i++)
       if ((i + 0.5 - cx) ** 2 + (j + 0.5 - cy) ** 2 < rr * rr && revealCell(j * FOGW + i)) any = true;
-  if (any && G && G.P) { G.P.seenR = G.P.seenR || {}; G.P.seenR[REGION_ID] = fogEncode(); }
+  if (any && G && G.P) { G.P.seenR = G.P.seenR || {}; G.P.seenR[REGION_ID] = fogEncode(); exploreCheck(G.P); }
 }
 function fogEncode() {
   const b = new Uint8Array(Math.ceil(FOG.length / 8));
