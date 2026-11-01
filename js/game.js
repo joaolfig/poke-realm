@@ -175,7 +175,9 @@ const race = P => RACES[P.race] || RACES.humano;
 const wxSlow = P => { const w = P && G && G.wx && weatherAt(P.x, P.y); if (!w || !w.slow || pType(P) === 'ice' || M(P, 'wx' + w.k) > 0) return 1; return 1 - (1 - w.slow) * (1 - Math.min(1, M(P, 'wxcapa'))); };
 // Tiefling: +20% de dano com menos da metade da vida
 const infernal = P => (P.race !== 'tiefling' ? 1 : P.hp < maxHP(P) / 2 ? 1.25 : 1.1);
-const pType = P => (P.tempTypeT > 0 ? P.tempType : P.ptype);
+const pType = P => (P.wildT > 0 ? P.wildType : P.tempTypeT > 0 ? P.tempType : P.ptype);
+// arma atual: a da classe ou, na Forma Selvagem, o golpe do tipo do Pokémon
+const curWpn = P => (P.wildT > 0 ? wildWpn(P.wildType) : CLASSES[P.cls].wpn);
 // valor efetivo usado nas regras: cada 2 pontos de atributo valem 1 (o anel soma direto no efetivo)
 const A = (P, k) => P.attrs[k] / 2 + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus : 0);
 // valor mostrado no painel (pontos)
@@ -184,6 +186,7 @@ const maxHP = P => {
   const c = CLASSES[P.cls];
   let h = 15 + (c.hd / 2 + A(P, 'VIG')) * P.lvl + (P.race === 'anao' ? 2 * P.lvl : 0) + (hasT(P, 'robusto') ? 2 * P.lvl : 0);
   if (hasS(P, 'barbaro')) h *= 1.25;
+  if (P.wildT > 0) h *= hasS(P, 'lua') ? 1.5 : 1.3; // Forma Selvagem
   return Math.round(h * (1 + M(P, 'hp')));
 };
 const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armadura ? P.equip.armadura.ac : 0)
@@ -192,7 +195,7 @@ const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.e
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
 const outOfCombat = P => P.sinceHit > 4 && G.time - (P.shotT === undefined ? -99 : P.shotT) > 4 && !P.pvp;
 const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (outOfCombat(P) ? 1.3 : 1) * (pst(P, 2) ? 0.85 : 1) * wxSlow(P) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
-const fireRate = P => CLASSES[P.cls].wpn.rate * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
+const fireRate = P => curWpn(P).rate * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
 // XP por nível = abates desejados × XP médio de um abate na zona recomendada para aquele nível.
@@ -662,10 +665,10 @@ function spawnPB(o) {
 // Bomba Arcana: quantos dos 20 projéteis podem acertar o mesmo alvo
 const BOMB_CAP = 6;
 function shootBullet(a, o = {}) {
-  const P = G.P, w = CLASSES[P.cls].wpn;
+  const P = G.P, w = curWpn(P);
   spawnPB({
     a, spd: o.spd || w.speed, life: (o.life || w.life) * rangeMul(P), amp: w.wave ? 14 : 0, ph: o.ph || 0,
-    r: o.r || w.size, color: o.color || (P.tempTypeT > 0 ? TYPE_COLORS[P.tempType] : w.color), shape: o.shape || w.shape, pierce: o.pierce || w.pierce || M(P, 'pierce') > 0, spell: o.spell, x: o.x !== undefined ? o.x : P.x, y: o.y !== undefined ? o.y : P.y,
+    r: o.r || w.size, color: o.color || (P.wildT > 0 || P.tempTypeT > 0 ? TYPE_COLORS[pType(P)] : w.color), shape: o.shape || w.shape, pierce: o.pierce || w.pierce || M(P, 'pierce') > 0, spell: o.spell, x: o.x !== undefined ? o.x : P.x, y: o.y !== undefined ? o.y : P.y,
     left: o.left || (!(o.pierce || w.pierce) && hasT(P, 'perfurante') ? 2 : 0), rico: o.rico, skip: o.skip, bomb: o.bomb, pd: pvpShotDmg(P, o),
   });
 }
@@ -675,10 +678,10 @@ function addCosmetic(s, own) {
 }
 
 function playerShoot() {
-  const P = G.P, w = CLASSES[P.cls].wpn;
+  const P = G.P, w = curWpn(P);
   P.shotT = G.time;
   const ca = pst(P, 6) ? rand(-0.2, 0.2) : 0; // confuso: a mira treme
-  for (let i = 0; i < w.shots; i++) shootBullet(P.aim + ca, { ph: i * Math.PI });
+  for (let i = 0; i < w.shots; i++) shootBullet(P.aim + ca + (w.spread ? (i - (w.shots - 1) / 2) * w.spread : 0), { ph: i * Math.PI });
   if (hasT(P, 'atirador')) { P.alt = -P.alt; shootBullet(P.aim + P.alt); }
   if (Math.random() < 0.5) sfx('shoot');
 }
@@ -800,6 +803,9 @@ function useAbility() {
       if (P.pvp) emitEvent({ t: 'pvpaoe', x: Math.round(t.x), y: Math.round(t.y), r: 90, dur: 6, wait: 0.5, once: 1, dmg: Math.max(1, Math.round((roll(2 + Math.floor(lv / 4), 8) + pod) * PVP_K)), name: P.name });
       sfx('pick'); break;
     }
+    case 'druida': case 'lua': case 'terra': // Forma Selvagem: vira o companheiro líder
+      if (!wildShape(P)) return;
+      break;
     case 'arcano': // Aljava Arcana: leque de flechas perfurantes
       for (let i = 0; i < 3; i++) shootBullet(P.aim + (i - 1) * 0.14, { spd: 620, life: 0.85, r: 9, color: '#c084fc', shape: 'arrow', pierce: true, left: 2, spell: 4 }); // cada flecha atravessa até 2 inimigos
       sfx('crit'); break;
@@ -820,8 +826,8 @@ function updateZones(dt) {
     if (!P) continue;
     if (z.k === 'veneno') {
       for (const e of enemiesNear(z.x, z.y, z.r)) abilHit(e, roll(1 + Math.floor(P.lvl / 6), 6), 'poison');
-    } else if (z.k === 'santuario') {
-      emitEvent({ t: 'heal', x: Math.round(z.x), y: Math.round(z.y), amt: Math.round((roll(1 + Math.floor(P.lvl / 6), 6) + Math.floor(A(P, 'VIG') / 2)) * 1.5), name: P.name, quiet: 1, r: z.r });
+    } else if (z.k === 'santuario' || z.k === 'raizes') {
+      emitEvent({ t: 'heal', x: Math.round(z.x), y: Math.round(z.y), amt: Math.round((roll(1 + Math.floor(P.lvl / 6), 6) + Math.floor(A(P, 'VIG') / 2)) * (z.k === 'raizes' ? 1 : 1.5)), name: P.name, quiet: 1, r: z.r });
       for (const e of enemiesNear(z.x, z.y, z.r)) e.slowT = Math.max(e.slowT || 0, 1.2);
     } else if (z.k === 'armadilha') {
       if (!enemiesNear(z.x, z.y, 60).length && z.t > 0) continue;
@@ -1052,6 +1058,7 @@ function updatePlayer(dt) {
   }
   P.sinceHit += dt;
   updatePlayerStatus(P, dt);
+  wildTick(P, dt);
   if (outOfCombat(P) && P.moving && Math.random() < 0.25) G.parts.push({ x: P.x + rand(-8, 8), y: P.y + 16, vx: rand(-15, 15), vy: -10, life: 0.35, color: '#e7dcc4', size: 2 });
 
   const inV = !inDg && inTown(P.x, P.y);
@@ -1321,7 +1328,12 @@ function outlined(s, x, y) { s = padText(s); ctx.strokeText(s, x, y); ctx.fillTe
 function drawShot(b, ox, oy) {
   const x = b.x + ox, y = b.y + oy;
   if (b.shape === 'arrow' && b.r >= 11) return drawHeavyArrow(b, x, y); // Aljava Pesada (também para os tiros vistos de outros jogadores)
-  if (b.shape === 'blade' || b.shape === 'dagger' || b.shape === 'arrow') {
+  if (b.shape === 'thorn') {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(b.a); ctx.fillStyle = b.color;
+    ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-5, -4); ctx.lineTo(-2, 0); ctx.lineTo(-5, 4); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#3f6212'; ctx.fillRect(-8, -1, 6, 2);
+    ctx.restore();
+  } else if (b.shape === 'blade' || b.shape === 'dagger' || b.shape === 'arrow') {
     ctx.save(); ctx.translate(x, y); ctx.rotate(b.a);
     ctx.fillStyle = b.color;
     if (b.shape === 'blade') ctx.fillRect(-10, -3, 20, 6);
@@ -1370,7 +1382,7 @@ function render() {
   drawMeteors(ox, oy);
   for (const z of G.zones) {
     const x = z.x + ox, y = z.y + oy, pulse = 1 + Math.sin(G.time * 6) * 0.04;
-    const col = z.k === 'veneno' ? '163,230,53' : z.k === 'santuario' ? '253,230,138' : '251,191,36';
+    const col = z.k === 'veneno' ? '163,230,53' : z.k === 'santuario' ? '253,230,138' : z.k === 'raizes' ? '134,239,172' : '251,191,36';
     ctx.fillStyle = `rgba(${col},${z.k === 'armadilha' ? 0.12 : 0.22})`; ctx.strokeStyle = `rgba(${col},.8)`; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(x, y, (z.k === 'armadilha' ? 22 : z.r) * pulse, 0, 7); ctx.fill(); ctx.stroke();
     if (z.k === 'armadilha') { ctx.fillStyle = '#78350f'; ctx.fillRect(x - 10, y - 4, 20, 8); ctx.fillStyle = '#d1d5db'; for (let k = -8; k <= 8; k += 4) ctx.fillRect(x + k, y - 8, 2, 4); }
@@ -1424,7 +1436,7 @@ function render() {
     else if (it.n) drawNPC(it.n, ox, oy);
     else if (it.a) {
       const a = it.a;
-      if (a.pet && a.slot === G.P.petIdx && mountPid(G.P)) continue; // virou montaria (desenhada embaixo do jogador)
+      if (a.pet && a.slot === G.P.petIdx && (mountPid(G.P) || G.P.wildT > 0)) continue; // virou montaria (desenhada embaixo do jogador)
       drawAlly(a.look || a.pid, a.x, a.y, ox, oy, a.ghost, a.t, a.face, a.moving, a.pet && G.evo && G.P && G.evo.pt === G.P.pets[a.slot], a.pet ? a.lvl : 0);
       grassOver(a.x, a.y + 10, a.x + ox, a.y + oy + 14, 26);
     } else if (it.ra) drawAlly(it.ra[0], it.ra[1], it.ra[2], ox, oy, it.ra[3], G.time, 1, false);
@@ -1432,11 +1444,12 @@ function render() {
       const r = it.r, x = r.x + ox, y = r.y + oy, hide = r.invis && G.P && G.P.pvp; // rival invisível na arena: só um vulto
       let lift = 0;
       if (hide) { drawPlayerSprite(r.cls, x, y, r.face || 1, 0, 0.07, r.aim || 0, r.ptype); continue; }
-      if (r.mount) lift = drawMount(r.mount, r.x, r.y, x, y, r.face || 1, r.moving, G.time); else waterOver(r.x, r.y + 16, x, y + 16, 30);
+      const rw = r.mount < 0 ? -r.mount : 0; // Druida na Forma Selvagem
+      if (r.mount > 0) lift = drawMount(r.mount, r.x, r.y, x, y, r.face || 1, r.moving, G.time); else waterOver(r.x, r.y + 16, x, y + 16, 30);
       const rt = pstTint(r.pst || 0);
       if (r.pst) drawStatusAura(r.pst, x, y);
       if (rt) ctx.filter = rt;
-      drawPlayerSprite(r.cls, x, y - lift, r.face || 1, r.mount ? 0 : r.moving ? Math.floor(r.walk * 8) % 2 : 0, r.invis ? (G.P && G.P.pvp ? 0.07 : 0.4) : 1, r.aim || 0, r.ptype);
+      if (!rw || !drawWildForm(rw, r.x, r.y, x, y, r.face || 1, r.moving, r.invis ? 0.4 : 1, r.ptype)) drawPlayerSprite(r.cls, x, y - lift, r.face || 1, r.mount ? 0 : r.moving ? Math.floor(r.walk * 8) % 2 : 0, r.invis ? (G.P && G.P.pvp ? 0.07 : 0.4) : 1, r.aim || 0, r.ptype);
       ctx.filter = 'none';
       if (r.pst === 7) drawShock(x, y - lift - 4, 30, 40);
       ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.textAlign = 'center';
@@ -1450,7 +1463,7 @@ function render() {
       if (P.shield > 0) { ctx.strokeStyle = 'rgba(147,197,253,.85)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.stroke(); }
       if (P.seloT > 0) { ctx.strokeStyle = 'rgba(253,230,138,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 30 + Math.sin(G.time * 8) * 2, 0, 7); ctx.stroke(); }
       if (P.furia > 0) { ctx.fillStyle = 'rgba(239,68,68,.25)'; ctx.beginPath(); ctx.arc(x, y, 24 + Math.sin(G.time * 15) * 3, 0, 7); ctx.fill(); }
-      const mpid = mountPid(P);
+      const mpid = P.wildT > 0 ? 0 : mountPid(P);
       let lift = 0;
       if (mpid) {
         lift = drawMount(mpid, P.x, P.y, x, y, P.face > 0 ? 1 : -1, P.moving, G.time);
@@ -1459,13 +1472,14 @@ function render() {
       const tint = pstTint(P.pstT > 0 ? P.pst : 0);
       if (P.pstT > 0) drawStatusAura(P.pst, x, y);
       if (tint) ctx.filter = tint;
-      drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
+      if (!(P.wildT > 0 && drawWildForm(P.wildPid, P.x, P.y, x, y, P.face, P.moving, P.invis > 0 ? 0.4 : 1, pType(P)))) drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
       ctx.filter = 'none';
       if (pst(P, 2) && P.pstShock) drawShock(x, y - lift - 4, 30, 40);
       if (!mpid) grassOver(P.x, P.y + 14, x, y + 18, 28);
       if (G.recall) { ctx.strokeStyle = '#fde68a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - G.recall.t / 1.5)); ctx.stroke(); }
       bar(x - 16, y + 22, 32, 4, P.hp / maxHP(P), '#22c55e');
       bar(x - 16, y + 28, 32, 3, 1 - P.abilCd / abilCd(P), '#60a5fa');
+      if (P.wildT > 0) bar(x - 16, y + 33, 32, 3, P.wildT / wildDur(P), '#86efac'); // tempo restante da Forma Selvagem
       if (P.bubble) drawBubble(x, y - 26, P.bubble.text);
     }
   }

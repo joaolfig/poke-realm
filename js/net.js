@@ -204,7 +204,7 @@ function sendSnapshot() {
   const e = G.enemies.map(e => [e.id, e.pid, e.kind, e.zone, Math.round(e.x), Math.round(e.y), Math.max(0, Math.round(e.hp)), e.story || (e.bountyT !== undefined ? 10 + e.bountyT : 0) || (e.mini ? 40 + e.mini : 0), e.st || 0]);
   const pl = [];
   const P = G.P;
-  if (P) pl.push([NET.myId, P.name, P.cls, Math.round(P.x), Math.round(P.y), P.face, P.moving ? 1 : 0, P.invis > 0 ? 1 : 0, Math.round(P.hp), maxHP(P), P.lvl, +P.aim.toFixed(2), myType(P), alliesToNet(), mountPid(P), pstNet(P)]);
+  if (P) pl.push([NET.myId, P.name, P.cls, Math.round(P.x), Math.round(P.y), P.face, P.moving ? 1 : 0, P.invis > 0 ? 1 : 0, Math.round(P.hp), maxHP(P), P.lvl, +P.aim.toFixed(2), myType(P), alliesToNet(), netMount(P), pstNet(P)]);
   for (const r of G.remotes.values()) if (!r.dead && r.name) pl.push([r.id, r.name, r.cls, Math.round(r.tx), Math.round(r.ty), r.face, r.moving ? 1 : 0, r.invis ? 1 : 0, r.hp, r.maxHp, r.lvl, r.aim || 0, r.ptype || '', r.allies || [], r.mount || 0, r.pst || 0]);
   const cs = NET.outS.map(s => [NET.myId, ...s]).concat(NET.relayS);
   const m = { t: 'snap', e, pl, b: NET.outB, cs, dg: dungeonsToNet(), po: portalsToNet(), ev: G.evInfo, wx: G.wx };
@@ -216,14 +216,16 @@ function sendPlayerState() {
   if (!NET.host || !NET.host.open) return;
   const P = G.P;
   if (!P) { NET.host.send({ t: 'p', dead: 1 }); NET.outS = []; return; }
-  const m = { t: 'p', name: P.name, cls: P.cls, s: [Math.round(P.x), Math.round(P.y), P.face, P.moving ? 1 : 0, P.invis > 0 ? 1 : 0, Math.round(P.hp), maxHP(P), P.lvl, +P.aim.toFixed(2), myType(P), mountPid(P), pstNet(P)], ch: storyOver(P) ? 1 : 0 };
+  const m = { t: 'p', name: P.name, cls: P.cls, s: [Math.round(P.x), Math.round(P.y), P.face, P.moving ? 1 : 0, P.invis > 0 ? 1 : 0, Math.round(P.hp), maxHP(P), P.lvl, +P.aim.toFixed(2), myType(P), netMount(P), pstNet(P)], ch: storyOver(P) ? 1 : 0 };
   if (NET.outS.length) m.b = NET.outS;
   if (G.allies.length) m.al = alliesToNet();
   NET.host.send(m);
   NET.outS = [];
 }
 
-const myType = P => (P.tempTypeT > 0 ? P.tempType : '');
+const myType = P => (pType(P) !== P.ptype ? pType(P) : '');
+// montaria (id do Pokémon) ou, na Forma Selvagem do Druida, o Pokémon em que ele virou (id negativo)
+const netMount = P => (P.wildT > 0 ? -P.wildPid : mountPid(P));
 
 function netTick(dt) {
   NET.t += dt;

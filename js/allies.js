@@ -150,6 +150,7 @@ const rideFlies = pid => FLY_RIDE.has(pid) || (canRide(pid) && petIsFlyer(pid));
 function toggleRide() {
   const P = G.P;
   if (P.riding) { P.riding = false; text(P.x, P.y - 44, 'Desmontou', '#cbd5e1', 12); return; }
+  if (P.wildT > 0) return text(P.x, P.y - 44, 'Na Forma Selvagem não dá para montar', '#fca5a5', 12);
   const pt = activePet(P);
   if (!pt || !G.allies.some(a => a.pet)) return G.toasts.push({ text: 'Chame um companheiro grande para montar (Arcanine, Rapidash, Onix, Lapras...).', color: '#fca5a5', t: 3 });
   if (!canRide(pt.pid)) return G.toasts.push({ text: `${pt.name} é pequeno demais para carregar você.`, color: '#fca5a5', t: 2.5 });
@@ -173,6 +174,50 @@ function drawMount(pid, wx, wy, x, y, face, moving, t) {
   }
   drawMon(p.img, p, x, y + 12, w, h, face, t, moving, wx, wy + 8, false, 1);
   return h * 0.3;
+}
+
+/* ---------- Forma Selvagem (Druida): vira o companheiro líder ---------- */
+const wildDur = P => (hasS(P, 'lua') ? 18 : 12);
+function wildShape(P) {
+  const pt = activePet(P);
+  if (!pt || !POKE[pt.pid] || !G.allies.some(a => a.pet && a.slot === P.petIdx)) {
+    text(P.x, P.y - 40, 'Chame um companheiro para usar a Forma Selvagem', '#fca5a5', 12); P.abilCd = 0.4; return false;
+  }
+  const before = maxHP(P);
+  P.riding = false;
+  P.wildT = wildDur(P); P.wildPid = pt.pid; P.wildType = mainType(POKE[pt.pid]); P.wildSlot = P.petIdx;
+  P.hp += maxHP(P) - before; // os PV extras chegam cheios
+  if (hasS(P, 'lua')) P.hp = Math.min(maxHP(P), P.hp + maxHP(P) * 0.25);
+  if (hasS(P, 'terra')) G.zones.push({ k: 'raizes', x: P.x, y: P.y, r: 150, t: 6, wait: 0, every: 1, tick: 0 });
+  burst(P.x, P.y, '#86efac', 30); burst(P.x, P.y, TYPE_COLORS[P.wildType], 24);
+  emitEvent({ t: 'fx', x: Math.round(P.x), y: Math.round(P.y), r: 90, color: '#86efac' });
+  text(P.x, P.y - 50, `🌿 Você virou ${pt.name}!`, '#86efac', 14);
+  sfx('lvl');
+  return true;
+}
+function endWild(P) {
+  P.wildT = 0;
+  P.hp = Math.min(P.hp, maxHP(P));
+  burst(P.x, P.y, '#86efac', 22);
+  text(P.x, P.y - 44, 'Você voltou à forma normal', '#cbd5e1', 12);
+}
+function wildTick(P, dt) {
+  if (!(P.wildT > 0)) return;
+  P.wildT -= dt;
+  if (P.wildT <= 0 || P.petIdx !== P.wildSlot || !activePet(P) || activePet(P).pid !== P.wildPid) endWild(P);
+  else if (Math.random() < 0.12) G.parts.push({ x: P.x + rand(-16, 16), y: P.y + rand(-10, 14), vx: rand(-10, 10), vy: -30, life: 0.6, color: Math.random() < 0.5 ? '#86efac' : TYPE_COLORS[P.wildType], size: 3 });
+}
+// desenha o Druida transformado: o Pokémon no lugar do herói, com os pés no mesmo ponto
+function drawWildForm(pid, wx, wy, x, y, face, moving, alpha, ptype) {
+  const p = POKE[pid];
+  if (!p || !p.img) { ensurePoke(pid); return false; }
+  const ih = p.img.height, k = clamp(1.9, 44 / ih, 92 / ih), w = p.img.width * k, h = ih * k;
+  if (ptype) {
+    ctx.strokeStyle = TYPE_COLORS[ptype]; ctx.lineWidth = 2; ctx.globalAlpha = (0.6 + Math.sin(G.time * 6) * 0.2) * alpha;
+    ctx.beginPath(); ctx.ellipse(x, y + 16, Math.max(20, w * 0.36), 7, 0, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  drawMon(p.img, p, x, y + 17 - h * 0.42, w, h, face, G.time, moving, wx, wy + 17 - h * 0.42, petIsFlyer(pid), alpha);
+  return true;
 }
 
 /* ---------- Comportamento em jogo ---------- */
@@ -218,7 +263,7 @@ function updateAllies(dt) {
     if (Math.hypot(a.x - P.x, a.y - P.y) > 400 || !walkable(a.x, a.y)) { a.x = P.x; a.y = P.y; }
     a.moving = Math.abs(a.x - ox) > 0.3;
     if (a.pet && a.pid === 132) dittoLook(a, dt);
-    if (a.pet && a.slot === P.petIdx && (P.riding || P.surfing)) { a.x = P.x; a.y = P.y; return; } // está carregando o jogador
+    if (a.pet && a.slot === P.petIdx && (P.riding || P.surfing || P.wildT > 0)) { a.x = P.x; a.y = P.y; return; } // está carregando o jogador (ou o Druida virou ele)
     if (a.rageT > 0) a.rageT -= dt;
     a.cd -= dt;
     if (a.pet) a.spT -= dt;
@@ -420,7 +465,7 @@ function hostRemoveCaptured(id) {
 }
 
 /* ---------- Desenho e rede ---------- */
-const alliesToNet = () => G.allies.filter(a => !(a.pet && a.slot === G.P.petIdx && mountPid(G.P))).map(a => [a.look || a.pid, Math.round(a.x), Math.round(a.y), a.ghost ? 1 : 0]);
+const alliesToNet = () => G.allies.filter(a => !(a.pet && a.slot === G.P.petIdx && (mountPid(G.P) || G.P.wildT > 0))).map(a => [a.look || a.pid, Math.round(a.x), Math.round(a.y), a.ghost ? 1 : 0]);
 const pokeLoading = new Set();
 function ensurePoke(id) {
   if (POKE[id] || pokeLoading.has(id)) return;

@@ -46,7 +46,28 @@ const CLASSES = {
     abil: { nome: 'Aljava Pesada', cd: 3, desc: 'Aljava: dispara uma flecha enorme e perfurante que causa (3 + nível/3)d8 + Poder e deixa os inimigos lentos por 3s.' },
     weapons: ['Arco Curto', 'Arco Longo', 'Arco Composto', 'Arco Élfico', 'Arco do Vento', 'Arco Lunar', 'Arco das Estrelas'], wicon: '🏹',
   },
+  druida: {
+    nome: 'Druida', icon: '🌿', hd: 8, ac: 13, crit: 20, dieAdj: 0, attrs: { POD: 3, AGI: 2, VIG: 2 },
+    spr: { h: '#4d7c0f', b: '#78350f', d: '#3f6212' },
+    desc: 'Guardião da natureza. Atira espinhos e, na Forma Selvagem, vira o seu companheiro líder.',
+    wpn: { shots: 1, speed: 440, life: 0.9, size: 6, rate: 2.2, shape: 'thorn', color: '#86efac' },
+    abil: { nome: 'Forma Selvagem', cd: 24, desc: 'Forma Selvagem: vira o seu companheiro líder por 12s. Fica com o visual e o tipo dele, ganha +30% de PV e ataca com o golpe do tipo dele (o companheiro luta através de você e continua ganhando XP).' },
+    weapons: ['Galho Retorcido', 'Cajado de Raiz', 'Cajado de Espinheiro', 'Cajado do Bosque', 'Cajado da Lua Cheia', 'Cajado do Carvalho Ancião', 'Cajado da Mãe Terra'], wicon: '🌿',
+  },
 };
+// Forma Selvagem do Druida: o ataque depende do tipo do Pokémon em que ele se transformou
+// golpe: corpo a corpo pesado que atravessa · leque: 3 projéteis curtos · rajada: 2 projéteis ondulados de longe
+const WILD_STYLE = {
+  fighting: 'golpe', rock: 'golpe', ground: 'golpe', steel: 'golpe', dragon: 'golpe', normal: 'golpe', dark: 'golpe',
+  fire: 'leque', ice: 'leque', poison: 'leque', bug: 'leque', grass: 'leque',
+  electric: 'rajada', psychic: 'rajada', fairy: 'rajada', ghost: 'rajada', flying: 'rajada', water: 'rajada',
+};
+const WILD_WPN = {
+  golpe: { shots: 1, speed: 480, life: 0.45, size: 12, rate: 3.0, shape: 'blade', pierce: true },
+  leque: { shots: 3, spread: 0.2, speed: 420, life: 0.55, size: 7, rate: 1.25, shape: 'orb' },
+  rajada: { shots: 2, speed: 480, life: 0.9, size: 7, rate: 1.5, shape: 'orb', wave: true },
+};
+const wildWpn = t => ({ ...WILD_WPN[WILD_STYLE[t] || 'rajada'], color: TYPE_COLORS[t] || '#86efac' });
 
 const WDICE = [[1, 6], [1, 8], [1, 8], [1, 10], [1, 10], [1, 12], [2, 8]];
 const WBONUS = [0, 0, 1, 1, 2, 3, 4];
