@@ -653,7 +653,7 @@ function shootBullet(a, o = {}) {
   spawnPB({
     a, spd: o.spd || w.speed, life: (o.life || w.life) * rangeMul(P), amp: w.wave ? 14 : 0, ph: o.ph || 0,
     r: o.r || w.size, color: o.color || (P.tempTypeT > 0 ? TYPE_COLORS[P.tempType] : w.color), shape: o.shape || w.shape, pierce: o.pierce || w.pierce || M(P, 'pierce') > 0, spell: o.spell, x: o.x !== undefined ? o.x : P.x, y: o.y !== undefined ? o.y : P.y,
-    left: !(o.pierce || w.pierce) && hasT(P, 'perfurante') ? 2 : 0, rico: o.rico, skip: o.skip, bomb: o.bomb, pd: pvpShotDmg(P, o),
+    left: o.left || (!(o.pierce || w.pierce) && hasT(P, 'perfurante') ? 2 : 0), rico: o.rico, skip: o.skip, bomb: o.bomb, pd: pvpShotDmg(P, o),
   });
 }
 function addCosmetic(s, own) {
@@ -781,7 +781,7 @@ function useAbility() {
       sfx('pick'); break;
     }
     case 'arcano': // Aljava Arcana: leque de flechas perfurantes
-      for (let i = 0; i < 5; i++) shootBullet(P.aim + (i - 2) * 0.12, { spd: 620, life: 0.85, r: 9, color: '#c084fc', shape: 'arrow', pierce: true, spell: 4 });
+      for (let i = 0; i < 5; i++) shootBullet(P.aim + (i - 2) * 0.12, { spd: 620, life: 0.85, r: 9, color: '#c084fc', shape: 'arrow', pierce: true, left: 2, spell: 4 }); // cada flecha atravessa até 2 inimigos
       sfx('crit'); break;
   }
   if (hasT(P, 'barreira')) { P.shield = Math.round(maxHP(P) * 0.15); P.shieldT = 4; }
