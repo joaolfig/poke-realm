@@ -316,6 +316,7 @@ function setRegion(id) {
   const fs = GYM_STYLE[R.final.type] || GYM_STYLE.dark;
   THEMES.final = { nome: R.final.nome, floor: [fs[0], fs[1]], wall: fs[2], top: fs[3], accent: '#ef4444', pool: R.grunts, boss: R.final.boss, story: 9, zmin: 5 };
   DARK_THEMES.push('final');
+  THEMES.torre = { nome: 'Torre Infinita', floor: ['#26252e', '#2c2b36'], wall: '#0b0a10', top: '#3b3950', accent: '#a78bfa', pool: [...new Set([...R.pools[4], ...R.pools[5]])], boss: R.pools[5][0], zmin: 5 };
   replaceArr(THEME_IDS, [...new Set(Object.values(THEMES).flatMap(t => [...t.pool, t.boss]))]);
   // história
   const H = R.historia;

@@ -230,7 +230,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -588,6 +588,7 @@ function onKill(m) {
   if (m.kind === 3) questProgress('masmorra');
   if (m.st >= 10) questProgress('caca', { pid: m.pid });
   storyKill(m);
+  { const tdg = inDungeonArea(m.x) && dungeonAt(m.x); if (m.kind === 3 && tdg && tdg.floor && tdg.floor % 5 === 0) towerCheckpoint(P, tdg.floor); }
   if (m.kind === 2) { P.legends = (P.legends || 0) + 1; dexCatch(P, m.pid); } // lendário: conta para todos que estavam perto (e entra na Pokédex)
   rollLoot(m); // saque: cada jogador perto rola o seu, mesmo sem ter acertado
   const xp = Math.max(1, Math.round(m.xp * xpShare * (1 + M(P, 'xp'))));
@@ -951,6 +952,8 @@ function heroLabel(P) {
 function playerDie(src) {
   const P = G.P;
   if (P.pvp || inArena(P.x, P.y)) return pvpLeave(true, src); // na arena ninguém morre de verdade
+  const tdg = inDungeonArea(P.x) && dungeonAt(P.x);
+  if (tdg && tdg.floor) return towerFall(P, tdg, src); // nem na torre
   burst(P.x, P.y, '#ef4444', 40);
   sfx('die');
   try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignora */ }
@@ -1035,7 +1038,8 @@ function updatePlayer(dt) {
 
   const inV = !inDg && inTown(P.x, P.y);
   const regenK = (hasT(P, 'regeneracao') ? 2.5 : 1) * (1 + M(P, 'regen'));
-  if (P.sinceHit > 5 || inV) P.hp = Math.min(maxHP(P), P.hp + (0.3 + A(P, 'VIG') * 0.2 + P.lvl * 0.05) * (inV ? 12 : 1) * regenK * dt);
+  const noRegen = inDg && (dungeonAt(P.x) || {}).mods && dungeonAt(P.x).mods.includes('semcura');
+  if ((P.sinceHit > 5 || inV) && !noRegen) P.hp = Math.min(maxHP(P), P.hp + (0.3 + A(P, 'VIG') * 0.2 + P.lvl * 0.05) * (inV ? 12 : 1) * regenK * dt);
 
   P.shootCd -= dt;
   // a vila é zona de paz: ninguém ataca de dentro dela
@@ -1454,7 +1458,7 @@ function render() {
   const flash = G.P && petKnows(G.P, 'flash');
   if (inDg) {
     const dg = dungeonAt(cam.x);
-    if (dg && (DARK_THEMES.includes(dg.theme) || dg.mod === 'escuro')) drawNight(ox, oy, flash ? 460 : 175, 'rgba(0,0,0,0.88)');
+    if (dg && (DARK_THEMES.includes(dg.theme) || dg.mod === 'escuro' || (dg.mods && dg.mods.includes('escuro')))) drawNight(ox, oy, flash ? 460 : 175, 'rgba(0,0,0,0.88)');
   } else {
     const fog = (ZONES[zoneAt(cam.x, cam.y)] || {}).fog && !flash;
     // à noite e na névoa quase não se enxerga sem Flash
@@ -1545,7 +1549,8 @@ function drawHUD(ox, oy) {
   const name = areaName(cx, cy);
   ctx.textAlign = 'left'; ctx.font = 'bold 14px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
   let hy = 22;
-  if (dg) outlined(`${name} · Perigo ${dg.zone}/5`, 12, hy);
+  if (dg && dg.floor) { outlined(`🗼 Torre Infinita · Andar ${dg.floor}`, 12, hy); if (dg.mods.length) { hy += 18; ctx.fillStyle = '#c4b5fd'; outlined(dg.mods.map(m => TOWER_MODS[m]).join(' · '), 12, hy); ctx.fillStyle = '#fff'; } }
+  else if (dg) outlined(`${name} · Perigo ${dg.zone}/5`, 12, hy);
   else {
     const z = zoneAt(cx, cy);
     if (z >= 0) outlined(`${REGION.nome} · ${name}  ${z === ARENA_Z ? '(duelo entre jogadores)' : z ? `Perigo ${z}/5 · Nv ${ZONES[z].lvl}–${ZONES[z].lvlMax}` : '(área segura)'}`, 12, hy);

@@ -6,6 +6,7 @@ const NPCS = [
   { id: 'ferreiro', nome: 'Ferreira Duna', icon: '🔨', x: -140, y: 136, spr: { h: '#ea580c', b: '#57534e', d: '#292524' }, fala: 'Traga ouro e eu deixo seu equipamento mais forte.' },
   { id: 'guilda', nome: 'Mestre da Guilda', icon: '📜', x: 140, y: 140, spr: { h: '#e5e7eb', b: '#1d4ed8', d: '#1e3a8a' }, fala: 'O reino precisa de heróis. Escolha um contrato.' },
   { id: 'sildo', nome: 'Sildo Invernal', icon: '🛡️', x: 0, y: -205, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
+  { id: 'torre', nome: 'Guardião da Torre', icon: '🗼', x: 0, y: 150, t2: 1, spr: { h: '#e5e7eb', b: '#6d28d9', d: '#2e1065' }, fala: '' },
   { id: 'pc', nome: 'PC', icon: '💻', x: -82, y: -40, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
   { id: 'dex', nome: 'Pesquisadora Íris', icon: '📖', x: 60, y: 205, spr: { h: '#7c2d12', b: '#f8fafc', d: '#0f766e' }, fala: '' },
   { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '', show: P => storyOver(P) },
@@ -29,16 +30,17 @@ function rebuildTownNPCs() {
   NPCS2.length = 0;
   const t = TOWNS[1];
   if (!t) return;
-  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex', 'pc'].includes(n.id))
+  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex', 'pc', 'torre'].includes(n.id))
     NPCS2.push({ ...n, x: n.x + t.x, y: n.y + t.y, town: 1, nome: n.id === 'sildo' ? `Assistente ${REGION.guia.nome.split(' ').pop()}` : n.nome, show: null });
 }
-const allNPCs = () => NPCS.concat(NPCS2);
+const allNPCs = () => NPCS.filter(n => !n.t2).concat(NPCS2); // o guardião da torre só existe na 2ª cidade
 function nearNPC(P) {
   if (inDungeonArea(P.x) || !inTown(P.x, P.y)) return null;
   return allNPCs().find(n => (!n.show || n.show(P)) && Math.hypot(n.x - P.x, n.y - P.y) < 60) || null;
 }
 function drawNPC(n, ox, oy) {
   if (n.show && !(G.P && n.show(G.P))) return;
+  if (n.t2 && !n.town) return;
   const x = n.x + ox, y = n.y + oy + Math.sin(G.time * 2 + n.x) * 1;
   ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y + 17, 12, 4, 0, 0, 7); ctx.fill();
   if (n.id === 'pc') {
@@ -115,6 +117,8 @@ function renderNPC() {
     body += renderDexNPC(P);
   } else if (n.id === 'pc') {
     body += renderPC(P);
+  } else if (n.id === 'torre') {
+    body += renderTowerNPC(P);
   } else if (n.id === 'sildo' || n.id === 'gundo') {
     body += renderStoryNPC(n, P);
   } else if (n.id === 'ferreiro') {
@@ -165,6 +169,7 @@ $('npc').addEventListener('click', ev => {
   else if (act === 'claim') claimQuest(P);
   else if (act === 'story') storyAct(P, arg);
   else if (act === 'dex') dexClaim(P, +arg);
+  else if (act === 'torre') { towerRequest(+arg); closeNPC(); }
   else if (act === 'pc') { const [a2, i2] = arg.split(':'); pcAct(P, a2, +i2); }
   else if (act === 'dexopen') { closeNPC(); toggleDex(); }
   else if (act === 'fly') { flyTo(P, arg); return; }

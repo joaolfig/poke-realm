@@ -129,6 +129,9 @@ function hostOnData(from, m) {
     case 'cap':
       hostRemoveCaptured(m.id);
       break;
+    case 'tower':
+      towerStart(m.f, m.x, m.y);
+      break;
     case 'story':
       hostStory(m.ch);
       break;
@@ -162,7 +165,7 @@ function clientOnData(m) {
       if (!e) {
         if (!POKE[pid]) continue;
         e = makeEnemy(id, pid, zone, kind, x, y);
-        if (inDungeonArea(x)) { e.maxHp = Math.round(e.maxHp * (kind === 3 ? 1.2 : 1.3)); e.hp = e.maxHp; } // mesmo reforço de masmorra do host
+        if (inDungeonArea(x)) { e.maxHp = Math.round(e.maxHp * (kind === 3 ? 1.2 : 1.3)); e.hp = e.maxHp; const tdg = dungeonAt(x); if (tdg && tdg.floor) towerScale(e, tdg.floor); } // mesmo reforço de masmorra do host
         if (st >= 40) gymMini(e, st - 40); else if (st >= 10) bountyMod(e, st - 10); else if (st) storyMod(e, st);
         G.enemies.push(e); G.emap.set(id, e);
       }

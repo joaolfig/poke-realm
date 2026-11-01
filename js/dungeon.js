@@ -58,23 +58,38 @@ const HAZ = {
   lava: { c1: '#9a3412', c2: '#f97316', st: 3, nome: 'lava' }, acido: { c1: '#3f6212', c2: '#a3e635', st: 4, nome: 'ácido' },
   gelo: { c1: '#155e75', c2: '#a5f3fc', st: 0, nome: 'gelo cortante' }, espinhos: { c1: '#44403c', c2: '#d6d3d1', st: 0, nome: 'espinhos' },
 };
+const TOWER_MODS = {
+  rapidos: '💨 Rápidos', alfas: '👑 Só Alfas', tipo: '🎯 Um tipo só', enxame: '🐝 Enxame', semcura: '🩸 Sem regeneração',
+  escuro: '🌑 Escuro', explosivos: '💥 Explodem ao morrer', chuva: '🌧 Chuva', areia: '🌪 Areia',
+};
+// força dos inimigos da torre: +8% por andar acima do 1º (vida e dano)
+function towerScale(e, f) {
+  if (!f || f <= 1) return;
+  const k = Math.pow(1.08, f - 1);
+  e.maxHp = Math.round(e.maxHp * k); e.hp = e.maxHp;
+  e.atk += Math.floor(f / 3);
+  e.dice = [e.dice[0], e.dice[1], e.dice[2] + Math.floor(f * 0.8)];
+}
 const DG_MODS = {
   escuro: '🌑 Escura: sem Flash você mal enxerga', frenesi: '💢 Frenesi: os Pokémon são mais rápidos e atacam mais',
   infestada: '🐛 Infestada: o dobro de Pokémon nas salas', rica: '💰 Rica: salas de tesouro extras',
 };
-function genDungeon(id, theme, seed, zone) {
+function genDungeon(id, theme, seed, zone, floor = 0) {
   const R = mulberry32(seed), grid = new Uint8Array(DG_W * DG_H), rooms = [];
   const carve = (x, y, w, h) => {
     for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (i > 0 && j > 0 && i < DG_W - 1 && j < DG_H - 1) grid[j * DG_W + i] = 1;
   };
   let cx = 3;
-  const gs = gymStage(theme), kinds = ['start', ...Array(gs ? gymFights(gs) : 2 + Math.floor(R() * 3)).fill('fight'), 'boss'];
+  const gs = gymStage(theme), kinds = floor ? ['start', floor % 5 ? 'fight' : 'boss'] : ['start', ...Array(gs ? gymFights(gs) : 2 + Math.floor(R() * 3)).fill('fight'), 'boss'];
   // modificador da masmorra comum (sai da semente: igual para todos)
-  const mod = !gs && zone >= 2 && R() < 0.6 ? pick2(R, ['escuro', 'frenesi', 'infestada', 'rica']) : '';
+  const mod = !gs && !floor && zone >= 2 && R() < 0.6 ? pick2(R, ['escuro', 'frenesi', 'infestada', 'rica']) : '';
+  // torre: 1 modificador por andar (2 a partir do 15)
+  const mods = [];
+  if (floor) { const all = Object.keys(TOWER_MODS); while (mods.length < (floor >= 15 ? 2 : 1)) { const m = pick2(R, all); if (!mods.includes(m)) mods.push(m); } }
   const hz = DG_HAZARD[theme] || 'espinhos';
   for (const kind of kinds) {
-    const w = kind === 'start' ? 10 : kind === 'boss' ? 24 : gs ? 16 + Math.floor(R() * 4) : 14 + Math.floor(R() * 6);
-    const h = kind === 'start' ? 10 : kind === 'boss' ? 22 : gs ? 15 + Math.floor(R() * 5) : 12 + Math.floor(R() * 6);
+    const w = kind === 'start' ? 10 : floor ? 30 : kind === 'boss' ? 24 : gs ? 16 + Math.floor(R() * 4) : 14 + Math.floor(R() * 6);
+    const h = kind === 'start' ? 10 : floor ? 24 : kind === 'boss' ? 22 : gs ? 15 + Math.floor(R() * 5) : 12 + Math.floor(R() * 6);
     const y = clamp(Math.floor(DG_H / 2 - h / 2 + (R() - 0.5) * 16), 2, DG_H - h - 2);
     const shape = kind === 'fight' ? pick2(R, ['ret', 'ret', 'oval', 'cruz', 'poco']) : kind === 'boss' ? pick2(R, ['ret', 'oval']) : 'ret';
     rooms.push({ x: cx, y, w, h, kind, state: 0, shape });
@@ -92,7 +107,7 @@ function genDungeon(id, theme, seed, zone) {
   // salas de tesouro: ramos acima ou abaixo de algumas salas de luta, com um baú
   const side = [], chests = [];
   const fights = rooms.filter(r => r.kind === 'fight');
-  const nSide = gs ? 0 : (mod === 'rica' ? 2 : R() < 0.6 ? 1 : 0);
+  const nSide = gs || floor ? 0 : (mod === 'rica' ? 2 : R() < 0.6 ? 1 : 0);
   for (let k = 0; k < nSide && fights.length; k++) {
     const r = fights[Math.floor(R() * fights.length)], up = R() < 0.5;
     const w = 9, h = 7, sx = (r.x + r.w / 2 - w / 2) | 0, sy = up ? r.y - h - 6 : r.y + r.h + 6;
@@ -104,7 +119,7 @@ function genDungeon(id, theme, seed, zone) {
     chests.push({ x: DG_BASE + id * DG_SPACING + (sx + w / 2) * TILE, y: (sy + h / 2) * TILE, i: chests.length });
   }
   // terreno perigoso nas salas de luta das masmorras comuns
-  if (!gs) for (const r of fights) {
+  if (!gs && !floor) for (const r of fights) {
     if (R() < 0.45) continue;
     for (let k = 0; k < 2 + Math.floor(R() * 3); k++) {
       const px = r.x + 2 + Math.floor(R() * (r.w - 6)), py = r.y + 2 + Math.floor(R() * (r.h - 6)), pw = 2 + Math.floor(R() * 3), ph = 2 + Math.floor(R() * 2);
@@ -121,7 +136,7 @@ function genDungeon(id, theme, seed, zone) {
       for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) grid[(py + j) * DG_W + px + i] = 0;
     }
   }
-  return { id, theme, seed, zone, grid, rooms, side, chests, mod, hz, ox: DG_BASE + id * DG_SPACING, oy: 0, done: false, doneT: 0, emptyT: 0, ent: { x: 0, y: 0 }, bossId: 0, mini: null };
+  return { id, theme, seed, zone, grid, rooms, side, chests, mod, hz, floor, mods, wx: mods.includes('chuva') ? 'chuva' : mods.includes('areia') ? 'areia' : '', ox: DG_BASE + id * DG_SPACING, oy: 0, done: false, doneT: 0, emptyT: 0, ent: { x: 0, y: 0 }, bossId: 0, mini: null };
 }
 
 function walkable(x, y) {
@@ -158,7 +173,7 @@ function createDungeon(x, y, type, zone, o = {}) {
   if (G.dungeons.size >= (o.force ? 6 : 3)) return null;
   const theme = o.theme || TYPE_THEME[type] || 'grass';
   const id = ++G.dgNext;
-  const dg = genDungeon(id, theme, randi(1, 2e9), clamp(Math.max(zone, THEMES[theme].zmin || 1), 1, 5));
+  const dg = genDungeon(id, theme, randi(1, 2e9), clamp(Math.max(zone, THEMES[theme].zmin || 1), 1, 5), o.floor || 0);
   dg.ent = { x: Math.round(x), y: Math.round(y) };
   const gs = gymStage(theme);
   if (gs) { dg.plan = gymPlan(gs); dg.used = []; }
@@ -172,6 +187,7 @@ function spawnRoom(dg, r) {
   const th = THEMES[dg.theme];
   const pool = th.pool.filter(id => POKE[id]);
   const fallback = ZONE_POOLS[clamp(dg.zone, 1, 5)];
+  if (dg.floor) return towerRoom(dg, r, pool.length ? pool : fallback);
   if (r.kind === 'tesouro') {
     // às vezes um Alfa guarda o baú
     if (Math.random() < 0.5) { const c = roomCenter(dg, r); const e = hostSpawn(pick(pool.length ? pool : fallback), dg.zone, 1, c.x, c.y - 40); e.dg = dg.id; e.cd = rand(1, 2); }
@@ -230,7 +246,7 @@ function spawnRoom(dg, r) {
 
 function closeDungeon(dg) {
   G.enemies = G.enemies.filter(e => { if (e.dg === dg.id) { G.emap.delete(e.id); return false; } return true; });
-  G.portals = G.portals.filter(p => p.dg !== dg.id);
+  G.portals = G.portals.filter(p => p.dg !== dg.id && dungeonAt(p.x) !== dg); // inclui a escada que estava dentro dela
   G.dungeons.delete(dg.id);
 }
 
@@ -247,6 +263,7 @@ function hostDungeons(dt) {
       if (r.state || r.kind === 'start') continue;
       if (inside.some(p => inRoom(dg, r, p.x, p.y))) { r.state = 1; spawnRoom(dg, r); }
     }
+    if (dg.floor && !dg.cleared && dg.rooms.every(r => r.kind === 'start' || r.state) && !G.enemies.some(e => e.dg === dg.id && e.hp > 0 && !e.dead)) towerCleared(dg);
     dg.emptyT = inside.length ? 0 : dg.emptyT + 0.25;
     const entOpen = G.portals.some(p => p.dg === dg.id && !p.exit);
     if ((dg.emptyT > 15 && !entOpen) || (dg.done && G.time - dg.doneT > 120)) closeDungeon(dg);
@@ -255,6 +272,8 @@ function hostDungeons(dt) {
 
 // chamado pelo host quando um inimigo morre
 function hostOnKill(e) {
+  const tdg = e.dg && G.dungeons.get(e.dg);
+  if (tdg && tdg.mods && tdg.mods.includes('explosivos')) for (let k = 0; k < 8; k++) eShot(e, k * Math.PI / 4, 170);
   if (e.kind === 3 && e.dg) {
     const dg = G.dungeons.get(e.dg);
     if (dg && !dg.done) {
@@ -269,14 +288,14 @@ function hostOnKill(e) {
 }
 
 /* ---------- Rede ---------- */
-const dungeonsToNet = () => [...G.dungeons.values()].map(d => [d.id, d.theme, d.seed, d.zone, d.done ? 1 : 0, d.ent.x, d.ent.y]);
+const dungeonsToNet = () => [...G.dungeons.values()].map(d => [d.id, d.theme, d.seed, d.zone, d.done ? 1 : 0, d.ent.x, d.ent.y, d.floor || 0]);
 const portalsToNet = () => G.portals.map(p => [p.id, p.x, p.y, p.theme, Math.round(p.ttl), p.dg, p.exit]);
 function dungeonsFromNet(dgs, pos) {
   const seen = new Set();
   for (const a of dgs || []) {
     seen.add(a[0]);
     let dg = G.dungeons.get(a[0]);
-    if (!dg) { dg = genDungeon(a[0], a[1], a[2], a[3]); G.dungeons.set(a[0], dg); }
+    if (!dg) { dg = genDungeon(a[0], a[1], a[2], a[3], a[7] || 0); G.dungeons.set(a[0], dg); }
     dg.done = !!a[4]; dg.ent = { x: a[5], y: a[6] };
   }
   for (const id of [...G.dungeons.keys()]) if (!seen.has(id)) G.dungeons.delete(id);
@@ -294,7 +313,7 @@ function usePortal(P, p) {
   if (!dg) return;
   burst(P.x, P.y, THEMES[p.theme].accent, 24);
   if (p.exit) { P.x = dg.ent.x + rand(-40, 40); P.y = dg.ent.y + rand(-40, 40); }
-  else { const c = roomCenter(dg, dg.rooms[0]); P.x = c.x + rand(-30, 30); P.y = c.y + rand(-30, 30); if (dg.mod) G.toasts.push({ text: `🌀 ${THEMES[dg.theme].nome} · ${DG_MODS[dg.mod]}`, color: THEMES[dg.theme].accent, t: 5, big: 1 }); }
+  else { const c = roomCenter(dg, dg.rooms[0]); P.x = c.x + rand(-30, 30); P.y = c.y + rand(-30, 30); if (dg.mod) G.toasts.push({ text: `🌀 ${THEMES[dg.theme].nome} · ${DG_MODS[dg.mod]}`, color: THEMES[dg.theme].accent, t: 5, big: 1 }); if (dg.floor) towerEnter(P, dg); }
   G.cam.x = P.x; G.cam.y = P.y;
   burst(P.x, P.y, THEMES[p.theme].accent, 24);
   sfx('pot');
@@ -406,4 +425,98 @@ function hazardTick(dt) {
   text(P.x, P.y - 34, `-${dmg} ${z.nome}`, z.c2, 12);
   if (z.st && Math.random() < 0.15) playerStatus(P, z.st);
   if (P.hp <= 0) playerDie(z.nome);
+}
+
+/* ============ Torre Infinita (mapa à parte; liberada depois da história) ============
+ * Cada andar é uma arena; ao limpar, abre a escada para o próximo. Cada andar é 8% mais forte.
+ * A cada 5 andares, um chefe (lendário a partir do 20). Morrer aqui não apaga o personagem.
+ */
+const towerBest = P => ((P.towerR || {})[REGION_ID] || 0);
+const towerCk = P => ((P.towerCk || {})[REGION_ID] || 0);
+function towerRoom(dg, r, pool) {
+  const f = dg.floor, c = roomCenter(dg, r), mods = dg.mods || [];
+  let src = pool;
+  if (mods.includes('tipo')) { const t = pick(src.map(id => POKE[id] && POKE[id].types[0]).filter(Boolean)); const f2 = src.filter(id => POKE[id] && POKE[id].types.includes(t)); if (f2.length) src = f2; }
+  const tune = (e, boss) => {
+    e.dg = dg.id;
+    e.maxHp = Math.round(e.maxHp * (boss ? 1.2 : 1.3)); e.hp = e.maxHp; // reforço de masmorra (igual nos clientes)
+    towerScale(e, f);
+    if (mods.includes('rapidos')) { e.speed *= 1.3; e.cdBoss = 0.85; }
+    e.cd = rand(1.5, 2.6);
+  };
+  if (r.kind === 'boss') {
+    const pid = f >= 20 && BOSSES.some(id => POKE[id]) ? pick(BOSSES.filter(id => POKE[id])) : pick(src);
+    const b = hostSpawn(pid, 5, 3, c.x, c.y - 40);
+    tune(b, true); dg.bossId = b.id;
+    emitEvent({ t: 'toast', text: `🗼 Andar ${f}: ${b.p.name} guarda a passagem!`, color: '#a78bfa', big: 1 });
+  }
+  const swarm = mods.includes('enxame');
+  const n = Math.round(Math.min(12, 5 + Math.floor(f / 3)) * (swarm ? 1.6 : 1) * (r.kind === 'boss' ? 0.5 : 1));
+  for (let i = 0; i < n; i++) {
+    const p = roomPos(dg, r);
+    const e = hostSpawn(pick(src), 5, mods.includes('alfas') ? 1 : Math.random() < 0.08 ? 1 : 0, p.x, p.y);
+    tune(e, false);
+    if (swarm) { e.maxHp = Math.round(e.maxHp * 0.6); e.hp = e.maxHp; }
+  }
+}
+function towerCleared(dg) {
+  dg.cleared = true;
+  const r = dg.rooms[dg.rooms.length - 1], c = roomCenter(dg, r);
+  // saque do andar e escada para o próximo
+  const items = [genItem(clamp(5 + Math.floor(dg.floor / 10), 0, 6))];
+  if (dg.floor % 5 === 0) items.push(statPot(), genItem(clamp(5 + Math.floor(dg.floor / 8), 0, 6)));
+  if (Math.random() < 0.5) items.push(consItem('ultra'));
+  G.bags.push({ x: c.x - 60, y: c.y, items, life: 180 });
+  const nx = createDungeon(c.x, c.y, null, 5, { theme: 'torre', force: true, quiet: true, floor: dg.floor + 1, ttl: 600 });
+  if (nx) nx.ent = { ...dg.ent };
+  emitEvent({ t: 'toast', text: `🗼 Andar ${dg.floor} limpo! A escada para o andar ${dg.floor + 1} apareceu.`, color: '#a78bfa', big: 1 });
+}
+// pedido para abrir a torre (no guardião da 2ª cidade)
+function towerRequest(f) {
+  const n = NPCS2.find(x => x.id === 'torre');
+  if (!n) return;
+  if (isHost()) towerStart(f, n.x, n.y + 50);
+  else if (NET.host && NET.host.open) NET.host.send({ t: 'tower', f, x: n.x, y: n.y + 50 });
+}
+function towerStart(f, x, y) {
+  f = clamp(f | 0, 1, 999);
+  if (G.portals.some(p => Math.hypot(p.x - x, p.y - y) < 30)) return;
+  const dg = createDungeon(x, y, null, 5, { theme: 'torre', force: true, quiet: true, floor: f, ttl: 60 });
+  if (dg) emitEvent({ t: 'toast', text: `🗼 A Torre Infinita abriu no andar ${f}! Entrem pelo portal (60s).`, color: '#a78bfa', big: 1 });
+}
+function towerEnter(P, dg) {
+  P.towerR = P.towerR || {};
+  const best = towerBest(P);
+  const names = (dg.mods || []).map(m => TOWER_MODS[m]).join(' · ');
+  G.toasts.push({ text: `🗼 Andar ${dg.floor}${names ? ' · ' + names : ''}`, color: '#c4b5fd', t: 5, big: 1 });
+  if (dg.floor > best) {
+    P.towerR[REGION_ID] = dg.floor;
+    if (best && dg.floor % 5 === 0) emitEvent({ t: 'chat', sys: 1, text: `🏆 ${P.name} chegou ao andar ${dg.floor} da Torre Infinita!` });
+    saveGame();
+  }
+}
+// chefe de andar vencido: libera começar do andar seguinte
+function towerCheckpoint(P, f) {
+  P.towerCk = P.towerCk || {};
+  if (f > towerCk(P)) { P.towerCk[REGION_ID] = f; G.toasts.push({ text: `🗼 Checkpoint! Agora você pode começar a Torre no andar ${f + 1}.`, color: '#fde047', t: 5 }); saveGame(); }
+}
+// morrer na torre não apaga o personagem
+function towerFall(P, dg, src) {
+  burst(P.x, P.y, '#a78bfa', 40);
+  const t = TOWNS[1] || TOWNS[0];
+  P.x = t.x + rand(-40, 40); P.y = t.y + rand(60, 90); G.cam.x = P.x; G.cam.y = P.y;
+  P.hp = maxHP(P); P.pstT = 0;
+  G.toasts.push({ text: `🗼 Você caiu no andar ${dg.floor} (${src}). Recorde: andar ${towerBest(P)}. Nada foi perdido.`, color: '#c4b5fd', t: 6, big: 1 });
+  emitEvent({ t: 'chat', sys: 1, text: `🗼 ${P.name} caiu no andar ${dg.floor} da Torre Infinita.` });
+  G.dirty = true;
+}
+function renderTowerNPC(P) {
+  if (!storyOver(P)) return `<p class="fala">"A Torre Infinita só se abre para quem venceu a história de ${REGION.nome}. Volte quando for campeão."</p>`;
+  const ck = towerCk(P), starts = [1];
+  for (let f = 5; f <= ck; f += 5) starts.push(f + 1);
+  return `<p class="fala">"Lá dentro, cada andar é mais difícil que o anterior. A cada 5 andares há um guardião, e quem o vence pode recomeçar dali. Se cair, você volta para cá, sem perder nada."</p>
+    <div class="small">Seu recorde em ${REGION.nome}: <b>andar ${towerBest(P) || '—'}</b> · checkpoint: ${ck ? 'andar ' + (ck + 1) : 'nenhum ainda'}</div>
+    <h4>Começar no andar</h4>
+    ${starts.map(f => `<div class="shoprow"><span>🗼 Andar ${f} <i>(${f === 1 ? 'nível da zona 5' : `+${Math.round((Math.pow(1.08, f - 1) - 1) * 100)}% de força`})</i></span><button data-act="torre:${f}" class="good">Abrir portal</button></div>`).join('')}
+    <div class="small">O grupo entra junto pelo portal. Cada andar dá itens; os guardiões dão mais.</div>`;
 }
