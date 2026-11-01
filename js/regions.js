@@ -39,6 +39,17 @@ const GYM_STYLE = {
 const REGIONS = {
   kanto: {
     babies: [172, 173, 174], // Pichu (Floresta de Viridian), Cleffa e Igglybuff (perto do Mt. Moon)
+    // contratos: o que esta região pede mais e quem pede (além dos personagens de sempre)
+    side: { peso: { pesquisa: 2, pegar: 1, caca: 1 }, pessoas: {
+      pesquisa: [['Assistente do Prof. Carvalho', 'a Pokédex de Kanto ainda tem páginas em branco']],
+      caca: [['Policial Jenny', 'um Pokémon furioso está atacando quem passa pela rota']],
+      pegar: [['Garoto do Safari', 'nunca consegui pegar um desses na Zona Safari']],
+      coleta: [['Vendedor do Monte Lunar', 'vendo lembrancinhas feitas com isso']] } },
+    // etapas da história dadas por outros NPCs (antes do ginásio do capítulo ch); a 1ª captura vale em todas as regiões
+    interludes: [
+      { ch: 3, npc: 'dex', kind: 'dexn', n: 8, titulo: 'Páginas da Pokédex', fala: 'O Professor Carvalho quer dados de campo antes de você seguir. A Pokédex de Kanto ainda tem páginas demais em branco: registre pelo menos 8 espécies capturadas e volte à estrada.', obj: 'Tenha 8 espécies capturadas na Pokédex de Kanto' },
+      { ch: 7, npc: 'cura', kind: 'capball', n: 1, z: 4, titulo: 'A prova do treinador', fala: 'Os últimos líderes não recebem qualquer um. Eles querem ver se você sabe lidar com os Pokémon de {Z4}... e esses não se entregam fácil. Traga a prova: capture um deles com uma Great Ball ou uma Ultra Ball.', obj: 'Capture um Pokémon em {Z4} com Great Ball ou Ultra Ball' },
+    ],
     nome: 'Kanto', sub: 'Gerações I · onde tudo começou', vila: 'Cidade de Pallet',
     guia: { nome: 'Professor Carvalho', spr: { h: '#9ca3af', b: '#f1f5f9', d: '#64748b' } },
     artesao: 'Mestre Ferro-Velho',
@@ -87,6 +98,15 @@ const REGIONS = {
 
   johto: {
     babies: [172, 173, 174, 175], // os bebês da Geração II: Pichu, Cleffa, Igglybuff e Togepi
+    side: { peso: { noturno: 2, bolaboa: 2 }, pessoas: {
+      bolaboa: [['Kurt, o artesão de bolas', 'quero saber se as bolas novas seguram Pokémon de verdade']],
+      noturno: [['Monge da Torre Sino', 'os espíritos da noite trazem Pokémon diferentes']],
+      especie: [['Fazendeiro da Moomoo', 'eles estão assustando as Miltank']],
+      pesquisa: [['Professor Elm', 'quero entender por que alguns Pokémon só existem em Johto']] } },
+    interludes: [
+      { ch: 3, npc: 'cura', kind: 'noite', n: 1, titulo: 'Sob a lua', fala: 'O velho Kurt diz que alguns Pokémon só se deixam pegar quando a lua aparece. Antes do próximo ginásio, prove que ele tem razão: capture um Pokémon durante a noite.', obj: 'Capture um Pokémon durante a noite' },
+      { ch: 7, npc: 'ferreiro', kind: 'forja', n: 4, titulo: 'Aço para dragões', fala: 'Os dragões da Mestra Clair quebram arma comum como se fosse graveto. Traga a sua para a minha bigorna e deixe ela pelo menos +4 antes de subir a montanha.', obj: 'Aprimore sua arma até +4 na Ferreira' },
+    ],
     nome: 'Johto', sub: 'Geração II · tradição e lendas', vila: 'Cidade de New Bark',
     guia: { nome: 'Professor Elm', spr: { h: '#78350f', b: '#fef3c7', d: '#b45309' } },
     artesao: 'Artesã das Bolas',
@@ -135,6 +155,14 @@ const REGIONS = {
 
   hoenn: {
     babies: [298, 360], // Azurill (rios do começo) e Wynaut
+    side: { peso: { coleta: 2, especie: 1, explorar: 1 }, pessoas: {
+      coleta: [['Pescador de Slateport', 'faço iscas com isso'], ['Devon S.A.', 'nossos laboratórios precisam de amostras']],
+      especie: [['Marinheiro Briney', 'eles não deixam meu barco sair do cais']],
+      explorar: [['Mergulhadora de Mossdeep', 'quero saber o que existe além das correntes']] } },
+    interludes: [
+      { ch: 3, npc: 'dex', kind: 'explore', n: 25, titulo: 'O mapa de Hoenn', fala: 'Hoenn é mar, vulcão e floresta, e metade dos mapas está errada. Antes de seguir, explore pelo menos 25% da região para eu corrigir as rotas.', obj: 'Explore 25% de Hoenn (o mapa revela por onde você passa)' },
+      { ch: 7, npc: 'cura', kind: 'capball', n: 1, z: 4, titulo: 'A prova do treinador', fala: 'Os últimos líderes querem ver se você sabe lidar com os Pokémon de {Z4}. Traga a prova: capture um deles com uma Great Ball ou uma Ultra Ball.', obj: 'Capture um Pokémon em {Z4} com Great Ball ou Ultra Ball' },
+    ],
     nome: 'Hoenn', sub: 'Geração III · mar, vulcões e céu', vila: 'Cidade de Littleroot',
     hmGym: { 1: 'cut', 2: 'flash', 3: 'smash', 4: 'surf' },
     guia: { nome: 'Professor Birch', spr: { h: '#92400e', b: '#bbf7d0', d: '#15803d' } },
@@ -184,6 +212,14 @@ const REGIONS = {
 
   sinnoh: {
     babies: [406, 440, 433], // Budew (Rota 204), Happiny e Chingling
+    side: { peso: { pesquisa: 2, explorar: 2, captura: 1 }, pessoas: {
+      pesquisa: [['Assistente do Prof. Rowan', 'a evolução dos Pokémon de Sinnoh ainda é um mistério']],
+      explorar: [['Alpinista do Monte Coronet', 'as trilhas mudam depois de cada nevasca']],
+      captura: [['Guarda das Ruínas', 'os Pokémon das ruínas guardam segredos antigos']] } },
+    interludes: [
+      { ch: 3, npc: 'dex', kind: 'dexn', n: 10, titulo: 'A pesquisa do Prof. Rowan', fala: 'O Professor Rowan estuda a evolução dos Pokémon de Sinnoh e precisa de exemplares. Registre pelo menos 10 espécies capturadas na Pokédex antes do próximo ginásio.', obj: 'Tenha 10 espécies capturadas na Pokédex de Sinnoh' },
+      { ch: 7, npc: 'guilda', kind: 'alfa', n: 3, z: 4, titulo: 'Os líderes da nevasca', fala: 'Os bandos de {Z4} estão descendo para as cidades, puxados pelos Alfas. A Liga não abre o caminho enquanto eles estiverem soltos: derrote 3 Alfas lá.', obj: 'Derrote 3 Pokémon Alfa em {Z4} ou além' },
+    ],
     nome: 'Sinnoh', sub: 'Geração IV · neve, mitos e o tempo', vila: 'Cidade de Twinleaf',
     guia: { nome: 'Professor Rowan', spr: { h: '#e5e7eb', b: '#1f2937', d: '#111827' } },
     artesao: 'Artesão das Placas',
@@ -231,6 +267,15 @@ const REGIONS = {
   },
 
   unova: {
+    side: { peso: { alfa: 2, evento: 1, caca: 1 }, pessoas: {
+      caca: [['Detetive Looker', 'esse Pokémon foi visto perto de um esconderijo da Equipe Plasma']],
+      alfa: [['Treinadora do Metrô de Batalha', 'só os Alfas dão um treino de verdade']],
+      evento: [['Repórter de Castelia', 'preciso de imagens no meio da confusão']],
+      pegar: [['Libertadora arrependida', 'quero cuidar de um Pokémon do jeito certo']] } },
+    interludes: [
+      { ch: 3, npc: 'guilda', kind: 'alfa', n: 2, z: 2, titulo: 'Força de verdade', fala: 'A Equipe Plasma diz que treinadores maltratam Pokémon. Mostre o contrário: enfrente os Alfas de {Z2} de igual para igual. Derrote 2 deles.', obj: 'Derrote 2 Pokémon Alfa em {Z2} ou além' },
+      { ch: 7, npc: 'ferreiro', kind: 'forja', n: 4, titulo: 'Lâmina para o lendário', fala: 'Se o que dizem do Reshiram for verdade, você vai precisar de mais que coragem. Deixe sua arma pelo menos +4 na minha bigorna.', obj: 'Aprimore sua arma até +4 na Ferreira' },
+    ],
     nome: 'Unova', sub: 'Geração V · verdade e ideais', vila: 'Cidade de Nuvema',
     guia: { nome: 'Professora Juniper', spr: { h: '#a16207', b: '#e0f2fe', d: '#0369a1' } },
     artesao: 'Engenheira Lírio',

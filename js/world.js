@@ -54,9 +54,10 @@ function drawNPC(n, ox, oy) {
   ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = '#fef3c7';
   outlined(`${n.icon} ${n.nome}`, x, y - 26);
   const P = G.P;
-  if (n.id === 'guilda' && P && (!P.quest || P.quest.done)) {
-    ctx.font = 'bold 20px Barlow Semi Condensed, system-ui'; ctx.fillStyle = P.quest && P.quest.done ? '#4ade80' : '#facc15';
-    outlined(P.quest && P.quest.done ? '?' : '!', x, y - 40 + Math.sin(G.time * 5) * 3);
+  const cq = P && QGIVERS[n.id] && (P.quests || {})[n.id];
+  if (P && QGIVERS[n.id] && (!cq || cq.done)) {
+    ctx.font = 'bold 20px Barlow Semi Condensed, system-ui'; ctx.fillStyle = cq && cq.done ? '#4ade80' : '#facc15';
+    outlined(cq && cq.done ? '?' : '!', x, y - 40 + Math.sin(G.time * 5) * 3);
   }
   if (n.id === 'sildo' && P && P.story && !storyOver(P) && ((n.town === 1 && needT2(P)) || (!needT2(P) && (n.town || 0) === storyHub(P) && (P.story.ch === 0 || P.story.done)))) {
     ctx.font = 'bold 22px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fde047';
@@ -109,7 +110,7 @@ function renderNPC() {
   const P = G.P, n = G.npcRef && G.npcRef.id === G.npcOpen ? G.npcRef : NPCS.find(x => x.id === G.npcOpen);
   if (P && G.npcOpen === 'fly') { $('npc').innerHTML = renderFly(P); return; }
   if (!P || !n) { closeNPC(); return; }
-  let body = n.fala ? `<p class="fala">"${n.fala}"</p>` : '';
+  let body = renderIL(n, P) + (n.fala ? `<p class="fala">"${n.fala}"</p>` : '');
   if (n.id === 'cura') {
     // dica da vendedora: insinua que a Poké Ball comum não segura os Pokémon mais fortes (sem explicar a regra)
     body += `<p class="fala">"Ouvi dizer que, de ${ZONES[3].nome} em diante, os Pokémon não se deixam prender por qualquer bola... Os treinadores que voltam de lá inteiros nunca levam só Poké Ball na mochila. Por que será que a Great Ball e a Ultra Ball vendem tanto?"</p>`;
@@ -145,18 +146,9 @@ function renderNPC() {
         <button data-act="upg:${s}" ${maxed || P.gold < c ? 'disabled' : ''}>${maxed ? 'Máximo' : `Aprimorar (${c} 🪙)`}</button></div>`;
     }).join('') + `<div class="small">Cada aprimoramento dá +1 de dano na arma ou +1 de CA na armadura (até +${cap}).</div>${cap === 4 && TOWNS[1] ? `<p class="fala">"Mais que isso, só com a forja de ${TOWNS[1].nome}. Minha bigorna não aguenta."</p>` : cap === 6 ? '<div class="small">Vencer a história da região libera até +8.</div>' : ''}`;
   } else if (n.id === 'guilda') {
-    const q = P.quest;
-    if (q) {
-      body += `<div class="quest cur"><b>${q.desc}</b><div class="qbar"><div style="width:${Math.min(100, q.have / q.need * 100)}%"></div></div>
-        <div class="small">${q.have}/${q.need} · Recompensa: ${q.xp} XP, ${q.gold} 🪙${q.bonus ? ', ' + BONUS_NAMES[q.bonus] : ''}</div></div>
-        ${q.done ? '<button data-act="claim" class="good">🎁 Receber recompensa</button>' : '<button data-act="abandon">Abandonar contrato</button>'}`;
-    } else {
-      // as ofertas acompanham o jogador: refeitas quando ele muda de faixa de nível, ganha acesso a outra zona ou troca de região
-      if (!P.questOffer || P.questOffer.some(o => o.zt !== questZone(P) || o.reg !== REGION_ID)) P.questOffer = genQuests(P);
-      body += P.questOffer.map((o, i) => `<div class="quest"><b>${o.desc}</b><div class="small">Recompensa: ${o.xp} XP, ${o.gold} 🪙${o.bonus ? ', ' + BONUS_NAMES[o.bonus] : ''}</div>
-        <button data-act="accept:${i}">Aceitar</button></div>`).join('');
-    }
+    body += renderContracts(P, 'guilda');
   }
+  if (n.id !== 'guilda' && QGIVERS[n.id]) body = renderContracts(P, n.id) + body;
   $('npc').innerHTML = `<div class="npc-head"><span>${n.icon} <b>${n.nome}</b></span><span>🪙 ${P.gold}</span><button data-act="close" title="Fechar (Esc)">✕</button></div>${body}`;
   padFixDom($('npc'));
 }
@@ -164,7 +156,7 @@ function renderNPC() {
 $('npc').addEventListener('click', ev => {
   const b = ev.target.closest('[data-act]');
   if (!b || !G || !G.P) return;
-  const P = G.P, [act, arg] = b.dataset.act.split(':');
+  const P = G.P, [act, arg, arg2] = b.dataset.act.split(':');
   if (act === 'close') return closeNPC();
   if (act === 'heal') { P.hp = maxHP(P); burst(P.x, P.y, '#f9a8d4', 20); sfx('pot'); }
   else if (act === 'gift') { P.pots.hp = Math.max(P.pots.hp, 2); P.giftT = 300; sfx('pick'); }
@@ -189,9 +181,9 @@ $('npc').addEventListener('click', ev => {
       G.toasts.push({ text: `🔨 ${it.name} agora é +${it.upg}!`, color: '#fdba74', t: 2.5 });
       sfx('lvl');
     }
-  } else if (act === 'accept') { P.quest = P.questOffer[+arg]; P.questOffer = null; P.recentQ = [P.quest.k, ...(P.recentQ || [])].slice(0, 3); sfx('pick'); }
-  else if (act === 'abandon') { P.quest = null; }
-  else if (act === 'claim') claimQuest(P);
+  } else if (act === 'accept') { const q = P.qOffers[arg][+arg2]; P.quests[arg] = q; P.qOffers[arg] = null; P.recentQ = [q.k, ...(P.recentQ || [])].slice(0, 4); sfx('pick'); }
+  else if (act === 'abandon') { delete P.quests[arg]; }
+  else if (act === 'claim') claimQuest(P, arg);
   else if (act === 'story') storyAct(P, arg);
   else if (act === 'dex') dexClaim(P, +arg);
   else if (act === 'torre') { towerRequest(+arg); closeNPC(); }
@@ -265,20 +257,51 @@ const MATERIAL = { flying: 'Penas', fire: 'Cinzas', water: 'Escamas', grass: 'Fo
   dragon: 'Escamas de dragão', dark: 'Garras sombrias', steel: 'Parafusos', fairy: 'Pó de fada' };
 // zona dos contratos: a do nível do jogador, mas só até onde ele já consegue chegar (HMs e insígnias)
 const questZone = P => { let z = lvlZone(P.lvl); while (z > 1 && needFor(P, z).length) z--; return z; };
-function genQuests(P) {
+/* ---------- Quem dá contratos: cada NPC cuida do seu assunto (um contrato ativo por NPC) ----------
+ * Guilda: combate · Vendedora de Poké Balls: capturas · Pesquisadora: pesquisa e exploração · Mercador: materiais e pragas.
+ * Cada região pesa os tipos de um jeito e tem os próprios personagens pedindo ajuda (REGION.side, em regions.js).
+ */
+const QGIVERS = {
+  guilda: ['tipo', 'zona', 'alfa', 'masmorra', 'evento', 'caca', 'caca', 'especie'],
+  cura: ['captura', 'pegar', 'pegar', 'pegaralfa', 'noturno', 'bolaboa'],
+  dex: ['pesquisa', 'pesquisa', 'pegar', 'explorar'],
+  loja: ['coleta', 'coleta', 'especie', 'tipo'],
+};
+const giverName = g => (NPCS.find(n => n.id === g) || {}).nome || 'quem te contratou';
+function renderContracts(P, g) {
+  P.quests = P.quests || {}; P.qOffers = P.qOffers || {};
+  const q = P.quests[g];
+  let h = '<h4>Contratos</h4>';
+  if (q) {
+    h += `<div class="quest cur"><b>${q.desc}</b><div class="qbar"><div style="width:${Math.min(100, q.have / q.need * 100)}%"></div></div>
+      <div class="small">${q.have}/${q.need} · Recompensa: ${q.xp} XP, ${q.gold} 🪙${q.bonus ? ', ' + BONUS_NAMES[q.bonus] : ''}</div></div>
+      ${q.done ? `<button data-act="claim:${g}" class="good">🎁 Receber recompensa</button>` : `<button data-act="abandon:${g}">Abandonar contrato</button>`}`;
+  } else {
+    // as ofertas acompanham o jogador: refeitas quando ele muda de faixa de nível, ganha acesso a outra zona ou troca de região
+    const of = P.qOffers[g];
+    if (!of || of.some(o => o.zt !== questZone(P) || o.reg !== REGION_ID)) P.qOffers[g] = genQuests(P, g);
+    h += P.qOffers[g].map((o, i) => `<div class="quest"><b>${o.desc}</b><div class="small">Recompensa: ${o.xp} XP, ${o.gold} 🪙${o.bonus ? ', ' + BONUS_NAMES[o.bonus] : ''}</div>
+      <button data-act="accept:${g}:${i}">Aceitar</button></div>`).join('');
+  }
+  return h;
+}
+function genQuests(P, g = 'guilda') {
   const z = questZone(P);
   const recent = P.recentQ || [];
   const unknown = LANDMARKS.filter(l => !P.fly.includes(l.id) && zoneAt(l.x, l.y) <= z + 1);
-  let kinds = ['tipo', 'zona', 'alfa', 'masmorra', 'captura', 'evento', 'caca', 'caca', 'coleta', 'coleta', 'especie', 'especie', 'pegar', 'pegar', 'pegaralfa', 'pesquisa', 'pesquisa', 'noturno', ...(z >= 2 ? ['bolaboa'] : []), ...(unknown.length ? ['explorar'] : [])];
+  const side = REGION.side || {};
+  let kinds = QGIVERS[g].filter(k => (k !== 'bolaboa' || z >= 2) && (k !== 'explorar' || unknown.length));
+  for (const [k, n] of Object.entries(side.peso || {})) if (kinds.includes(k)) for (let i = 0; i < n; i++) kinds.push(k);
   const fresh = kinds.filter(k => !recent.includes(k));
-  if (fresh.length >= 3) kinds = fresh;
+  if (new Set(fresh).size >= 3) kinds = fresh;
   const picked = [];
-  for (const k of kinds.sort(() => Math.random() - 0.5)) if (!picked.includes(k) && picked.length < 3) picked.push(k);
+  for (const k of [...kinds].sort(() => Math.random() - 0.5)) if (!picked.includes(k) && picked.length < 3) picked.push(k);
+  while (picked.length < 3) picked.push(pick(kinds));
   return picked.map((k, idx) => {
     const T = QTIERS[idx], q = { k, have: 0, done: false, tier: idx, zt: z, zone: z, reg: REGION_ID };
     const need = base => Math.max(1, Math.round(base * T.m));
     const pool = ZONE_POOLS[z].filter(id => POKE[id]);
-    let [who, why] = pick(QPEOPLE[k]);
+    let [who, why] = pick([...QPEOPLE[k], ...((side.pessoas || {})[k] || []), ...((side.pessoas || {})[k] || [])]); // os da região aparecem mais
     let diff = 1;
     if (k === 'tipo') {
       const p = POKE[pick(pool)]; q.type = p ? mainType(p) : 'normal'; q.need = need(10 + z * 3);
@@ -341,7 +364,11 @@ function genQuests(P) {
 }
 
 function questProgress(k, info = {}) {
-  const P = G && G.P, q = P && P.quest;
+  const P = G && G.P;
+  if (!P || !P.quests) return;
+  for (const [g, q] of Object.entries(P.quests)) questStep(P, g, q, k, info);
+}
+function questStep(P, g, q, k, info) {
   if (!q || q.done || q.k !== k) return;
   if ((k === 'tipo' || k === 'coleta') && !(info.types || []).includes(q.type)) return;
   if (k === 'captura' && (!(info.types || []).includes(q.type) || (info.zone || 0) < q.zone)) return;
@@ -357,7 +384,7 @@ function questProgress(k, info = {}) {
   q.have++;
   if (q.have >= q.need) {
     q.done = true;
-    G.toasts.push({ text: '📜 Contrato cumprido! Volte a um Mestre da Guilda.', color: '#4ade80', t: 4 });
+    G.toasts.push({ text: `📜 Contrato cumprido! Volte a ${giverName(g)}.`, color: '#4ade80', t: 4 });
     sfx('lvl');
   }
   G.dirty = true;
@@ -374,10 +401,13 @@ function bountyMod(e, tier) {
   e.cdBoss = 1.6 - tier * 0.2;
 }
 function questTick(dt) {
-  const P = G.P, q = P && P.quest;
+  const P = G.P;
   G.qT = (G.qT || 0) - dt;
-  if (!q || q.done || q.k !== 'caca' || G.qT > 0) return;
+  if (!P || G.qT > 0) return;
   G.qT = 1;
+  for (const q of Object.values(P.quests || {})) if (q && !q.done && q.k === 'caca') bountyNear(P, q);
+}
+function bountyNear(P, q) {
   if (Math.hypot(P.x - q.x, P.y - q.y) > 700) return;
   const m = { pid: q.pid, zone: q.zone, x: q.x, y: q.y, tier: q.tier };
   if (isHost()) hostBounty(m); else if (NET.host && NET.host.open) NET.host.send({ t: 'bounty', ...m });
@@ -393,12 +423,11 @@ function hostBounty(m) {
   emitEvent({ t: 'toast', text: `🎯 ${b.name} apareceu!`, color: '#fca5a5', big: 1 });
 }
 function questTarget(P) {
-  const q = P && P.quest;
-  return q && !q.done && (q.k === 'caca' || q.k === 'explorar') ? q : null;
+  return (P && Object.values(P.quests || {}).find(q => q && !q.done && (q.k === 'caca' || q.k === 'explorar'))) || null;
 }
 
-function claimQuest(P) {
-  const q = P.quest;
+function claimQuest(P, g) {
+  const q = P.quests[g];
   if (!q || !q.done) return;
   P.gold += q.gold;
   if (q.bonus === 'ball') P.balls += 2;
@@ -409,8 +438,8 @@ function claimQuest(P) {
     if (i >= 0) P.inv[i] = it; else G.bags.push({ x: P.x, y: P.y + 30, items: [it], life: 90 });
   }
   G.toasts.push({ text: `🎁 Recompensa: +${q.xp} XP, +${q.gold} 🪙`, color: '#facc15', t: 3 });
-  P.quest = null;
-  P.questOffer = genQuests(P);
+  delete P.quests[g];
+  P.qOffers[g] = genQuests(P, g);
   gainXP(q.xp, true);
 }
 
