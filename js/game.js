@@ -705,6 +705,8 @@ function playerShoot() {
 function typed(P, e, dmg, atkType, pet) {
   let eff = typeEff(atkType, e.p.types);
   if (!pet) { const w = weatherAt(e.x, e.y), b = wxBoost(e.x, e.y, atkType); if (w && b < 1) dmg *= (M(P, 'wx' + w.k) > 0 ? 1 / b : 1 + (1 / b - 1) * Math.min(1, M(P, 'wxcapa'))); }
+  // pouco efetivo do herói mais suave (½ → 0,65; ¼ → ~0,48), para nenhum ginásio ficar impossível só pelo tipo
+  if (!pet && eff > 0 && eff < 1) eff = 1 - (1 - eff) * 0.7;
   if (!pet && eff > 0 && eff < 1 && hasT(P, 'persistencia')) eff = 1 - (1 - eff) / 2;
   if (!pet && eff === 0 && hasT(P, 'quebra')) eff = 0.3;
   dmg *= wxBoost(e.x, e.y, atkType); // clima

@@ -145,7 +145,7 @@ const TALENTS = {
   regeneracao: { nome: 'Regeneração', icon: '💚', desc: 'Regeneração de PV 2,5× maior.' },
   // talentos de tipo: só aparecem para os tipos (naturais) que ganham de verdade com eles
   couraca: { nome: 'Couraça Elemental', icon: '🛡️', max: 2, types: ['rock', 'grass', 'ice', 'fire', 'flying', 'bug', 'psychic', 'dark'], desc: 'Golpes super efetivos em você causam 20% menos dano (no nível 2: 35% menos).' },
-  persistencia: { nome: 'Persistência', icon: '🪨', types: ['poison', 'bug', 'grass', 'normal', 'rock', 'fire', 'electric', 'ice'], desc: 'Seus golpes pouco efetivos perdem só metade do dano que perderiam (½ vira ¾, ¼ vira ⅝).' },
+  persistencia: { nome: 'Persistência', icon: '🪨', types: ['poison', 'bug', 'grass', 'normal', 'rock', 'fire', 'electric', 'ice'], desc: 'Seus golpes pouco efetivos perdem só metade do dano que perderiam (65% vira ~83%, 48% vira ~74%).' },
   quebra: { nome: 'Quebra-Imunidade', icon: '🔨', types: ['electric', 'normal', 'poison', 'psychic'], desc: 'Contra alvos imunes ao seu tipo, você ainda causa 30% do dano.' },
   // antigos: continuam funcionando em saves velhos, mas não são mais oferecidos
   robusto: { nome: 'Robusto', icon: '💪', off: 1, desc: '+2 PV máximos por nível.' },
