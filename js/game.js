@@ -537,8 +537,8 @@ function hostSpawning(dt) {
   let near = 0;
   for (const e of G.enemies) if (!e.boss && !e.dg && !e.ev && Math.hypot(e.x - pl.x, e.y - pl.y) < 1100) near++;
   const zp = Math.max(1, zoneAt(pl.x, pl.y));
-  // limite de Pokémon por perto: 10, 13, 16, 18 e 20 da zona 1 à 5 (antes chegava a 38-46 nas zonas 4-5 e cercava o jogador)
-  if (near >= [0, 10, 13, 16, 18, 20][Math.min(5, zp)] + (pls.length > 1 ? 5 : 0)) return;
+  // limite de Pokémon por perto: cresce com a zona (caótico no fim), mas cada tiro das zonas altas dói menos (ZONE_DMG)
+  if (near >= [0, 12, 16, 22, 28, 34][Math.min(5, zp)] + (pls.length > 1 ? 5 : 0)) return;
   let x = 0, y = 0, water = false;
   for (let k = 0; k < 4; k++) {
     const a = Math.random() * 6.28, dist = rand(600, 950);
@@ -558,7 +558,7 @@ function hostSpawning(dt) {
   const pid = own ? pick(REGION.babies) : other ? pick(otherBabies(REGION)) : water || rainy ? pick(WATER_POOLS[z]) : night.length ? pick(night) : pick(ZONE_POOLS[z]);
   if (!POKE[pid]) return;
   // bandos maiores e mais Alfas no meio e no fim do jogo
-  const n = baby ? 1 : randi(z >= 4 ? 3 : z >= 2 ? 2 : 1, z >= 4 ? 5 : z >= 3 ? 4 : 3); // bebê aparece sozinho
+  const n = baby ? 1 : randi(z >= 4 ? 3 : z >= 2 ? 2 : 1, z >= 5 ? 7 : z >= 4 ? 6 : z >= 3 ? 5 : 3); // bebê aparece sozinho
   for (let i = 0; i < n; i++) {
     const ex = x + rand(-50, 50), ey = y + rand(-50, 50);
     if (water && !isWater(ex, ey)) continue;
@@ -2659,7 +2659,7 @@ const grpN = () => 1 + 0.4 * (nPlayers() - 1);
 
 // dificuldade média do começo ao fim (medido com uma IA que desvia das balas): o começo era fácil demais
 // e o fim perigoso demais, então o dano dos tiros inimigos varia por zona
-const ZONE_DMG = [1, 1.1, 1.25, 1.15, 0.85, 0.72]; // zona 1 leve para quem começa no Nv 1 // zona 5 aliviada depois de teste em jogo (estava um pouco difícil demais)
+const ZONE_DMG = [1, 1.1, 1.25, 1, 0.7, 0.6]; // zonas altas: muitos inimigos (caótico), cada tiro dói menos // zona 1 leve para quem começa no Nv 1 // zona 5 aliviada depois de teste em jogo (estava um pouco difícil demais)
 
 // Clérigo em grupo: cada outro jogador perto dele na hora da cura aumenta a cura em 10% (até +30%)
 const clericChoir = P => 1 + 0.1 * Math.min(3, [...G.remotes.values()].filter(r => !r.dead && r.name && Math.hypot(r.tx - P.x, r.ty - P.y) < 260).length);
