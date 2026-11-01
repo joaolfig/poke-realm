@@ -182,9 +182,9 @@ const curWpn = P => (P.wildT > 0 ? wildWpn(P.wildType) : CLASSES[P.cls].wpn);
 const A = (P, k) => P.attrs[k] / 2 + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus : 0);
 // valor mostrado no painel (pontos)
 const Araw = (P, k) => P.attrs[k] + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus * 2 : 0);
-// curva de vida: começa mais alta, cresce a cada nível começando devagar e acelerando até o ritmo normal no Nv 7
-// (onde a vida é a mesma de antes); daí em diante cresce normalmente. Sem trancos: o crescimento por nível só aumenta.
-const hpLvl = P => (P.lvl >= 7 ? P.lvl : P.lvl + 0.08 * (7 - P.lvl) ** 2);
+// curva de vida: no Nv 1 a vida é a que seria no Nv 3; ela cresce a cada nível, acelerando até o ritmo normal,
+// e no Nv 7 é exatamente a de antes. Daí em diante cresce normalmente (sem trancos e sem nada que encolha).
+const hpLvl = P => (P.lvl >= 7 ? P.lvl : P.lvl + (7 - P.lvl) ** 2 / 18);
 const maxHP = P => {
   const c = CLASSES[P.cls];
   let h = 15 + (c.hd / 2 + A(P, 'VIG')) * hpLvl(P) + (P.race === 'anao' ? 2 * P.lvl : 0) + (hasT(P, 'robusto') ? 2 * P.lvl : 0);
