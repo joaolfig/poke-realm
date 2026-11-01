@@ -2366,7 +2366,7 @@ const LIN = {
   vampiro: { nome: 'Vampiro', icon: '🧛', resist: ['poison', 'dark'], fraco: ['fire'] },
   lobisomem: { nome: 'Lobisomem', icon: '🐺', resist: [], fraco: ['fire', 'fairy'] },
 };
-const WOLF_PID = { kanto: 59, johto: 217, hoenn: 262, sinnoh: 405, unova: 571 };
+const WOLF_PID = { kanto: 571, johto: 571, hoenn: 262, sinnoh: 405, unova: 571 }; // Zoroark em Kanto, Johto e Unova
 // morcego do vampiro: Zubat, Golbat e Crobat pelo nível (em Unova, Woobat e Swoobat)
 const batPid = P => (REGION_ID === 'unova' ? (P.lvl < 16 ? 527 : 528) : P.lvl < 10 ? 41 : P.lvl < 22 ? 42 : 169);
 const wolfPid = () => WOLF_PID[REGION_ID] || 59;
