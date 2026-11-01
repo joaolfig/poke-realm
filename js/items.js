@@ -101,6 +101,8 @@ const consItem = k => ({ slot: 'cons', k, tier: CONS[k].stat ? 5 : k === 'ultra'
 const potion = () => ({ slot: 'pot', tier: 0, name: 'Poção de Cura' });
 const ballItem = () => ({ slot: 'ball', tier: 0, name: 'Poké Ball' });
 const stone = type => ({ slot: 'pedra', tier: 3, type: TYPE_PT[type] ? type : 'normal', name: `Cristal de ${TYPE_PT[type] || 'Normal'}` });
+// cristal que um Pokémon derrubou: de um dos tipos dele (sorteado quando tem dois)
+const monStone = m => { const ts = ((POKE[m.pid] || {}).types || []).filter(t => TYPE_PT[t]); return stone(ts.length ? pick(ts) : m.type); };
 
 function scaleMods(mod, k) {
   const o = {};
@@ -154,6 +156,14 @@ function enchant(it, en = pick(ENCHANTS)) {
   return it;
 }
 
+// raridade dos prêmios compatível com a zona e com o nível do herói (inimigos comuns):
+// zona 1 ≈ Comum/Incomum, 2 ≈ Incomum/Raro, 3 ≈ Raro/Muito Raro, 4 ≈ Muito Raro/Épico, 5 ≈ Épico/Lendário.
+// Alfas, baús e chefes (bonus) ficam um degrau acima; Artefato só deles na zona 5 (e dos lendários).
+// Limitada pelo nível: quem corre cedo para uma zona alta não pega item de fim de jogo.
+function zoneTier(z, bonus = 0) {
+  const P = G && G.P, byZone = (clamp(z || 1, 1, 5) - 1) * 1.25, byLvl = P ? (P.lvl - 1) / 29 * 5 + 1 : 5;
+  return clamp(Math.round(Math.min(byZone, byLvl) + bonus + rand(-0.6, 0.6)), 0, 6);
+}
 function genItem(tier, slot) {
   const P = G.P;
   tier = clamp(tier, 0, 6);
@@ -258,25 +268,26 @@ function rollLoot(m) {
   const chance = m.kind >= 2 ? 1 : m.kind === 1 ? 0.85 : 0.16 + (tes ? 0.12 : 0) + M(P, 'loot');
   if (Math.random() > chance) return;
   const items = [];
-  const zt = (m.zone - 1) * 1.5 + (tes ? 0.5 : 0);
-  const tier = () => clamp(Math.round(zt + rand(-0.5, 1.2)), 0, 6);
+  const z = m.zone || 1;
+  const great = () => (z >= 2 ? consItem('grande') : ballItem()), ultra = () => (z >= 3 ? consItem('ultra') : consItem('grande'));
+  const tier = () => zoneTier(m.zone, 0.35 + (tes ? 0.5 : 0));
   const maybe = (p, f) => { if (Math.random() < p) items.push(f()); };
   if (m.kind === 2) {
     for (let i = 0; i < 3; i++) items.push(genItem(randi(4, 6)));
-    items.push(relic(m.pid), stone(m.type), potion(), potion(), consItem('ultra'), consItem('ultra'), consItem('doce'), consItem('doce'), statPot(), statPot());
+    items.push(relic(m.pid), monStone(m), potion(), potion(), consItem('ultra'), consItem('ultra'), consItem('doce'), consItem('doce'), statPot(), statPot());
   } else if (m.kind === 3) {
-    items.push(genItem(clamp(m.zone + randi(0, 2), 0, 6)), genItem(clamp(m.zone + randi(-1, 1), 0, 6)), stone(m.type), potion(), consItem('grande'), consItem('doce'));
-    maybe(0.4, () => consItem('ultra')); maybe(0.35, statPot);
+    items.push(genItem(zoneTier(m.zone, 1.5)), genItem(zoneTier(m.zone, 0.5)), monStone(m), potion(), great(), consItem('doce'));
+    maybe(0.4, ultra); maybe(z >= 2 ? 0.35 : 0.15, statPot);
   } else if (m.kind === 4) {
-    items.push(genItem(tier() + 1), stone(m.type), ballItem(), consItem('grande'), consItem('doce'));
+    items.push(genItem(tier() + 1), monStone(m), ballItem(), great(), consItem('doce'));
     maybe(0.25, statPot);
   } else if (m.kind === 1) {
     items.push(genItem(tier() + 1), potion());
-    maybe(0.5, ballItem); maybe(0.3, () => stone(m.type)); maybe(0.25, () => consItem('doce')); maybe(0.25, () => consItem('grande')); maybe(0.06 + (m.st >= 10 ? 0.5 : 0), statPot);
+    maybe(0.5, ballItem); maybe(0.3, () => monStone(m)); maybe(0.25, () => consItem('doce')); maybe(0.25, great); maybe((z >= 2 ? 0.06 : 0.02) + (m.st >= 10 ? 0.5 : 0), statPot);
   } else {
     const r = Math.random();
-    items.push(r < 0.38 ? potion() : r < 0.48 ? ballItem() : r < 0.52 ? consItem('grande') : r < 0.545 ? consItem('doce')
-      : Math.random() < 0.15 ? stone(m.type) : genItem(tier()));
+    items.push(r < 0.38 ? potion() : r < 0.48 ? ballItem() : r < 0.52 ? great() : r < (z >= 2 ? 0.545 : 0.53) ? consItem('doce')
+      : Math.random() < 0.15 ? monStone(m) : genItem(tier()));
   }
   if (m.kind === 0 && m.zone >= 3 && Math.random() < 0.004) items.push(statPot());
   G.bags.push({ x: m.x + rand(-10, 10), y: m.y + rand(-10, 10), items, life: 90 });

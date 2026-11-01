@@ -514,7 +514,7 @@ function claimQuest(P, g) {
   if (q.bonus === 'ball') P.balls += 2;
   else if (q.bonus === 'statpot') drinkStat(P, pick(ATTRS));
   else if (q.bonus) {
-    const it = q.bonus === 'stone' ? stone(pick(TYPES)) : genItem(clamp(q.zt + 1, 0, 6));
+    const it = q.bonus === 'stone' ? stone(pick(TYPES)) : genItem(zoneTier(q.zt, 1));
     const i = P.inv.indexOf(null);
     if (i >= 0) P.inv[i] = it; else G.bags.push({ x: P.x, y: P.y + 30, items: [it], life: 90 });
   }
@@ -940,10 +940,10 @@ function openXChest(P, c) {
   const z = c.zone;
   let items, gold;
   if (c.kind === 'gua') {
-    const acc = genItem(5, pick(['anel', 'amuleto'])); if (!acc.name.includes('✧') && Math.random() < 0.5) enchant(acc);
-    items = [statPot(), genItem(clamp(z + 2, 0, 6)), acc, consItem('ultra'), consItem('ultra')]; gold = 400;
+    const acc = genItem(zoneTier(z, 2), pick(['anel', 'amuleto'])); if (!acc.name.includes('✧') && Math.random() < 0.5) enchant(acc);
+    items = [statPot(), genItem(zoneTier(z, 1.5)), acc, consItem(z >= 3 ? 'ultra' : 'grande'), consItem(z >= 3 ? 'ultra' : 'grande')]; gold = 400;
   } else {
-    items = [genItem(clamp(z + 1, 0, 6)), potion(), Math.random() < 0.5 ? ballItem() : consItem('grande')];
+    items = [genItem(zoneTier(z, 1)), potion(), Math.random() < 0.5 ? ballItem() : consItem('grande')];
     if (Math.random() < 0.25) items.push(consItem('doce'));
     gold = 30 * z;
   }
@@ -1082,20 +1082,22 @@ function nightHost(ev, dt) {
   ev.moonT = (ev.moonT === undefined ? 15 : ev.moonT) - dt;
   if (ev.moonT <= 0 && !ev.moonDone) {
     ev.moonDone = 1;
-    const pl = pick(pls), s = evSpot(pl);
+    const pl = pick(pls), s = farSpot(pl, 1400, 2600) || evSpot(pl);
     const pool = s && (REGION.moon || NIGHT_POOL).filter(id => POKE[id]);
     if (!s || !pool.length) return;
     const e = hostSpawn(pick(pool), s.z, 1, s.x, s.y);
     moonMod(e);
-    emitEvent({ t: 'toast', text: `🌕 Um ${e.name} surgiu na escuridão! Derrote-o para pegar o tesouro dele.`, color: '#c4b5fd', big: 1 });
+    const dirs = ['leste', 'sudeste', 'sul', 'sudoeste', 'oeste', 'noroeste', 'norte', 'nordeste'], dir = dirs[(Math.round(Math.atan2(s.y - pl.y, s.x - pl.x) / (Math.PI / 4)) + 8) % 8];
+    emitEvent({ t: 'toast', text: `🌕 Um ${e.name} surgiu na escuridão, longe, a ${dir} de ${pl.name || 'você'}! Derrote-o para pegar o tesouro dele.`, color: '#c4b5fd', big: 1 });
   }
 }
 // todos: tesouro do Alfa noturno (cada jogador perto ganha o seu)
 function moonAlfaLoot(m) {
   const P = G.P;
   if (!P || Math.hypot(P.x - m.x, P.y - m.y) > 900) return;
-  const z = m.zone || 1, items = [stone(pick(TYPES)), genItem(clamp(z + 2, 0, 6))];
-  if (Math.random() < 0.4) items.push(consItem('doce'));
+  const z = m.zone || 1, items = [genItem(zoneTier(z, 1))];
+  if (Math.random() < 0.5) items.push(monStone(m)); // cristal de um dos tipos do Alfa
+  if (Math.random() < 0.25) items.push(consItem('doce'));
   G.bags.push({ x: m.x, y: m.y + 10, items, life: 120 });
   G.toasts.push({ text: '🌕 O Alfa da noite deixou um tesouro!', color: '#c4b5fd', t: 4 });
 }
@@ -1121,7 +1123,7 @@ function nearMoonChest(P) {
 }
 function openMoonChest(P, c) {
   G.moonOpen.add(c.id);
-  const items = [genItem(clamp(c.z + 1, 0, 6)), stone(pick(TYPES)), consItem('ultra')];
+  const items = [genItem(zoneTier(c.z, 1)), stone(pick(TYPES)), consItem(c.z >= 3 ? 'ultra' : 'grande')];
   const gold = 40 * c.z;
   P.gold += gold;
   G.bags.push({ x: c.x, y: c.y + 16, items, life: 120 });

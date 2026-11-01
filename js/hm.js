@@ -209,7 +209,7 @@ function useHMTile(P, h) {
   if (h.k === 'dive') {
     if (!isDeep(P.x, P.y)) { text(P.x, P.y - 40, 'Surfe até ficar em cima do ponto escuro', '#cbd5e1', 12); return; }
     G.usedDive.add(h.i);
-    const items = [stone(pick(TYPES)), genItem(clamp(zoneOf(P) + 1, 0, 6)), Math.random() < 0.3 ? consItem('ultra') : consItem('doce')];
+    const items = [stone(pick(TYPES)), genItem(zoneTier(zoneOf(P), 1)), Math.random() < 0.3 ? consItem(zoneOf(P) >= 3 ? 'ultra' : 'grande') : consItem('doce')];
     G.bags.push({ x: P.x, y: P.y + 10, items, life: 60 });
     G.toasts.push({ text: `🤿 ${pt.name} mergulhou e trouxe um tesouro do fundo!`, color: '#93c5fd', t: 3 });
     burst(P.x, P.y, '#93c5fd', 30);
@@ -236,7 +236,7 @@ function openChest(P, i) {
   if (!sc || P.chests.includes(sc.id)) return;
   P.chests.push(sc.id);
   const z = Math.max(1, sc.zone);
-  const items = [genItem(clamp(z + 2, 0, 6)), genItem(clamp(z + 1, 0, 6)), consItem('doce'), statPot()];
+  const items = [genItem(zoneTier(z, 1.5)), genItem(zoneTier(z, 0.5)), consItem('doce'), z >= 2 ? statPot() : stone(pick(TYPES))];
   if (z >= 3) items.push(consItem('ultra'));
   const gold = 60 * z;
   P.gold += gold;

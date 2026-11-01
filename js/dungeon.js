@@ -506,10 +506,10 @@ function nearDgChest(P) {
 function openDgChest(P, c) {
   const dg = dungeonAt(P.x);
   dg.opened.add(c.i);
-  const items = [genItem(clamp(dg.zone + randi(0, 2), 0, 6)), potion()];
+  const items = [genItem(zoneTier(dg.zone, 1)), potion()];
   if (Math.random() < 0.5) items.push(ballItem());
   if (dg.zone >= 3 && Math.random() < 0.25) items.push(statPot());
-  if (c.pz) items.push(stone(pick(TYPES)), Math.random() < 0.5 ? statPot() : genItem(clamp(dg.zone + 2, 0, 6))); // prêmio do enigma
+  if (c.pz) items.push(stone(pick(TYPES)), Math.random() < 0.5 ? statPot() : genItem(zoneTier(dg.zone, 1.5))); // prêmio do enigma
   G.bags.push({ x: c.x, y: c.y + 30, items, life: 120 });
   burst(c.x, c.y, '#facc15', 30);
   G.toasts.push({ text: '💰 Baú aberto!', color: '#facc15', t: 2.5 });

@@ -1953,9 +1953,9 @@ function typeMatchHTML(t) {
   const atk = row('💥', 'Dobro em', C.s, 'Seus ataques causam o DOBRO de dano nesses tipos')
     + row('🔻', 'Metade em', C.w, 'Seus ataques causam só METADE do dano nesses tipos')
     + row('🚫', 'Nada em', C.i, 'Seus ataques NÃO causam dano nesses tipos');
-  const def = row('💔', 'Dobro de', by('s'), 'Ataques desses tipos causam o DOBRO de dano em você')
-    + row('🛡', 'Metade de', by('w'), 'Ataques desses tipos causam só METADE do dano em você')
-    + row('✨', 'Nada de', by('i'), 'Ataques desses tipos NÃO causam dano em você');
+  const def = row('💔', 'Dobro em', by('s'), 'Ataques desses tipos causam o DOBRO de dano em você')
+    + row('🛡', 'Metade em', by('w'), 'Ataques desses tipos causam só METADE do dano em você')
+    + row('✨', 'Nada em', by('i'), 'Ataques desses tipos NÃO causam dano em você');
   return `<div class="tmatch"><div class="tmg"><div class="tmh">⚔ Seus ataques ${typeBadge(t)} causam</div>${atk || '<div class="tmr"><i>dano normal em todos</i></div>'}</div>`
     + `<div class="tmg"><div class="tmh">🛡 Ataques em você causam</div>${def || '<div class="tmr"><i>dano normal de todos</i></div>'}</div></div>`;
 }
