@@ -206,7 +206,7 @@ const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 
 // (os inimigos de uma zona dão sempre o mesmo XP). A média de cada zona é a calibrada em jogo (~2 min por nível nas
 // zonas 1 e 5, ~3 min nas zonas 2 a 4); a zona 1 começa mais rápida para os primeiros níveis passarem logo.
 const XP_TABLE = [
-  600, 1300, 1550, 1750, 1900, 2050, // zona 1 (Nv 1-6): medido jogando, ~1 min por nível na simulação (1,5-2 min de verdade)
+  1000, 1700, 2200, 2600, 3000, 3400, // zona 1 (Nv 1-6): ~1,5× mais lenta que antes (subia rápido demais até o Nv 7)
   5200, 5600, 6000, 6400, 6800, 7200, 7600, // zona 2 (Nv 7-13)
   7400, 8050, 8700, 9400, 10150, 10900, 11950, // zona 3 (Nv 14-20)
   12950, 13650, 14300, 14850, 15400, // zona 4 (Nv 21-25)
@@ -350,9 +350,18 @@ function makeEnemy(id, pid, zone, kind, x, y) {
   });
   e.r = Math.max(12, Math.min(e.w, e.h) * 0.42);
   e.fly = s.p.types.includes('flying') && !s.p.types.includes('water');
-  // nível do Pokémon: dentro da faixa da zona (igual no host e nos clientes, sai do id); Alfas e raros um pouco acima
-  const zi = clamp(Math.round(zone), 1, 5);
-  e.lvl = clamp(ZONE_LVL[zi] + Math.floor(hash(id, pid) * (ZONE_LVL_MAX[zi] - ZONE_LVL[zi] + 1)) + (alfa(kind) ? 2 : kind === 4 ? 1 : 0), 1, 30);
+  // nível do Pokémon: distribuição normal em volta do meio da faixa da zona (a maioria perto da média, alguns bem
+  // mais fortes ou mais fracos, até 2 níveis além da faixa). Igual no host e nos clientes (sai do id).
+  // Vida, acerto e XP acompanham o desvio; chefes ficam no meio da faixa. Alfas e raros um pouco acima.
+  const zi = clamp(Math.round(zone), 1, 5), lo = ZONE_LVL[zi], hi = ZONE_LVL_MAX[zi], mid = (lo + hi) / 2;
+  let lv = Math.round(mid);
+  if (!e.boss) {
+    const u1 = Math.max(1e-6, hash(id, pid)), u2 = hash(pid, id + 7);
+    lv = clamp(Math.round(mid + Math.sqrt(-2 * Math.log(u1)) * Math.cos(6.283 * u2) * (hi - lo + 1) / 4), Math.max(1, lo - 2), hi + 2);
+    const dev = clamp(lv - mid, -4, 4), k = 1 + dev * 0.07;
+    e.dev = dev; e.maxHp = e.hp = Math.max(1, Math.round(e.maxHp * k)); e.atk += Math.round(dev * 0.5); e.xp = Math.round(e.xp * k);
+  }
+  e.lvl = clamp(lv + (alfa(kind) ? 2 : kind === 4 ? 1 : 0), 1, 30);
   return e;
 }
 
@@ -1660,7 +1669,7 @@ function drawTargetCard() {
   // nome e tipos
   ctx.textAlign = 'left'; ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#ece5d6';
   const tag = e.legend ? ' ★' : e.rare ? ' ✨' : '';
-  let nm = (e.alfa ? 'Alfa ' : '') + e.p.name + tag + (e.lvl && !e.boss ? ` · Nv ${e.lvl}` : '');
+  let nm = (e.alfa ? 'Alfa ' : '') + e.p.name + tag + (e.lvl && !e.boss ? ` · Nv ${e.lvl}${e.dev >= 2 ? ' ▲' : ''}` : '');
   while (ctx.measureText(nm).width > w - 66 && nm.length > 4) nm = nm.slice(0, -2);
   ctx.fillText(nm, x + 58, y + 17);
   let tx = x + 58;
