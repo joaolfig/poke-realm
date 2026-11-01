@@ -195,10 +195,10 @@ const maxHP = P => {
 const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armadura ? P.equip.armadura.ac : 0)
   + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
 const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
-const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
+const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - (P.lin === 'lobisomem' ? 1 : 0) - M(P, 'crit')); // lobisomem: instinto
 const outOfCombat = P => P.sinceHit > 4 && G.time - (P.shotT === undefined ? -99 : P.shotT) > 4 && !P.pvp;
-const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (outOfCombat(P) ? 1.3 : 1) * (pst(P, 2) ? 0.85 : 1) * wxSlow(P) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (P.lin === 'lobisomem' ? 1.05 : 1) * (isBat(P) ? 1.25 : 1) * (1 + M(P, 'speed'));
-const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWolf(P) ? 1.3 : 1) * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
+const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (outOfCombat(P) ? 1.3 : 1) * (pst(P, 2) ? 0.85 : 1) * wxSlow(P) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (P.lin === 'lobisomem' ? 1.05 : 1) * (isBat(P) ? 1.3 : 1) * (1 + M(P, 'speed'));
+const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWolf(P) ? 1.35 : 1) * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
 // XP para cada nível: acompanha o dano do herói (medido: XP por segundo matando na zona recomendada, nível a nível).
@@ -938,7 +938,7 @@ function playerHit(e, b) {
   dmg = Math.max(1, dmg);
   if (!hit) dmg = Math.max(1, Math.floor(dmg / 2));
   const res = typed(P, e, dmg, pType(P));
-  if (isWolf(P)) res.dmg = Math.round(res.dmg * 1.15);
+  if (isWolf(P)) res.dmg = Math.round(res.dmg * 1.2);
   dealDamage(e, res.dmg, sp === 2 ? 3 : 0);
   linSteal1(P, res.dmg);
   hitText(e, res.dmg, res.eff, crit, hit);
@@ -1126,8 +1126,8 @@ function updatePlayer(dt) {
   const inV = !inDg && inTown(P.x, P.y);
   const regenK = (hasT(P, 'regeneracao') ? 2.5 : 1) * (1 + M(P, 'regen'));
   const noRegen = inDg && (dungeonAt(P.x) || {}).mods && dungeonAt(P.x).mods.includes('semcura');
-  const sunBurn = P.lin === 'vampiro' && !inV && !isNight() && !inDg; // vampiro: de dia só se cura roubando vida
-  if ((P.sinceHit > 5 || inV) && !noRegen && !sunBurn) P.hp = Math.min(maxHP(P), P.hp + (0.3 + A(P, 'VIG') * 0.2 + P.lvl * 0.05) * (inV ? 12 : 1) * regenK * dt);
+  const sunBurn = P.lin === 'vampiro' && !inV && !isNight() && !inDg ? 0.5 : 1; // vampiro: de dia regenera pela metade fora das cidades
+  if ((P.sinceHit > 5 || inV) && !noRegen) P.hp = Math.min(maxHP(P), P.hp + (0.3 + A(P, 'VIG') * 0.2 + P.lvl * 0.05) * (inV ? 12 : 1) * regenK * sunBurn * dt);
 
   P.shootCd -= dt;
   // a vila é zona de paz: ninguém ataca de dentro dela
@@ -2447,9 +2447,9 @@ const batPid = P => (REGION_ID === 'unova' ? (P.lvl < 16 ? 527 : 528) : P.lvl < 
 const wolfPid = () => WOLF_PID[REGION_ID] || 59;
 const isBat = P => !!(P.lform && P.lform.kind === 'bat');
 const isWolf = P => !!(P.lform && P.lform.kind === 'wolf');
-const linSteal = P => (P.lin !== 'vampiro' ? 0 : isBat(P) ? 0.06 : 0.03);
+const linSteal = P => (P.lin !== 'vampiro' ? 0 : isBat(P) ? 0.1 : 0.04);
 // dano recebido: fraquezas da linhagem e o morcego mais frágil
-const linTaken = (P, type) => (P.lin && LIN[P.lin].fraco.includes(type) ? 1.1 : 1) * (isBat(P) ? 1.15 : 1);
+const linTaken = (P, type) => (P.lin && LIN[P.lin].fraco.includes(type) ? 1.1 : 1) * (isBat(P) ? 1.1 : 1);
 function linSteal1(P, dmg) {
   const k = linSteal(P);
   if (!k || dmg <= 0) return;
@@ -2493,7 +2493,8 @@ function linTick(P, dt) {
   if (isBat(P)) { P.lform.pid = batPid(P); if (Math.random() < 0.08) G.parts.push({ x: P.x + rand(-14, 14), y: P.y + rand(-8, 8), vx: rand(-20, 20), vy: -20, life: 0.5, color: '#7c3aed', size: 2 }); }
   else if (isWolf(P) && Math.random() < 0.2) G.parts.push({ x: P.x + rand(-16, 16), y: P.y + rand(-10, 10), vx: 0, vy: -25, life: 0.4, color: '#dc2626', size: 2 });
 }
-function linKill(P) { /* a transformação não depende mais de abates */ }
+// fome da fera: sem poções, cada abate cura 5% da vida
+function linKill(P) { if (isWolf(P)) { const h = Math.round(maxHP(P) * 0.05); P.hp = Math.min(maxHP(P), P.hp + h); text(P.x, P.y - 34, `+${h}`, '#86efac', 13); } }
 // desenho do herói com a linhagem: forma completa, ou o lobisomem se formando aos poucos
 function drawLinHero(P, x, y, alpha) {
   if (P.lform) return drawWildForm(P.lform.pid, P.x, P.y, x, y, P.face, P.moving, alpha, pType(P), isWolf(P) ? 1 : 0);
@@ -2510,8 +2511,8 @@ function drawLinHero(P, x, y, alpha) {
 const linBuffs = P => {
   if (!P.lin) return '';
   const L = LIN[P.lin];
-  const s = P.lin === 'vampiro' ? (isBat(P) ? '🦇 Morcego até o amanhecer · rouba 6%' : P.transK > 0.05 ? `🦇 Transformando... ${Math.round(P.transK * 100)}%` : `rouba 3% do dano${isNight() ? '' : ' · de dia não regenera fora das cidades'}`)
-    : isWolf(P) ? '🐺 Fera até o amanhecer (+30% cadência, +15% dano, sem poções nem especial)' : P.transK > 0.05 ? `🌕 Transformando... ${Math.round(P.transK * 100)}%` : '50% de chance de virar fera a cada noite';
+  const s = P.lin === 'vampiro' ? (isBat(P) ? '🦇 Morcego até o amanhecer · rouba 10%' : P.transK > 0.05 ? `🦇 Transformando... ${Math.round(P.transK * 100)}%` : `rouba 4% do dano${isNight() ? '' : ' · de dia regenera pela metade fora das cidades'}`)
+    : isWolf(P) ? '🐺 Fera até o amanhecer (+35% cadência, +20% dano, abates curam 5%; sem poções nem especial)' : P.transK > 0.05 ? `🌕 Transformando... ${Math.round(P.transK * 100)}%` : '50% de chance de virar fera a cada noite';
   return `<div class="small" style="color:#fca5a5">${L.icon} ${L.nome}: ${s}</div>`;
 };
 
