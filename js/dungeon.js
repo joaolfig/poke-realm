@@ -35,7 +35,11 @@ function gymMini(e, gs) {
   const s = STORY[gs];
   e.mini = gs; e.boss = true;
   e.name = `${s ? s.nome : 'Líder'} (${e.p.name})`;
-  e.maxHp = Math.round(e.maxHp * (1.8 + 0.12 * gs)); e.hp = e.maxHp;
+  e.maxHp = Math.round(e.maxHp * (1.8 + 0.12 * gs));
+  // nunca mais forte que o Pokémon principal do líder (no máximo 70% da vida dele)
+  const th = THEMES[gs === 9 ? 'final' : 'gym' + gs];
+  if (th && POKE[th.boss]) e.maxHp = Math.min(e.maxHp, Math.round(enemyStats(th.boss, e.zone, 3).maxHp * 1.2 * 0.7));
+  e.hp = e.maxHp;
   e.scale *= 1.2; e.w *= 1.2; e.h *= 1.2; e.r *= 1.2;
   e.speed *= 0.85;
   e.cdBoss = Math.max(1.1, 1.75 - gs * 0.07);
