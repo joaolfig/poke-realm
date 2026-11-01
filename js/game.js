@@ -1556,19 +1556,18 @@ function wrapText(text, maxW, maxLines) {
   else if (cur) lines.push(cur);
   return lines;
 }
-function drawToasts() {
-  // um aviso por vez, numa faixa fina no topo (o mais recente substitui o anterior)
+function drawToasts(topY = 12) {
+  // um aviso por vez, numa faixa fina no canto superior esquerdo, abaixo das linhas da área/missão (o mais recente substitui o anterior)
   const t = G.toasts[G.toasts.length - 1];
   if (!t) return;
   const n = G.toasts.filter(x => x.text === t.text).length;
-  const boss = G.P && G.enemies.some(e => e.boss && Math.hypot(e.x - G.P.x, e.y - G.P.y) < 1000);
   ctx.save();
   ctx.font = '600 15px Barlow Semi Condensed, system-ui';
   let txt = t.text + (n > 1 ? ` (×${n})` : '');
-  const maxW = Math.min(620, W - 420);
+  const maxW = Math.min(560, W * 0.5);
   while (ctx.measureText(txt).width > maxW && txt.length > 8) txt = txt.slice(0, -2);
   if (txt.length < (t.text + (n > 1 ? ` (×${n})` : '')).length) txt += '…';
-  const w = ctx.measureText(txt).width + 30, x = W / 2 - w / 2, y = boss ? 94 : 58, h = 24;
+  const w = ctx.measureText(txt).width + 30, x = 10, y = topY + 8, h = 24;
   ctx.globalAlpha = Math.min(1, t.t * 1.5);
   ctx.fillStyle = 'rgba(13,14,16,.85)'; ctx.fillRect(x, y, w, h);
   ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
@@ -1637,7 +1636,7 @@ function drawHUD(ox, oy) {
     if (hint) { ctx.textAlign = 'center'; ctx.font = 'bold 16px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 4; ctx.fillStyle = col; outlined(hint, W / 2, H / 2 + 70); }
   }
 
-  drawToasts();
+  drawToasts(hy);
 
   let boss = null, bd = 1000;
   for (const e of G.enemies) if (e.boss && P) { const dd = Math.hypot(e.x - P.x, e.y - P.y); if (dd < bd) { bd = dd; boss = e; } }
