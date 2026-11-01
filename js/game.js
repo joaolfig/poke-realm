@@ -1380,7 +1380,10 @@ function render() {
       let lift = 0;
       if (hide) { drawPlayerSprite(r.cls, x, y, r.face || 1, 0, 0.07, r.aim || 0, r.ptype); continue; }
       if (r.mount) lift = drawMount(r.mount, r.x, r.y, x, y, r.face || 1, r.moving, G.time); else waterOver(r.x, r.y + 16, x, y + 16, 30);
+      const rt = pstTint(r.pst || 0);
+      if (rt) ctx.filter = rt;
       drawPlayerSprite(r.cls, x, y - lift, r.face || 1, r.mount ? 0 : r.moving ? Math.floor(r.walk * 8) % 2 : 0, r.invis ? (G.P && G.P.pvp ? 0.07 : 0.4) : 1, r.aim || 0, r.ptype);
+      ctx.filter = 'none';
       ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.textAlign = 'center';
       outlined(`${r.name} · Nv ${r.lvl}`, x, y - 26);
       grassOver(r.x, r.y + 14, x, y + 18, 28);
@@ -1398,7 +1401,10 @@ function render() {
         lift = drawMount(mpid, P.x, P.y, x, y, P.face > 0 ? 1 : -1, P.moving, G.time);
         if (P.surfing && P.moving && Math.random() < 0.5) G.parts.push({ x: P.x - Math.cos(P.aim) * 10 + rand(-8, 8), y: P.y + 22, vx: rand(-20, 20), vy: rand(-10, 10), life: 0.6, color: '#e0f2fe', size: 3 });
       } else waterOver(P.x, P.y + 16, x, y + 16, 30);
+      const tint = pstTint(P.pstT > 0 ? P.pst : 0);
+      if (tint) ctx.filter = tint;
       drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
+      ctx.filter = 'none';
       if (!mpid) grassOver(P.x, P.y + 14, x, y + 18, 28);
       if (G.recall) { ctx.strokeStyle = '#fde68a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - G.recall.t / 1.5)); ctx.stroke(); }
       bar(x - 16, y + 22, 32, 4, P.hp / maxHP(P), '#22c55e');
@@ -1702,6 +1708,10 @@ function updatePanel() {
   const c = CLASSES[P.cls];
   const mh = maxHP(P), need = xpNeed(P.lvl);
   $('b-hp').style.width = (P.hp / mh * 100) + '%'; $('t-hp').textContent = `PV ${Math.ceil(P.hp)} / ${mh}`;
+  const S = P.pstT > 0 && PST[P.pst], chip = $('p-st');
+  $('b-hp').style.background = S ? S.color : '';
+  chip.classList.toggle('hidden', !S);
+  if (S) { chip.style.background = S.color; chip.textContent = `${S.label} ${Math.ceil(P.pstT)}s · ${S.fx} · poção ou cura tira`; }
   $('b-xp').style.width = (P.lvl >= MAX_LVL ? 100 : P.xp / need * 100) + '%'; $('t-xp').textContent = P.lvl >= MAX_LVL ? 'NÍVEL MÁXIMO' : `XP ${P.xp} / ${need}`;
   $('p-derived').innerHTML = `<div class="st" title="Classe de Armadura: o d20 inimigo + bônus precisa igualar ou superar"><span>CA</span><b>${AC(P)}</b></div>
     <div class="st" title="Bônus de acerto (d20 + isto contra a CA do inimigo)"><span>Acerto</span><b>+${toHit(P)}</b></div>

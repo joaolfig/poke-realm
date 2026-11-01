@@ -313,14 +313,16 @@ const abilDmgMul = ab => (ab ? 1 - Math.min(0.2, ab.ch * 1.5) : 1);
 // 2 paralisado (mais lento e atira menos), 3 queimado (dano por segundo e bate menos), 4 envenenado (dano por segundo), 6 confuso (mira treme: ~60% dos tiros acertam)
 const PLAYER_ST_CH = 0.03;
 const PST = {
-  2: { label: '⚡ Paralisado', dur: 4, color: '#fde047' },
-  3: { label: '🔥 Queimado', dur: 4, color: '#fb923c', dot: 0.025 },
-  4: { label: '☠ Envenenado', dur: 6, color: '#c084fc', dot: 0.02 },
-  6: { label: '💫 Confuso', dur: 3, color: '#f9a8d4' },
+  2: { label: '⚡ Paralisado', dur: 4, color: '#fde047', fx: 'mais lento e atira menos', tint: 'sepia(1) saturate(7) hue-rotate(12deg) brightness(1.25)' },
+  3: { label: '🔥 Queimado', dur: 4, color: '#fb923c', dot: 0.025, fx: 'perde vida e bate menos', tint: 'sepia(1) saturate(8) hue-rotate(-28deg) brightness(1.05)' },
+  4: { label: '☠ Envenenado', dur: 6, color: '#c084fc', dot: 0.02, fx: 'perde vida', tint: 'sepia(1) saturate(5) hue-rotate(235deg) brightness(0.95)' },
+  6: { label: '💫 Confuso', dur: 3, color: '#f9a8d4', fx: 'a mira treme', tint: 'sepia(1) saturate(4) hue-rotate(285deg) brightness(1.15)' },
 };
 // qual status cada tipo de ataque pode causar no jogador
 const PST_BY_TYPE = { electric: 2, dragon: 2, fire: 3, poison: 4, bug: 4, grass: 4, psychic: 6, ghost: 6, fairy: 6, dark: 6, fighting: 6 };
 const pst = (P, st) => P && P.pstT > 0 && P.pst === st;
+// filtro que pisca o boneco na cor do status (st = código do status, ou 0)
+const pstTint = st => (st && PST[st] && Math.sin(G.time * 12) > -0.2 ? PST[st].tint : '');
 function playerStatus(P, st) {
   if (!P || !PST[st] || P.pstT > 0 || P.pvp) return;
   P.pst = st; P.pstT = PST[st].dur; P.pdotT = 1;
