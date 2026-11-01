@@ -319,7 +319,8 @@ function genQuests(P, g = 'guilda') {
   const recent = P.recentQ || [];
   const unknown = LANDMARKS.filter(l => !P.fly.includes(l.id) && zoneAt(l.x, l.y) <= z + 1);
   const side = REGION.side || {};
-  let kinds = QGIVERS[g].filter(k => (k !== 'bolaboa' || z >= 2) && (k !== 'explorar' || unknown.length));
+  // visitar lugares (destinos do Fly) só depois de ter a HM Fly
+  let kinds = QGIVERS[g].filter(k => (k !== 'bolaboa' || z >= 2) && (k !== 'explorar' || (unknown.length && P.hms.includes('fly'))));
   for (const [k, n] of Object.entries(side.peso || {})) if (kinds.includes(k)) for (let i = 0; i < n; i++) kinds.push(k);
   const fresh = kinds.filter(k => !recent.includes(k));
   if (new Set(fresh).size >= 3) kinds = fresh;
