@@ -586,7 +586,7 @@ function updateWorld(dt) {
 
 /* ============ Clima por zona ============
  * Cada zona sorteia um clima conforme o bioma (o host decide e manda no snapshot).
- * Dura 4-6 min e às vezes não há clima. À noite o clima some (a noite já é o "clima" dela).
+ * É um evento raro (~12% a cada 6-10 min por zona, dura 2-3 min). À noite o clima some (a noite já é o "clima" dela).
  * Os efeitos valem para todos: tiros do jogador, companheiros e golpes dos inimigos.
  */
 const WEATHER = {
@@ -606,12 +606,17 @@ function weatherAt(x, y) {
 const wxBoost = (x, y, type) => { const w = weatherAt(x, y); return w && w.boost[type] || 1; };
 function hostWeather(dt) {
   G.wx = G.wx || ['', '', '', '', '', ''];
-  G.wxT = G.wxT || [0, rand(5, 60), rand(5, 60), rand(5, 60), rand(5, 60), rand(5, 60)];
+  G.wxT = G.wxT || [0, rand(120, 600), rand(120, 600), rand(120, 600), rand(120, 600), rand(120, 600)];
+  // clima é evento raro: a cada 6-10 min por zona, só ~12% de chance de começar; dura 2-3 min
   for (let z = 1; z <= 5; z++) {
     if ((G.wxT[z] -= dt) > 0) continue;
-    G.wxT[z] = rand(240, 360);
     const opts = ZONES[z] && WEATHER_BY_BIO[ZONES[z].bio] || [];
-    G.wx[z] = !opts.length || Math.random() < 0.4 ? '' : pick(opts);
+    if (G.wx[z]) { G.wx[z] = ''; G.wxT[z] = rand(360, 600); continue; }
+    if (opts.length && Math.random() < 0.12) {
+      const k = pick(opts);
+      G.wx[z] = k; G.wxT[z] = rand(120, 180);
+      emitEvent({ t: 'toast', text: `${WEATHER[k].icon} Evento raro: ${WEATHER[k].nome} em ${ZONES[z].nome}! (${WEATHER[k].fx})`, color: WEATHER[k].color, big: 1 });
+    } else G.wxT[z] = rand(360, 600);
   }
 }
 // local (todo jogador): avisa quando o clima onde você está muda, e aplica o desgaste da areia/neve
