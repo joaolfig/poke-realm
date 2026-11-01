@@ -2431,7 +2431,7 @@ const blessBuffs = P => {
  * quando começam, encerram a Forma Selvagem, e enquanto duram não dá para trocar de forma.
  * Vampiro: rouba 3% do dano causado; resiste a Veneno e Sombrio; de dia não regenera fora das cidades;
  *   a cada anoitecer, 33% de chance de virar morcego aos poucos (Zubat/Golbat/Crobat pelo nível) até o amanhecer:
- *   rouba 6%, +25% de velocidade, voa por cima da água, mas recebe +15% de dano.
+ *   rouba 6%, +25% de velocidade, mas recebe +15% de dano.
  * Lobisomem: +5% de velocidade e faro (baús escondidos aparecem de mais longe).
  *   À noite a Lua enche aos poucos (e mais rápido a cada abate) e o herói vai virando fera na tela;
  *   em 100% vira o lobo da região por 12s: +30% de cadência, +15% de dano, uivo que deixa os inimigos lentos,

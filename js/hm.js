@@ -64,7 +64,7 @@ function petKnows(P, k) {
 }
 const petIsFlyer = pid => !!(POKE[pid] && POKE[pid].types.includes('flying') && !POKE[pid].types.includes('water'));
 // 1 = pode entrar na água funda, 2 = pode subir cachoeira
-const swimFlags = P => (petKnows(P, 'surf') || ridingFlyer(P) || isBat(P) ? 1 : 0); // o morcego do vampiro voa por cima da água
+const swimFlags = P => (petKnows(P, 'surf') || ridingFlyer(P) ? 1 : 0);
 const ridingFlyer = P => !!(P.riding && activePet(P) && rideFlies(activePet(P).pid));
 
 function giveHM(P, k) {
