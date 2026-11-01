@@ -298,11 +298,11 @@ const ABIL = [
 const ABIL_BY_ID = {};
 for (const a of ABIL) for (const id of a.ids) ABIL_BY_ID[id] = a;
 // por tipo (quando a espécie não tem habilidade própria): paralisia só no Elétrico, queimadura só no Fogo,
-// veneno só no Veneno e no Inseto, confusão só no Psíquico e no Fantasma (e o Gelo congela).
+// veneno no Veneno e no Inseto (que também paralisa), confusão só no Psíquico e no Fantasma (e o Gelo congela).
 // Os outros tipos não causam status e batem com força total. A mesma regra vale para os golpes que acertam o jogador.
 const TYPE_ABIL = {
   electric: { nome: 'Faísca', st: 2, ch: 0.033 }, fire: { nome: 'Brasa', st: 3, ch: 0.039 }, poison: { nome: 'Toxina', st: 4, ch: 0.046 },
-  bug: { nome: 'Ferrão Venenoso', st: 4, ch: 0.033 }, psychic: { nome: 'Mente Confusa', st: 6, ch: 0.026 }, ghost: { nome: 'Raio Confuso', st: 6, ch: 0.026 },
+  bug: { nome: 'Ferrão e Pó Paralisante', st: [4, 2], ch: 0.033 }, psychic: { nome: 'Mente Confusa', st: 6, ch: 0.026 }, ghost: { nome: 'Raio Confuso', st: 6, ch: 0.026 },
   ice: { nome: 'Toque Gélido', st: 5, ch: 0.019 },
 };
 // quem causa status bate menos (quanto maior a chance, menor o dano: 12% de chance -> -18% de dano)
@@ -317,7 +317,9 @@ const PST = {
   6: { label: '💫 Confuso', dur: 3, color: '#f9a8d4', fx: 'a mira treme', tint: 'sepia(1) saturate(4) hue-rotate(285deg) brightness(1.15)' },
 };
 // qual status cada tipo de ataque pode causar no jogador
-const PST_BY_TYPE = { electric: 2, fire: 3, poison: 4, bug: 4, psychic: 6, ghost: 6 };
+// um tipo pode causar mais de um status (Inseto: veneno ou paralisia); stPick sorteia
+const PST_BY_TYPE = { electric: 2, fire: 3, poison: 4, bug: [4, 2], psychic: 6, ghost: 6 };
+const stPick = st => (Array.isArray(st) ? pick(st) : st);
 const pst = (P, st) => P && P.pstT > 0 && P.pst === st;
 // filtro que pisca o boneco na cor do status (st = código do status, ou 0)
 const pstTint = st => (st && PST[st] && Math.sin(G.time * 12) > -0.2 ? PST[st].tint : '');
@@ -403,7 +405,7 @@ function petTip(P, i) {
     <div>⚔️ Ataque ${Math.max(st.attack || 0, st['special-attack'] || 0) || '?'} · ❤️ PV ${st.hp || '?'} · 💨 Vel ${st.speed || '?'}</div>
     <div>🎯 Tiro: (${1 + Math.floor(pt.lvl / 8)}d8 + ${Math.floor(pt.lvl / 2)}) × ${f.toFixed(2)}, tipo ${TYPE_PT[pt.type]}</div>
     <div>✨ Golpe especial: <b>${MOVES[pt.type] || 'Investida'}</b> (leque a cada 6s)</div>
-    <div>🌀 ${ab ? `<b>${ab.nome}</b>: ${Math.round(ab.ch * 100)}% por acerto de ${STATUS[ab.st].txt} (bate ${Math.round((1 - abilDmgMul(ab)) * 100)}% menos)` : 'Sem habilidade especial (bate com força total)'}</div>
+    <div>🌀 ${ab ? `<b>${ab.nome}</b>: ${Math.round(ab.ch * 100)}% por acerto de ${[].concat(ab.st).map(s => STATUS[s].txt).join(' ou ')} (bate ${Math.round((1 - abilDmgMul(ab)) * 100)}% menos)` : 'Sem habilidade especial (bate com força total)'}</div>
     <div>🧬 ${evt} · XP ${pt.xp}/${petNeed(pt.lvl)}</div>
     ${petIsFlyer(pt.pid) ? '<div>🪽 Voa sobre a água</div>' : ''}
     <div class="tip-hm"><b>HMs</b>${hm}</div>`;

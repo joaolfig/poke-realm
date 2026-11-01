@@ -918,7 +918,7 @@ function enemyAttack(b) {
   let dmg = Math.max(1, Math.round((roll(b.dice[0] * (crit ? 2 : 1), b.dice[1]) + b.dice[2]) * eff));
   if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (!dmg) { text(P.x, P.y - 34, 'Escudo!', '#93c5fd', 12); return; } }
   P.hp -= dmg; P.sinceHit = 0;
-  if (b.stc && P.hp > 0 && PST_BY_TYPE[b.type] && Math.random() < PLAYER_ST_CH) playerStatus(P, PST_BY_TYPE[b.type]);
+  if (b.stc && P.hp > 0 && PST_BY_TYPE[b.type] && Math.random() < PLAYER_ST_CH) playerStatus(P, stPick(PST_BY_TYPE[b.type]));
   G.shake = Math.min(8, G.shake + 2 + dmg * 0.3);
   const tag = graze ? ' (bloqueado)' : crit ? ' CRÍTICO' : eff > 1 ? ' super efetivo' : eff < 1 ? ' resistido' : '';
   text(P.x, P.y - 34, `-${dmg}${tag}`, graze ? '#cbd5e1' : eff > 1 ? '#ff5e5e' : eff < 1 ? '#fda4af' : '#f87171', graze ? 11 : crit || eff > 1 ? 16 : 14);
