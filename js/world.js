@@ -72,7 +72,8 @@ function ballShop(P, town = npcTown()) {
 }
 function shopList(P) {
   // a loja só vende até Muito Raro: os melhores itens vêm de chefes e masmorras
-  const tier = clamp(Math.floor(P.lvl / 4), 0, 3);
+  // na vila inicial o estoque para em Raro; os itens Muito Raros só chegam à loja da 2ª cidade
+  const tier = clamp(Math.floor(P.lvl / 4), 0, npcTown() === 1 || !TOWNS[1] ? 3 : 2);
   return [
     { id: 'pot', nome: 'Poção de Cura', icon: '❤️', preco: 25 },
     { id: 'doce', nome: 'Doce Raro (+1 nível do companheiro)', icon: '🍬', preco: 140 },
