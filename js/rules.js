@@ -94,7 +94,7 @@ const SUBCLASSES = {
     { id: 'feras', nome: 'Mestre das Feras', icon: '🐾', desc: 'Seus companheiros causam +50% de dano.',
       abil: { nome: 'Armadilha da Caçadora', cd: 5, desc: 'Armadilha: arma no cursor e explode quando um inimigo chega perto ((2 + nível/4)d8 + Poder em área, deixa lentos) e agita seus companheiros.' } },
     { id: 'arcano', nome: 'Atirador Arcano', icon: '✴️', desc: 'Flechas explodem ao acertar, causando metade do dano em volta.',
-      abil: { nome: 'Aljava Arcana', cd: 5, desc: 'Aljava: dispara 5 flechas arcanas que atravessam até 2 inimigos em leque ((2 + nível/4)d8 + Poder) que podem paralisar.' } },
+      abil: { nome: 'Aljava Arcana', cd: 5, desc: 'Aljava: dispara 3 flechas arcanas que atravessam até 2 inimigos em leque ((2 + nível/4)d8 + Poder) que podem paralisar.' } },
   ],
 };
 const subInfo = id => Object.values(SUBCLASSES).flat().find(s => s.id === id);

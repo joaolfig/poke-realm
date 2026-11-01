@@ -21,7 +21,7 @@ const HM_ICON = { cut: '✂️', smash: '🪨', surf: '🌊', flash: '💡', fly
 const HM_LINES = {
   cut: () => 'Leve esta HM e corte os arbustos que fecham a estrada. Daqui pra frente, o caminho só se abre para quem sabe usar Cut.',
   smash: () => 'Rochas rachadas bloqueiam as passagens para as terras mais altas. Rock Smash abre caminho por elas.',
-  flash: () => 'Alguns ginásios são escuros como breu, e a noite aqui não perdoa. Com Flash você enxerga o que os outros não veem.',
+  flash: () => { const d = darkPlaces(); return `${d.length ? `Mais adiante você vai encontrar lugares escuros como breu: ${d.join(', ')}.` : 'Há lugares escuros como breu pela região.'} E a noite aqui não perdoa. Com Flash você enxerga o que os outros não veem.`; },
   surf: () => 'Um rio fundo separa as terras mais perigosas. Com Surf, seu companheiro te leva pela água até lá.',
 };
 // o que falta para chegar a uma zona
@@ -311,10 +311,10 @@ const abilDmgMul = ab => (ab ? 1 - Math.min(0.2, ab.ch * 1.5) : 1);
 // 2 paralisado (mais lento e atira menos), 3 queimado (dano por segundo e bate menos), 4 envenenado (dano por segundo), 6 confuso (mira treme: ~60% dos tiros acertam)
 const PLAYER_ST_CH = 0.03;
 const PST = {
-  2: { label: '⚡ Paralisado', dur: 4, color: '#fde047', fx: 'mais lento e atira menos', tint: 'sepia(1) saturate(7) hue-rotate(12deg) brightness(1.25)' },
-  3: { label: '🔥 Queimado', dur: 4, color: '#fb923c', dot: 0.025, fx: 'perde vida e bate menos', tint: 'sepia(1) saturate(8) hue-rotate(-28deg) brightness(1.05)' },
-  4: { label: '☠ Envenenado', dur: 6, color: '#c084fc', dot: 0.02, fx: 'perde vida', tint: 'sepia(1) saturate(5) hue-rotate(235deg) brightness(0.95)' },
-  6: { label: '💫 Confuso', dur: 3, color: '#f9a8d4', fx: 'a mira treme', tint: 'sepia(1) saturate(4) hue-rotate(285deg) brightness(1.15)' },
+  2: { label: '⚡ Paralisado', dur: 4, color: '#fde047', fx: 'mais lento e atira menos', tint: 'sepia(1) saturate(12) hue-rotate(15deg) brightness(1.45)' },
+  3: { label: '🔥 Queimado', dur: 4, color: '#fb923c', dot: 0.025, fx: 'perde vida e bate menos', tint: 'sepia(1) saturate(14) hue-rotate(-32deg) brightness(1.15)' },
+  4: { label: '☠ Envenenado', dur: 6, color: '#c084fc', dot: 0.02, fx: 'perde vida', tint: 'sepia(1) saturate(9) hue-rotate(235deg) brightness(1.05)' },
+  6: { label: '💫 Confuso', dur: 3, color: '#f9a8d4', fx: 'a mira treme', tint: 'sepia(1) saturate(8) hue-rotate(290deg) brightness(1.25)' },
 };
 // qual status cada tipo de ataque pode causar no jogador
 // um tipo pode causar mais de um status (Inseto: veneno ou paralisia); stPick sorteia
@@ -322,7 +322,25 @@ const PST_BY_TYPE = { electric: 2, fire: 3, poison: 4, bug: [4, 2], psychic: 6, 
 const stPick = st => (Array.isArray(st) ? pick(st) : st);
 const pst = (P, st) => P && P.pstT > 0 && P.pst === st;
 // filtro que pisca o boneco na cor do status (st = código do status, ou 0)
-const pstTint = st => { st = st === 7 ? 2 : st; return st && PST[st] && Math.sin(G.time * 12) > -0.2 ? PST[st].tint : ''; };
+const pstTint = st => { st = st === 7 ? 2 : st; return st && PST[st] && Math.sin(G.time * 9) > -0.35 ? PST[st].tint : ''; };
+// aura pulsando no chão, na cor do status (dá para ver de longe quem está com status)
+function drawStatusAura(st, x, y) {
+  const S = PST[st === 7 ? 2 : st];
+  if (!S) return;
+  const k = 0.5 + 0.5 * Math.sin(G.time * 9);
+  ctx.save();
+  ctx.globalAlpha = 0.25 + 0.3 * k; ctx.fillStyle = S.color;
+  ctx.beginPath(); ctx.ellipse(x, y + 14, 22 + 4 * k, 9 + 2 * k, 0, 0, 7); ctx.fill();
+  ctx.globalAlpha = 0.5 + 0.4 * k; ctx.strokeStyle = S.color; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(x, y + 14, 26 + 5 * k, 11 + 2 * k, 0, 0, 7); ctx.stroke();
+  ctx.restore();
+}
+// lugares escuros da região (para o líder que entrega o Flash e os avisos da história)
+function darkPlaces() {
+  const out = STORY.filter(s => s.theme && DARK_THEMES.includes(s.theme)).map(s => s.titulo);
+  for (let z = 1; z <= 5; z++) if (ZONES[z] && ZONES[z].fog) out.push(ZONES[z].nome);
+  return out;
+}
 const pstNet = P => (P.pstT > 0 ? (P.pst === 2 && P.pstShock ? 7 : P.pst) : 0);
 // choque elétrico: raios em zigue-zague em volta do corpo, em descargas rápidas
 function drawShock(x, y, w, h) {

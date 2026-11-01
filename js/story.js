@@ -160,7 +160,10 @@ function renderStoryNPC(n, P) {
   const block = zt >= 2 && zt <= 4 ? (() => { const k = { 2: 'cut', 3: 'smash', 4: 'surf' }[zt], H = HMS[k];
     return `<p class="fala">O caminho até lá passa por ${{ cut: 'arbustos que fecham a estrada', smash: 'rochas rachadas que bloqueiam a passagem', surf: 'um rio largo e fundo' }[k]}. Use <b>${H.icon} ${H.nome}</b> com um companheiro que a saiba.</p>`; })()
     : zt >= 5 ? `<p class="fala">O caminho passa pelo Portão da Liga, que só abre para quem tem 7 insígnias.</p>` : '';
-  return `<div class="quest cur"><b>${st.ch <= 8 ? `Insígnia ${st.ch}/8: ` : 'Capítulo final: '}${s.titulo}</b><p>${s.intro}</p>${block}<div class="small">🎯 ${s.obj}${warn}<br>O destino aparece como ★ no minimapa.${need.length ? `<br><span style="color:#fca5a5">Para chegar lá você precisa de: ${need.join(', ')}.</span>` : ''}</div></div>` + pathChecklist(P);
+  // lugares escuros: a história lembra do Flash
+  const dark = (s.theme && DARK_THEMES.includes(s.theme) ? `<p class="fala">Dizem que lá dentro é escuro como breu. Sem <b>💡 Flash</b> você mal vai enxergar um palmo à frente.</p>` : '')
+    + (ZONES[zt] && ZONES[zt].fog ? `<p class="fala">${ZONES[zt].nome} vive coberta por uma névoa espessa. O <b>💡 Flash</b> abre caminho por ela.</p>` : '');
+  return `<div class="quest cur"><b>${st.ch <= 8 ? `Insígnia ${st.ch}/8: ` : 'Capítulo final: '}${s.titulo}</b><p>${s.intro}</p>${block}${dark}<div class="small">🎯 ${s.obj}${warn}<br>O destino aparece como ★ no minimapa.${need.length ? `<br><span style="color:#fca5a5">Para chegar lá você precisa de: ${need.join(', ')}.</span>` : ''}</div></div>` + pathChecklist(P);
 }
 
 function storyAct(P, arg) {
@@ -232,6 +235,7 @@ function storyTarget(P) {
   if (st.ch === 0 || st.done) return { x: gd.x, y: gd.y, label: st.ch === 0 ? `Fale com ${gd.nome} na vila` : `Volte para ${hubName(P)} e fale com ${gd.nome}`, titulo: s.titulo };
   const [x, y] = storyPos(st.ch);
   const need = needFor(P, zoneAt(x, y));
+  if (s.theme && DARK_THEMES.includes(s.theme) && !P.hms.includes('flash')) need.push('Flash (é escuro)');
   return { x, y, label: s.obj + (need.length ? ` (precisa de ${need.join(', ')})` : ''), titulo: st.ch <= 8 ? `Insígnia ${st.ch}/8` : 'Final', lvl: s.lvl };
 }
 function drawStoryHUD(hy, ox, oy) {

@@ -312,8 +312,10 @@ function setRegion(id) {
     THEMES[key] = { nome: g.nome, floor: [st[0], st[1]], wall: st[2], top: st[3], accent: TYPE_COLORS[g.type], pool: g.pool, boss: g.boss, story: i + 1, gym: i + 1, zmin: GYM_ZONE[i] };
     if (g.type === 'ghost' || g.type === 'dark') DARK_THEMES.push(key);
   });
+  // o esconderijo do vilão é escuro em todas as regiões: o Flash do 2º ginásio volta a importar no clímax
   const fs = GYM_STYLE[R.final.type] || GYM_STYLE.dark;
   THEMES.final = { nome: R.final.nome, floor: [fs[0], fs[1]], wall: fs[2], top: fs[3], accent: '#ef4444', pool: R.grunts, boss: R.final.boss, story: 9, zmin: 5 };
+  DARK_THEMES.push('final');
   replaceArr(THEME_IDS, [...new Set(Object.values(THEMES).flatMap(t => [...t.pool, t.boss]))]);
   // história
   const H = R.historia;

@@ -782,7 +782,7 @@ function useAbility() {
       sfx('pick'); break;
     }
     case 'arcano': // Aljava Arcana: leque de flechas perfurantes
-      for (let i = 0; i < 5; i++) shootBullet(P.aim + (i - 2) * 0.12, { spd: 620, life: 0.85, r: 9, color: '#c084fc', shape: 'arrow', pierce: true, left: 2, spell: 4 }); // cada flecha atravessa até 2 inimigos
+      for (let i = 0; i < 3; i++) shootBullet(P.aim + (i - 1) * 0.14, { spd: 620, life: 0.85, r: 9, color: '#c084fc', shape: 'arrow', pierce: true, left: 2, spell: 4 }); // cada flecha atravessa até 2 inimigos
       sfx('crit'); break;
   }
   if (hasT(P, 'barreira')) { P.shield = Math.round(maxHP(P) * 0.15); P.shieldT = 4; }
@@ -1381,6 +1381,7 @@ function render() {
       if (hide) { drawPlayerSprite(r.cls, x, y, r.face || 1, 0, 0.07, r.aim || 0, r.ptype); continue; }
       if (r.mount) lift = drawMount(r.mount, r.x, r.y, x, y, r.face || 1, r.moving, G.time); else waterOver(r.x, r.y + 16, x, y + 16, 30);
       const rt = pstTint(r.pst || 0);
+      if (r.pst) drawStatusAura(r.pst, x, y);
       if (rt) ctx.filter = rt;
       drawPlayerSprite(r.cls, x, y - lift, r.face || 1, r.mount ? 0 : r.moving ? Math.floor(r.walk * 8) % 2 : 0, r.invis ? (G.P && G.P.pvp ? 0.07 : 0.4) : 1, r.aim || 0, r.ptype);
       ctx.filter = 'none';
@@ -1403,6 +1404,7 @@ function render() {
         if (P.surfing && P.moving && Math.random() < 0.5) G.parts.push({ x: P.x - Math.cos(P.aim) * 10 + rand(-8, 8), y: P.y + 22, vx: rand(-20, 20), vy: rand(-10, 10), life: 0.6, color: '#e0f2fe', size: 3 });
       } else waterOver(P.x, P.y + 16, x, y + 16, 30);
       const tint = pstTint(P.pstT > 0 ? P.pst : 0);
+      if (P.pstT > 0) drawStatusAura(P.pst, x, y);
       if (tint) ctx.filter = tint;
       drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
       ctx.filter = 'none';
