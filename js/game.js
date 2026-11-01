@@ -1328,10 +1328,10 @@ function drawShot(b, ox, oy) {
 // Aljava Pesada: flecha grande dourada com brilho, rastro e faíscas (fácil de distinguir dos tiros comuns)
 function drawHeavyArrow(b, x, y) {
   ctx.save();
-  const g = ctx.createRadialGradient(x, y, 2, x, y, 34);
+  const g = ctx.createRadialGradient(x, y, 2, x, y, 26);
   g.addColorStop(0, 'rgba(255,240,170,.75)'); g.addColorStop(1, 'rgba(250,204,21,0)');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 34, 0, 7); ctx.fill();
-  ctx.translate(x, y); ctx.rotate(b.a);
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.fill();
+  ctx.translate(x, y); ctx.rotate(b.a); ctx.scale(0.75, 0.75);
   // rastro
   for (let k = 1; k <= 5; k++) { ctx.globalAlpha = 0.45 - k * 0.08; ctx.fillStyle = '#fde047'; ctx.fillRect(-16 - k * 11, -3 + k * 0.3, 12, 6 - k * 0.6); }
   ctx.globalAlpha = 1;
