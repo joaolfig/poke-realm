@@ -448,7 +448,8 @@ function updateEnemiesHost(dt) {
         if (e.sigT <= 0 && dd < 620 && e.st !== 6) { bossSig(e, tgt); e.sigT = sigEvery(e) * (e.rage ? 0.7 : 1); e.cd = Math.max(e.cd, 1.2); }
         e.phaseT += dt;
         if (e.phaseT > BOSS_PH[e.phase].dur) { e.phase = (e.phase + 1) % BOSS_PH.length; e.phaseT = 0; }
-        if (e.cd <= 0) { BOSS_PH[e.phase].f(e, ang); e.cd = BOSS_PH[e.phase].cd * (e.kind === 3 ? 1.3 : e.cdBoss || 1) * (e.rage ? 0.85 : 1); }
+        // na fase do golpe do próprio tipo o ritmo segue o padrão (anéis grossos de Aço/Dragão viravam parede de balas)
+        if (e.cd <= 0) { BOSS_PH[e.phase].f(e, ang); e.cd = (e.phase === 3 ? Math.max(0.55, PAT[e.type].cd * 0.6) : BOSS_PH[e.phase].cd) * (e.kind === 3 ? 1.3 : e.cdBoss || 1) * (e.rage ? 0.85 : 1); }
       } else if (e.cd <= 0 && dd < 460) {
         const pt = PAT[e.type];
         if (!(e.st === 2 && Math.random() < 0.4)) pt.f(e, ang);
@@ -2646,7 +2647,7 @@ const grpN = () => 1 + 0.4 * (nPlayers() - 1);
 
 // dificuldade média do começo ao fim (medido com uma IA que desvia das balas): o começo era fácil demais
 // e o fim perigoso demais, então o dano dos tiros inimigos varia por zona
-const ZONE_DMG = [1, 1.35, 1.25, 1.05, 0.95, 0.88];
+const ZONE_DMG = [1, 1.35, 1.25, 1.15, 0.9, 0.8];
 
 // Clérigo em grupo: cada outro jogador perto dele na hora da cura aumenta a cura em 10% (até +30%)
 const clericChoir = P => 1 + 0.1 * Math.min(3, [...G.remotes.values()].filter(r => !r.dead && r.name && Math.hypot(r.tx - P.x, r.ty - P.y) < 260).length);
