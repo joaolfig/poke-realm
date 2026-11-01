@@ -172,6 +172,8 @@ const curAbil = P => (P.subclass && subInfo(P.subclass) && subInfo(P.subclass).a
 const petSlots = P => Math.min(4, 1 + tRank(P, 'equipe'));
 const hasS = (P, id) => P.subclass === id;
 const race = P => RACES[P.race] || RACES.humano;
+// Tiefling: +20% de dano com menos da metade da vida
+const infernal = P => P.race === 'tiefling' && P.hp < maxHP(P) / 2;
 const pType = P => (P.tempTypeT > 0 ? P.tempType : P.ptype);
 // valor efetivo usado nas regras: cada 2 pontos de atributo valem 1 (o anel soma direto no efetivo)
 const A = (P, k) => P.attrs[k] / 2 + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus : 0);
@@ -179,15 +181,15 @@ const A = (P, k) => P.attrs[k] / 2 + (P.equip.anel && P.equip.anel.attr === k ? 
 const Araw = (P, k) => P.attrs[k] + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus * 2 : 0);
 const maxHP = P => {
   const c = CLASSES[P.cls];
-  let h = 15 + (c.hd / 2 + A(P, 'VIG')) * P.lvl + (P.race === 'anao' ? P.lvl : 0) + (hasT(P, 'robusto') ? 2 * P.lvl : 0);
+  let h = 15 + (c.hd / 2 + A(P, 'VIG')) * P.lvl + (P.race === 'anao' ? 2 * P.lvl : 0) + (hasT(P, 'robusto') ? 2 * P.lvl : 0);
   if (hasS(P, 'barbaro')) h *= 1.25;
   return Math.round(h * (1 + M(P, 'hp')));
 };
 const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armadura ? P.equip.armadura.ac : 0)
-  + (P.race === 'halfling' || P.race === 'draconato' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
+  + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
 const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
-const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
+const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
 const fireRate = P => CLASSES[P.cls].wpn.rate * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.15 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
@@ -215,7 +217,7 @@ function startWeapon(cls) {
 function createPlayer(name, h) {
   const P = {
     name, cls: h.cls, race: h.race, ptype: h.type, subclass: null, lvl: 1, xp: 0, legends: 0, kills: 0, gold: 20,
-    attrs: { ...h.attrs }, points: h.points || 0, attrV2: 1, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
+    attrs: { ...h.attrs }, points: h.points || 0, attrV2: 1, humV2: 1, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
     equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: null, amuleto: null },
     inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0 }, ballSel: 'poke', story: { ch: 0, done: false },
     pets: [], petIdx: -1, petAct: [], stories: {}, hmsR: {}, quest: null, questOffer: null, hasteT: 0, slowCd: 0, hms: [], fly: ['vila'], chests: [], flyCd: 0,
@@ -227,7 +229,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'humV2', 'lastTown', 'seenR', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -617,6 +619,7 @@ function gainXP(n, raw) {
     P.xp -= xpNeed(P.lvl);
     P.lvl++;
     P.points++; // 1 ponto de atributo por nível
+    if (P.race === 'humano' && P.lvl % 10 === 0) { P.points++; text(P.x, P.y - 70, '+1 ponto extra (Humano)', '#fde68a', 12); }
     if (P.lvl % 4 === 0) P.talentPending++;
     P.hp = maxHP(P);
     G.toasts.push({ text: `⭐ Nível ${P.lvl}!${P.lvl % 2 === 0 ? ' +1 ponto de atributo' : ''}`, color: '#fde047', t: 3 });
@@ -643,12 +646,14 @@ function spawnPB(o) {
   if (netActive()) NET.outS.push([Math.round(b.ox), Math.round(b.oy), +o.a.toFixed(3), b.spd, +b.life.toFixed(2), b.amp, +b.ph.toFixed(2), b.r, b.shape, b.color, b.pd]);
   return b;
 }
+// Bomba Arcana: quantos dos 20 projéteis podem acertar o mesmo alvo
+const BOMB_CAP = 8;
 function shootBullet(a, o = {}) {
   const P = G.P, w = CLASSES[P.cls].wpn;
   spawnPB({
     a, spd: o.spd || w.speed, life: (o.life || w.life) * rangeMul(P), amp: w.wave ? 14 : 0, ph: o.ph || 0,
     r: o.r || w.size, color: o.color || (P.tempTypeT > 0 ? TYPE_COLORS[P.tempType] : w.color), shape: o.shape || w.shape, pierce: o.pierce || w.pierce || M(P, 'pierce') > 0, spell: o.spell, x: o.x !== undefined ? o.x : P.x, y: o.y !== undefined ? o.y : P.y,
-    left: !(o.pierce || w.pierce) && hasT(P, 'perfurante') ? 2 : 0, rico: o.rico, skip: o.skip, pd: pvpShotDmg(P, o),
+    left: !(o.pierce || w.pierce) && hasT(P, 'perfurante') ? 2 : 0, rico: o.rico, skip: o.skip, bomb: o.bomb, pd: pvpShotDmg(P, o),
   });
 }
 function addCosmetic(s, own) {
@@ -710,7 +715,8 @@ function useAbility() {
       fxAt(P.x, P.y, 200, '#fde68a'); sfx('lvl'); break;
     case 'mago': { // Feitiço: bomba de projéteis no cursor
       const t = aimPoint(P, 380);
-      for (let i = 0; i < 20; i++) shootBullet(i * Math.PI / 10, { x: t.x, y: t.y, spd: 330, life: 0.55, r: 6, color: TYPE_COLORS[tp], shape: 'orb', spell: 1 });
+      const bomb = G.bombId = (G.bombId || 0) + 1;
+      for (let i = 0; i < 20; i++) shootBullet(i * Math.PI / 10, { x: t.x, y: t.y, spd: 330, life: 0.55, r: 6, color: TYPE_COLORS[tp], shape: 'orb', spell: 1, bomb });
       fxAt(t.x, t.y, 50, TYPE_COLORS[tp]); sfx('boom'); break;
     }
     case 'evocador': { // Cetro Relampejante (Feiticeiro): raio em cadeia
@@ -860,6 +866,7 @@ function playerHit(e, b) {
       : roll(w.dice[0] * (crit ? 2 : 1), w.dice[1]) + A(P, 'POD') + w.bonus + M(P, 'dmg');
   if (P.furia > 0) dmg += d(6);
   if (P.seloT > 0) dmg += d(6);
+  if (infernal(P)) dmg = Math.round(dmg * 1.2);
   if (P.tempTypeT > 0) dmg += d(4);
   if (hasS(P, 'guerra')) dmg += d(6);
   if (crit && P.cls === 'ladino') dmg += roll(Math.ceil(P.lvl / 4), 6);
@@ -905,6 +912,7 @@ function enemyAttack(b) {
   if (graze) eff *= 0.34;
   if (P.furia > 0 && hasS(P, 'barbaro')) eff *= 0.5;
   if (P.seloT > 0) eff *= 0.75;
+  if (P.race === 'draconato') eff *= 0.9; // escamas
   let dmg = Math.max(1, Math.round((roll(b.dice[0] * (crit ? 2 : 1), b.dice[1]) + b.dice[2]) * eff));
   if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (!dmg) { text(P.x, P.y - 34, 'Escudo!', '#93c5fd', 12); return; } }
   P.hp -= dmg; P.sinceHit = 0;
@@ -1199,6 +1207,7 @@ function update(dt) {
       const rr = e.r + b.r;
       if (Math.abs(e.x - b.x) > rr || Math.abs(e.y - b.y) > rr || (e.x - b.x) ** 2 + (e.y - b.y) ** 2 > rr * rr) continue;
       if (b.hit) { if (b.hit.has(e.id)) continue; b.hit.add(e.id); }
+      if (b.bomb) { if (e.bombId !== b.bomb) { e.bombId = b.bomb; e.bombC = 0; } if (e.bombC >= BOMB_CAP) continue; e.bombC++; }
       if (G.P) playerHit(e, b);
       if (G.P && !b.ally && !b.rico && !b.spell && hasT(G.P, 'ricochete')) {
         const nx = G.enemies.filter(o => o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 260).sort((p, q) => Math.hypot(p.x - e.x, p.y - e.y) - Math.hypot(q.x - e.x, q.y - e.y))[0];
@@ -2008,6 +2017,9 @@ async function startGame(saved) {
     // saves antigos: atributos e pontos guardados passam para a escala nova (o dobro, mesmo poder)
     if (!saved.attrV2) { for (const k of ATTRS) P.attrs[k] = Math.min(ATTR_MAX, (P.attrs[k] || 0) * 2); P.points = (P.points || 0) * 2; }
     P.attrV2 = 1;
+    // Humano agora ganha +1 ponto a cada 10 níveis: saves antigos recebem os pontos que já teriam
+    if (!saved.humV2 && P.race === 'humano') P.points += Math.floor(P.lvl / 10);
+    P.humV2 = 1;
     P.petCap = Math.max(petCap(P), P.pets.length); // saves antigos tinham 4 vagas: ninguém perde companheiro
     if (!RACES[P.race]) P.race = 'humano';
     if (!TYPE_PT[P.ptype]) P.ptype = 'normal';

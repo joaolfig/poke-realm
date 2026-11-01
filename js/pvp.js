@@ -93,7 +93,8 @@ function pvpShotDmg(P, o) {
   const base = sp === 1 ? roll(1 + Math.floor(P.lvl / 6), 6) + A(P, 'POD') / 2
     : sp ? roll(2 + Math.floor(P.lvl / 4), 8) + A(P, 'POD')
       : roll(w.dice[0], w.dice[1]) + A(P, 'POD') + w.bonus + M(P, 'dmg');
-  let dmg = Math.max(1, Math.round(base * 0.6));
+  // a Bomba Arcana (spell 1) solta 20 projéteis no mesmo ponto: cada um vale bem menos contra jogadores
+  let dmg = Math.max(1, Math.round(base * (sp === 1 ? 0.25 : 0.6) * (infernal(P) ? 1.2 : 1)));
   if (P.nextCrit && !sp) { dmg *= 2; P.nextCrit = false; } // Manto do Ladino: o próximo ataque é crítico também no rival
   return dmg;
 }
@@ -101,7 +102,7 @@ function pvpHitCheck(b) {
   const P = G.P;
   if (!P || !P.pvp || !b.dmg || b.own === NET.myId || P.pvp.t > 0 || P.dodgeT > 0) return false;
   if ((b.x - P.x) ** 2 + (b.y - P.y) ** 2 > (b.r + 10) ** 2) return false;
-  let dmg = Math.round(b.dmg * clamp(1 - (AC(P) - 12) * 0.03, 0.5, 1));
+  let dmg = Math.round(b.dmg * clamp(1 - (AC(P) - 12) * 0.03, 0.5, 1) * (P.race === 'draconato' ? 0.9 : 1));
   if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; }
   if (dmg > 0) {
     P.hp -= dmg; P.sinceHit = 0;
