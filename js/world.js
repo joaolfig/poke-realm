@@ -9,6 +9,7 @@ const NPCS = [
   { id: 'torre', nome: 'Guardião da Torre', icon: '🗼', x: 0, y: 150, t2: 1, spr: { h: '#e5e7eb', b: '#6d28d9', d: '#2e1065' }, fala: '' },
   { id: 'pc', nome: 'Banco Pokémon', icon: '💻', x: -62, y: -50, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
   { id: 'dex', nome: 'Pesquisadora Íris', icon: '📖', x: 60, y: 205, spr: { h: '#7c2d12', b: '#f8fafc', d: '#0f766e' }, fala: '' },
+  { id: 'grupo', nome: 'Capitã Vera', icon: '👥', x: 150, y: 30, spr: { h: '#1e3a8a', b: '#0ea5e9', d: '#0c4a6e' }, fala: '' },
   { id: 'templo', nome: 'Sacerdotisa Aurora', icon: '⛪', x: -150, y: 30, t2: 1, spr: { h: '#fde68a', b: '#f8fafc', d: '#ca8a04' }, fala: '' },
   { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, t2: 1, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '' },
 ];
@@ -31,7 +32,7 @@ function rebuildTownNPCs() {
   NPCS2.length = 0;
   const t = TOWNS[1];
   if (!t) return;
-  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex', 'pc', 'torre', 'gundo', 'templo'].includes(n.id))
+  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex', 'pc', 'torre', 'gundo', 'templo', 'grupo'].includes(n.id))
     NPCS2.push({ ...n, x: n.x + t.x, y: n.y + t.y, town: 1, nome: n.id === 'sildo' ? `Assistente ${REGION.guia.nome.split(' ').pop()}` : n.nome, show: n.id === 'gundo' ? n.show : null });
 }
 const allNPCs = () => NPCS.filter(n => !n.t2).concat(NPCS2); // o guardião da torre só existe na 2ª cidade
@@ -55,7 +56,7 @@ function drawNPC(n, ox, oy) {
   outlined(`${n.icon} ${n.nome}`, x, y - 26);
   const P = G.P;
   const cq = P && QGIVERS[n.id] && (P.quests || {})[n.id];
-  if (P && QGIVERS[n.id] && (!cq || cq.done)) {
+  if (P && QGIVERS[n.id] && (cq ? cq.done : n.id === 'grupo' ? G.remotes.size : !soloQuest(P))) {
     ctx.font = 'bold 20px Barlow Semi Condensed, system-ui'; ctx.fillStyle = cq && cq.done ? '#4ade80' : '#facc15';
     outlined(cq && cq.done ? '?' : '!', x, y - 40 + Math.sin(G.time * 5) * 3);
   }
@@ -184,7 +185,11 @@ $('npc').addEventListener('click', ev => {
       G.toasts.push({ text: `🔨 ${it.name} agora é +${it.upg}!`, color: '#fdba74', t: 2.5 });
       sfx('lvl');
     }
-  } else if (act === 'accept') { const q = P.qOffers[arg][+arg2]; P.quests[arg] = q; P.qOffers[arg] = null; P.recentQ = [q.k, ...(P.recentQ || [])].slice(0, 4); sfx('pick'); }
+  } else if (act === 'accept') {
+    if (arg !== 'grupo' && soloQuest(P)) return;
+    const q = P.qOffers[arg][+arg2]; P.quests[arg] = q; P.qOffers[arg] = null; P.recentQ = [q.k, ...(P.recentQ || [])].slice(0, 4); sfx('pick');
+    if (q.gid) emitEvent({ t: 'gq', acc: P.name, desc: q.desc.replace(/<div[\s\S]*$/, '').replace(/<[^>]+>/g, '') }); // avisa o grupo para pegar o mesmo
+  }
   else if (act === 'abandon') { delete P.quests[arg]; }
   else if (act === 'claim') claimQuest(P, arg);
   else if (act === 'story') storyAct(P, arg);
@@ -275,12 +280,16 @@ const QGIVERS = {
   cura: ['captura', 'pegar', 'pegar', 'pegaralfa', 'noturno', 'bolaboa'],
   dex: ['pesquisa', 'pesquisa', 'pegar', 'explorar'],
   loja: ['coleta', 'coleta', 'especie', 'tipo'],
+  grupo: ['duoAlfa', 'duoCaca', 'duoTipo', 'duoEspecie', 'duoCaptura'], // Capitã Vera: só contratos de grupo (com outros jogadores na sala)
 };
+// NPC do contrato individual ativo (só pode haver um; o de grupo fica à parte)
+const soloQuest = P => Object.keys(P.quests || {}).find(g => g !== 'grupo' && P.quests[g]);
 const giverName = g => (NPCS.find(n => n.id === g) || {}).nome || 'quem te contratou';
 function renderContracts(P, g) {
   P.quests = P.quests || {}; P.qOffers = P.qOffers || {};
   const q = P.quests[g];
-  let h = '<h4>Contratos</h4>';
+  let h = g === 'grupo' ? '<h4>Contratos de grupo</h4>' : '<h4>Contratos</h4>';
+  if (g === 'grupo' && !q && !G.remotes.size) return h + '<p class="fala">"Meu mural é só para quem viaja em grupo. Quando houver outros heróis na sua sala, eu tenho serviço para vocês: o mesmo contrato para todos, e o que cada um faz conta para o grupo."</p>';
   if (q) {
     h += `<div class="quest cur"><b>${q.desc}</b><div class="qbar"><div style="width:${Math.min(100, q.have / q.need * 100)}%"></div></div>
       <div class="small">${q.have}/${q.need} · Recompensa: ${q.xp} XP, ${q.gold} 🪙${q.bonus ? ', ' + BONUS_NAMES[q.bonus] : ''}</div></div>
@@ -288,9 +297,13 @@ function renderContracts(P, g) {
   } else {
     // as ofertas acompanham o jogador: refeitas quando ele muda de faixa de nível, ganha acesso a outra zona ou troca de região
     const of = P.qOffers[g];
-    if (!of || of.some(o => o.zt !== questZone(P) || o.reg !== REGION_ID)) P.qOffers[g] = genQuests(P, g);
+    if (!of || of.some(o => !o.gid && (o.zt !== questZone(P) || o.reg !== REGION_ID))) P.qOffers[g] = genQuests(P, g);
+    groupOffer(P, g);
+    // um contrato individual (em qualquer NPC) e um de grupo ao mesmo tempo
+    const busy = g !== 'grupo' && soloQuest(P);
+    if (busy) h += `<div class="small" style="color:#fca5a5">Você já tem um contrato individual com ${giverName(busy)}. Termine ou abandone antes de pegar outro (o de grupo, da Capitã Vera, pode ficar junto).</div>`;
     h += P.qOffers[g].map((o, i) => `<div class="quest"><b>${o.desc}</b><div class="small">Recompensa: ${o.xp} XP, ${o.gold} 🪙${o.bonus ? ', ' + BONUS_NAMES[o.bonus] : ''}</div>
-      <button data-act="accept:${g}:${i}">Aceitar</button></div>`).join('');
+      <button data-act="accept:${g}:${i}" ${busy ? 'disabled' : ''}>Aceitar</button></div>`).join('');
   }
   return h;
 }
@@ -306,9 +319,6 @@ function genQuests(P, g = 'guilda') {
   const picked = [];
   for (const k of [...kinds].sort(() => Math.random() - 0.5)) if (!picked.includes(k) && picked.length < 3) picked.push(k);
   while (picked.length < 3) picked.push(pick(kinds));
-  // contratos de dupla: só aparecem com outro jogador na sala
-  if (g === 'guilda' && G.remotes.size) picked[2] = pick(['duoAlfa', 'duoCaca', 'duoTipo', 'duoEspecie']);
-  if (g === 'cura' && G.remotes.size) picked[2] = 'duoCaptura';
   // contratos de grupo crescem com o número de jogadores na sala (2 a 4): ~0,8× o individual por jogador
   const np = clamp(1 + G.remotes.size, 2, 4), grp = np > 2 ? 'grupo' : 'dupla';
   return picked.map((k, idx) => {
@@ -389,7 +399,9 @@ function genQuests(P, g = 'guilda') {
     }
     q.desc = `<span class="qtier t${idx}">${T.n}</span> ${q.desc}<div class="small"><i>${who}: "${why}."</i></div>`;
     // dupla: dá mais trabalho e rende 30% a mais de XP que o contrato individual equivalente (o ouro é o mesmo)
-    q.xp = Math.round(xpNeed(P.lvl) * (0.1 + 0.06 * diff) * T.r * (k.startsWith('duo') ? 1.3 : 1));
+    q.xpk = (0.1 + 0.06 * diff) * T.r * (k.startsWith('duo') ? 1.3 : 1);
+    q.xp = Math.round(xpNeed(P.lvl) * q.xpk);
+    if (k.startsWith('duo')) q.gid = `${NET.myId || 'eu'}_${Date.now()}_${g}`;
     q.gold = Math.round((30 + z * 25) * diff * T.r);
     q.bonus = idx === 2 ? (Math.random() < 0.5 ? 'statpot' : 'item') : idx === 1 ? pick(['stone', 'item', 'ball']) : pick(['ball', 'stone', null]);
     return q;
@@ -479,6 +491,7 @@ function claimQuest(P, g) {
   }
   G.toasts.push({ text: `🎁 Recompensa: +${q.xp} XP, +${q.gold} 🪙`, color: '#facc15', t: 3 });
   delete P.quests[g];
+  if (g === 'grupo') { G.groupBoard = null; emitEvent({ t: 'gq', reset: 1 }); } // o mural é refeito para a sala
   P.qOffers[g] = genQuests(P, g);
   gainXP(q.xp, true);
 }
@@ -1119,4 +1132,23 @@ function drawNightStuff(ox, oy) {
     gr.addColorStop(0, `rgba(240,253,255,${a})`); gr.addColorStop(0.4, `rgba(103,232,249,${a * 0.7})`); gr.addColorStop(1, 'rgba(103,232,249,0)');
     ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, 16, 0, 7); ctx.fill();
   }
+}
+
+/* ---------- Mural de grupo (Capitã Vera) ----------
+ * Um mural só para a sala inteira: todos veem as MESMAS 3 ofertas (evento 'gq' com o mural), então qualquer um
+ * pode pegar o mesmo contrato e o progresso de todos soma. O XP é recalculado pelo nível de cada um (q.xpk).
+ * Quando alguém recebe a recompensa, o mural é refeito para a sala.
+ */
+const groupStrip = q => { const c = { ...q }; delete c.have; delete c.done; delete c.seen; return c; };
+function groupOffer(P, g) {
+  if (g !== 'grupo' || !G.remotes.size) return;
+  const b = G.groupBoard;
+  if (b && b.reg === REGION_ID) P.qOffers.grupo = b.list.map(o => ({ ...o, have: 0, done: false, seen: [], xp: Math.round(xpNeed(P.lvl) * o.xpk) }));
+  else { G.groupBoard = { reg: REGION_ID, list: P.qOffers.grupo.map(groupStrip) }; emitEvent({ t: 'gq', board: G.groupBoard }); }
+}
+function groupQEvent(m, local) {
+  const P = G.P;
+  if (m.board) { if (!local) G.groupBoard = m.board; return; }
+  if (m.reset) { if (!local) G.groupBoard = null; return; }
+  if (!local && m.acc && P && !(P.quests || {}).grupo) G.toasts.push({ text: `👥 ${m.acc} aceitou um contrato de grupo: "${m.desc}". Fale com a Capitã Vera para pegar o mesmo!`, color: '#93c5fd', t: 7, big: 1 });
 }

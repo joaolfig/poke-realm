@@ -1226,6 +1226,7 @@ function handleEvent(m, local) {
     case 'decoy': G.decoys.push({ x: m.x, y: m.y, t: m.dur, cls: m.cls, ptype: m.ptype }); break;
     case 'tele': teleEvent(m); break;
     case 'moonch': moonChestEvent(m); break;
+    case 'gq': groupQEvent(m, local); break;
     case 'cap2': { const P = G.P; if (!local && P && Math.hypot(P.x - m.x, P.y - m.y) < DUO_R && duoNear(P)) questProgress('duoCaptura', { types: m.types }); break; }
     case 'met': G.meteors.push({ x: m.x, y: m.y, r: m.r, t: m.delay, max: m.delay, zone: m.zone || 1 }); break;
     case 'evdone': onEventDone(m); break;
