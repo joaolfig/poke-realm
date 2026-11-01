@@ -254,6 +254,9 @@ const QPEOPLE = {
   pesquisa: [['Pesquisadora Sofia', 'estou catalogando as espécies da região'], ['Estudioso Ivo', 'quero comparar espécies diferentes']],
   noturno: [['Astrônoma Lua', 'alguns Pokémon só mostram sua verdadeira natureza à noite'], ['Vigia Noel', 'quero companheiros para a ronda da madrugada']],
   bolaboa: [['Vendedora de Poké Balls', 'preciso de relatos de campo das minhas bolas novas'], ['Colecionador Ivo', 'quero ver as bolas especiais em ação']],
+  duoTipo: [['Guarda Tomé', 'são muitos: um vigia de cada lado da estrada'], ['Fazendeira Lia', 'peguem um de cada ponta da plantação']],
+  duoEspecie: [['Mineiro Brás', 'eles estão em toda parte: dividam a área'], ['Pescadora Marina', 'um em cada margem do rio, por favor']],
+  duoCaptura: [['Criador Otto', 'meu rancho precisa de um casal de cada'], ['Pesquisadora Sofia', 'quero amostras de dois pontos diferentes']],
   duoAlfa: [['Mestre da Guilda', 'esses Alfas andam em bando: um herói sozinho não segura'], ['Caçadora Rita', 'preciso de uma dupla afinada']],
   duoCaca: [['Xerife Duarte', 'esse Procurado é forte demais para um só'], ['Mestre da Guilda', 'só aceito esse serviço de quem tem parceiro']],
   pegar: [['Pesquisadora Sofia', 'preciso de um exemplar para a minha pesquisa'], ['Menino Pedrinho', 'sempre sonhei em ter um'], ['Criador Otto', 'falta essa espécie no meu rancho'], ['Colecionador Ivo', 'é a peça que falta na minha coleção']],
@@ -303,7 +306,11 @@ function genQuests(P, g = 'guilda') {
   const picked = [];
   for (const k of [...kinds].sort(() => Math.random() - 0.5)) if (!picked.includes(k) && picked.length < 3) picked.push(k);
   while (picked.length < 3) picked.push(pick(kinds));
-  if (g === 'guilda' && G.remotes.size) picked[2] = pick(['duoAlfa', 'duoCaca']); // contratos de dupla: só aparecem com outro jogador na sala
+  // contratos de dupla: só aparecem com outro jogador na sala
+  if (g === 'guilda' && G.remotes.size) picked[2] = pick(['duoAlfa', 'duoCaca', 'duoTipo', 'duoEspecie']);
+  if (g === 'cura' && G.remotes.size) picked[2] = 'duoCaptura';
+  // contratos de grupo crescem com o número de jogadores na sala (2 a 4): ~0,8× o individual por jogador
+  const np = clamp(1 + G.remotes.size, 2, 4), grp = np > 2 ? 'grupo' : 'dupla';
   return picked.map((k, idx) => {
     const T = QTIERS[idx], q = { k, have: 0, done: false, tier: idx, zt: z, zone: z, reg: REGION_ID };
     const need = base => Math.max(1, Math.round(base * T.m));
@@ -334,15 +341,24 @@ function genQuests(P, g = 'guilda') {
       for (let t = 0; t < 10 && Math.hypot(pt[0], pt[1]) < 900; t++) pt = randomZonePoint(z);
       q.x = Math.round(pt[0]); q.y = Math.round(pt[1]);
       q.desc = `Caçada: derrote ${POKE[q.pid] ? POKE[q.pid].name : 'o Pokémon'} Procurado (🎯 no mapa)`;
+    } else if (k === 'duoTipo') {
+      const p = POKE[pick(pool)]; q.type = p ? mainType(p) : 'normal'; q.need = need((10 + z * 3) * 0.8 * np); diff = 1;
+      q.desc = `👥 Em ${grp}: derrotem ${q.need} Pokémon do tipo ${TYPE_PT[q.type]} (cada um pode caçar num canto: vale o abate de todos, até ~50 m de distância)`;
+    } else if (k === 'duoEspecie') {
+      q.pid = pick(pool); q.need = need((6 + z * 2) * 0.8 * np); diff = 1.2;
+      q.desc = `👥 Em ${grp}: derrotem ${q.need} ${POKE[q.pid] ? POKE[q.pid].name : 'Pokémon'} (vale o abate de todos, até ~50 m de distância)`;
+    } else if (k === 'duoCaptura') {
+      const p = POKE[pick(pool)]; q.type = p ? mainType(p) : 'normal'; q.need = need((1 + Math.floor(z / 3)) * 0.8 * np + 0.5); diff = 1.6;
+      q.desc = `👥 Em ${grp}: capturem ${q.need} Pokémon do tipo ${TYPE_PT[q.type]} (vale a captura de todos, até ~50 m de distância)`;
     } else if (k === 'duoAlfa') {
-      q.need = need(3 + z); diff = 2; // ~1,6× mais Alfas que o contrato individual
-      q.desc = `👥 Em dupla: derrotem ${q.need} Pokémon Alfa (só conta com outro jogador perto de você)`;
+      q.need = need((1 + Math.floor(z / 2)) * 0.8 * np + 1); diff = 2;
+      q.desc = `👥 Em ${grp}: derrotem ${q.need} Pokémon Alfa (só conta com outro jogador perto de você)`;
     } else if (k === 'duoCaca') {
-      q.pid = pick(pool); q.need = 1; q.duo = 1; diff = 2.4; // igual à caçada comum
+      q.pid = pick(pool); q.need = 1; q.duo = np; diff = 2.4; // igual à caçada comum
       let pt = randomZonePoint(z);
       for (let t = 0; t < 10 && Math.hypot(pt[0], pt[1]) < 900; t++) pt = randomZonePoint(z);
       q.x = Math.round(pt[0]); q.y = Math.round(pt[1]);
-      q.desc = `👥 Caçada em dupla: ${POKE[q.pid] ? POKE[q.pid].name : 'o Pokémon'} Procurado gigante (🎯 no mapa; só aparece com 2 jogadores juntos)`;
+      q.desc = `👥 Caçada em ${grp}: ${POKE[q.pid] ? POKE[q.pid].name : 'o Pokémon'} Procurado gigante (🎯 no mapa; só aparece com 2 jogadores juntos)`;
     } else if (k === 'especie') {
       q.pid = pick(pool); q.need = need(6 + z * 2); diff = 1.2;
       if (POKE[q.pid] && POKE[q.pid].types.includes('water')) [who, why] = ['Pescadora Marina', 'espantaram todos os peixes'];
@@ -373,7 +389,7 @@ function genQuests(P, g = 'guilda') {
     }
     q.desc = `<span class="qtier t${idx}">${T.n}</span> ${q.desc}<div class="small"><i>${who}: "${why}."</i></div>`;
     // dupla: dá mais trabalho e rende 30% a mais de XP que o contrato individual equivalente (o ouro é o mesmo)
-    q.xp = Math.round(xpNeed(P.lvl) * (0.1 + 0.06 * diff) * T.r * (k === 'duoAlfa' || k === 'duoCaca' ? 1.3 : 1));
+    q.xp = Math.round(xpNeed(P.lvl) * (0.1 + 0.06 * diff) * T.r * (k.startsWith('duo') ? 1.3 : 1));
     q.gold = Math.round((30 + z * 25) * diff * T.r);
     q.bonus = idx === 2 ? (Math.random() < 0.5 ? 'statpot' : 'item') : idx === 1 ? pick(['stone', 'item', 'ball']) : pick(['ball', 'stone', null]);
     return q;
@@ -387,10 +403,10 @@ function questProgress(k, info = {}) {
 }
 function questStep(P, g, q, k, info) {
   if (!q || q.done || q.k !== k) return;
-  if ((k === 'tipo' || k === 'coleta') && !(info.types || []).includes(q.type)) return;
+  if ((k === 'tipo' || k === 'coleta' || k === 'duoTipo' || k === 'duoCaptura') && !(info.types || []).includes(q.type)) return;
   if (k === 'captura' && (!(info.types || []).includes(q.type) || (info.zone || 0) < q.zone)) return;
   if (k === 'zona' && info.zone !== q.zone) return;
-  if ((k === 'caca' || k === 'duoCaca' || k === 'especie' || k === 'pegar') && info.pid !== q.pid) return;
+  if ((k === 'caca' || k === 'duoCaca' || k === 'especie' || k === 'duoEspecie' || k === 'pegar') && info.pid !== q.pid) return;
   if (k === 'duoAlfa' && !info.duo) return;
   if (k === 'explorar' && info.id !== q.lm) return;
   if ((k === 'noturno' || k === 'bolaboa') && (info.zone || 0) < q.zone) return;
@@ -432,7 +448,7 @@ function bountyNear(P, q) {
     if (G.time - (G.duoWarn || -99) > 20) { G.duoWarn = G.time; G.toasts.push({ text: '👥 O Procurado só aparece quando você chega com outro jogador.', color: '#fca5a5', t: 3 }); }
     return;
   }
-  const m = { pid: q.pid, zone: q.zone, x: q.x, y: q.y, tier: q.tier, duo: q.duo ? 1 : 0 };
+  const m = { pid: q.pid, zone: q.zone, x: q.x, y: q.y, tier: q.tier, duo: q.duo || 0 };
   if (isHost()) hostBounty(m); else if (NET.host && NET.host.open) NET.host.send({ t: 'bounty', ...m });
 }
 function hostBounty(m) {
@@ -441,7 +457,7 @@ function hostBounty(m) {
   if (G.enemies.some(e => e.bountyT !== undefined && e.pid === m.pid && Math.hypot(e.x - m.x, e.y - m.y) < 1200)) return;
   const b = hostSpawn(m.pid, m.zone, 1, m.x, m.y);
   bountyMod(b, m.tier || 0);
-  if (m.duo) { b.maxHp = Math.round(b.maxHp * 2.2); b.hp = b.maxHp; b.name = `Procurado gigante: ${b.p.name}`; for (let i = 0; i < 3; i++) hostSpawn(pick(ZONE_POOLS[m.zone]), m.zone, 1, m.x + rand(-160, 160), m.y + rand(-160, 160)); } // escolta de Alfas
+  if (m.duo) { b.maxHp = Math.round(b.maxHp * 1.1 * m.duo); b.hp = b.maxHp; b.name = `Procurado gigante: ${b.p.name}`; for (let i = 0; i < m.duo + 1; i++) hostSpawn(pick(ZONE_POOLS[m.zone]), m.zone, 1, m.x + rand(-160, 160), m.y + rand(-160, 160)); } // escolta de Alfas
   b.bkey = key;
   for (let i = 0; i < 2 + (m.tier || 0); i++) hostSpawn(pick(ZONE_POOLS[m.zone]), m.zone, 0, m.x + rand(-120, 120), m.y + rand(-120, 120));
   emitEvent({ t: 'toast', text: `🎯 ${b.name} apareceu!`, color: '#fca5a5', big: 1 });
@@ -1022,7 +1038,7 @@ function nightHost(ev, dt) {
   if (ev.moonT <= 0 && !ev.moonDone) {
     ev.moonDone = 1;
     const pl = pick(pls), s = evSpot(pl);
-    const pool = s && [...NIGHT_POOL, ...(ZONE_POOLS[s.z] || [])].filter(id => POKE[id]);
+    const pool = s && (REGION.moon || NIGHT_POOL).filter(id => POKE[id]);
     if (!s || !pool.length) return;
     const e = hostSpawn(pick(pool), s.z, 1, s.x, s.y);
     moonMod(e);

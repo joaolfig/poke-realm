@@ -470,6 +470,7 @@ function capture(e, rollTxt, k = 'poke') {
   if (isHost()) hostRemoveCaptured(e.id);
   else if (NET.host && NET.host.open) NET.host.send({ t: 'cap', id: e.id });
   questProgress('captura', { types: e.p.types, zone: e.zone });
+  if (G.remotes.size) { if (duoNear(P)) questProgress('duoCaptura', { types: e.p.types }); emitEvent({ t: 'cap2', x: Math.round(e.x), y: Math.round(e.y), types: e.p.types }); } // conta para o parceiro também
   questProgress('pegar', { pid: e.pid });
   if (e.alfa) questProgress('pegaralfa');
   questProgress('pesquisa', { pid: e.pid, zone: e.zone });

@@ -593,6 +593,12 @@ function onKill(m) {
   }
   if (m.kind === 2) G.toasts.push({ text: `🏆 ${m.name} foi derrotado!`, color: '#facc15', t: 4, big: 1 });
   const P = G.P;
+  // contratos de dupla: vale o abate de qualquer um dos dois, se o parceiro estiver a uma distância média de você
+  if (P && G.remotes.size && Math.hypot(P.x - m.x, P.y - m.y) < DUO_R && duoNear(P)) {
+    const pp = POKE[m.pid];
+    questProgress('duoTipo', { types: pp ? pp.types : [m.type] });
+    questProgress('duoEspecie', { pid: m.pid });
+  }
   if (!P || Math.hypot(P.x - m.x, P.y - m.y) > 900) return;
   // ouro proporcional ao dano que cada um causou. XP: metade dividida igualmente entre os jogadores
   // perto do abate e metade proporcional ao dano (o total por abate continua o mesmo)
@@ -1220,6 +1226,7 @@ function handleEvent(m, local) {
     case 'decoy': G.decoys.push({ x: m.x, y: m.y, t: m.dur, cls: m.cls, ptype: m.ptype }); break;
     case 'tele': teleEvent(m); break;
     case 'moonch': moonChestEvent(m); break;
+    case 'cap2': { const P = G.P; if (!local && P && Math.hypot(P.x - m.x, P.y - m.y) < DUO_R && duoNear(P)) questProgress('duoCaptura', { types: m.types }); break; }
     case 'met': G.meteors.push({ x: m.x, y: m.y, r: m.r, t: m.delay, max: m.delay, zone: m.zone || 1 }); break;
     case 'evdone': onEventDone(m); break;
   }
@@ -2596,3 +2603,7 @@ function useAbra() {
   G.toasts.push({ text: `🌀 O Talismã de Abra te teletransportou para ${townName(t)}! (restam ${P.bag.abra})`, color: '#c4b5fd', t: 4 });
   sfx('pot'); G.dirty = true; saveGame();
 }
+
+// contratos de dupla: distância média entre os parceiros (~50 m)
+const DUO_R = 1600;
+const duoNear = P => [...G.remotes.values()].some(r => !r.dead && r.name && Math.hypot(r.tx - P.x, r.ty - P.y) < DUO_R);
