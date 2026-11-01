@@ -1586,7 +1586,8 @@ function render() {
     ctx.globalAlpha = 1;
   }
   // escuridão: noite, névoa das Terras Sombrias (Dissipar Névoa) e masmorras escuras (Flash)
-  const flash = G.P && petKnows(G.P, 'flash');
+  // Flash do companheiro, ou visão noturna de Vampiros e Lobisomens: enxergam no escuro como com Flash
+  const flash = G.P && (petKnows(G.P, 'flash') || !!G.P.lin);
   if (inDg) {
     const dg = dungeonAt(cam.x);
     if (dg && (DARK_THEMES.includes(dg.theme) || dg.mod === 'escuro' || (dg.mods && dg.mods.includes('escuro')))) drawNight(ox, oy, flash ? 460 : 175, 'rgba(0,0,0,0.88)');
