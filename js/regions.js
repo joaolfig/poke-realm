@@ -310,7 +310,6 @@ function setRegion(id) {
   R.gyms.forEach((g, i) => {
     const st = GYM_STYLE[g.type] || GYM_STYLE.normal, key = 'gym' + (i + 1);
     THEMES[key] = { nome: g.nome, floor: [st[0], st[1]], wall: st[2], top: st[3], accent: TYPE_COLORS[g.type], pool: g.pool, boss: g.boss, story: i + 1, gym: i + 1, zmin: GYM_ZONE[i] };
-    TYPE_THEME[g.type] = key; // portais de Alfa abrem o ginásio do mesmo tipo
     if (g.type === 'ghost' || g.type === 'dark') DARK_THEMES.push(key);
   });
   const fs = GYM_STYLE[R.final.type] || GYM_STYLE.dark;

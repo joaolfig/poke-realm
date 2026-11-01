@@ -21,19 +21,39 @@ function dungeonAt(x) {
   return G.dungeons.get(Math.floor((x - DG_BASE + 10000) / DG_SPACING)) || null;
 }
 
+// Ginásios (e o confronto final): a etapa da história (1-9) define o tamanho e a dificuldade
+const gymStage = theme => (THEMES[theme] && THEMES[theme].story) || 0;
+const gymFights = gs => clamp(2 + Math.floor((gs - 1) / 2), 2, 5); // salas antes do líder: 2 no 1º, 5 no 8º e no final
+// plano das salas (só o host): algumas com chefes do time do líder, outras com bandos do ginásio, ordem sorteada
+function gymPlan(gs) {
+  const n = gymFights(gs), bosses = clamp(1 + Math.floor(gs / 3), 1, n - 1);
+  const plan = [...Array(bosses).fill('chefe'), ...Array(n - bosses).fill(0).map(() => (Math.random() < 0.35 ? 'misto' : 'bando'))];
+  return plan.sort(() => Math.random() - 0.5);
+}
+// Pokémon do time do líder como chefe de sala: forte, mas abaixo do Pokémon principal do líder
+function gymMini(e, gs) {
+  const s = STORY[gs];
+  e.mini = gs; e.boss = true;
+  e.name = `${s ? s.nome : 'Líder'} (${e.p.name})`;
+  e.maxHp = Math.round(e.maxHp * (1.8 + 0.12 * gs)); e.hp = e.maxHp;
+  e.scale *= 1.2; e.w *= 1.2; e.h *= 1.2; e.r *= 1.2;
+  e.speed *= 0.85;
+  e.cdBoss = Math.max(1.1, 1.75 - gs * 0.07);
+}
 function genDungeon(id, theme, seed, zone) {
   const R = mulberry32(seed), grid = new Uint8Array(DG_W * DG_H), rooms = [];
   const carve = (x, y, w, h) => {
     for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (i > 0 && j > 0 && i < DG_W - 1 && j < DG_H - 1) grid[j * DG_W + i] = 1;
   };
   let cx = 3;
-  for (const kind of ['start', 'fight', 'fight', 'fight', 'boss']) {
-    const w = kind === 'start' ? 10 : kind === 'boss' ? 24 : 14 + Math.floor(R() * 6);
-    const h = kind === 'start' ? 10 : kind === 'boss' ? 22 : 12 + Math.floor(R() * 6);
+  const gs = gymStage(theme), kinds = ['start', ...Array(gs ? gymFights(gs) : 3).fill('fight'), 'boss'];
+  for (const kind of kinds) {
+    const w = kind === 'start' ? 10 : kind === 'boss' ? 24 : gs ? 16 + Math.floor(R() * 4) : 14 + Math.floor(R() * 6);
+    const h = kind === 'start' ? 10 : kind === 'boss' ? 22 : gs ? 15 + Math.floor(R() * 5) : 12 + Math.floor(R() * 6);
     const y = clamp(Math.floor(DG_H / 2 - h / 2 + (R() - 0.5) * 16), 2, DG_H - h - 2);
     rooms.push({ x: cx, y, w, h, kind, state: 0 });
     carve(cx, y, w, h);
-    cx += w + 6 + Math.floor(R() * 5);
+    cx += w + (gs ? 6 + Math.floor(R() * 3) : 6 + Math.floor(R() * 5));
   }
   // corredores em L entre salas consecutivas
   for (let i = 0; i < rooms.length - 1; i++) {
@@ -84,6 +104,8 @@ function createDungeon(x, y, type, zone, o = {}) {
   const id = ++G.dgNext;
   const dg = genDungeon(id, theme, randi(1, 2e9), clamp(Math.max(zone, THEMES[theme].zmin || 1), 1, 5));
   dg.ent = { x: Math.round(x), y: Math.round(y) };
+  const gs = gymStage(theme);
+  if (gs) { dg.plan = gymPlan(gs); dg.used = []; }
   G.dungeons.set(id, dg);
   G.portals.push({ id: ++G.poNext, x: Math.round(x), y: Math.round(y), theme, ttl: o.ttl || 60, dg: id, exit: 0 });
   if (!o.quiet) emitEvent({ t: 'toast', text: `🌀 Um portal para ${THEMES[theme].nome} se abriu! (60s)`, color: THEMES[theme].accent });
@@ -105,6 +127,24 @@ function spawnRoom(dg, r) {
       hostSpawn(pick(pool.length ? pool : fallback), dg.zone, 0, p.x, p.y).dg = dg.id;
     }
     emitEvent({ t: 'toast', text: `⚔ ${b.name} guarda o fim de ${th.nome}!`, color: th.accent, big: 1 });
+  } else if (dg.plan) {
+    // sala de ginásio: chefes do time do líder, bandos do ginásio ou os dois
+    const gs = gymStage(dg.theme), idx = dg.rooms.filter(x => x.kind === 'fight').indexOf(r), kind = dg.plan[idx] || 'bando';
+    const team = pool.filter(id => id !== th.boss), src = team.length ? team : pool.length ? pool : fallback;
+    const nextMini = () => { let opts = src.filter(id => !dg.used.includes(id)); if (!opts.length) { dg.used = []; opts = src; } const id = pick(opts); dg.used.push(id); return id; };
+    const nB = kind === 'chefe' ? (gs >= 5 && Math.random() < 0.5 ? 2 : 1) : kind === 'misto' ? 1 : 0;
+    const c = roomCenter(dg, r);
+    for (let i = 0; i < nB; i++) {
+      const b = hostSpawn(nextMini(), dg.zone, 1, c.x + (nB > 1 ? (i ? 110 : -110) : 0), c.y - 40);
+      b.dg = dg.id; gymMini(b, gs); b.cd = rand(1.5, 2.5);
+    }
+    const nM = kind === 'bando' ? 3 + dg.zone + Math.floor(gs / 3) : kind === 'misto' ? 2 + Math.floor(gs / 3) : randi(0, 2);
+    for (let i = 0; i < nM; i++) {
+      const p = roomPos(dg, r);
+      const e = hostSpawn(pick(src), dg.zone, 0, p.x, p.y);
+      e.dg = dg.id; e.maxHp = Math.round(e.maxHp * 1.3); e.hp = e.maxHp; e.cd = rand(1.5, 2.8);
+    }
+    if (nB) emitEvent({ t: 'toast', text: `⚔ Pokémon de ${STORY[gs] ? STORY[gs].nome : 'o líder'} bloqueiam o caminho!`, color: th.accent });
   } else {
     const n = 3 + dg.zone + randi(0, 1);
     for (let i = 0; i < n; i++) {

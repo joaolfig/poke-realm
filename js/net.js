@@ -163,7 +163,7 @@ function clientOnData(m) {
         if (!POKE[pid]) continue;
         e = makeEnemy(id, pid, zone, kind, x, y);
         if (inDungeonArea(x)) { e.maxHp = Math.round(e.maxHp * (kind === 3 ? 1.2 : 1.3)); e.hp = e.maxHp; } // mesmo reforço de masmorra do host
-        if (st >= 10) bountyMod(e, st - 10); else if (st) storyMod(e, st);
+        if (st >= 40) gymMini(e, st - 40); else if (st >= 10) bountyMod(e, st - 10); else if (st) storyMod(e, st);
         G.enemies.push(e); G.emap.set(id, e);
       }
       e.tx = x; e.ty = y;
@@ -194,7 +194,7 @@ function clientOnData(m) {
 }
 
 function sendSnapshot() {
-  const e = G.enemies.map(e => [e.id, e.pid, e.kind, e.zone, Math.round(e.x), Math.round(e.y), Math.max(0, Math.round(e.hp)), e.story || (e.bountyT !== undefined ? 10 + e.bountyT : 0), e.st || 0]);
+  const e = G.enemies.map(e => [e.id, e.pid, e.kind, e.zone, Math.round(e.x), Math.round(e.y), Math.max(0, Math.round(e.hp)), e.story || (e.bountyT !== undefined ? 10 + e.bountyT : 0) || (e.mini ? 40 + e.mini : 0), e.st || 0]);
   const pl = [];
   const P = G.P;
   if (P) pl.push([NET.myId, P.name, P.cls, Math.round(P.x), Math.round(P.y), P.face, P.moving ? 1 : 0, P.invis > 0 ? 1 : 0, Math.round(P.hp), maxHP(P), P.lvl, +P.aim.toFixed(2), myType(P), alliesToNet(), mountPid(P), pstNet(P)]);
