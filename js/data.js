@@ -15,7 +15,7 @@ const CLASSES = {
     weapons: ['Espada Curta', 'Espada Longa', 'Espada Bastarda', 'Montante', 'Lâmina Flamejante', 'Vingadora Sagrada', 'Matadora de Dragões'], wicon: '⚔️',
   },
   mago: {
-    nome: 'Mago', icon: '🔮', hd: 6, ac: 10, crit: 20, dieAdj: 0, attrs: { POD: 4, AGI: 2, VIG: 1 },
+    nome: 'Mago', icon: '🔮', hd: 7, ac: 11, crit: 20, dieAdj: 0, attrs: { POD: 4, AGI: 2, VIG: 1 },
     spr: { h: '#312e81', b: '#4338ca', d: '#1e1b4b' },
     desc: 'Frágil, mas com longo alcance e explosões em área.',
     wpn: { shots: 2, speed: 420, life: 1.15, size: 6, rate: 1.55, wave: true, shape: 'orb', color: '#c4b5fd' },
@@ -39,7 +39,7 @@ const CLASSES = {
     weapons: ['Maça Simples', 'Maça de Ferro', 'Martelo Abençoado', 'Maça Radiante', 'Martelo do Alvorecer', 'Maça dos Santos', 'Martelo Divino'], wicon: '🔨',
   },
   patrulheiro: {
-    nome: 'Patrulheiro', icon: '🏹', hd: 10, ac: 13, crit: 20, dieAdj: 0, attrs: { POD: 3, AGI: 3, VIG: 1 },
+    nome: 'Patrulheiro', icon: '🏹', hd: 10, ac: 14, crit: 20, dieAdj: 0, attrs: { POD: 3, AGI: 3, VIG: 1 },
     spr: { h: '#166534', b: '#15803d', d: '#14532d' },
     desc: 'Flechas de longo alcance que atravessam inimigos.',
     wpn: { shots: 1, speed: 520, life: 1.0, size: 5, rate: 2.4, pierce: true, shape: 'arrow', color: '#fbbf24' },

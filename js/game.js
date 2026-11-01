@@ -318,7 +318,7 @@ function enemyStats(pid, zone, kind) {
     speed: (35 + (st.speed || 50) * 0.55) * (legend || dboss ? 0.6 : rare ? 1.5 : 1),
     scale: legend ? 4.2 : dboss ? 3.3 : clamp(1.7 + (p.height || 10) / 35, 1.7, 2.8) * (alfa || rare ? 1.3 : 1),
     xp: Math.round((p.exp || 100) * (0.4 + zone * 0.35) * (1 + (zone - 1) * 0.1) * (legend ? 45 : dboss ? 8 : alfa ? 3 : rare ? 4 : 1)),
-    cdMul: 1 / (1 + (zone - 1) * 0.2 + Math.max(0, zone - 2) * 0.1), // atacam mais rápido nas zonas altas
+    cdMul: (zone <= 2 ? 0.85 : 1) / (1 + (zone - 1) * 0.2 + Math.max(0, zone - 2) * 0.1), // atacam mais rápido nas zonas altas (e um pouco mais no começo)
     cdBoss: legend ? 0.6 : undefined, // lendários atacam mais rápido
   };
 }
@@ -357,7 +357,7 @@ function spawnEB(e, b) {
   G.eb.push({
     x: b[1], y: b[2], a0: b[3], a: b[3], spd: b[4], r: b[5], life: b[6], wave: b[7], home: b[8], t: 0,
     stc: e && (e.alfa || e.boss) ? 1 : 0,
-    color: e ? e.color : '#fff', atk: e ? e.atk : 5, dice: e ? e.dice : [1, 6, 0], src: e ? e.name : 'um Pokémon', type: e ? e.type : 'normal',
+    color: e ? e.color : '#fff', atk: e ? e.atk : 5, dice: e ? e.dice : [1, 6, 0], src: e ? e.name : 'um Pokémon', type: e ? e.type : 'normal', zone: e ? clamp(Math.round(e.zone), 1, 5) : 1,
   });
 }
 
@@ -956,6 +956,8 @@ function enemyAttack(b) {
   const graze = !crit && r + b.atk < AC(P);
   let eff = typeEff(b.type, [pType(P)]);
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
+  if (eff > 1) eff = 1 + (eff - 1) * 0.6; // super efetivo no herói: ×1,6 (duplo ×2,8), para o tipo não decidir sozinho quem sobrevive
+  eff *= ZONE_DMG[b.zone || 1];
   if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type) || (P.lin && LIN[P.lin].resist.includes(b.type))) eff *= 0.5;
   eff *= linTaken(P, b.type); // linhagem
   eff *= wxBoost(P.x, P.y, b.type); // clima
@@ -2499,7 +2501,7 @@ const linBuffs = P => {
  */
 // no começo do jogo o que importa são as balas: golpes de assinatura fracos, raros e com aviso longo;
 // no fim eles ficam fortes e frequentes. Todo aviso dura pelo menos ~1 s (sempre dá para sair).
-const sigPct = e => (e.legend ? 0.3 : 0.06 + 0.045 * clamp(e.zone, 1, 5)); // fração da vida máxima: 10% (zona 1) a 28% (zona 5)
+const sigPct = e => (e.legend ? 0.3 : 0.06 + 0.036 * clamp(e.zone, 1, 5)); // fração da vida máxima: ~10% (zona 1) a 24% (zona 5)
 const sigEvery = e => (e.legend ? 5 : 10.5 - 1.1 * clamp(e.zone, 1, 5)); // a cada ~9,4 s (zona 1) a ~5 s (zona 5)
 const sigWarn = e => Math.max(1, 1.45 - 0.1 * clamp(e.zone, 1, 5)); // aviso mais longo no começo
 const near2 = (t, r) => { const a = Math.random() * 6.28, d = Math.random() * r; return [t.x + Math.cos(a) * d, t.y + Math.sin(a) * d]; };
@@ -2637,3 +2639,7 @@ const duoNear = P => [...G.remotes.values()].some(r => !r.dead && r.name && Math
 const nPlayers = () => clamp(1 + (G && G.remotes ? [...G.remotes.values()].filter(r => !r.dead && r.name).length : 0), 1, 4);
 const grpK = () => 1 + 0.6 * (nPlayers() - 1);
 const grpN = () => 1 + 0.4 * (nPlayers() - 1);
+
+// dificuldade média do começo ao fim (medido com uma IA que desvia das balas): o começo era fácil demais
+// e o fim perigoso demais, então o dano dos tiros inimigos varia por zona
+const ZONE_DMG = [1, 1.35, 1.25, 1.05, 0.95, 0.88];
