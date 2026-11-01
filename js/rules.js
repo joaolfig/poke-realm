@@ -106,7 +106,7 @@ const SUBCLASSES = {
 /* ============ Bênçãos do Clérigo ============
  * Cada fase do Clérigo tem as suas bênçãos; ele escolhe UMA ativa no templo da 2ª cidade.
  * A bênção vai junto com as curas dele (Tomo, Santuário e Hino) e vale para quem for curado.
- * No próprio Clérigo ela vale pela metade (é uma classe de suporte), e a Graça Salvadora nunca o protege
+ * No próprio Clérigo ela vale menos (escudo pela metade, bônus de dano 35%: é uma classe de suporte), e a Graça Salvadora nunca o protege
  * (a morte continua definitiva para quem joga sozinho).
  */
 const BLESS = {

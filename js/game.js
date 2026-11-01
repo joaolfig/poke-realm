@@ -2316,7 +2316,8 @@ function renderToastLog() {
 
 /* ---------- Bênçãos do Clérigo: efeito em quem recebe a cura (no próprio Clérigo, metade) ---------- */
 function blessApply(P, m, over, self) {
-  const k = self ? 0.5 : 1, mh = maxHP(P), b = m.bl;
+  // no próprio Clérigo: escudo pela metade e bônus de dano só 35% (medido no Nv 30: Guerra sozinho ~295/s, abaixo dos atacantes)
+  const mh = maxHP(P), b = m.bl, k = !self ? 1 : b === 'escudo' || b === 'escudo2' ? 0.5 : 0.35;
   if (b === 'escudo' || b === 'escudo2') {
     const big = b === 'escudo2', cap = mh * (big ? 0.25 : 0.15) * k, min = m.quiet ? 0 : mh * (big ? 0.1 : 0.08) * k;
     const add = Math.max(over, min);

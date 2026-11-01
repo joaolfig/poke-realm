@@ -898,6 +898,6 @@ function renderTemple(P) {
     <h4>Bênçãos do ${esc(phName)}</h4>`;
   h += opts.map(([id, b]) => `<div class="shoprow"><span>${b.icon} <b>${b.nome}</b><br><i>${b.desc}</i></span>
     ${cur === id ? '<button disabled>Ativa ✓</button>' : `<button data-act="bless:${id}" class="good">Escolher</button>`}</div>`).join('');
-  h += `<div class="small">As bênçãos valem para quem você cura (Tomo, Santuário e Hino). Em você mesmo, valem pela metade.${ph === 'clerigo' ? ` No Nv ${SUB_LVL}, cada subclasse libera bênçãos mais fortes.` : ''}</div>`;
+  h += `<div class="small">As bênçãos valem para quem você cura (Tomo, Santuário e Hino). Em você mesmo valem menos (escudo pela metade, bônus de dano em 35%).${ph === 'clerigo' ? ` No Nv ${SUB_LVL}, cada subclasse libera bênçãos mais fortes.` : ''}</div>`;
   return h;
 }
