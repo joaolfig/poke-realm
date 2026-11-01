@@ -602,7 +602,7 @@ function onKill(m) {
   const xpShare = 0.5 / nNear + 0.5 * share;
   // chefes, caçadas e história contam para quem estava junto (cooperação)
   if (m.kind === 3) questProgress('masmorra');
-  if (m.st >= 10 && m.st < 40) questProgress('caca', { pid: m.pid });
+  if (m.st >= 10 && m.st < 40) { questProgress('caca', { pid: m.pid }); questProgress('duoCaca', { pid: m.pid }); }
   if (m.st === 60) moonAlfaLoot(m);
   storyKill(m);
   { const tdg = inDungeonArea(m.x) && dungeonAt(m.x); if (m.kind === 3 && tdg && tdg.floor && tdg.floor % 5 === 0) towerCheckpoint(P, tdg.floor); }
@@ -625,7 +625,7 @@ function onKill(m) {
   questProgress('coleta', { types: p ? p.types : [m.type] });
   questProgress('especie', { pid: m.pid });
   if (!inDungeonArea(m.x)) questProgress('zona', { zone: m.zone });
-  if (m.kind === 1) { questProgress('alfa'); storyAlfa(P, m); }
+  if (m.kind === 1) { questProgress('alfa'); questProgress('duoAlfa', { duo: [...G.remotes.values()].some(r => !r.dead && r.name && Math.hypot(r.tx - m.x, r.ty - m.y) < 900) }); storyAlfa(P, m); }
   linKill(P); templeKill(P, m);
   G.dirty = true;
 }
