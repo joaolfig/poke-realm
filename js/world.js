@@ -1075,10 +1075,12 @@ function moonAlfaLoot(m) {
   G.toasts.push({ text: '🌕 O Alfa da Lua deixou um tesouro!', color: '#c4b5fd', t: 4 });
 }
 // Baús da Lua
+// Baús da Lua e fogos-fátuos só aparecem quando já está bem escuro (o anoitecer leva ~25 s)
+const deepNight = () => isNight() && (G.nightK || 0) > 0.97;
 function moonChestEvent(m) { G.moonCh = (G.moonCh || []).concat(m.l); }
 const moonChOpen = c => (G.moonOpen = G.moonOpen || new Set()).has(c.id);
 function nearMoonChest(P) {
-  if (!isNight() || inDungeonArea(P.x)) return null;
+  if (!deepNight() || inDungeonArea(P.x)) return null;
   return (G.moonCh || []).find(c => !moonChOpen(c) && Math.hypot(c.x - P.x, c.y - P.y) < 48) || null;
 }
 function openMoonChest(P, c) {
@@ -1096,7 +1098,7 @@ function nightTick(dt) {
   if (!P) return;
   if (!isNight()) { G.moonCh = []; G.moonOpen = null; G.wisps = []; return; }
   G.wisps = G.wisps || [];
-  if (!inDungeonArea(P.x) && !inTown(P.x, P.y) && G.wisps.length < 3 && (G.wispT = (G.wispT || 8) - dt) <= 0) {
+  if (deepNight() && !inDungeonArea(P.x) && !inTown(P.x, P.y) && G.wisps.length < 3 && (G.wispT = (G.wispT || 8) - dt) <= 0) {
     G.wispT = rand(18, 30);
     const a = Math.random() * 6.28, r = rand(260, 420), x = P.x + Math.cos(a) * r, y = P.y + Math.sin(a) * r;
     if (zoneAt(x, y) >= 1 && !isWater(x, y)) G.wisps.push({ x, y, t: 0, life: 45 });
@@ -1121,7 +1123,7 @@ function nightTick(dt) {
   G.wisps = G.wisps.filter(w => w.life > 0);
 }
 function drawNightStuff(ox, oy) {
-  if (!isNight()) return;
+  if (!deepNight()) return;
   for (const c of G.moonCh || []) {
     if (moonChOpen(c)) continue;
     const x = c.x + ox, y = c.y + oy;
