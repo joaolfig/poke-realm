@@ -784,6 +784,7 @@ function useAbility() {
       fxAt(P.x, P.y, 170, '#f97316'); sfx('boom'); break;
     case 'patrulheiro': // Aljava: flechada pesada que perfura e deixa lento
       shootBullet(P.aim, { spd: 600, life: 0.9, r: 12, color: '#fde047', shape: 'arrow', pierce: true, spell: 2 });
+      fxAt(P.x + Math.cos(P.aim) * 30, P.y + Math.sin(P.aim) * 30, 40, '#fde047'); G.shake = Math.min(8, G.shake + 3);
       sfx('crit'); break;
     case 'feras': { // Armadilha da Caçadora (Caçadora)
       const t = aimPoint(P, 300);
@@ -1309,6 +1310,7 @@ function outlined(s, x, y) { s = padText(s); ctx.strokeText(s, x, y); ctx.fillTe
 
 function drawShot(b, ox, oy) {
   const x = b.x + ox, y = b.y + oy;
+  if (b.shape === 'arrow' && b.r >= 11) return drawHeavyArrow(b, x, y); // Aljava Pesada (também para os tiros vistos de outros jogadores)
   if (b.shape === 'blade' || b.shape === 'dagger' || b.shape === 'arrow') {
     ctx.save(); ctx.translate(x, y); ctx.rotate(b.a);
     ctx.fillStyle = b.color;
@@ -1321,6 +1323,26 @@ function drawShot(b, ox, oy) {
     ctx.beginPath(); ctx.arc(x, y, b.r * 1.8, 0, 7); ctx.fill();
     ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(x, y, b.r, 0, 7); ctx.fill();
   }
+}
+
+// Aljava Pesada: flecha grande dourada com brilho, rastro e faíscas (fácil de distinguir dos tiros comuns)
+function drawHeavyArrow(b, x, y) {
+  ctx.save();
+  const g = ctx.createRadialGradient(x, y, 2, x, y, 34);
+  g.addColorStop(0, 'rgba(255,240,170,.75)'); g.addColorStop(1, 'rgba(250,204,21,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 34, 0, 7); ctx.fill();
+  ctx.translate(x, y); ctx.rotate(b.a);
+  // rastro
+  for (let k = 1; k <= 5; k++) { ctx.globalAlpha = 0.45 - k * 0.08; ctx.fillStyle = '#fde047'; ctx.fillRect(-16 - k * 11, -3 + k * 0.3, 12, 6 - k * 0.6); }
+  ctx.globalAlpha = 1;
+  // haste e ponta grandes, com miolo branco
+  ctx.fillStyle = '#b45309'; ctx.fillRect(-22, -3, 36, 6);
+  ctx.fillStyle = '#fde047'; ctx.fillRect(-22, -2, 36, 4);
+  ctx.fillStyle = '#fff7d6'; ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(12, -10); ctx.lineTo(15, 0); ctx.lineTo(12, 10); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#b45309'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = '#fbbf24'; ctx.fillRect(-26, -7, 6, 4); ctx.fillRect(-26, 3, 6, 4); // penas
+  ctx.restore();
+  if (Math.random() < 0.6) G.parts.push({ x: b.x + rand(-6, 6), y: b.y + rand(-6, 6), vx: -Math.cos(b.a) * 60 + rand(-30, 30), vy: -Math.sin(b.a) * 60 + rand(-30, 30), life: 0.35, color: Math.random() < 0.5 ? '#fde047' : '#fff7d6', size: 3 });
 }
 
 function render() {
