@@ -1082,6 +1082,8 @@ function updatePlayer(dt) {
 
   P.abilCd = Math.max(0, P.abilCd - dt);
   P.dashCd = Math.max(0, (P.dashCd || 0) - dt); P.dodgeT = Math.max(0, (P.dodgeT || 0) - dt); P.seloT = Math.max(0, (P.seloT || 0) - dt);
+  // Mago: Escudo Arcano (absorve até 20% da vida e se recarrega depois de 4 s sem levar dano)
+  if (P.cls === 'mago') { const cap = maxHP(P) * 0.2; if (P.sinceHit > 4 && P.shield < cap) P.shield = Math.min(cap, (P.shield || 0) + cap * dt / 2); if (P.shield > 0) P.shieldT = Math.max(P.shieldT || 0, 0.5); }
   if ((P.shieldT = Math.max(0, (P.shieldT || 0) - dt)) <= 0) P.shield = 0;
   P.breathCd = Math.max(0, P.breathCd - dt);
   P.furia = Math.max(0, P.furia - dt);
