@@ -744,3 +744,5 @@ function renderDexNPC(P) {
     <button data-act="dexopen">📖 Abrir a Pokédex</button>`;
 }
 document.addEventListener('click', ev => { const b = ev.target.closest('[data-dexf]'); if (!b || !G || !G.P) return; if (b.dataset.dexf === 'x') $('dex').classList.add('hidden'); else { G.dexF = b.dataset.dexf; renderDex(); } });
+// clicar no título (no painel) troca entre os títulos conquistados, de qualquer região
+document.addEventListener('click', ev => { if (!ev.target.closest('[data-title]') || !G || !G.P) return; const P = G.P, T = P.titles || []; if (T.length < 2) return; P.title = T[(T.indexOf(P.title) + 1) % T.length]; G.dirty = true; saveGame(); });

@@ -1746,7 +1746,7 @@ function updatePanel() {
   if (!G.dirty) return;
   G.dirty = false;
   const rc = race(P), sub = P.subclass ? subInfo(P.subclass) : null;
-  $('p-head').innerHTML = `<div class="pname">${esc(P.name)}</div>${P.title ? `<div class="ptitle">🏅 ${esc(P.title)}</div>` : ''}<div class="pcls" title="${rc.traco}">${rc.nome} ${c.nome}${sub ? ` (${sub.nome})` : ''} · Nível ${P.lvl}</div>`;
+  $('p-head').innerHTML = `<div class="pname">${esc(P.name)}</div>${P.title ? `<div class="ptitle" data-title="1" title="${(P.titles || []).length > 1 ? 'Clique para trocar o título' : 'Seu título'}">🏅 ${esc(P.title)}${(P.titles || []).length > 1 ? ' ⇄' : ''}</div>` : ''}<div class="pcls" title="${rc.traco}">${rc.nome} ${c.nome}${sub ? ` (${sub.nome})` : ''} · Nível ${P.lvl}</div>`;
   let choose = '';
   if (P.lvl >= SUB_LVL && !P.subclass) {
     choose += `<h4>Escolha sua subclasse <span class="pts">nível ${SUB_LVL}!</span></h4>` + SUBCLASSES[P.cls].map(s =>
