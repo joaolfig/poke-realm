@@ -268,11 +268,12 @@ function allyHit(e, a, sp) {
   const nPets = G.allies.filter(x => x.pet).length;
   let dmg = petDmg(a) * (1 + M(P, 'pet')) * (sp ? 1.5 : 1) * (a.ghost ? 1 : [1, 0.8, 0.7, 0.62][Math.max(0, nPets - 1)] || 0.62);
   if (P.subclass === 'feras') dmg *= 1.5;
+  const ab = !a.ghost && petAbility(a.pid);
+  dmg *= abilDmgMul(ab);
   const r = typed(P, e, Math.max(1, Math.round(dmg)), a.type);
   dealDamage(e, r.dmg);
   hitText(e, r.dmg, r.eff, false, true);
   // habilidade do companheiro (ex.: Canção de Ninar do Jigglypuff faz dormir)
-  const ab = !a.ghost && petAbility(a.pid);
   if (ab && !e.dead && e.hp > 0 && !e.st && Math.random() < ab.ch) inflict(e, ab.st);
 }
 
