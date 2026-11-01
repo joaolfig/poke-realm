@@ -203,7 +203,7 @@ const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 
 // (os inimigos de uma zona dão sempre o mesmo XP). A média de cada zona é a calibrada em jogo (~2 min por nível nas
 // zonas 1 e 5, ~3 min nas zonas 2 a 4); a zona 1 começa mais rápida para os primeiros níveis passarem logo.
 const XP_TABLE = [
-  600, 850, 1100, 1300, 1450, 1550, // zona 1 (Nv 1-6)
+  600, 1300, 1550, 1750, 1900, 2050, // zona 1 (Nv 1-6): medido jogando, ~1 min por nível na simulação (1,5-2 min de verdade)
   5200, 5600, 6000, 6400, 6800, 7200, 7600, // zona 2 (Nv 7-13)
   5300, 5750, 6200, 6700, 7250, 7800, 8550, // zona 3 (Nv 14-20)
   9250, 9750, 10200, 10600, 11000, // zona 4 (Nv 21-25)
@@ -969,6 +969,7 @@ function enemyAttack(b) {
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
   if (eff > 1) eff = 1 + (eff - 1) * 0.6; // super efetivo no herói: ×1,6 (duplo ×2,8), para o tipo não decidir sozinho quem sobrevive
   eff *= ZONE_DMG[b.zone || 1];
+  if ((b.zone || 1) === 1 && P.lvl <= 2) eff *= P.lvl === 1 ? 0.6 : 0.8; // começo mais seguro: no Nv 1 a zona 1 bate 40% menos (Nv 2: 20%)
   if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type) || (P.lin && LIN[P.lin].resist.includes(b.type))) eff *= 0.5;
   eff *= linTaken(P, b.type); // linhagem
   eff *= wxBoost(P.x, P.y, b.type); // clima
