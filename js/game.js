@@ -1543,6 +1543,43 @@ function drawTargetCard() {
   ctx.textAlign = 'left';
 }
 
+// avisos: um feed no canto direito (embaixo do minimapa), em cartões fáceis de ler, em vez do meio da tela
+function wrapText(text, maxW, maxLines) {
+  const words = String(text).split(' '), lines = [];
+  let cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; if (lines.length === maxLines - 1) break; } else cur = t;
+  }
+  const rest = words.slice(lines.join(' ').split(' ').filter(Boolean).length).join(' ');
+  if (lines.length === maxLines - 1 && rest) { let l = rest; while (ctx.measureText(l + '…').width > maxW && l.length > 4) l = l.slice(0, -1); lines.push(l === rest ? l : l + '…'); }
+  else if (cur) lines.push(cur);
+  return lines;
+}
+function drawToasts() {
+  // junta avisos repetidos seguidos
+  const list = [];
+  for (const t of G.toasts) { const l = list[list.length - 1]; if (l && l.text === t.text) { l.n = (l.n || 1) + 1; l.t = Math.max(l.t, t.t); } else list.push({ ...t }); }
+  const show = list.slice(-4), w = Math.min(360, Math.max(240, W * 0.3)), x = W - w - 12;
+  let y = showMap && !(showMap === 2) ? 186 : 12;
+  ctx.save();
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  for (const t of show) {
+    const fade = Math.min(1, t.t * 1.5);
+    ctx.font = `${t.big ? 600 : 500} ${t.big ? 15 : 14}px Barlow Semi Condensed, system-ui`;
+    const lines = wrapText(t.text + (t.n > 1 ? ` (×${t.n})` : ''), w - 22, 3), h = lines.length * 18 + 10;
+    ctx.globalAlpha = 0.9 * fade;
+    ctx.fillStyle = 'rgba(13,14,16,.92)'; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
+    ctx.fillStyle = t.color || '#e5e7eb'; ctx.fillRect(x, y, 4, h);
+    if (t.big) { ctx.strokeStyle = t.color || '#e5e7eb'; ctx.lineWidth = 1; ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3); }
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = t.big ? (t.color || '#fff') : '#efe9dc';
+    lines.forEach((l, i) => ctx.fillText(l, x + 12, y + 6 + i * 18));
+    y += h + 5;
+  }
+  ctx.restore();
+}
 function drawHUD(ox, oy) {
   const P = G.P;
   const cx = P ? P.x : G.cam.x, cy = P ? P.y : G.cam.y;
@@ -1603,13 +1640,7 @@ function drawHUD(ox, oy) {
     if (hint) { ctx.textAlign = 'center'; ctx.font = 'bold 16px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 4; ctx.fillStyle = col; outlined(hint, W / 2, H / 2 + 70); }
   }
 
-  ctx.textAlign = 'center';
-  G.toasts.slice(-4).forEach((t, i) => {
-    ctx.globalAlpha = Math.min(1, t.t);
-    ctx.font = `bold ${t.big ? 20 : 15}px Barlow Semi Condensed, system-ui`; ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.fillStyle = t.color;
-    outlined(t.text, W / 2, 112 + i * 28);
-  });
-  ctx.globalAlpha = 1;
+  drawToasts();
 
   let boss = null, bd = 1000;
   for (const e of G.enemies) if (e.boss && P) { const dd = Math.hypot(e.x - P.x, e.y - P.y); if (dd < bd) { bd = dd; boss = e; } }
