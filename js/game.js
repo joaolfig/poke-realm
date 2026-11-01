@@ -443,7 +443,7 @@ function updateEnemiesHost(dt) {
         // fúria: abaixo de metade da vida
         if (!e.rage && e.hp < e.maxHp / 2) { e.rage = 1; emitEvent({ t: 'toast', text: `💢 ${e.name} ficou furioso!`, color: '#fca5a5' }); }
         e.sigT = (e.sigT === undefined ? rand(2.5, 4) : e.sigT) - dt;
-        if (e.sigT <= 0 && dd < 620 && e.st !== 6) { bossSig(e, tgt); e.sigT = (e.legend ? 5 : 6.5) * (e.rage ? 0.65 : 1); e.cd = Math.max(e.cd, 1.2); }
+        if (e.sigT <= 0 && dd < 620 && e.st !== 6) { bossSig(e, tgt); e.sigT = sigEvery(e) * (e.rage ? 0.7 : 1); e.cd = Math.max(e.cd, 1.2); }
         e.phaseT += dt;
         if (e.phaseT > BOSS_PH[e.phase].dur) { e.phase = (e.phase + 1) % BOSS_PH.length; e.phaseT = 0; }
         if (e.cd <= 0) { BOSS_PH[e.phase].f(e, ang); e.cd = BOSS_PH[e.phase].cd * (e.kind === 3 ? 1.3 : e.cdBoss || 1) * (e.rage ? 0.85 : 1); }
@@ -2479,7 +2479,11 @@ const linBuffs = P => {
  * O host escolhe o golpe e manda o aviso para todos; cada jogador calcula o próprio dano quando o aviso estoura.
  * Com menos de metade da vida o chefe fica furioso e usa o golpe com mais frequência.
  */
-const sigPct = e => (e.legend ? 0.32 : 0.14 + 0.03 * clamp(e.zone, 1, 5)); // fração da vida máxima do jogador
+// no começo do jogo o que importa são as balas: golpes de assinatura fracos, raros e com aviso longo;
+// no fim eles ficam fortes e frequentes. Todo aviso dura pelo menos ~1 s (sempre dá para sair).
+const sigPct = e => (e.legend ? 0.3 : 0.06 + 0.045 * clamp(e.zone, 1, 5)); // fração da vida máxima: 10% (zona 1) a 28% (zona 5)
+const sigEvery = e => (e.legend ? 5 : 10.5 - 1.1 * clamp(e.zone, 1, 5)); // a cada ~9,4 s (zona 1) a ~5 s (zona 5)
+const sigWarn = e => Math.max(1, 1.45 - 0.1 * clamp(e.zone, 1, 5)); // aviso mais longo no começo
 const near2 = (t, r) => { const a = Math.random() * 6.28, d = Math.random() * r; return [t.x + Math.cos(a) * d, t.y + Math.sin(a) * d]; };
 const tC = (x, y, r, delay) => ({ s: 'c', x: Math.round(x), y: Math.round(y), r, d: +delay.toFixed(2) });
 const tL = (x, y, a, len, w, delay) => ({ s: 'l', x: Math.round(x), y: Math.round(y), a: +a.toFixed(3), len, w, d: +delay.toFixed(2) });
@@ -2511,8 +2515,9 @@ function bossSig(e, t) {
     if (!e.dg || walkableR(nx, ny, 16)) { e.x = nx; e.y = ny; }
   }
   const a = Math.atan2(t.y - e.y, t.x - e.x);
-  const list = S.f(e, t, a);
-  if (S.dash) e.dash = { a, wait: 0.75, t: 0.4, spd: 1300 };
+  const list = S.f(e, t, a), wk = sigWarn(e);
+  for (const o of list) o.d = +Math.max(0.95, o.d * wk).toFixed(2);
+  if (S.dash) e.dash = { a, wait: 0.75 * wk, t: 0.4, spd: 1300 };
   emitEvent({ t: 'tele', l: list, nm: S.nome, bx: Math.round(e.x), by: Math.round(e.y), src: e.name, ty: e.type, pct: +sigPct(e).toFixed(3), st: S.st || 0 });
 }
 // host: investida (o chefe espera o aviso encher e então dispara na linha)
