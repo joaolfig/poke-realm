@@ -265,7 +265,8 @@ function rollLoot(m) {
     if (Math.random() < ch) G.bags.push({ x: m.x + rand(-10, 10), y: m.y + rand(-10, 10), items: [mythItem(f)], life: 120 });
   }
   const tes = hasT(P, 'tesouro');
-  const chance = m.kind >= 2 ? 1 : m.kind === 1 ? 0.85 : 0.16 + (tes ? 0.12 : 0) + M(P, 'loot');
+  // frequência: comuns 11% (20% com Caçador de Tesouros), Alfas 60%, chefes e raros sempre (os extras deles são sorteados)
+  const chance = m.kind >= 2 ? 1 : m.kind === 1 ? 0.6 : 0.112 + (tes ? 0.084 : 0) + M(P, 'loot') * 0.7;
   if (Math.random() > chance) return;
   const items = [];
   const z = m.zone || 1;
@@ -276,20 +277,21 @@ function rollLoot(m) {
     for (let i = 0; i < 3; i++) items.push(genItem(randi(4, 6)));
     items.push(relic(m.pid), monStone(m), potion(), potion(), consItem('ultra'), consItem('ultra'), consItem('doce'), consItem('doce'), statPot(), statPot());
   } else if (m.kind === 3) {
-    items.push(genItem(zoneTier(m.zone, 1.75)), genItem(zoneTier(m.zone, 0.75)), monStone(m), potion(), great(), consItem('doce'));
-    maybe(0.4, ultra); maybe(z >= 2 ? 0.35 : 0.15, statPot);
+    items.push(genItem(zoneTier(m.zone, 1.75)), genItem(zoneTier(m.zone, 0.75)));
+    maybe(0.6, () => monStone(m)); maybe(0.7, potion); maybe(0.7, great); maybe(0.7, () => consItem('doce'));
+    maybe(0.28, ultra); maybe(z >= 2 ? 0.245 : 0.1, statPot);
   } else if (m.kind === 4) {
-    items.push(genItem(zoneTier(z, 0.9 + (tes ? 0.5 : 0))), monStone(m), ballItem(), great(), consItem('doce')); // raro: no nível do Alfa
-    maybe(0.25, statPot);
+    items.push(genItem(zoneTier(z, 0.9 + (tes ? 0.5 : 0)))); // raro: no nível do Alfa
+    maybe(0.6, () => monStone(m)); maybe(0.7, ballItem); maybe(0.7, great); maybe(0.7, () => consItem('doce')); maybe(0.175, statPot);
   } else if (m.kind === 1) {
     items.push(genItem(zoneTier(z, 0.9 + (tes ? 0.5 : 0))), potion()); // Alfa: meio degrau acima dos comuns, abaixo dos chefes (tem muitos pelo mapa)
-    maybe(0.5, ballItem); maybe(0.3, () => monStone(m)); maybe(0.25, () => consItem('doce')); maybe(0.25, great); maybe((z >= 2 ? 0.06 : 0.02) + (m.st >= 10 && m.st < 40 ? 0.5 : 0), statPot); // Procurados (recompensa de contrato) dão mais; mini-chefes do ginásio não
+    maybe(0.5, ballItem); maybe(0.2, () => monStone(m)); maybe(0.25, () => consItem('doce')); maybe(0.25, great); maybe((z >= 2 ? 0.06 : 0.02) + (m.st >= 10 && m.st < 40 ? 0.5 : 0), statPot); // Procurados (recompensa de contrato) dão mais; mini-chefes do ginásio não
   } else {
     const r = Math.random();
     items.push(r < 0.38 ? potion() : r < 0.48 ? ballItem() : r < 0.52 ? great() : r < (z >= 2 ? 0.545 : 0.53) ? consItem('doce')
-      : Math.random() < 0.15 ? monStone(m) : genItem(tier()));
+      : Math.random() < 0.08 ? monStone(m) : genItem(tier()));
   }
-  if (m.kind === 0 && m.zone >= 3 && Math.random() < 0.004) items.push(statPot());
+  if (m.kind === 0 && m.zone >= 3 && Math.random() < 0.003) items.push(statPot());
   G.bags.push({ x: m.x + rand(-10, 10), y: m.y + rand(-10, 10), items, life: 90 });
 }
 

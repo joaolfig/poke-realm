@@ -1096,7 +1096,7 @@ function moonAlfaLoot(m) {
   const P = G.P;
   if (!P || Math.hypot(P.x - m.x, P.y - m.y) > 900) return;
   const z = m.zone || 1, items = [genItem(zoneTier(z, 1))];
-  if (Math.random() < 0.5) items.push(monStone(m)); // cristal de um dos tipos do Alfa
+  if (Math.random() < 0.35) items.push(monStone(m)); // cristal de um dos tipos do Alfa
   if (Math.random() < 0.25) items.push(consItem('doce'));
   G.bags.push({ x: m.x, y: m.y + 10, items, life: 120 });
   G.toasts.push({ text: '🌕 O Alfa da noite deixou um tesouro!', color: '#c4b5fd', t: 4 });
