@@ -182,6 +182,9 @@ const curWpn = P => (P.wildT > 0 ? wildWpn(P.wildType) : CLASSES[P.cls].wpn);
 const A = (P, k) => P.attrs[k] / 2 + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus : 0);
 // valor mostrado no painel (pontos)
 const Araw = (P, k) => P.attrs[k] + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus * 2 : 0);
+// começo: vida e defesa extras que diminuem a cada nível e zeram no Nv 7 (no fim da zona 1 o herói fica como antes)
+let ROOKIE_HP = 30, ROOKIE_AC = 3;
+const rookie = P => Math.max(0, (7 - P.lvl) / 6);
 const maxHP = P => {
   const c = CLASSES[P.cls];
   let h = 15 + rookie(P) * ROOKIE_HP + (c.hd / 2 + A(P, 'VIG')) * P.lvl + (P.race === 'anao' ? 2 * P.lvl : 0) + (hasT(P, 'robusto') ? 2 * P.lvl : 0);
@@ -2659,7 +2662,3 @@ const ZONE_DMG = [1, 1.1, 1.25, 1.15, 0.85, 0.72]; // zona 1 leve para quem come
 
 // Clérigo em grupo: cada outro jogador perto dele na hora da cura aumenta a cura em 10% (até +30%)
 const clericChoir = P => 1 + 0.1 * Math.min(3, [...G.remotes.values()].filter(r => !r.dead && r.name && Math.hypot(r.tx - P.x, r.ty - P.y) < 260).length);
-
-// começo: vida e defesa extras que diminuem a cada nível e zeram no Nv 7 (no fim da zona 1 o herói fica como antes)
-let ROOKIE_HP = 30, ROOKIE_AC = 3;
-const rookie = P => Math.max(0, (7 - P.lvl) / 6);
