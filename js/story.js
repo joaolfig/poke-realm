@@ -111,10 +111,11 @@ function storyKill(m) {
 function renderStoryNPC(n, P) {
   const st = P.story;
   if (n.id === 'gundo') {
-    if (storyOver(P)) return `<p class="fala">"Então você é o novo campeão de ${REGION.nome}! Minha oficina está às suas ordens."</p>
-      <p>A ferraria agora aprimora equipamentos até <b>+8</b>, e eu posso <b>reencantar</b> uma arma ou armadura (sortear novos afixos).</p>
-      ${['arma', 'armadura'].map(s => { const it = P.equip[s], c = 40 + it.tier * 40; return `<div class="shoprow"><span>${itemIcon(it)} ${esc(it.name)}</span><button data-act="reforge:${s}" ${P.gold < c ? 'disabled' : ''}>Reencantar (${c} 🪙)</button></div>`; }).join('')}`;
-    return `<p class="fala">"Volte quando for campeão. Aí conversamos."</p>`;
+    // artesão da 2ª cidade: reencanta qualquer equipamento (anéis e amuletos sempre saem com um encantamento ✧)
+    const rows = EQ_SLOTS.map(sl => { const it = P.equip[sl]; if (!it) return ''; const c = reforgeCost(it);
+      return `<div class="shoprow"><span>${itemIcon(it)} ${esc(it.name)}</span><button data-act="reforge:${sl}" ${P.gold < c ? 'disabled' : ''}>Reencantar (${c} 🪙)</button></div>`; }).join('');
+    return `<p class="fala">"Traga seu equipamento que eu sorteio novos poderes nele. Anel e amuleto saem sempre com um encantamento ✧, mas qual vai ser... só a sorte diz."</p>
+      ${rows}<div class="small">Reencantar sorteia o item de novo na mesma raridade e mantém o aprimoramento. Itens Míticos continuam Míticos do mesmo andar.</div>`;
   }
   if (storyOver(P)) {
     return `<p class="fala">"${STORY[STORY.length - 1].fim}"</p><p>A história de ${REGION.nome} terminou, e agora os lendários despertaram: eles aparecem em qualquer canto do mapa, são fortes demais para um herói sozinho e se regeneram sem parar. Junte um grupo para caçá-los. E os ginásios aceitam revanches pelos portais dos Alfas. Que tal conhecer outra região?</p>`;

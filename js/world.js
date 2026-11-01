@@ -9,7 +9,7 @@ const NPCS = [
   { id: 'torre', nome: 'Guardião da Torre', icon: '🗼', x: 0, y: 150, t2: 1, spr: { h: '#e5e7eb', b: '#6d28d9', d: '#2e1065' }, fala: '' },
   { id: 'pc', nome: 'Banco Pokémon', icon: '💻', x: -82, y: 22, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
   { id: 'dex', nome: 'Pesquisadora Íris', icon: '📖', x: 60, y: 205, spr: { h: '#7c2d12', b: '#f8fafc', d: '#0f766e' }, fala: '' },
-  { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, t2: 1, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '', show: P => storyOver(P) },
+  { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, t2: 1, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '' },
 ];
 const NPC_SPR = {};
 function buildNPCSprites() {
@@ -95,6 +95,8 @@ function shopList(P) {
     { id: 'amuleto', nome: 'Amuleto aleatório', icon: '📿', preco: 90 + tier * 40, tier },
   ];
 }
+// preço de reencantar: intermediário (mais caro para itens raros e míticos)
+const reforgeCost = it => Math.round((100 + it.tier * 80) * (it.myth ? 2 : 1) * (it.slot === 'anel' || it.slot === 'amuleto' ? 1.3 : 1));
 const sellPrice = it => 8 + it.tier * 12 + (it.upg || 0) * 10 + (it.myth ? 150 + it.myth * 10 : 0);
 // vila: +4 · 2ª cidade: +6 (+8 depois da história) · loja da torre: +12
 const upgMax = (P, town = npcTown()) => (town === 2 ? 12 : town === 1 || !TOWNS[1] ? (storyOver(P) ? 8 : 6) : 4);
@@ -179,12 +181,16 @@ $('npc').addEventListener('click', ev => {
   else if (act === 'dexopen') { closeNPC(); toggleDex(); }
   else if (act === 'fly') { flyTo(P, arg); return; }
   else if (act === 'reforge') {
-    const it = P.equip[arg], c = 40 + it.tier * 40;
-    if (storyOver(P) && P.gold >= c) {
+    const it = P.equip[arg], c = it && reforgeCost(it);
+    if (it && P.gold >= c) {
       P.gold -= c;
       const upg = it.upg || 0;
-      Object.assign(it, genItem(it.tier, arg));
-      if (upg) { it.upg = upg; if (it.slot === 'arma') it.bonus += upg; else it.ac += upg; }
+      // Mítico continua Mítico do mesmo andar; anel e amuleto sempre saem com um encantamento ✧
+      const nw = it.myth ? mythItem(it.myth, arg) : genItem(it.tier, arg);
+      if ((arg === 'anel' || arg === 'amuleto') && !nw.name.includes('✧')) enchant(nw);
+      for (const k of Object.keys(it)) delete it[k];
+      Object.assign(it, nw);
+      if (upg) { it.upg = upg; if (it.slot === 'arma') it.bonus += upg; else if (it.slot === 'armadura') it.ac += upg; }
       G.toasts.push({ text: `✨ Reencantado: ${it.name}`, color: '#c4b5fd', t: 3 });
       sfx('lvl');
     }
