@@ -256,6 +256,13 @@
   .npc-body > *, .npc-body .quest, .npc-body .shoprow, .npc-body .sellrow, .npc-body .bulk { break-inside: avoid; }
   .npc-body h4 { break-after: avoid; }
   @media (max-width: 900px) { #npc { width: min(560px, 94vw); left: 50%; } }
+  /* menus compactos: linhas mais baixas e o botão do contrato ao lado do texto */
+  .npc-body .shoprow { padding: 3px 0; } .npc-body .shoprow > button, .npc-body .sellrow button { padding: 3px 8px 4px; }
+  .npc-body .quest { padding: 6px 8px; margin-bottom: 5px; position: relative; }
+  .npc-body .quest:not(.cur) > button[data-act^="accept"] { position: absolute; right: 8px; bottom: 6px; margin: 0; padding: 3px 10px 4px; }
+  .npc-body .quest:not(.cur) .small:last-of-type { padding-right: 78px; }
+  .npc-body .fala { margin: 4px 0 8px; } .npc-body h4 { margin: 8px 0 4px; }
+  @media (max-height: 700px) { #npc { max-height: 94vh; padding: 8px 12px; } }
   .shoprow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
   .shoprow i { font-size: 12px; font-style: normal; color: var(--dim); }
   .shoprow > button { flex: none; white-space: nowrap; }
@@ -389,23 +396,23 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=199"></script>
-<script src="js/data.js?v=199"></script>
-<script src="js/rules.js?v=199"></script>
-<script src="js/items.js?v=199"></script>
-<script src="js/dungeon.js?v=199"></script>
-<script src="js/net.js?v=199"></script>
-<script src="js/map.js?v=199"></script>
-<script src="js/world.js?v=199"></script>
-<script src="js/story.js?v=199"></script>
-<script src="js/hm.js?v=199"></script>
-<script src="js/allies.js?v=199"></script>
-<script src="js/town.js?v=199"></script>
-<script src="js/geo.js?v=199"></script>
-<script src="js/regions.js?v=199"></script>
-<script src="js/audio.js?v=199"></script>
-<script src="js/pad.js?v=199"></script>
-<script src="js/pvp.js?v=199"></script>
-<script src="js/game.js?v=199"></script>
+<script src="js/pokedex.js?v=200"></script>
+<script src="js/data.js?v=200"></script>
+<script src="js/rules.js?v=200"></script>
+<script src="js/items.js?v=200"></script>
+<script src="js/dungeon.js?v=200"></script>
+<script src="js/net.js?v=200"></script>
+<script src="js/map.js?v=200"></script>
+<script src="js/world.js?v=200"></script>
+<script src="js/story.js?v=200"></script>
+<script src="js/hm.js?v=200"></script>
+<script src="js/allies.js?v=200"></script>
+<script src="js/town.js?v=200"></script>
+<script src="js/geo.js?v=200"></script>
+<script src="js/regions.js?v=200"></script>
+<script src="js/audio.js?v=200"></script>
+<script src="js/pad.js?v=200"></script>
+<script src="js/pvp.js?v=200"></script>
+<script src="js/game.js?v=200"></script>
 </body>
 </html>
