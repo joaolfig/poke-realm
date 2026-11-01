@@ -279,11 +279,11 @@ function rollLoot(m) {
     items.push(genItem(zoneTier(m.zone, 1.75)), genItem(zoneTier(m.zone, 0.75)), monStone(m), potion(), great(), consItem('doce'));
     maybe(0.4, ultra); maybe(z >= 2 ? 0.35 : 0.15, statPot);
   } else if (m.kind === 4) {
-    items.push(genItem(tier() + 1), monStone(m), ballItem(), great(), consItem('doce'));
+    items.push(genItem(zoneTier(z, 0.9 + (tes ? 0.5 : 0))), monStone(m), ballItem(), great(), consItem('doce')); // raro: no nível do Alfa
     maybe(0.25, statPot);
   } else if (m.kind === 1) {
     items.push(genItem(zoneTier(z, 0.9 + (tes ? 0.5 : 0))), potion()); // Alfa: meio degrau acima dos comuns, abaixo dos chefes (tem muitos pelo mapa)
-    maybe(0.5, ballItem); maybe(0.3, () => monStone(m)); maybe(0.25, () => consItem('doce')); maybe(0.25, great); maybe((z >= 2 ? 0.06 : 0.02) + (m.st >= 10 ? 0.5 : 0), statPot);
+    maybe(0.5, ballItem); maybe(0.3, () => monStone(m)); maybe(0.25, () => consItem('doce')); maybe(0.25, great); maybe((z >= 2 ? 0.06 : 0.02) + (m.st >= 10 && m.st < 40 ? 0.5 : 0), statPot); // Procurados (recompensa de contrato) dão mais; mini-chefes do ginásio não
   } else {
     const r = Math.random();
     items.push(r < 0.38 ? potion() : r < 0.48 ? ballItem() : r < 0.52 ? great() : r < (z >= 2 ? 0.545 : 0.53) ? consItem('doce')
