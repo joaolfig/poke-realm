@@ -326,7 +326,7 @@ function enemyStats(pid, zone, kind) {
     speed: (35 + (st.speed || 50) * 0.55) * (legend || dboss ? 0.6 : rare ? 1.5 : 1),
     scale: legend ? 4.2 : dboss ? 3.3 : clamp(1.7 + (p.height || 10) / 35, 1.7, 2.8) * (alfa || rare ? 1.3 : 1),
     xp: Math.round((p.exp || 100) * (0.4 + zone * 0.35) * (1 + (zone - 1) * 0.1) * (legend ? 45 : dboss ? 8 : alfa ? 3 : rare ? 4 : 1)),
-    cdMul: (zone === 2 ? 0.85 : zone >= 5 ? 1.1 : 1) / (1 + (zone - 1) * 0.2 + Math.max(0, zone - 2) * 0.1), // atacam mais rápido nas zonas altas (e um pouco mais no começo)
+    cdMul: (zone === 1 ? 1.15 : zone === 2 ? 0.85 : zone >= 5 ? 1.1 : 1) / (1 + (zone - 1) * 0.2 + Math.max(0, zone - 2) * 0.1), // atacam mais rápido nas zonas altas (e um pouco mais no começo)
     cdBoss: legend ? 0.6 : undefined, // lendários atacam mais rápido
   };
 }
@@ -1497,7 +1497,7 @@ function render() {
   for (const it of ents) {
     if (it.e) { drawEnemy(it.e, ox, oy); if (!it.e.dg && !it.e.fly) grassOver(it.e.x, it.e.y + it.e.h * 0.35, it.e.x + ox, it.e.y + oy + it.e.h * 0.42, it.e.w * 0.6); }
     else if (it.bld) drawBuilding(it.bld, ox + it.t.x, oy + it.t.y);
-    else if (it.deco) { drawDecor(it.deco, ox + it.t.x, oy + it.t.y); if (it.deco.k === 'gate') drawFrontObjs(it.t.x + it.deco.x, it.t.y + it.deco.y, ox, oy); }
+    else if (it.deco) { drawDecor(it.deco, ox + it.t.x, oy + it.t.y); if (it.deco.k === 'gate') drawFrontObjs(it.t.x + it.deco.x, it.t.y + it.deco.y, ox, oy); else if (it.deco.k === 'gpost') drawFrontObjs(it.t.x + it.deco.x, it.t.y + it.deco.y, ox, oy, 26); }
     else if (it.n) drawNPC(it.n, ox, oy);
     else if (it.a) {
       const a = it.a;
@@ -2656,7 +2656,7 @@ const grpN = () => 1 + 0.4 * (nPlayers() - 1);
 
 // dificuldade média do começo ao fim (medido com uma IA que desvia das balas): o começo era fácil demais
 // e o fim perigoso demais, então o dano dos tiros inimigos varia por zona
-const ZONE_DMG = [1, 0.9, 1.25, 1.15, 0.85, 0.72]; // zona 1 leve para quem começa no Nv 1 // zona 5 aliviada depois de teste em jogo (estava um pouco difícil demais)
+const ZONE_DMG = [1, 0.75, 1.25, 1.15, 0.85, 0.72]; // zona 1 leve para quem começa no Nv 1 // zona 5 aliviada depois de teste em jogo (estava um pouco difícil demais)
 
 // Clérigo em grupo: cada outro jogador perto dele na hora da cura aumenta a cura em 10% (até +30%)
 const clericChoir = P => 1 + 0.1 * Math.min(3, [...G.remotes.values()].filter(r => !r.dead && r.name && Math.hypot(r.tx - P.x, r.ty - P.y) < 260).length);

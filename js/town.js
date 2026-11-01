@@ -91,8 +91,11 @@ const TOWN_GATES = [[], []];
 function gateParts(g) {
   const parts = [];
   for (const s of [1, -1]) {
-    for (let k = 1; k <= 3; k++) { const d = 46 + k * 16; parts.push({ k: 'gpost', h: 20, x: g.x + g.tx * s * d, y: g.y + g.ty * s * d }); }
-    parts.push({ k: 'gpost', h: 58, x: g.x + g.tx * s * 46, y: g.y + g.ty * s * 46 });
+    // cada poste leva as tábuas até o próximo (de dentro para fora), para a cerca parecer contínua
+    for (let k = 0; k <= 3; k++) {
+      const d = 46 + k * 16, n = d + 16;
+      parts.push({ k: 'gpost', h: k ? 20 : 58, x: g.x + g.tx * s * d, y: g.y + g.ty * s * d, rx: k < 3 ? g.tx * s * 16 : 0, ry: k < 3 ? g.ty * s * 16 : 0 });
+    }
   }
   for (const p of parts) p.sy = p.y;
   parts.push({ ...g, sy: g.y + Math.abs(g.ty) * 46 + 1 });
@@ -200,7 +203,14 @@ function drawDecor(d, ox, oy) {
       for (let k = 0; k < 5; k++) { ctx.fillStyle = ['#d9534f', '#f2d24b', '#e88fc0', '#fff', '#b07cd8'][k]; ctx.fillRect(x - 9 + k * 4, y - 16 + (k & 1) * 3, 3, 3); }
       break;
     case 'tree': ctx.drawImage(treeImg(TK.TREE, 1, Math.abs(d.x) % 4), x - 32, y - 76); break;
-    case 'gpost': post(x, y, d.h); break; // poste do portão ou da cerquinha (cada um na sua profundidade)
+    case 'gpost': { // poste do portão ou da cerquinha (cada um na sua profundidade), com as tábuas até o próximo
+      if (d.rx || d.ry) for (const hh of [8, 15]) {
+        ctx.strokeStyle = WOOD.dk; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, y - hh); ctx.lineTo(x + d.rx, y + d.ry - hh); ctx.stroke();
+        ctx.strokeStyle = WOOD.lt; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, y - hh - 1); ctx.lineTo(x + d.rx, y + d.ry - hh - 1); ctx.stroke();
+      }
+      post(x, y, d.h);
+      break;
+    }
     case 'gate': {
       // só a trave, as flâmulas e a placa: os postes são desenhados à parte (gateParts)
       const p1x = x + d.tx * 46, p1y = y + d.ty * 46, p2x = x - d.tx * 46, p2y = y - d.ty * 46;

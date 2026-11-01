@@ -167,7 +167,7 @@ function solidAt(x, y, swim) {
     if (Math.abs(Math.hypot(dx, dy) - (VILA_R - 8)) > 70) continue;
     for (const g of (typeof TOWN_GATES !== 'undefined' && TOWN_GATES[t.i]) || []) {
       const rx = dx - g.x, ry = dy - g.y, along = Math.abs(rx * g.tx + ry * g.ty), across = Math.abs(-rx * g.ty + ry * g.tx);
-      if (along > 40 && along < 102 && across < 7) return true;
+      if (along > 40 && along < 100 && across < 6) return true;
     }
   }
   return false;
@@ -675,8 +675,8 @@ function renderOverworld(ox, oy) {
 }
 
 // árvores e pedras do mapa que ficam NA FRENTE de um portão de cidade são desenhadas de novo por cima dele
-function drawFrontObjs(wx, wy, ox, oy) {
-  const tx0 = Math.floor((wx - 70) / TILE), tx1 = Math.floor((wx + 70) / TILE), ty0 = Math.floor((wy - 40) / TILE), ty1 = Math.floor((wy + 60) / TILE);
+function drawFrontObjs(wx, wy, ox, oy, rw = 70) {
+  const tx0 = Math.floor((wx - rw) / TILE), tx1 = Math.floor((wx + rw) / TILE), ty0 = Math.floor((wy - 40) / TILE), ty1 = Math.floor((wy + 60) / TILE);
   for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
     if ((ty + 1) * TILE <= wy + 4) continue; // atrás do portão: já está certo
     const i = tIdx(tx + OX, ty + OY);
