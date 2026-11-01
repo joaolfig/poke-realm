@@ -1119,6 +1119,7 @@ function updatePlayer(dt) {
   }
   P.sinceHit += dt;
   updatePlayerStatus(P, dt);
+  autoTick(P, dt);
   wildTick(P, dt);
   linTick(P, dt);
   if (outOfCombat(P) && P.moving && Math.random() < 0.25) G.parts.push({ x: P.x + rand(-8, 8), y: P.y + 16, vx: rand(-15, 15), vy: -10, life: 0.35, color: '#e7dcc4', size: 2 });
@@ -1976,12 +1977,13 @@ function updatePanel() {
   else if (NET.mode === 'client') $('p-room').innerHTML = `<h4>Multiplayer</h4><div class="room">Conectado à sala <b>${NET.room}</b></div>`;
   else $('p-room').innerHTML = '';
   $('p-room').innerHTML += pvpPanel();
+  $('p-room').innerHTML += optsPanel();
   $('p-room').innerHTML += '<button data-save="1" class="savebtn" title="Baixa um arquivo .json com seu personagem (Ctrl+S)">Salvar em arquivo <small>Ctrl+S</small></button>';
   padFixDom($('panel'));
 }
 
 $('panel').addEventListener('click', ev => {
-  const t = ev.target.closest('[data-attr],[data-inv],[data-eq],[data-pot],[data-ball],[data-copy],[data-tal],[data-sub],[data-pet],[data-candy],[data-save],[data-teach],[data-stoneevo],[data-abra],[data-eqbest]');
+  const t = ev.target.closest('[data-attr],[data-inv],[data-eq],[data-pot],[data-ball],[data-copy],[data-tal],[data-sub],[data-pet],[data-candy],[data-save],[data-teach],[data-stoneevo],[data-abra],[data-eqbest],[data-opt]');
   if (!t || !G || !G.P) return;
   const P = G.P;
   if (t.dataset.attr) {
@@ -2006,6 +2008,7 @@ $('panel').addEventListener('click', ev => {
   } else if (t.dataset.pot) usePotion();
   else if (t.dataset.abra) useAbra();
   else if (t.dataset.eqbest) equipBest(P);
+  else if (t.dataset.opt) { OPTS[t.dataset.opt] = !OPTS[t.dataset.opt]; saveOpts(); G.dirty = true; updatePanel(); }
   else if (t.dataset.candy) giveCandy();
   else if (t.dataset.save) exportSave();
   else if (t.dataset.stoneevo !== undefined) crystalEvolve(+t.dataset.stoneevo);
@@ -2712,3 +2715,25 @@ function equipBest(P) {
   G.toasts.push({ text: `⬆ Equipado: ${names.join(', ')}`, color: '#86efac', t: 3 });
   sfx('pick'); G.dirty = true; saveGame();
 }
+
+/* ---------- Automáticos (todas as plataformas; podem ser desligados no painel) ----------
+ * Vida abaixo de 15% com Talismã de Abra pronto: foge primeiro (uma poção não salvaria no meio de tanta bala).
+ * Vida abaixo de 35% (ou abaixo de 15% sem Talismã): bebe uma poção, com 5 s entre as automáticas.
+ * Nada disso na arena PvP.
+ */
+const OPTS_KEY = 'pkr_opts_v1';
+let OPTS = { autoPot: true, autoFlee: true };
+try { Object.assign(OPTS, JSON.parse(localStorage.getItem(OPTS_KEY) || '{}')); } catch (e) { /* ignora */ }
+const saveOpts = () => { try { localStorage.setItem(OPTS_KEY, JSON.stringify(OPTS)); } catch (e) { /* ignora */ } };
+const AUTO_POT = 0.35, AUTO_FLEE = 0.15;
+function autoTick(P, dt) {
+  P.autoPotT = Math.max(0, (P.autoPotT || 0) - dt);
+  if (!P || P.hp <= 0 || P.pvp || inArena(P.x, P.y)) return;
+  const f = P.hp / maxHP(P), safe = !inDungeonArea(P.x) && inTown(P.x, P.y);
+  if (safe) return;
+  if (OPTS.autoFlee && f < AUTO_FLEE && P.bag.abra > 0 && !(P.abraCd > 0)) { useAbra(); return; }
+  if (OPTS.autoPot && f < AUTO_POT && P.pots.hp > 0 && P.autoPotT <= 0 && !isWolf(P)) { usePotion(); P.autoPotT = 5; }
+}
+const optsPanel = () => `<h4>Opções</h4><div class="opts">
+  <button data-opt="autoPot" class="${OPTS.autoPot ? 'good' : ''}" title="Bebe uma poção sozinho com menos de 35% de vida (5 s entre poções automáticas)">🧪 Poção automática: ${OPTS.autoPot ? 'ligada' : 'desligada'}</button>
+  <button data-opt="autoFlee" class="${OPTS.autoFlee ? 'good' : ''}" title="Com menos de 15% de vida, usa o Talismã de Abra sozinho (se você tiver um pronto) e foge para a cidade">🌀 Fuga automática: ${OPTS.autoFlee ? 'ligada' : 'desligada'}</button></div>`;
