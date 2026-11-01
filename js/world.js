@@ -529,7 +529,7 @@ function drawMeteors(ox, oy) {
 
 /* ---------- Noite ---------- */
 let nightCanvas = null;
-function drawNight(ox, oy, R = 230, col = 'rgba(8,6,30,0.62)') {
+function drawNight(ox, oy, R = 230, col = 'rgba(8,6,30,0.62)', alpha = 1) {
   if (!nightCanvas) nightCanvas = document.createElement('canvas');
   if (nightCanvas.width !== W || nightCanvas.height !== H) { nightCanvas.width = W; nightCanvas.height = H; }
   const x = nightCanvas.getContext('2d');
@@ -545,7 +545,9 @@ function drawNight(ox, oy, R = 230, col = 'rgba(8,6,30,0.62)') {
   if (G.P) light(G.P.x + ox, G.P.y + oy, R);
   for (const r of G.remotes.values()) if (!r.dead && r.tx !== undefined) light(r.x + ox, r.y + oy, R * 0.85);
   light(ox, oy, 280);
+  ctx.globalAlpha = alpha;
   ctx.drawImage(nightCanvas, 0, 0);
+  ctx.globalAlpha = 1;
 }
 
 function updateWorld(dt) {
@@ -593,6 +595,8 @@ function hostWeather(dt) {
 }
 // local (todo jogador): avisa quando o clima onde você está muda, e aplica o desgaste da areia/neve
 function weatherTick(dt) {
+  // anoitecer e amanhecer graduais (~8s) em vez de mudar de uma vez
+  G.nightK = clamp((G.nightK || 0) + (isNight() ? dt : -dt) / 8, 0, 1);
   const P = G.P;
   if (!P) return;
   const w = weatherAt(P.x, P.y), k = w ? w.k : '';
