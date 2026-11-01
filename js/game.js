@@ -1472,7 +1472,7 @@ function render() {
     if (Math.abs(cam.x - t.x) > W + 300 || Math.abs(cam.y - t.y) > H + 300) continue;
     for (const n of t.i ? NPCS2 : NPCS) ents.push({ y: n.y, n });
     for (const b of BUILDINGS) ents.push({ y: t.y + b.y + b.h / 2, bld: b, t });
-    for (const d of TOWN_DECOR) if (!(d.hide && d.hide[t.i])) ents.push({ y: t.y + d.sy, deco: d, t });
+    for (const d of TOWN_DECOR) ents.push({ y: t.y + d.sy, deco: d, t });
     for (const d of TOWN_GATES[t.i] || []) ents.push({ y: t.y + d.sy, deco: d, t });
   }
   if (G.P) ents.push({ y: G.P.y, me: G.P });
