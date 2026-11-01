@@ -1087,7 +1087,7 @@ function moonChestEvent(m) {
 function farSpot(pl, rMin, rMax) {
   for (let k = 0; k < 60; k++) {
     const a = Math.random() * 6.28, r = rand(rMin, rMax), x = pl.x + Math.cos(a) * r, y = pl.y + Math.sin(a) * r, z = zoneAt(x, y);
-    if (z >= 1 && z <= 5 && !solidAt(x, y) && !isWater(x, y)) return { x, y, z };
+    if (z >= 1 && z <= Math.min(5, Math.max(1, zoneAt(pl.x, pl.y)) + 1) && !solidAt(x, y) && !isWater(x, y)) return { x, y, z }; // no máximo 1 zona acima da sua
   }
   return null;
 }
