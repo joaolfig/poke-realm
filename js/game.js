@@ -715,12 +715,13 @@ function useAbility() {
     }
     case 'evocador': { // Cetro Relampejante (Feiticeiro): raio em cadeia
       const t = aimPoint(P, 420);
-      let cur = enemiesNear(t.x, t.y, 160).sort((a, b) => Math.hypot(a.x - t.x, a.y - t.y) - Math.hypot(b.x - t.x, b.y - t.y))[0];
+      let cur = (P.pvp ? pvpFoesNear(t.x, t.y, 160) : []).concat(enemiesNear(t.x, t.y, 160)).sort((a, b) => Math.hypot(a.x - t.x, a.y - t.y) - Math.hypot(b.x - t.x, b.y - t.y))[0];
       if (!cur) { text(P.x, P.y - 40, 'Nenhum alvo perto do cursor', '#cbd5e1', 12); P.abilCd = 0.4; return; }
       const hit = new Set(), pts = [[P.x, P.y]];
       let k = 1;
       for (let j = 0; j < 6 && cur; j++) {
         hit.add(cur.id); pts.push([cur.x, cur.y]);
+        if (cur.pvpFoe) { pvpBlast(cur.x, cur.y, 40, (roll(2 + Math.floor(lv / 5), 8) + Math.floor(pod / 2)) * k); break; }
         abilHit(cur, (roll(2 + Math.floor(lv / 5), 8) + Math.floor(pod / 2)) * k, tp);
         k *= 0.85;
         const from = cur;
@@ -733,6 +734,7 @@ function useAbility() {
       const t = aimPoint(P, 360);
       let tot = 0;
       for (const e of enemiesNear(t.x, t.y, 110)) tot += abilHit(e, roll(1 + Math.floor(lv / 5), 10) + Math.floor(pod / 2), tp);
+      if (P.pvp && pvpFoesNear(t.x, t.y, 110).length) { const dm = roll(1 + Math.floor(lv / 5), 10) + Math.floor(pod / 2); pvpBlast(t.x, t.y, 110, dm); tot += Math.round(dm * 0.6); }
       if (tot) { const h = Math.ceil(tot * 0.2); P.hp = Math.min(maxHP(P), P.hp + h); text(P.x, P.y - 34, `+${h}`, '#86efac', 14); }
       fxAt(t.x, t.y, 110, '#a78bfa'); sfx('boom'); break;
     }
@@ -769,6 +771,7 @@ function useAbility() {
     case 'feras': { // Armadilha da Caçadora (Caçadora)
       const t = aimPoint(P, 300);
       G.zones.push({ k: 'armadilha', x: t.x, y: t.y, r: 120, t: 6, wait: 0.5, every: 0.1, tick: 0 });
+      if (P.pvp) emitEvent({ t: 'pvpaoe', x: Math.round(t.x), y: Math.round(t.y), r: 90, dur: 6, wait: 0.5, once: 1, dmg: Math.max(1, Math.round((roll(2 + Math.floor(lv / 4), 8) + pod) * 0.6)), name: P.name });
       sfx('pick'); break;
     }
     case 'arcano': // Aljava Arcana: leque de flechas perfurantes
@@ -1332,7 +1335,7 @@ function render() {
   for (const r of G.remotes.values()) {
     if (r.dead || !r.cls || r.tx === undefined) continue;
     ents.push({ y: r.y, r });
-    for (const a of r.allies || []) if (vis(a[1], a[2])) ents.push({ y: a[2], ra: a });
+    if (!(r.invis && G.P && G.P.pvp)) for (const a of r.allies || []) if (vis(a[1], a[2])) ents.push({ y: a[2], ra: a });
   }
   for (const a of G.allies) ents.push({ y: a.y, a });
   // cidades: prédios e enfeites ficam em coordenadas locais (deslocados pelo centro de cada cidade)
@@ -1358,8 +1361,9 @@ function render() {
       grassOver(a.x, a.y + 10, a.x + ox, a.y + oy + 14, 26);
     } else if (it.ra) drawAlly(it.ra[0], it.ra[1], it.ra[2], ox, oy, it.ra[3], G.time, 1, false);
     else if (it.r) {
-      const r = it.r, x = r.x + ox, y = r.y + oy;
+      const r = it.r, x = r.x + ox, y = r.y + oy, hide = r.invis && G.P && G.P.pvp; // rival invisível na arena: só um vulto
       let lift = 0;
+      if (hide) { drawPlayerSprite(r.cls, x, y, r.face || 1, 0, 0.07, r.aim || 0, r.ptype); continue; }
       if (r.mount) lift = drawMount(r.mount, r.x, r.y, x, y, r.face || 1, r.moving, G.time); else waterOver(r.x, r.y + 16, x, y + 16, 30);
       drawPlayerSprite(r.cls, x, y - lift, r.face || 1, r.mount ? 0 : r.moving ? Math.floor(r.walk * 8) % 2 : 0, r.invis ? (G.P && G.P.pvp ? 0.07 : 0.4) : 1, r.aim || 0, r.ptype);
       ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.textAlign = 'center';
@@ -1654,7 +1658,7 @@ function drawHUD(ox, oy) {
       const stt = !dg && storyTarget(P);
       if (stt) { const [a, b] = dg || big ? toM(stt.x, stt.y) : edge(_toM(stt.x, stt.y)); ctx.font = 'bold 14px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fde047'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; outlined('★', a, b + 5); }
       for (const p of G.portals) if (same(p.x)) { const [a, b] = toM(p.x, p.y); ctx.fillStyle = p.exit ? '#facc15' : THEMES[p.theme].accent; ctx.beginPath(); ctx.arc(a, b, 4, 0, 7); ctx.fill(); }
-      for (const r of G.remotes.values()) if (!r.dead && r.tx !== undefined && same(r.x)) { const [a, b] = toM(r.x, r.y); ctx.fillStyle = '#38bdf8'; ctx.fillRect(a - 2, b - 2, 5, 5); }
+      for (const r of G.remotes.values()) if (!r.dead && r.tx !== undefined && same(r.x) && !(r.invis && P && P.pvp)) { const [a, b] = toM(r.x, r.y); ctx.fillStyle = '#38bdf8'; ctx.fillRect(a - 2, b - 2, 5, 5); }
       for (const e of G.enemies) if (e.boss && same(e.x)) { const [a, b] = toM(e.x, e.y); ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(a, b, 5, 0, 7); ctx.fill(); }
       if (P) { const [a, b] = toM(P.x, P.y); ctx.fillStyle = '#fff'; ctx.fillRect(a - 2.5, b - 2.5, 6, 6); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.strokeRect(a - 2.5, b - 2.5, 6, 6); }
     }

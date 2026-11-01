@@ -80,6 +80,12 @@ function pvpLeave(lost, by) {
 }
 
 /* ---------- dano entre jogadores ---------- */
+// rivais da arena como alvos dos especiais de área (raio do Evocador, explosão do Necromante)
+const pvpFoesNear = (x, y, r) => [...G.remotes.values()].filter(o => !o.dead && o.name && inArena(o.tx, o.ty) && Math.hypot(o.tx - x, o.ty - y) < r + 12).map(o => ({ x: o.tx, y: o.ty, pvpFoe: 1 }));
+// explosão instantânea: quem estiver dentro do raio calcula o próprio dano (60%, como os tiros)
+function pvpBlast(x, y, r, dmg) {
+  emitEvent({ t: 'pvpaoe', x: Math.round(x), y: Math.round(y), r, dur: 0.05, wait: 0, once: 1, dmg: Math.max(1, Math.round(dmg * 0.6)), name: G.P.name });
+}
 // dano de PvP que vai junto com cada tiro meu (os tiros dos outros chegam como cosméticos)
 function pvpShotDmg(P, o) {
   if (!P.pvp) return 0;
@@ -119,6 +125,7 @@ function pvpAoeTick(dt) {
     const dmg = Math.round(a.dmg * clamp(1 - (AC(P) - 12) * 0.03, 0.5, 1));
     P.hp -= dmg; P.sinceHit = 0;
     text(P.x, P.y - 34, `-${dmg} ☠`, '#a3e635', 13);
+    if (a.once) a.dur = 0; // armadilha/explosão: acerta uma vez só
     if (P.hp <= 0) { PVP.aoe = []; pvpLeave(true, a.name); return; }
   }
   PVP.aoe = PVP.aoe.filter(a => a.dur > 0);
@@ -147,8 +154,8 @@ function pvpEvent(m) {
     else if (m.b === NET.myId) { const r = G.remotes.get(m.a); pvpEnter(1, r ? r.name : 'o rival'); }
   } else if (m.t === 'pvpaoe') {
     if (m.from === NET.myId || !P || !P.pvp) return;
-    (PVP.aoe = PVP.aoe || []).push({ x: m.x, y: m.y, r: m.r, dur: m.dur, wait: m.wait || 0, dmg: m.dmg, tick: 0, name: m.name });
-    G.zones.push({ k: 'veneno', x: m.x, y: m.y, r: m.r, t: m.dur + (m.wait || 0), wait: 99, every: 99, tick: 99, fx: 1 }); // só o desenho da nuvem
+    (PVP.aoe = PVP.aoe || []).push({ x: m.x, y: m.y, r: m.r, dur: m.dur, wait: m.wait || 0, dmg: m.dmg, tick: 0, name: m.name, once: m.once });
+    if (!m.once) G.zones.push({ k: 'veneno', x: m.x, y: m.y, r: m.r, t: m.dur + (m.wait || 0), wait: 99, every: 99, tick: 99, fx: 1 }); // só o desenho da nuvem (armadilha fica escondida)
   } else if (m.t === 'pvpout') {
     G.toasts.push({ text: m.by ? `🏆 ${m.by} derrotou ${m.name} na arena!` : `${m.name} saiu da arena.`, color: '#facc15', t: 5, big: 1 });
     if (P && P.pvp && m.by === P.name) G.toasts.push({ text: 'Vitória! Use [R] para voltar à vila ou espere outro desafio.', color: '#86efac', t: 5 });
