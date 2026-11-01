@@ -277,8 +277,9 @@ function allyHit(e, a, sp) {
 }
 
 /* ---------- Captura ---------- */
-// penalidade da Poké Ball comum por zona (com o nível recomendado e o alvo quase sem vida: ~15% na zona 3, ~10% na 4, só 20 natural na 5)
-const POKE_BALL_PEN = { 3: 11, 4: 13, 5: 16 };
+// A Poké Ball comum perde força com o nível do Pokémon: −2 por nível acima do 11.
+// Com o alvo quase sem vida e o herói no mesmo nível: ~45% no Nv 13, ~35% no Nv 14, ~15% no Nv 16 e só 20 natural do Nv 17 em diante.
+const POKE_BALL_FREE = 11;
 const BALLS = { poke: { nome: 'Poké Ball', icon: '⚪', bonus: 0 }, grande: CONS.grande, ultra: CONS.ultra };
 // [C] / LB: troca o companheiro líder pelo próximo que está na Poké Ball (se todos já estão fora, passa a liderança)
 function cyclePet() {
@@ -338,12 +339,13 @@ function throwBall() {
   if (k === 'poke') P.balls--; else P.bag[k]--;
   G.dirty = true;
   // rolagem de captura: d20 + nível/2 + bônus da bola contra uma CD que cai com a vida do alvo
-  const dc = 8 + e.zone * 2 + (e.alfa ? 4 : 0) + Math.round(e.hp / e.maxHp * 10) - (e.kind === 4 ? 6 : 0);
-  // a Poké Ball comum quase não segura Pokémon das zonas 3-5 (empurra o jogador para Great e Ultra Ball)
-  const pen = k === 'poke' ? (POKE_BALL_PEN[e.zone] || 0) : 0;
+  // CD sobe com o nível do Pokémon e com a vida que ainda tem
+  const elv = e.lvl || e.zone * 5;
+  const dc = 6 + Math.floor(elv * 0.6) + (e.alfa ? 4 : 0) + Math.round(e.hp / e.maxHp * 10) - (e.kind === 4 ? 6 : 0);
+  const pen = k === 'poke' ? Math.max(0, elv - POKE_BALL_FREE) * 2 : 0;
   const nat = d(20), total = nat + Math.floor(P.lvl / 2) + (hasT(P, 'domador') ? 4 : 0) + BALLS[k].bonus + M(P, 'cap') - pen;
   const ok = nat === 20 || total >= dc, rollTxt = `${BALLS[k].icon} 🎲 ${nat}${total - nat >= 0 ? '+' : ''}${total - nat} vs CD ${dc}`;
-  if (pen && !ok && !G.ballTip) { G.ballTip = 1; G.toasts.push({ text: '⚪ O Pokémon escapou da Poké Ball como se ela nem estivesse ali... Talvez essa bola não seja páreo para os Pokémon daqui.', color: '#fde68a', t: 8 }); }
+  if (pen && !ok && !G.ballTip) { G.ballTip = 1; G.toasts.push({ text: '⚪ Essa Poké Ball não segurou... será que é forte o bastante?', color: '#fde68a', t: 8 }); }
   // a bola voa em arco até o Pokémon; o resultado sai quando ela chega
   const dist = Math.hypot(e.x - P.x, e.y - P.y);
   G.throws = G.throws || [];
@@ -384,7 +386,7 @@ function drawThrows(ox, oy) {
 function capture(e, rollTxt, k = 'poke') {
   const P = G.P;
   e.hp = 0; e.dead = true;
-  const lvl = clamp(e.zone * 5 - 4 + randi(0, 2) + (e.alfa ? 3 : 0) + (e.kind === 4 ? 2 : 0), 1, 28);
+  const lvl = clamp(e.lvl || e.zone * 5 - 4, 1, 28); // o companheiro vem no nível em que foi capturado
   P.pets.push({ pid: e.pid, name: e.p.name, type: e.type, lvl, xp: 0 });
   if (P.petAct.length < petSlots(P)) { P.petAct.push(P.pets.length - 1); P.petIdx = P.petAct[0]; }
   loadEvo(e.pid);

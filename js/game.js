@@ -312,6 +312,7 @@ function enemyStats(pid, zone, kind) {
   };
 }
 
+const alfa = kind => kind === 1;
 function makeEnemy(id, pid, zone, kind, x, y) {
   const s = enemyStats(pid, zone, kind);
   const iw = s.p.img ? s.p.img.width : 30, ih = s.p.img ? s.p.img.height : 30;
@@ -322,6 +323,9 @@ function makeEnemy(id, pid, zone, kind, x, y) {
   });
   e.r = Math.max(12, Math.min(e.w, e.h) * 0.42);
   e.fly = s.p.types.includes('flying') && !s.p.types.includes('water');
+  // nível do Pokémon: dentro da faixa da zona (igual no host e nos clientes, sai do id); Alfas e raros um pouco acima
+  const zi = clamp(Math.round(zone), 1, 5);
+  e.lvl = clamp(ZONE_LVL[zi] + Math.floor(hash(id, pid) * (ZONE_LVL_MAX[zi] - ZONE_LVL[zi] + 1)) + (alfa(kind) ? 2 : kind === 4 ? 1 : 0), 1, 30);
   return e;
 }
 
@@ -1474,7 +1478,7 @@ function drawTargetCard() {
   // nome e tipos
   ctx.textAlign = 'left'; ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#ece5d6';
   const tag = e.legend ? ' ★' : e.rare ? ' ✨' : '';
-  let nm = (e.alfa ? 'Alfa ' : '') + e.p.name + tag;
+  let nm = (e.alfa ? 'Alfa ' : '') + e.p.name + tag + (e.lvl && !e.boss ? ` · Nv ${e.lvl}` : '');
   while (ctx.measureText(nm).width > w - 66 && nm.length > 4) nm = nm.slice(0, -2);
   ctx.fillText(nm, x + 58, y + 17);
   let tx = x + 58;
