@@ -110,7 +110,7 @@ function renderNPC() {
   const P = G.P, n = G.npcRef && G.npcRef.id === G.npcOpen ? G.npcRef : NPCS.find(x => x.id === G.npcOpen);
   if (P && G.npcOpen === 'fly') { $('npc').innerHTML = renderFly(P); return; }
   if (!P || !n) { closeNPC(); return; }
-  let body = renderIL(n, P) + (n.fala ? `<p class="fala">"${n.fala}"</p>` : '');
+  let body = n.fala ? `<p class="fala">"${n.fala}"</p>` : '';
   if (n.id === 'cura') {
     // dica da vendedora: insinua que a Poké Ball comum não segura os Pokémon mais fortes (sem explicar a regra)
     body += `<p class="fala">"Ouvi dizer que, de ${ZONES[3].nome} em diante, os Pokémon não se deixam prender por qualquer bola... Os treinadores que voltam de lá inteiros nunca levam só Poké Ball na mochila. Por que será que a Great Ball e a Ultra Ball vendem tanto?"</p>`;
@@ -148,7 +148,8 @@ function renderNPC() {
   } else if (n.id === 'guilda') {
     body += renderContracts(P, 'guilda');
   }
-  if (n.id !== 'guilda' && QGIVERS[n.id]) body = renderContracts(P, n.id) + body;
+  if (n.id !== 'guilda' && QGIVERS[n.id]) body += renderContracts(P, n.id);
+  body = renderIL(n, P) + body; // etapa da história sempre no topo
   $('npc').innerHTML = `<div class="npc-head"><span>${n.icon} <b>${n.nome}</b></span><span>🪙 ${P.gold}</span><button data-act="close" title="Fechar (Esc)">✕</button></div>${body}`;
   padFixDom($('npc'));
 }
