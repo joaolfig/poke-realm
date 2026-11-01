@@ -230,7 +230,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quest', 'questOffer', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};

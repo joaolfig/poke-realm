@@ -6,6 +6,7 @@ const NPCS = [
   { id: 'ferreiro', nome: 'Ferreira Duna', icon: '🔨', x: -140, y: 136, spr: { h: '#ea580c', b: '#57534e', d: '#292524' }, fala: 'Traga ouro e eu deixo seu equipamento mais forte.' },
   { id: 'guilda', nome: 'Mestre da Guilda', icon: '📜', x: 140, y: 140, spr: { h: '#e5e7eb', b: '#1d4ed8', d: '#1e3a8a' }, fala: 'O reino precisa de heróis. Escolha um contrato.' },
   { id: 'sildo', nome: 'Sildo Invernal', icon: '🛡️', x: 0, y: -205, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
+  { id: 'pc', nome: 'PC', icon: '💻', x: -82, y: -40, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
   { id: 'dex', nome: 'Pesquisadora Íris', icon: '📖', x: 60, y: 205, spr: { h: '#7c2d12', b: '#f8fafc', d: '#0f766e' }, fala: '' },
   { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '', show: P => storyOver(P) },
 ];
@@ -28,7 +29,7 @@ function rebuildTownNPCs() {
   NPCS2.length = 0;
   const t = TOWNS[1];
   if (!t) return;
-  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex'].includes(n.id))
+  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex', 'pc'].includes(n.id))
     NPCS2.push({ ...n, x: n.x + t.x, y: n.y + t.y, town: 1, nome: n.id === 'sildo' ? `Assistente ${REGION.guia.nome.split(' ').pop()}` : n.nome, show: null });
 }
 const allNPCs = () => NPCS.concat(NPCS2);
@@ -40,7 +41,12 @@ function drawNPC(n, ox, oy) {
   if (n.show && !(G.P && n.show(G.P))) return;
   const x = n.x + ox, y = n.y + oy + Math.sin(G.time * 2 + n.x) * 1;
   ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y + 17, 12, 4, 0, 0, 7); ctx.fill();
-  ctx.drawImage(NPC_SPR[n.id], x - 18, y - 18, 36, 36);
+  if (n.id === 'pc') {
+    ctx.fillStyle = '#334155'; ctx.fillRect(x - 15, y - 14, 30, 30); ctx.fillStyle = '#0f172a'; ctx.fillRect(x - 15, y + 12, 30, 4);
+    ctx.fillStyle = '#1e293b'; ctx.fillRect(x - 12, y - 11, 24, 15);
+    ctx.fillStyle = Math.sin(G.time * 3) > 0 ? '#38bdf8' : '#7dd3fc'; ctx.fillRect(x - 10, y - 9, 20, 11);
+    ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(x, y + 9, 3, 0, 7); ctx.fill();
+  } else ctx.drawImage(NPC_SPR[n.id], x - 18, y - 18, 36, 36);
   ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = '#fef3c7';
   outlined(`${n.icon} ${n.nome}`, x, y - 26);
   const P = G.P;
@@ -107,6 +113,8 @@ function renderNPC() {
     body += `<h4>Vender</h4>${inv || '<div class="small">Mochila vazia.</div>'}`;
   } else if (n.id === 'dex') {
     body += renderDexNPC(P);
+  } else if (n.id === 'pc') {
+    body += renderPC(P);
   } else if (n.id === 'sildo' || n.id === 'gundo') {
     body += renderStoryNPC(n, P);
   } else if (n.id === 'ferreiro') {
@@ -157,6 +165,7 @@ $('npc').addEventListener('click', ev => {
   else if (act === 'claim') claimQuest(P);
   else if (act === 'story') storyAct(P, arg);
   else if (act === 'dex') dexClaim(P, +arg);
+  else if (act === 'pc') { const [a2, i2] = arg.split(':'); pcAct(P, a2, +i2); }
   else if (act === 'dexopen') { closeNPC(); toggleDex(); }
   else if (act === 'fly') { flyTo(P, arg); return; }
   else if (act === 'reforge') {
@@ -698,14 +707,22 @@ const dexIcon = pid => `https://raw.githubusercontent.com/PokeAPI/sprites/master
 const dexName = pid => (POKE[pid] || (typeof POKEDEX_PRELOAD !== 'undefined' && POKEDEX_PRELOAD[pid]) || {}).name || '???';
 function renderDex() {
   const P = G.P, d = dexOf(P), box = $('dex');
-  const cells = DEX_IDS.map(pid => {
-    const c = d.c.includes(pid), s = c || d.s.includes(pid);
+  const f = G.dexF || 'todos';
+  const ids = DEX_IDS.filter(pid => { const c = d.c.includes(pid), s = c || d.s.includes(pid); return f === 'todos' || (f === 'cap' ? c : f === 'vis' ? s && !c : !s); });
+  const cells = ids.map(pid => {
+    const c = d.c.includes(pid), s = c || d.s.includes(pid), p = POKE[pid] || (typeof POKEDEX_PRELOAD !== 'undefined' && POKEDEX_PRELOAD[pid]);
+    const ty = s && p ? p.types.map(t => `<i class="dt" style="background:${TYPE_COLORS[t]}"></i>`).join('') : '';
     return `<div class="dexc ${c ? 'got' : s ? 'seen' : 'unk'}" title="${s ? `${esc(dexName(pid))} — ${DEX_WHERE[pid]}` : '??? — ainda não encontrado'}">
-      <img src="${dexIcon(pid)}" alt="" loading="lazy">${c ? '<i>●</i>' : ''}<span>${s ? esc(dexName(pid)) : '???'}</span></div>`;
+      <em>#${String(pid).padStart(3, '0')}</em>${c ? '<b class="ball"></b>' : ''}
+      <img src="${dexIcon(pid)}" alt="" loading="lazy"><span>${s ? esc(dexName(pid)) : '???'}</span><div class="dts">${ty}</div></div>`;
   }).join('');
-  box.innerHTML = `<h3>📖 Pokédex de ${REGION.nome} <span class="small">[P] fecha</span></h3>
-    <div class="small">${d.s.length} vistos · <b>${d.c.length}/${DEX_IDS.length}</b> capturados (${Math.floor(d.c.length / DEX_IDS.length * 100)}%) · passe o mouse para ver onde cada um aparece. Lendários contam ao serem derrotados.</div>
-    <div class="dexgrid">${cells}</div>`;
+  const pc = d.c.length / DEX_IDS.length * 100;
+  const tab = (k, t) => `<button data-dexf="${k}" class="${f === k ? 'on' : ''}">${t}</button>`;
+  box.innerHTML = `<div class="dexhead"><span class="dextitle">Pokédex · ${REGION.nome}</span><button data-dexf="x" title="Fechar ([P])">✕</button></div>
+    <div class="bar dexbar"><div style="width:${pc}%"></div><span>${d.c.length}/${DEX_IDS.length} capturados · ${d.s.length} vistos · ${Math.floor(pc)}%</span></div>
+    <div class="dextabs">${tab('todos', 'Todos')}${tab('cap', 'Capturados')}${tab('vis', 'Só vistos')}${tab('falta', 'Faltando')}</div>
+    <div class="dexgrid">${cells || '<div class="small">Nada aqui ainda.</div>'}</div>
+    <div class="small dexfoot">Passe o mouse para ver onde cada um aparece · lendários contam ao serem derrotados · recompensas com a Pesquisadora Íris (vila e 2ª cidade)</div>`;
 }
 function toggleDex() {
   const box = $('dex');
@@ -719,3 +736,4 @@ function renderDexNPC(P) {
       return `<div class="shoprow"><span>${ok ? '✅' : can ? '🎁' : '🔒'} <b>${g.pc}%</b>: ${regTitle(g.txt)}</span>${can ? `<button data-act="dex:${g.pc}" class="good">Receber</button>` : ''}</div>`; }).join('')}
     <button data-act="dexopen">📖 Abrir a Pokédex</button>`;
 }
+document.addEventListener('click', ev => { const b = ev.target.closest('[data-dexf]'); if (!b || !G || !G.P) return; if (b.dataset.dexf === 'x') $('dex').classList.add('hidden'); else { G.dexF = b.dataset.dexf; renderDex(); } });

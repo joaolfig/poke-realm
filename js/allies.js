@@ -336,7 +336,6 @@ function throwBall() {
   }
   if (!e) { text(P.x, P.y - 40, 'Mire num Pokémon próximo', '#cbd5e1', 12); return; }
   if (e.boss) { text(e.x, e.y - e.h / 2, 'Não pode ser capturado!', '#fca5a5', 13); return; }
-  if (P.pets.length >= petCap(P)) { G.toasts.push({ text: `Você já tem ${petCap(P)} companheiros. Compre mais vagas com a Vendedora de Poké Balls ou solte um no painel (botão direito duas vezes).`, color: '#fca5a5', t: 4 }); return; }
   if (k === 'poke') P.balls--; else P.bag[k]--;
   G.dirty = true;
   // rolagem de captura: d20 + nível/2 + bônus da bola contra uma CD que cai com a vida do alvo
@@ -362,7 +361,7 @@ function updateThrows(dt) {
     const e = b.e;
     if (e.dead || e.hp <= 0 || !G.emap.has(e.id)) { text(e.x, e.y - 20, 'A Poké Ball caiu no chão...', '#cbd5e1', 12); continue; }
     G.fx.push({ k: 'ring', x: e.x, y: e.y, r: 0, R: e.r + 20, life: 0.5, max: 0.5, color: b.k === 'ultra' ? '#facc15' : b.k === 'grande' ? '#60a5fa' : '#f87171' });
-    if (b.ok && G.P && G.P.pets.length < petCap(G.P)) capture(e, b.rollTxt, b.k);
+    if (b.ok && G.P) capture(e, b.rollTxt, b.k);
     else { text(e.x, e.y - e.h / 2 - 10, `Escapou! (${b.rollTxt.replace(/^\S+ /, '')})`, '#fca5a5', 13); e.flash = 0.2; burst(e.x, e.y, '#f87171', 10); sfx('pick'); }
   }
   G.throws = G.throws.filter(b => !b.done);
@@ -388,9 +387,11 @@ function capture(e, rollTxt, k = 'poke') {
   const P = G.P;
   e.hp = 0; e.dead = true;
   const lvl = clamp(e.lvl || e.zone * 5 - 4, 1, 28); // o companheiro vem no nível em que foi capturado
-  P.pets.push({ pid: e.pid, name: e.p.name, type: e.type, lvl, xp: 0 });
+  const mon = { pid: e.pid, name: e.p.name, type: e.type, lvl, xp: 0 };
   dexCatch(P, e.pid);
-  if (P.petAct.length < petSlots(P)) { P.petAct.push(P.pets.length - 1); P.petIdx = P.petAct[0]; }
+  const toPC = P.pets.length >= petCap(P);
+  if (toPC) { P.box = P.box || []; P.box.push(mon); G.toasts.push({ text: `💻 Equipe cheia: ${e.p.name} foi para o PC. Troque num PC das cidades.`, color: '#93c5fd', t: 4.5 }); }
+  else { P.pets.push(mon); if (P.petAct.length < petSlots(P)) { P.petAct.push(P.pets.length - 1); P.petIdx = P.petAct[0]; } }
   loadEvo(e.pid);
   burst(e.x, e.y, '#f87171', 30);
   burst(e.x, e.y, '#ffffff', 20);
@@ -449,4 +450,51 @@ function petIconUrl(pid) {
   if (!p || !p.img) { ensurePoke(pid); return ''; }
   if (!p.url) { try { p.url = p.img.toDataURL ? p.img.toDataURL() : ''; } catch (e) { p.url = ''; } }
   return p.url;
+}
+
+/* ---------- PC (nas cidades): guarda os Pokémon que não cabem na equipe ---------- */
+// mexe na equipe mantendo quem está fora da Poké Ball (petAct guarda índices)
+function teamEdit(P, fn) {
+  const out = P.petAct.map(i => P.pets[i]);
+  fn();
+  P.petAct = out.map(m => P.pets.indexOf(m)).filter(i => i >= 0).slice(0, petSlots(P));
+  P.petIdx = P.petAct.length ? P.petAct[0] : -1;
+  G.dirty = true; saveGame();
+}
+function pcAct(P, act, i) {
+  P.box = P.box || [];
+  if (act === 'sel') { G.pcSel = G.pcSel === i ? -1 : i; return; }
+  if (act === 'guardar') {
+    const m = P.pets[i];
+    if (!m) return;
+    if (P.pets.length <= 1) return G.toasts.push({ text: 'Fique com pelo menos um Pokémon na equipe.', color: '#fca5a5', t: 2.5 });
+    teamEdit(P, () => { P.pets.splice(i, 1); P.box.push(m); });
+    G.pcSel = -1;
+    G.toasts.push({ text: `💻 ${m.name} foi guardado no PC.`, color: '#93c5fd', t: 2.5 });
+  } else if (act === 'pegar') {
+    const m = P.box[i];
+    if (!m) return;
+    if (P.pets.length < petCap(P)) {
+      teamEdit(P, () => { P.box.splice(i, 1); P.pets.push(m); });
+      G.toasts.push({ text: `💻 ${m.name} entrou na equipe.`, color: '#86efac', t: 2.5 });
+    } else if (G.pcSel >= 0 && P.pets[G.pcSel]) {
+      const out = P.pets[G.pcSel];
+      teamEdit(P, () => { P.pets[G.pcSel] = m; P.box[i] = out; });
+      G.toasts.push({ text: `💻 Troca feita: ${m.name} entrou, ${out.name} foi para o PC.`, color: '#86efac', t: 3 });
+      G.pcSel = -1;
+    } else G.toasts.push({ text: 'Equipe cheia: escolha primeiro quem sai da equipe.', color: '#fca5a5', t: 2.5 });
+  }
+  loadPokedex([...P.pets, ...P.box].map(m => m.pid)).then(() => { if (G.npcOpen === 'pc') renderNPC(); });
+}
+function renderPC(P) {
+  P.box = P.box || [];
+  if (G.pcSel === undefined) G.pcSel = -1;
+  const row = (m, html) => `<div class="pcrow"><img src="${petIconUrl(m.pid) || dexIcon(m.pid)}" alt=""><span>${esc(m.name)} <b>Nv ${m.lvl}</b> ${typeBadge(m.type)}</span>${html}</div>`;
+  const full = P.pets.length >= petCap(P);
+  return `<p class="fala">"Bem-vindo ao sistema de armazenamento de Pokémon!"</p>
+    <h4>Equipe ${P.pets.length}/${petCap(P)}</h4>
+    ${P.pets.map((m, i) => row(m, `<span><button data-act="pc:sel:${i}" class="${G.pcSel === i ? 'good' : ''}">${G.pcSel === i ? '✔ Sai da equipe' : 'Trocar'}</button> <button data-act="pc:guardar:${i}">Guardar</button></span>`)).join('')}
+    <h4>PC ${P.box.length}</h4>
+    ${P.box.length ? `<div class="pcbox">${P.box.map((m, i) => row(m, `<button data-act="pc:pegar:${i}" ${full && G.pcSel < 0 ? 'disabled' : ''}>${full ? (G.pcSel >= 0 ? 'Trocar' : 'Pegar') : 'Pegar'}</button>`)).join('')}</div>` : '<div class="small">O PC está vazio. Quando a equipe estiver cheia, os Pokémon capturados vêm para cá.</div>'}
+    <div class="small">${full ? 'Equipe cheia: clique em "Trocar" em quem vai sair e depois em "Trocar" no Pokémon do PC.' : 'Há espaço na equipe: é só pegar.'}</div>`;
 }

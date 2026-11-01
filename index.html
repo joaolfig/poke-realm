@@ -72,13 +72,22 @@
   #padinfo { position: fixed; z-index: 9; right: 296px; bottom: 12px; max-width: min(380px, 40vw); background: rgba(13, 14, 16, .96); border: 2px solid #000; box-shadow: 0 0 0 1px var(--gold); padding: 8px 10px; font-size: 13px; white-space: pre-line; pointer-events: none; }
   .padgrid { display: grid; grid-template-columns: repeat(2, auto 1fr); gap: 3px 10px; align-items: center; margin-bottom: 10px; font-size: 13px; line-height: 1.3; }
   body.pad #help { width: min(760px, 94vw); }
-  #dex { position: fixed; z-index: 7; left: calc((100vw - 284px) / 2); top: 50%; transform: translate(-50%, -50%); width: min(820px, 94vw); max-height: 86vh; overflow: auto; background: rgba(20, 21, 24, .97); border: 3px solid #000; box-shadow: 0 0 0 1px var(--line); padding: 12px 14px; }
-  #dex h3 { margin: 0 0 4px; }
-  .dexgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 4px; margin-top: 8px; }
-  .dexc { position: relative; background: var(--well); border: 1px solid var(--line); text-align: center; padding: 2px 2px 3px; font: 600 10.5px/12px var(--px); }
-  .dexc img { width: 40px; height: 30px; object-fit: contain; image-rendering: pixelated; display: block; margin: 0 auto; }
-  .dexc.unk img { filter: brightness(0) invert(1); opacity: .22; } .dexc.unk span { color: var(--faint); }
-  .dexc.got { border-color: #4ade80; } .dexc i { position: absolute; top: 1px; right: 3px; color: #ef4444; font-style: normal; font-size: 10px; }
+  #dex { position: fixed; z-index: 7; left: calc((100vw - 284px) / 2); top: 50%; transform: translate(-50%, -50%); width: min(860px, 94vw); max-height: 88vh; display: flex; flex-direction: column; background: var(--panel); border: 3px solid #000; box-shadow: 0 0 0 1px var(--line-hi), 0 10px 40px rgba(0,0,0,.6); padding: 10px 12px; }
+  .dexhead { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; box-shadow: 0 1px 0 var(--line); padding-bottom: 6px; }
+  .dextitle { font: 700 22px/1 var(--px); color: var(--gold); text-shadow: 2px 2px 0 #000; letter-spacing: .03em; }
+  .dexbar { height: 18px; margin: 8px 0 6px; } .dexbar div { height: 100%; background: linear-gradient(#7ad37a, #3f8f3f); }
+  .dextabs { display: flex; gap: 4px; flex-wrap: wrap; } .dextabs button.on { background: var(--gold); color: #000; }
+  .dexgrid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 5px; margin: 8px 0 6px; padding-right: 4px; }
+  .dexc { position: relative; background: var(--well); border: 2px solid #000; box-shadow: 0 0 0 1px var(--line); text-align: center; padding: 12px 3px 4px; font: 600 11px/12px var(--px); color: var(--text); }
+  .dexc em { position: absolute; top: 2px; left: 4px; font: 600 9px var(--px); color: var(--faint); font-style: normal; }
+  .dexc img { width: 48px; height: 36px; object-fit: contain; image-rendering: pixelated; display: block; margin: 0 auto 2px; }
+  .dexc.unk { opacity: .7; } .dexc.unk img { filter: brightness(0) invert(1); opacity: .2; } .dexc.unk span { color: var(--faint); }
+  .dexc.got { box-shadow: 0 0 0 1px var(--gold); background: linear-gradient(#1b1a14, var(--well)); }
+  .dexc .ball { position: absolute; top: 3px; right: 4px; width: 9px; height: 9px; border-radius: 50%; background: linear-gradient(#ef4444 50%, #f8fafc 50%); border: 1px solid #000; }
+  .dts { display: flex; justify-content: center; gap: 3px; height: 5px; margin-top: 3px; } .dt { width: 16px; height: 4px; border: 1px solid #000; }
+  .dexfoot { border-top: 1px solid var(--line); padding-top: 5px; }
+  .pcrow { display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid var(--line); } .pcrow img { width: 40px; height: 30px; object-fit: contain; image-rendering: pixelated; } .pcrow span { flex: 1; }
+  .pcbox { max-height: 220px; overflow-y: auto; }
   .ptitle { color: #fcd34d; font: 600 12px var(--px); }
   .padgrid kbd { justify-self: start; }
   #help #pad-help h3 + .padgrid { margin-top: 4px; }
@@ -355,23 +364,23 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=82"></script>
-<script src="js/data.js?v=82"></script>
-<script src="js/rules.js?v=82"></script>
-<script src="js/items.js?v=82"></script>
-<script src="js/dungeon.js?v=82"></script>
-<script src="js/net.js?v=82"></script>
-<script src="js/map.js?v=82"></script>
-<script src="js/world.js?v=82"></script>
-<script src="js/story.js?v=82"></script>
-<script src="js/hm.js?v=82"></script>
-<script src="js/allies.js?v=82"></script>
-<script src="js/town.js?v=82"></script>
-<script src="js/geo.js?v=82"></script>
-<script src="js/regions.js?v=82"></script>
-<script src="js/audio.js?v=82"></script>
-<script src="js/pad.js?v=82"></script>
-<script src="js/pvp.js?v=82"></script>
-<script src="js/game.js?v=82"></script>
+<script src="js/pokedex.js?v=83"></script>
+<script src="js/data.js?v=83"></script>
+<script src="js/rules.js?v=83"></script>
+<script src="js/items.js?v=83"></script>
+<script src="js/dungeon.js?v=83"></script>
+<script src="js/net.js?v=83"></script>
+<script src="js/map.js?v=83"></script>
+<script src="js/world.js?v=83"></script>
+<script src="js/story.js?v=83"></script>
+<script src="js/hm.js?v=83"></script>
+<script src="js/allies.js?v=83"></script>
+<script src="js/town.js?v=83"></script>
+<script src="js/geo.js?v=83"></script>
+<script src="js/regions.js?v=83"></script>
+<script src="js/audio.js?v=83"></script>
+<script src="js/pad.js?v=83"></script>
+<script src="js/pvp.js?v=83"></script>
+<script src="js/game.js?v=83"></script>
 </body>
 </html>
