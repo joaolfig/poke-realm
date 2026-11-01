@@ -2461,12 +2461,12 @@ function startLForm(P, kind) {
   P.riding = false;
   const pid = kind === 'bat' ? batPid(P) : wolfPid();
   ensurePoke(pid);
-  P.lform = { kind, pid, t: kind === 'wolf' ? 12 : 0 };
+  P.lform = { kind, pid };
   burst(P.x, P.y, kind === 'bat' ? '#7c3aed' : '#dc2626', 36); burst(P.x, P.y, '#111827', 24);
   if (kind === 'wolf') {
     for (const e of enemiesNear(P.x, P.y, 190)) e.slowT = Math.max(e.slowT || 0, 2);
     G.fx.push({ k: 'ring', x: P.x, y: P.y, r: 0, R: 190, life: 0.7, max: 0.7, color: '#dc2626' }); G.shake = Math.min(10, G.shake + 6);
-    G.toasts.push({ text: '🐺 A lua cheia tomou conta: FÚRIA DA LUA! (12s, sem poções nem especial)', color: '#fca5a5', t: 4, big: 1 });
+    G.toasts.push({ text: '🐺 A escuridão tomou conta: você virou fera até o amanhecer! (sem poções nem especial)', color: '#fca5a5', t: 4, big: 1 });
   } else G.toasts.push({ text: '🦇 A noite chamou o seu sangue: você virou morcego até o amanhecer!', color: '#c4b5fd', t: 5, big: 1 });
   sfx('boss');
 }
@@ -2474,37 +2474,29 @@ function endLForm(P) {
   const k = P.lform && P.lform.kind;
   P.lform = null;
   burst(P.x, P.y, k === 'bat' ? '#7c3aed' : '#dc2626', 22);
-  text(P.x, P.y - 44, k === 'bat' ? '🦇 O dia nasceu: você voltou a ser você' : '🐺 A fúria passou', '#cbd5e1', 12);
+  text(P.x, P.y - 44, '🌅 O dia está nascendo: você voltou a ser você', '#cbd5e1', 12);
 }
 function linTick(P, dt) {
   if (!P.lin) { if (P.lform) endLForm(P); return; }
-  const night = isNight() && !inDungeonArea(P.x);
-  if (P.lin === 'vampiro') {
-    // a transformação vem aos poucos (~10 s) e, ao amanhecer, volta aos poucos (~6 s)
-    if (night && !P.nightSeen) { P.nightSeen = true; if (Math.random() < 0.33) { P.batGrow = true; G.toasts.push({ text: '🦇 A noite chama o seu sangue... você está virando morcego.', color: '#c4b5fd', t: 4 }); } }
-    if (P.batGrow && !isBat(P)) { P.batK = Math.min(1, (P.batK || 0) + dt / 10); if (P.batK >= 1) { P.batGrow = false; startLForm(P, 'bat'); } }
-    if (!night) { P.nightSeen = false; P.batGrow = false; if (isBat(P)) endLForm(P); }
-    if (!P.batGrow && !isBat(P)) P.batK = Math.max(0, (P.batK || 0) - dt / 6);
-    if (isBat(P)) { P.lform.pid = batPid(P); if (Math.random() < 0.08) G.parts.push({ x: P.x + rand(-14, 14), y: P.y + rand(-8, 8), vx: rand(-20, 20), vy: -20, life: 0.5, color: '#7c3aed', size: 2 }); }
-  } else {
-    if (isWolf(P)) {
-      if ((P.lform.t -= dt) <= 0) { endLForm(P); P.moon = 0; }
-      else if (Math.random() < 0.2) G.parts.push({ x: P.x + rand(-16, 16), y: P.y + rand(-10, 10), vx: 0, vy: -25, life: 0.4, color: '#dc2626', size: 2 });
-      return;
-    }
-    // a Lua enche sozinha à noite (~75 s) e mais rápido a cada abate; de dia esvazia devagar
-    P.moon = clamp((P.moon || 0) + (night ? dt * 1.33 : -dt * 2), 0, 100);
-    if (P.moon >= 100) startLForm(P, 'wolf');
-    else if (P.moon > 20 && Math.random() < P.moon / 900) G.parts.push({ x: P.x + rand(-10, 10), y: P.y + rand(-14, 10), vx: rand(-10, 10), vy: -15, life: 0.5, color: Math.random() < 0.5 ? '#57534e' : '#dc2626', size: 2 });
+  // a cada noite, 50% de chance de transformar; a transformação acompanha a escuridão:
+  // começa ao anoitecer, fica completa quando está bem escuro e se desfaz aos poucos ao amanhecer
+  if (isNight() && !P.nightSeen) {
+    P.nightSeen = true; P.nightRoll = Math.random() < 0.5;
+    if (P.nightRoll) G.toasts.push({ text: P.lin === 'vampiro' ? '🦇 A noite chama o seu sangue... a transformação começou.' : '🐺 A lua está subindo... você sente a fera despertar.', color: '#c4b5fd', t: 4 });
   }
+  if (!isNight() && (G.nightK || 0) < 0.02) { P.nightSeen = false; P.nightRoll = false; }
+  P.transK = P.nightRoll ? (G.nightK || 0) : 0;
+  const kind = P.lin === 'vampiro' ? 'bat' : 'wolf';
+  if (P.transK >= 0.97 && !P.lform) startLForm(P, kind);
+  else if (P.transK < 0.97 && P.lform) endLForm(P);
+  if (isBat(P)) { P.lform.pid = batPid(P); if (Math.random() < 0.08) G.parts.push({ x: P.x + rand(-14, 14), y: P.y + rand(-8, 8), vx: rand(-20, 20), vy: -20, life: 0.5, color: '#7c3aed', size: 2 }); }
+  else if (isWolf(P) && Math.random() < 0.2) G.parts.push({ x: P.x + rand(-16, 16), y: P.y + rand(-10, 10), vx: 0, vy: -25, life: 0.4, color: '#dc2626', size: 2 });
 }
-function linKill(P) {
-  if (P.lin === 'lobisomem' && !isWolf(P) && isNight()) P.moon = Math.min(100, (P.moon || 0) + 6);
-}
+function linKill(P) { /* a transformação não depende mais de abates */ }
 // desenho do herói com a linhagem: forma completa, ou o lobisomem se formando aos poucos
 function drawLinHero(P, x, y, alpha) {
   if (P.lform) return drawWildForm(P.lform.pid, P.x, P.y, x, y, P.face, P.moving, alpha, pType(P), isWolf(P) ? 1 : 0);
-  const wolf = P.lin === 'lobisomem', k = wolf ? (P.moon || 0) / 100 : P.batK || 0;
+  const wolf = P.lin === 'lobisomem', k = P.transK || 0;
   if (k < 0.15) return false;
   // meio gente, meio fera: o Pokémon vai aparecendo e crescendo por cima do herói
   const m = (k - 0.15) / 0.85;
@@ -2517,8 +2509,8 @@ function drawLinHero(P, x, y, alpha) {
 const linBuffs = P => {
   if (!P.lin) return '';
   const L = LIN[P.lin];
-  const s = P.lin === 'vampiro' ? (isBat(P) ? '🦇 Morcego até o amanhecer · rouba 6%' : `rouba 3% do dano${isNight() ? '' : ' · de dia não regenera fora das cidades'}`)
-    : isWolf(P) ? `🐺 Fúria da Lua ${Math.ceil(P.lform.t)}s` : `🌕 Lua ${Math.floor(P.moon || 0)}%${isNight() ? '' : ' (só enche à noite)'}`;
+  const s = P.lin === 'vampiro' ? (isBat(P) ? '🦇 Morcego até o amanhecer · rouba 6%' : P.transK > 0.05 ? `🦇 Transformando... ${Math.round(P.transK * 100)}%` : `rouba 3% do dano${isNight() ? '' : ' · de dia não regenera fora das cidades'}`)
+    : isWolf(P) ? '🐺 Fera até o amanhecer (+30% cadência, +15% dano, sem poções nem especial)' : P.transK > 0.05 ? `🌕 Transformando... ${Math.round(P.transK * 100)}%` : '50% de chance de virar fera a cada noite';
   return `<div class="small" style="color:#fca5a5">${L.icon} ${L.nome}: ${s}</div>`;
 };
 
