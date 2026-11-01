@@ -1947,9 +1947,9 @@ const typeBadge = t => `<span class="tbadge" style="background:${TYPE_COLORS[t]}
 function typeMatchHTML(t) {
   const C = TYPE_CHART[t];
   if (!C) return '';
-  const all = Object.keys(TYPE_CHART), fraco = all.filter(x => TYPE_CHART[x].s.includes(t)), imune = all.filter(x => TYPE_CHART[x].i.includes(t));
+  const all = Object.keys(TYPE_CHART), fraco = all.filter(x => TYPE_CHART[x].s.includes(t)), resiste = all.filter(x => TYPE_CHART[x].w.includes(t)), imune = all.filter(x => TYPE_CHART[x].i.includes(t));
   const L = l => (l.length ? l.map(typeBadge).join(' ') : '<i>nenhum</i>');
-  return `<div class="tmatch"><div title="Seus ataques causam o dobro de dano nesses tipos"><b>⚔ Forte contra</b> ${L(C.s)}</div><div title="Ataques desses tipos causam o dobro de dano em você"><b>🛡 Fraco contra</b> ${L(fraco)}</div>${imune.length ? `<div title="Ataques desses tipos não causam dano em você"><b>✨ Imune a</b> ${L(imune)}</div>` : ''}</div>`;
+  return `<div class="tmatch"><div title="Seus ataques causam o dobro de dano nesses tipos"><b>⚔ Forte contra</b> ${L(C.s)}</div><div title="Ataques desses tipos causam o dobro de dano em você"><b>💔 Fraco contra</b> ${L(fraco)}</div><div class="rs" title="Ataques desses tipos causam metade do dano em você"><b>🛡 Resiste a</b> ${L(resiste)}</div>${imune.length ? `<div title="Ataques desses tipos não causam dano em você"><b>✨ Imune a</b> ${L(imune)}</div>` : ''}</div>`;
 }
 function updatePanel() {
   const P = G.P;
@@ -2455,7 +2455,7 @@ function boot() {
     $('load-b').style.width = (n / t * 100) + '%';
   }).then(() => {
     menuSel.loaded = true;
-    $('load').innerHTML = 'Pokémon prontos para a batalha.';
+    $('load').innerHTML = 'Pokémon prontos para a batalha.'; $('load').classList.add('done');
     $('btn-start').disabled = false;
     renderContinue();
     // Pokémon das masmorras e da noite carregam em segundo plano

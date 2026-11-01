@@ -228,7 +228,7 @@
   #chat-in { position: fixed; left: 12px; bottom: 150px; width: 300px; z-index: 5; background: rgba(11, 12, 14, .94); border: 2px solid #000; box-shadow: 0 0 0 1px var(--gold); color: var(--text); padding: 8px 10px; font: inherit; outline: none; }
   .tmatch { margin-top: 4px; font-size: 12.5px; line-height: 1.5; } .tmatch b { color: var(--dim); font-weight: 600; margin-right: 3px; } .tmatch .tbadge { font-size: 11px; line-height: 15px; }
   .ptm { margin: -4px 0 8px; font-size: 13px; color: var(--dim); }
-  body.mobile #hero .tmatch { margin-top: 2px; line-height: 1.3; font-size: 11.5px; } body.mobile #hero .tmatch .tbadge { line-height: 13px; }
+  body.mobile #hero .tmatch { margin-top: 2px; line-height: 1.3; font-size: 11.5px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; } body.mobile #hero .tmatch .tbadge { line-height: 13px; } body.mobile #hero .tmatch .rs { grid-column: 1 / -1; }
   .tbadge { display: inline-block; padding: 0 6px; font: 600 12px/17px var(--px); color: #111; text-shadow: none; vertical-align: middle; border: 1px solid #000; box-shadow: inset 0 -2px 0 rgba(0,0,0,.25); }
   .ptype { grid-column: 1 / -1; margin-top: 4px; font-size: 13px; color: var(--dim); }
   .gem { display: block; width: 18px; height: 22px; clip-path: polygon(50% 0, 100% 35%, 80% 100%, 20% 100%, 0 35%); box-shadow: inset 0 0 6px #fff8; }
@@ -347,7 +347,7 @@
   body.mobile .logo, body.mobile .sub, body.mobile .credit, body.mobile #btn-pad { display: none; }
   body.mobile .menu-box { padding: 8px 10px; }
   body.mobile .menu-grid { grid-template-columns: 1.15fr 1fr; gap: 10px; }
-  body.mobile #load { font-size: 12px; margin: 0 0 4px; }
+  body.mobile #load { font-size: 12px; margin: 0 0 4px; } body.mobile #load.done { display: none; }
   body.mobile .overlay h3 { margin: 0 0 4px; font-size: 11px; }
   body.mobile .field { margin-bottom: 6px; }
   /* herói: figura pequena, só o essencial (a habilidade em 2 linhas) */
@@ -484,25 +484,25 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=233"></script>
-<script src="js/data.js?v=233"></script>
-<script src="js/rules.js?v=233"></script>
-<script src="js/items.js?v=233"></script>
-<script src="js/dungeon.js?v=233"></script>
-<script src="js/net.js?v=233"></script>
-<script src="js/map.js?v=233"></script>
-<script src="js/world.js?v=233"></script>
-<script src="js/story.js?v=233"></script>
-<script src="js/hm.js?v=233"></script>
-<script src="js/allies.js?v=233"></script>
-<script src="js/town.js?v=233"></script>
-<script src="js/geo.js?v=233"></script>
-<script src="js/regions.js?v=233"></script>
-<script src="js/audio.js?v=233"></script>
-<script src="js/pad.js?v=233"></script>
-<script src="js/pvp.js?v=233"></script>
-<script src="js/sigs.js?v=233"></script>
-<script src="js/game.js?v=233"></script>
-<script src="js/touch.js?v=233"></script>
+<script src="js/pokedex.js?v=236"></script>
+<script src="js/data.js?v=236"></script>
+<script src="js/rules.js?v=236"></script>
+<script src="js/items.js?v=236"></script>
+<script src="js/dungeon.js?v=236"></script>
+<script src="js/net.js?v=236"></script>
+<script src="js/map.js?v=236"></script>
+<script src="js/world.js?v=236"></script>
+<script src="js/story.js?v=236"></script>
+<script src="js/hm.js?v=236"></script>
+<script src="js/allies.js?v=236"></script>
+<script src="js/town.js?v=236"></script>
+<script src="js/geo.js?v=236"></script>
+<script src="js/regions.js?v=236"></script>
+<script src="js/audio.js?v=236"></script>
+<script src="js/pad.js?v=236"></script>
+<script src="js/pvp.js?v=236"></script>
+<script src="js/sigs.js?v=236"></script>
+<script src="js/game.js?v=236"></script>
+<script src="js/touch.js?v=236"></script>
 </body>
 </html>
