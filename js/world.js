@@ -91,7 +91,7 @@ function shopList(P) {
     { id: 'pot', nome: 'Poção de Cura', icon: '❤️', preco: 25 },
     { id: 'doce', nome: 'Doce Raro (+1 nível do companheiro)', icon: '🍬', preco: 140 },
     { id: 'stone', nome: 'Cristal de tipo aleatório', icon: '💎', preco: 50 },
-    { id: 'abra', nome: 'Talismã de Abra (fuga instantânea para a cidade, [Z])', icon: '🌀', preco: 220 },
+    { id: 'abra', nome: 'Talismã de Abra (fuga instantânea para a cidade, [Z]; só 1 por vez)', icon: '🌀', preco: 1000 },
     { id: 'arma', nome: CLASSES[P.cls].weapons[tier], icon: CLASSES[P.cls].wicon, preco: 60 + tier * 45, tier },
     { id: 'armadura', nome: ARMORS[tier], icon: '🛡️', preco: 50 + tier * 40, tier },
     { id: 'anel', nome: 'Anel aleatório', icon: '💍', preco: 70 + tier * 30, tier },
@@ -225,6 +225,7 @@ function buyItem(P, id) {
     P.inv[i] = it;
   } else if (id === 'pot') P.pots.hp++;
   else if (id === 'ball') P.balls++;
+  else if (id === 'abra' && P.bag.abra >= 1) { G.toasts.push({ text: '🌀 Só dá para carregar um Talismã de Abra por vez.', color: '#fca5a5', t: 2.5 }); return; }
   else if (CONS[id]) P.bag[id]++;
   else if (id === 'statpot') drinkStat(P, pick(ATTRS));
   else if (id === 'cinto') { P.petCap = petCap(P) + 1; G.toasts.push({ text: `🎒 Agora você pode levar ${P.petCap} companheiros!`, color: '#86efac', t: 3 }); G.dirty = true; }
@@ -510,7 +511,7 @@ function startEvent() {
     announce(`✨ Um ${e.p.name} raro foi avistado! Ele foge — enfraqueça e capture (é fácil de pegar).`, '#67e8f9');
   } else {
     G.event = { kind, x: 0, y: 0, ttl: 120, zone: pz, label: 'Noite Sombria' };
-    announce('🌙 A noite caiu: Pokémon Fantasma e Sombrio surgem, e todo XP vale +50%.', '#a78bfa');
+    announce('🌙 A noite caiu: Pokémon Fantasma e Sombrio surgem, todo XP vale +50%, Baús da Lua brilham pelo mapa e fogos-fátuos flutuam nos campos.', '#a78bfa');
   }
 }
 
@@ -521,6 +522,7 @@ function updateEvent(ev, dt) {
     if (alive.length) { ev.x = alive.reduce((s, e) => s + e.x, 0) / alive.length; ev.y = alive.reduce((s, e) => s + e.y, 0) / alive.length; }
     if (ev.kind !== 'raro' && !alive.length) return eventDone(ev);
   }
+  if (ev.kind === 'noite') nightHost(ev, dt);
   if (ev.kind === 'meteoros') {
     ev.next -= dt;
     if (ev.next <= 0) {
@@ -639,6 +641,7 @@ function updateWorld(dt) {
   } else if (G.npcOpen) closeNPC();
   updateMeteors(dt);
   updateTeles(dt);
+  nightTick(dt);
 }
 
 /* ============ Clima por zona ============
@@ -858,7 +861,7 @@ function openXChest(P, c) {
   let items, gold;
   if (c.kind === 'gua') {
     const acc = genItem(5, pick(['anel', 'amuleto'])); if (!acc.name.includes('✧') && Math.random() < 0.5) enchant(acc);
-    items = [statPot(), genItem(clamp(z + 2, 0, 6)), acc, consItem('ultra'), consItem('ultra'), consItem('abra')]; gold = 400;
+    items = [statPot(), genItem(clamp(z + 2, 0, 6)), acc, consItem('ultra'), consItem('ultra')]; gold = 400;
   } else {
     items = [genItem(clamp(z + 1, 0, 6)), potion(), Math.random() < 0.5 ? ballItem() : consItem('grande')];
     if (Math.random() < 0.25) items.push(consItem('doce'));
@@ -971,4 +974,113 @@ function templeAct(P, a) {
 function templeKill(P, m) {
   if (P.tq === 1 && isNight()) { P.tqN = (P.tqN || 0) + 1; if (P.tqN >= TQ_NIGHT) { P.tq = 2; G.toasts.push({ text: '🕯️ As maldições acordaram! Agora conclua uma masmorra para achar o relicário.', color: '#c4b5fd', t: 6, big: 1 }); sfx('lvl'); } }
   else if (P.tq === 2 && m.kind === 3) { P.tq = 3; G.toasts.push({ text: `⚱️ Você achou o relicário! Leve à Sacerdotisa Aurora em ${TOWNS[1] ? townName(TOWNS[1]) : 'na 2ª cidade'}.`, color: '#c4b5fd', t: 6, big: 1 }); sfx('lvl'); }
+}
+
+/* ============ Eventos da noite ============
+ * Durante a Noite Sombria: (1) um Alfa da Lua aparece perto de alguém e deixa um tesouro ao cair;
+ * (2) Baús da Lua surgem pelo mapa e só existem até o amanhecer (cada jogador abre o seu);
+ * (3) fogos-fátuos flutuam pelos campos: fogem de você, mas quem encosta ganha um presentinho.
+ */
+function moonMod(e) {
+  e.moonA = 1; e.alfa = true;
+  e.name = `Alfa da Lua (${e.p.name})`;
+  e.maxHp = Math.round(e.maxHp * 1.6); e.hp = e.maxHp;
+  e.scale *= 1.15; e.w *= 1.15; e.h *= 1.15; e.r *= 1.15;
+  e.color = '#c4b5fd';
+}
+// host: chamado a cada quadro da noite
+function nightHost(ev, dt) {
+  const pls = allPlayers().filter(p => !inDungeonArea(p.x) && !inArena(p.x, p.y));
+  if (!pls.length) return;
+  if (!ev.chests) {
+    ev.chests = 1;
+    const list = [];
+    for (const pl of pls) for (let k = 0; k < 2; k++) { const s = evSpot(pl); if (s) list.push({ id: `${G.time | 0}_${list.length}`, x: Math.round(s.x), y: Math.round(s.y), z: s.z }); }
+    if (list.length) emitEvent({ t: 'moonch', l: list });
+  }
+  ev.moonT = (ev.moonT === undefined ? 15 : ev.moonT) - dt;
+  if (ev.moonT <= 0 && !ev.moonDone) {
+    ev.moonDone = 1;
+    const pl = pick(pls), s = evSpot(pl);
+    const pool = s && [...NIGHT_POOL, ...(ZONE_POOLS[s.z] || [])].filter(id => POKE[id]);
+    if (!s || !pool.length) return;
+    const e = hostSpawn(pick(pool), s.z, 1, s.x, s.y);
+    moonMod(e);
+    emitEvent({ t: 'toast', text: `🌕 Um ${e.name} uivou sob a lua! Derrote-o para pegar o tesouro dele.`, color: '#c4b5fd', big: 1 });
+  }
+}
+// todos: tesouro do Alfa da Lua (cada jogador perto ganha o seu)
+function moonAlfaLoot(m) {
+  const P = G.P;
+  if (!P || Math.hypot(P.x - m.x, P.y - m.y) > 900) return;
+  const z = m.zone || 1, items = [stone(pick(TYPES)), genItem(clamp(z + 2, 0, 6))];
+  if (Math.random() < 0.4) items.push(consItem('doce'));
+  G.bags.push({ x: m.x, y: m.y + 10, items, life: 120 });
+  G.toasts.push({ text: '🌕 O Alfa da Lua deixou um tesouro!', color: '#c4b5fd', t: 4 });
+}
+// Baús da Lua
+function moonChestEvent(m) { G.moonCh = (G.moonCh || []).concat(m.l); }
+const moonChOpen = c => (G.moonOpen = G.moonOpen || new Set()).has(c.id);
+function nearMoonChest(P) {
+  if (!isNight() || inDungeonArea(P.x)) return null;
+  return (G.moonCh || []).find(c => !moonChOpen(c) && Math.hypot(c.x - P.x, c.y - P.y) < 48) || null;
+}
+function openMoonChest(P, c) {
+  G.moonOpen.add(c.id);
+  const items = [genItem(clamp(c.z + 1, 0, 6)), stone(pick(TYPES)), consItem('ultra')];
+  const gold = 40 * c.z;
+  P.gold += gold;
+  G.bags.push({ x: c.x, y: c.y + 16, items, life: 120 });
+  G.toasts.push({ text: `🌙 Baú da Lua aberto! +${gold} 🪙`, color: '#c4b5fd', t: 4 });
+  burst(c.x, c.y, '#c4b5fd', 30); sfx('lvl'); saveGame();
+}
+// fogos-fátuos (cada jogador vê os seus)
+function nightTick(dt) {
+  const P = G.P;
+  if (!P) return;
+  if (!isNight()) { G.moonCh = []; G.moonOpen = null; G.wisps = []; return; }
+  G.wisps = G.wisps || [];
+  if (!inDungeonArea(P.x) && !inTown(P.x, P.y) && G.wisps.length < 3 && (G.wispT = (G.wispT || 8) - dt) <= 0) {
+    G.wispT = rand(18, 30);
+    const a = Math.random() * 6.28, r = rand(260, 420), x = P.x + Math.cos(a) * r, y = P.y + Math.sin(a) * r;
+    if (zoneAt(x, y) >= 1 && !isWater(x, y)) G.wisps.push({ x, y, t: 0, life: 45 });
+  }
+  for (const w of G.wisps) {
+    w.t += dt; w.life -= dt;
+    const dx = w.x - P.x, dy = w.y - P.y, d = Math.hypot(dx, dy) || 1;
+    // foge quando você chega perto, mas um pouco mais devagar que você correndo
+    const sp = d < 140 ? moveSpeed(P) * 0.75 : 25;
+    w.x += (d < 140 ? dx / d : Math.cos(w.t * 0.7)) * sp * dt; w.y += (d < 140 ? dy / d : Math.sin(w.t * 0.9)) * sp * dt;
+    if (Math.random() < 0.3) G.parts.push({ x: w.x + rand(-5, 5), y: w.y + rand(-5, 5), vx: 0, vy: -20, life: 0.5, color: Math.random() < 0.5 ? '#67e8f9' : '#c4b5fd', size: 2 });
+    if (d < 26) {
+      w.life = 0;
+      const z = clamp(zoneAt(P.x, P.y), 1, 5), r = Math.random();
+      if (r < 0.12) { P.bag.doce++; G.toasts.push({ text: '✨ O fogo-fátuo virou um Doce Raro!', color: '#67e8f9', t: 3 }); }
+      else if (r < 0.3) { G.bags.push({ x: P.x, y: P.y + 20, items: [stone(pick(TYPES))], life: 60 }); G.toasts.push({ text: '✨ O fogo-fátuo deixou um cristal!', color: '#67e8f9', t: 3 }); }
+      else if (r < 0.5) { P.pots.hp++; G.toasts.push({ text: '✨ O fogo-fátuo virou uma Poção de Cura!', color: '#67e8f9', t: 3 }); }
+      else { const g = 20 * z; P.gold += g; G.toasts.push({ text: `✨ O fogo-fátuo se desfez em ${g} 🪙!`, color: '#67e8f9', t: 3 }); }
+      burst(w.x, w.y, '#67e8f9', 24); sfx('pick'); G.dirty = true;
+    }
+  }
+  G.wisps = G.wisps.filter(w => w.life > 0);
+}
+function drawNightStuff(ox, oy) {
+  if (!isNight()) return;
+  for (const c of G.moonCh || []) {
+    if (moonChOpen(c)) continue;
+    const x = c.x + ox, y = c.y + oy;
+    if (x < -40 || y < -40 || x > W + 40 || y > H + 40) continue;
+    const g = 0.5 + Math.sin(G.time * 3) * 0.2;
+    ctx.fillStyle = `rgba(196,181,253,${g * 0.4})`; ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.fill();
+    ctx.fillStyle = '#1e1b4b'; ctx.fillRect(x - 13, y - 6, 26, 16);
+    ctx.fillStyle = '#a5b4fc'; ctx.fillRect(x - 13, y - 12, 26, 8);
+    ctx.fillStyle = '#f8fafc'; ctx.fillRect(x - 2, y - 5, 4, 5);
+    if (Math.random() < 0.15) G.parts.push({ x: c.x + rand(-12, 12), y: c.y - 10, vx: 0, vy: -25, life: 0.7, color: '#e0e7ff', size: 2 });
+  }
+  for (const w of G.wisps || []) {
+    const x = w.x + ox, y = w.y + oy + Math.sin(w.t * 3) * 4, a = Math.min(1, w.life / 3);
+    const gr = ctx.createRadialGradient(x, y, 1, x, y, 16);
+    gr.addColorStop(0, `rgba(240,253,255,${a})`); gr.addColorStop(0.4, `rgba(103,232,249,${a * 0.7})`); gr.addColorStop(1, 'rgba(103,232,249,0)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, 16, 0, 7); ctx.fill();
+  }
 }

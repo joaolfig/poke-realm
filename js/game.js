@@ -225,7 +225,7 @@ function createPlayer(name, h) {
     name, cls: h.cls, race: h.race, ptype: h.type, subclass: null, lvl: 1, xp: 0, legends: 0, kills: 0, gold: 20,
     attrs: { ...h.attrs }, points: h.points || 0, attrV2: 1, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
     equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: null, amuleto: null },
-    inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0, abra: 1 }, ballSel: 'poke', story: { ch: 0, done: false },
+    inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0, abra: 0 }, ballSel: 'poke', story: { ch: 0, done: false },
     pets: [], petIdx: -1, petAct: [], stories: {}, hmsR: {}, quests: {}, qOffers: {}, hasteT: 0, slowCd: 0, hms: [], fly: ['vila'], chests: [], flyCd: 0,
     x: rand(-40, 40), y: rand(55, 80), hp: 1, shootCd: 0, abilCd: 0, breathCd: 0, furia: 0, invis: 0, nextCrit: false,
     recallCd: 0, dashCd: 0, dodgeT: 0, shield: 0, shieldT: 0, seloT: 0, sinceHit: 10, face: 1, walk: 0, moving: false, aim: 0, tempType: null, tempTypeT: 0, alt: 0.14, auraT: 0, giftT: 0,
@@ -235,7 +235,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'wseed', 'expR', 'bless', 'lin', 'tq', 'moon', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quests', 'qOffers', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'wseed', 'expR', 'bless', 'lin', 'tq', 'moon', 'abraCd', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quests', 'qOffers', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -574,7 +574,7 @@ function applyHit(e, dmg, from = NET.myId) {
   e.hp -= dmg; e.flash = 0.1; e.hitT = G.time;
   if (e.hp <= 0) {
     e.dead = true;
-    emitEvent({ t: 'k', id: e.id, pid: e.pid, x: Math.round(e.x), y: Math.round(e.y), xp: e.xp, zone: e.zone, kind: e.kind, name: e.name, type: e.type, st: e.story || (e.bountyT !== undefined ? 10 + e.bountyT : 0), by: e.dmgBy || {} });
+    emitEvent({ t: 'k', id: e.id, pid: e.pid, x: Math.round(e.x), y: Math.round(e.y), xp: e.xp, zone: e.zone, kind: e.kind, name: e.name, type: e.type, st: e.story || (e.bountyT !== undefined ? 10 + e.bountyT : 0) || (e.moonA ? 60 : 0), by: e.dmgBy || {} });
     if (e.bkey) G.bountyCd[e.bkey] = G.time + 20;
     if (e.story) G.storyCd[e.story] = G.time + 30;
     hostOnKill(e);
@@ -602,7 +602,8 @@ function onKill(m) {
   const xpShare = 0.5 / nNear + 0.5 * share;
   // chefes, caçadas e história contam para quem estava junto (cooperação)
   if (m.kind === 3) questProgress('masmorra');
-  if (m.st >= 10) questProgress('caca', { pid: m.pid });
+  if (m.st >= 10 && m.st < 40) questProgress('caca', { pid: m.pid });
+  if (m.st === 60) moonAlfaLoot(m);
   storyKill(m);
   { const tdg = inDungeonArea(m.x) && dungeonAt(m.x); if (m.kind === 3 && tdg && tdg.floor && tdg.floor % 5 === 0) towerCheckpoint(P, tdg.floor); }
   if (m.kind === 2) { P.legends = (P.legends || 0) + 1; dexCatch(P, m.pid); } // lendário: conta para todos que estavam perto (e entra na Pokédex)
@@ -1217,6 +1218,7 @@ function handleEvent(m, local) {
     case 'pvpinv': case 'pvpok': case 'pvpout': case 'pvpaoe': pvpEvent(m); break;
     case 'decoy': G.decoys.push({ x: m.x, y: m.y, t: m.dur, cls: m.cls, ptype: m.ptype }); break;
     case 'tele': teleEvent(m); break;
+    case 'moonch': moonChestEvent(m); break;
     case 'met': G.meteors.push({ x: m.x, y: m.y, r: m.r, t: m.delay, max: m.delay, zone: m.zone || 1 }); break;
     case 'evdone': onEventDone(m); break;
   }
@@ -1414,6 +1416,7 @@ function render() {
 
   drawMeteors(ox, oy);
   drawTeles(ox, oy);
+  drawNightStuff(ox, oy);
   for (const z of G.zones) {
     const x = z.x + ox, y = z.y + oy, pulse = 1 + Math.sin(G.time * 6) * 0.04;
     const col = z.k === 'veneno' ? '163,230,53' : z.k === 'santuario' ? '253,230,138' : z.k === 'raizes' ? '134,239,172' : '251,191,36';
@@ -1574,7 +1577,7 @@ function render() {
 function drawEnemy(e, ox, oy) {
   const x = e.x + ox, y = e.y + oy;
   if (e.alfa || e.boss || e.rare) {
-    ctx.fillStyle = e.legend ? 'rgba(239,68,68,.18)' : e.boss ? 'rgba(168,85,247,.2)' : e.rare ? 'rgba(103,232,249,.25)' : 'rgba(250,204,21,.22)';
+    ctx.fillStyle = e.legend ? 'rgba(239,68,68,.18)' : e.moonA ? 'rgba(196,181,253,.35)' : e.boss ? 'rgba(168,85,247,.2)' : e.rare ? 'rgba(103,232,249,.25)' : 'rgba(250,204,21,.22)';
     ctx.beginPath(); ctx.arc(x, y, e.r * 1.4 + Math.sin(e.t * 4) * 3, 0, 7); ctx.fill();
   }
   if (e.rare && Math.random() < 0.3) G.parts.push({ x: e.x + rand(-e.r, e.r), y: e.y + rand(-e.r, e.r), vx: 0, vy: -30, life: 0.6, color: '#a5f3fc', size: 3 });
@@ -1721,6 +1724,7 @@ function drawHUD(ox, oy) {
   if (P && !G.npcOpen) {
     let hint = null, col = '#fef3c7';
     if (G.nearPortal) { const p = G.nearPortal; hint = p.exit ? '[E] Sair da masmorra' : `[E] Entrar: ${THEMES[p.theme].nome}`; col = p.exit ? '#facc15' : THEMES[p.theme].accent; }
+    else if (nearMoonChest(P)) hint = '[E] Abrir o Baú da Lua';
     else if (nearXChest(P)) hint = nearXChest(P).kind === 'gua' && guardAlive(nearXChest(P)) ? '👑 Derrote o guardião para abrir o baú' : '[E] Abrir o baú';
     else if (G.nearNPC) hint = G.nearNPC.id === 'pc' ? '[E] Acessar o Banco Pokémon' : G.nearNPC.id === 'tshop' ? '[E] Ver a loja da Torre' : `[E] Falar com ${G.nearNPC.nome}`;
     else if (!gateOpen() && [[0, -40], [0, 40], [-40, 0], [40, 0]].some(([dx, dy]) => tileKind(P.x + dx, P.y + dy) === TK.GATE)) { hint = `🏅 Portão da Liga: abre com 7 insígnias (você tem ${badgeCount(P)})`; col = '#fcd34d'; }
@@ -1905,7 +1909,7 @@ function updatePanel() {
     return `<div class="slot" data-inv="${i}" style="border-color:${itemColor(it)}" title="${esc(it.name)} — ${itemDesc(it)}${it.slot === 'pedra' ? '' : ` (${TIER_NAMES[it.tier]})`}\n${hint} · Shift+clique: ${it.locked ? 'destravar' : 'travar (não vende nem solta)'} · Botão direito: soltar no chão">${itemIcon(it)}${better ? '<i class="up">▲</i>' : ''}${it.locked ? '<i class="lock">🔒</i>' : ''}</div>`;
   }).join('') + '</div>';
   const bsel = P.ballSel || 'poke';
-  $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}</button><button data-abra="1" title="Talismã de Abra [Z]: te teletransporta na hora para a última cidade, até no meio de uma luta ou de uma masmorra. Vende no Mercador.">🌀 ×${P.bag.abra || 0}${P.abraCd > 0 ? ` (${Math.ceil(P.abraCd)}s)` : ''}</button></div>
+  $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}</button><button data-abra="1" title="Talismã de Abra [Z]: te teletransporta na hora para a última cidade, até no meio de uma luta ou de uma masmorra. Só no Mercador (1000 🪙), um por vez, 5 min de recarga.">🌀 ×${P.bag.abra || 0}${P.abraCd > 0 ? ` (${Math.ceil(P.abraCd / 60)} min)` : ''}</button></div>
     <div class="potrow balls">${Object.keys(BALLS).map(k => `<button data-ball="${k}" class="${bsel === k ? 'sel' : ''}" title="${BALLS[k].nome} (+${BALLS[k].bonus} na captura). Clique (ou [G]) para escolher qual o F joga.">${BALLS[k].icon} ×${ballCount(P, k)}</button>`).join('')}</div>`;
   $('p-pets').innerHTML = `<h4>Companheiros <span class="small" title="Fora da Pokébola / máximo ao mesmo tempo">${P.petAct.length}/${petSlots(P)} fora · ${P.pets.length}/${petCap(P)}</span></h4>` + (P.pets.length
     ? `<div class="pets">${P.pets.map((pt, i) => {
@@ -2035,6 +2039,7 @@ window.addEventListener('keydown', ev => {
     if (G.npcOpen) closeNPC();
     else if (nearDgChest(P)) openDgChest(P, nearDgChest(P));
     else if (nearXChest(P)) openXChest(P, nearXChest(P));
+    else if (nearMoonChest(P)) openMoonChest(P, nearMoonChest(P));
     else if (G.nearPortal) usePortal(P, G.nearPortal);
     else if (G.nearNPC) openNPC(G.nearNPC.id);
     else if (G.nearHM) useHMTile(P, G.nearHM);
@@ -2569,17 +2574,18 @@ function drawTeles(ox, oy) {
 
 /* ---------- Talismã de Abra: fuga de emergência ----------
  * Como o Teleporte do Abra: tira você na hora de qualquer lugar (luta, masmorra, torre) e te leva para a última cidade.
- * Você fica intocável por um instante enquanto some. Não funciona na arena PvP. Recarga de 20s entre usos.
+ * Você fica intocável por um instante enquanto some. Não funciona na arena PvP.
+ * Caro (1000 🪙, só no Mercador, nunca cai de baú), um por vez e 5 min de recarga entre usos.
  */
 function useAbra() {
   const P = G.P;
   if (!P) return;
   if (!(P.bag.abra > 0)) return G.toasts.push({ text: '🌀 Você não tem Talismã de Abra. O Mercador vende.', color: '#fca5a5', t: 2.5 });
   if (P.pvp || inArena(P.x, P.y)) return text(P.x, P.y - 40, 'O talismã não funciona na arena', '#fca5a5', 12);
-  if (P.abraCd > 0) return text(P.x, P.y - 40, `🌀 Recarregando (${Math.ceil(P.abraCd)}s)`, '#fca5a5', 12);
+  if (P.abraCd > 0) return text(P.x, P.y - 40, `🌀 Recarregando (${Math.floor(P.abraCd / 60)}:${String(Math.ceil(P.abraCd % 60)).padStart(2, '0')})`, '#fca5a5', 12);
   if (!inDungeonArea(P.x) && inTown(P.x, P.y)) return text(P.x, P.y - 40, 'Você já está numa cidade', '#cbd5e1', 12);
   const t = TOWNS[P.lastTown] || TOWNS[0];
-  P.bag.abra--; P.abraCd = 20; P.dodgeT = 1.2; P.riding = false; G.recall = null; P.dash = null;
+  P.bag.abra--; P.abraCd = 300; P.dodgeT = 1.2; P.riding = false; G.recall = null; P.dash = null;
   burst(P.x, P.y, '#c084fc', 34); burst(P.x, P.y, '#fde68a', 16);
   G.fx.push({ k: 'ring', x: P.x, y: P.y, r: 0, R: 90, life: 0.5, max: 0.5, color: '#c084fc' });
   P.x = t.x + rand(-50, 50); P.y = t.y + rand(55, 80);
