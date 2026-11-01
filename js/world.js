@@ -283,7 +283,7 @@ const questZone = P => { let z = lvlZone(P.lvl); while (z > 1 && needFor(P, z).l
  */
 const QGIVERS = {
   guilda: ['tipo', 'zona', 'alfa', 'masmorra', 'evento', 'caca', 'caca', 'especie'],
-  cura: ['captura', 'pegar', 'pegar', 'pegaralfa', 'noturno', 'bolaboa'],
+  cura: ['captura', 'pegar', 'pegar', 'pegaralfa', 'bolaboa', 'bolaboa'],
   dex: ['pesquisa', 'pesquisa', 'pegar', 'explorar'],
   loja: ['coleta', 'coleta', 'especie', 'tipo'],
   grupo: ['duoAlfa', 'duoCaca', 'duoTipo', 'duoEspecie', 'duoCaptura'], // Mural de Grupo: só contratos de grupo (com outros jogadores na sala)
@@ -1006,8 +1006,8 @@ function renderLinQuest(P, cleric) {
     return `${hd}<div class="quest cur"><p class="fala">"Embaixo deste templo dormem duas maldições antigas: o <b>Sangue</b> e a <b>Lua</b>. Elas escolhem quem tem coragem de libertá-las... e cobram um preço. Quer tentar?"</p>
       <div class="small">Recompensa: virar <b>🧛 Vampiro</b> ou <b>🐺 Lobisomem</b> (fica por cima da sua raça).</div></div><button data-act="tq:start" class="good">🕯️ Aceitar a missão</button>`;
   }
-  if (s === 1) return `${hd}<div class="quest cur"><b>🌙 Caçada noturna</b><p class="fala">"As maldições só acordam com sangue derramado sob a lua. Derrote Pokémon durante a noite."</p>
-    <div class="qbar"><div style="width:${Math.min(100, (P.tqN || 0) / TQ_NIGHT * 100)}%"></div></div><div class="small">${P.tqN || 0}/${TQ_NIGHT} derrotados à noite</div></div>`;
+  if (s === 1) return `${hd}<div class="quest cur"><b>🌑 Caçada às sombras</b><p class="fala">"As maldições só acordam perto das criaturas das sombras. Derrote Pokémon dos tipos Fantasma ou Sombrio."</p>
+    <div class="qbar"><div style="width:${Math.min(100, (P.tqN || 0) / TQ_NIGHT * 100)}%"></div></div><div class="small">${P.tqN || 0}/${TQ_NIGHT} Fantasma ou Sombrio derrotados</div></div>`;
   if (s === 2) return `${hd}<div class="quest cur"><b>⚱️ O relicário</b><p class="fala">"Elas acordaram. Agora preciso do relicário que as prende: ele sempre aparece no fundo de uma masmorra. Derrote o chefe de qualquer masmorra e traga."</p>
     <div class="small">🎯 Conclua uma masmorra (derrote o chefe)</div></div>`;
   if (s === 3) return `${hd}<div class="quest cur"><b>🕯️ O pacto</b><p class="fala">"O relicário está aberto. Escolha qual maldição vai carregar. Ela fica com você em todas as regiões."</p>
@@ -1018,7 +1018,7 @@ function renderLinQuest(P, cleric) {
     <button data-act="tq:undo" ${P.gold < TQ_UNDO ? 'disabled' : ''}>Desfazer o pacto (${TQ_UNDO} 🪙)</button></div>`;
 }
 function templeAct(P, a) {
-  if (a === 'start' && !P.tq && P.lvl >= TQ_LVL) { P.tq = 1; P.tqN = 0; G.toasts.push({ text: `🕯️ Missão do templo: derrote ${TQ_NIGHT} Pokémon durante a noite.`, color: '#c4b5fd', t: 5, big: 1 }); }
+  if (a === 'start' && !P.tq && P.lvl >= TQ_LVL) { P.tq = 1; P.tqN = 0; G.toasts.push({ text: `🕯️ Missão do templo: derrote ${TQ_NIGHT} Pokémon Fantasma ou Sombrio.`, color: '#c4b5fd', t: 5, big: 1 }); }
   else if ((a === 'vampiro' || a === 'lobisomem') && P.tq === 3) {
     P.lin = a; P.tq = 4; P.moon = 0; P.nightSeen = isNight();
     burst(P.x, P.y, a === 'vampiro' ? '#7c3aed' : '#dc2626', 40);
@@ -1029,7 +1029,8 @@ function templeAct(P, a) {
   saveGame();
 }
 function templeKill(P, m) {
-  if (P.tq === 1 && isNight()) { P.tqN = (P.tqN || 0) + 1; if (P.tqN >= TQ_NIGHT) { P.tq = 2; G.toasts.push({ text: '🕯️ As maldições acordaram! Agora conclua uma masmorra para achar o relicário.', color: '#c4b5fd', t: 6, big: 1 }); sfx('lvl'); } }
+  const tps = (POKE[m.pid] || {}).types || [m.type];
+  if (P.tq === 1 && (tps.includes('ghost') || tps.includes('dark'))) { P.tqN = (P.tqN || 0) + 1; if (P.tqN >= TQ_NIGHT) { P.tq = 2; G.toasts.push({ text: '🕯️ As maldições acordaram! Agora conclua uma masmorra para achar o relicário.', color: '#c4b5fd', t: 6, big: 1 }); sfx('lvl'); } }
   else if (P.tq === 2 && m.kind === 3) { P.tq = 3; G.toasts.push({ text: `⚱️ Você achou o relicário! Leve à Sacerdotisa Aurora em ${TOWNS[1] ? townName(TOWNS[1]) : 'na 2ª cidade'}.`, color: '#c4b5fd', t: 6, big: 1 }); sfx('lvl'); }
 }
 
@@ -1053,7 +1054,7 @@ function nightHost(ev, dt) {
     ev.chests = 1;
     const list = [];
     // 50% de chance por noite (para cada jogador); quando surgem, ficam longe: entre 50 e 300 m (1 m = 32 px)
-    for (const pl of pls) if (Math.random() < 0.5) for (let k = 0; k < 2; k++) { const s = farSpot(pl, 1600, 9600); if (s) list.push({ id: `${G.time | 0}_${list.length}`, x: Math.round(s.x), y: Math.round(s.y), z: s.z, for: pl.id || null }); }
+    for (const pl of pls) if (Math.random() < 0.5) for (let k = 0; k < 1; k++) { const s = farSpot(pl, 1600, 9600); if (s) list.push({ id: `${G.time | 0}_${list.length}`, x: Math.round(s.x), y: Math.round(s.y), z: s.z, for: pl.id || null }); }
     if (list.length) emitEvent({ t: 'moonch', l: list });
   }
   ev.moonT = (ev.moonT === undefined ? 15 : ev.moonT) - dt;
@@ -1082,7 +1083,6 @@ const deepNight = () => isNight() && (G.nightK || 0) > 0.97;
 function moonChestEvent(m) {
   G.moonCh = (G.moonCh || []).concat(m.l);
   const P = G.P;
-  if (P && m.l.some(c => Math.hypot(c.x - P.x, c.y - P.y) < 10000)) G.toasts.push({ text: '🌙 Um brilho prateado surgiu ao longe... Baús da Lua apareceram em algum canto do mapa (somem ao amanhecer).', color: '#c4b5fd', t: 6, big: 1 });
 }
 // ponto em terra firme a uma distância entre rMin e rMax do jogador
 function farSpot(pl, rMin, rMax) {

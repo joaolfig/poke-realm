@@ -100,13 +100,12 @@ const REGIONS = {
 
   johto: {
     babies: [172, 173, 174, 175], // os bebês da Geração II: Pichu, Cleffa, Igglybuff e Togepi
-    side: { peso: { noturno: 2, bolaboa: 2 }, pessoas: {
+    side: { peso: { bolaboa: 2, pegar: 1 }, pessoas: {
       bolaboa: [['Kurt, o artesão de bolas', 'quero saber se as bolas novas seguram Pokémon de verdade']],
-      noturno: [['Monge da Torre Sino', 'os espíritos da noite trazem Pokémon diferentes']],
       especie: [['Fazendeiro da Moomoo', 'eles estão assustando as Miltank']],
       pesquisa: [['Professor Elm', 'quero entender por que alguns Pokémon só existem em Johto']] } },
     interludes: [
-      { ch: 3, npc: 'cura', kind: 'noite', n: 1, titulo: 'Sob a lua', fala: 'O velho Kurt diz que alguns Pokémon só se deixam pegar quando a lua aparece. Antes do próximo ginásio, prove que ele tem razão: capture um Pokémon durante a noite.', obj: 'Capture um Pokémon durante a noite' },
+      { ch: 3, npc: 'cura', kind: 'capball', n: 1, z: 2, titulo: 'As bolas do Kurt', fala: 'O velho Kurt mandou bolas novas e quer saber se elas aguentam Pokémon de verdade. Antes do próximo ginásio, capture um Pokémon da {Z2} com uma Great Ball ou uma Ultra Ball.', obj: 'Capture um Pokémon na {Z2} com Great Ball ou Ultra Ball' },
       { ch: 7, npc: 'ferreiro', kind: 'forja', n: 4, titulo: 'Aço para dragões', fala: 'Os dragões da Mestra Clair quebram arma comum como se fosse graveto. Traga a sua para a minha bigorna e deixe ela pelo menos +4 antes de subir a montanha.', obj: 'Aprimore sua arma até +4 na Ferreira' },
     ],
     // Alfas da Lua: Pokémon noturnos de verdade (pela lore e pelos jogos)
