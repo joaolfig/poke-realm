@@ -72,6 +72,8 @@
   #padinfo { position: fixed; z-index: 9; right: 296px; bottom: 12px; max-width: min(380px, 40vw); background: rgba(13, 14, 16, .96); border: 2px solid #000; box-shadow: 0 0 0 1px var(--gold); padding: 8px 10px; font-size: 13px; white-space: pre-line; pointer-events: none; }
   .padgrid { display: grid; grid-template-columns: repeat(2, auto 1fr); gap: 3px 10px; align-items: center; margin-bottom: 10px; font-size: 13px; line-height: 1.3; }
   body.pad #help { width: min(760px, 94vw); }
+  #tlog { position: fixed; z-index: 7; left: 12px; top: 60px; width: min(520px, 60vw); max-height: 70vh; overflow-y: auto; background: var(--panel); border: 3px solid #000; box-shadow: 0 0 0 1px var(--line-hi), 0 10px 40px rgba(0,0,0,.6); padding: 8px 10px; }
+  .tlrow { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 14px; } .tlrow i { width: 7px; height: 7px; margin-top: 6px; flex: none; } .tlrow span { flex: 1; } .tlrow em { color: var(--faint); font-style: normal; font-size: 12px; }
   #pcwin { position: fixed; z-index: 7; left: calc((100vw - 284px) / 2); top: 50%; transform: translate(-50%, -50%); width: min(760px, 94vw); max-height: 88vh; display: flex; flex-direction: column; background: var(--panel); border: 3px solid #000; box-shadow: 0 0 0 1px var(--line-hi), 0 10px 40px rgba(0,0,0,.6); padding: 10px 12px; }
   .pcteam { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; } .pcgrid { min-height: 120px; }
   .pccard { cursor: pointer; } .pccard:hover { box-shadow: 0 0 0 1px var(--line-hi); } .pccard.sel { box-shadow: 0 0 0 2px var(--gold); background: linear-gradient(#2a2412, var(--well)); }
@@ -283,11 +285,12 @@
     <div id="p-inv"></div>
     <div id="p-pets"></div>
     <div id="p-room"></div>
-    <div class="help-hint"><kbd>H</kbd> controles · <kbd>N</kbd> música/som · <kbd>M</kbd> mapa · <kbd>P</kbd> Pokédex<button data-dexopen class="savebtn">📖 Pokédex</button><button data-padtoggle class="savebtn">🎮 Controle: desligado</button></div>
+    <div class="help-hint"><kbd>H</kbd> controles · <kbd>N</kbd> música/som · <kbd>M</kbd> mapa · <kbd>P</kbd> Pokédex · <kbd>L</kbd> avisos<button data-dexopen class="savebtn">📖 Pokédex</button><button data-padtoggle class="savebtn">🎮 Controle: desligado</button></div>
   </aside>
 </div>
 <div id="dex" class="hidden"></div>
 <div id="pcwin" class="hidden"></div>
+<div id="tlog" class="hidden"></div>
 <div id="help" class="hidden">
     <div id="pad-help" class="help hidden"></div>
     <div class="help kbhelp">
@@ -370,23 +373,23 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=100"></script>
-<script src="js/data.js?v=100"></script>
-<script src="js/rules.js?v=100"></script>
-<script src="js/items.js?v=100"></script>
-<script src="js/dungeon.js?v=100"></script>
-<script src="js/net.js?v=100"></script>
-<script src="js/map.js?v=100"></script>
-<script src="js/world.js?v=100"></script>
-<script src="js/story.js?v=100"></script>
-<script src="js/hm.js?v=100"></script>
-<script src="js/allies.js?v=100"></script>
-<script src="js/town.js?v=100"></script>
-<script src="js/geo.js?v=100"></script>
-<script src="js/regions.js?v=100"></script>
-<script src="js/audio.js?v=100"></script>
-<script src="js/pad.js?v=100"></script>
-<script src="js/pvp.js?v=100"></script>
-<script src="js/game.js?v=100"></script>
+<script src="js/pokedex.js?v=101"></script>
+<script src="js/data.js?v=101"></script>
+<script src="js/rules.js?v=101"></script>
+<script src="js/items.js?v=101"></script>
+<script src="js/dungeon.js?v=101"></script>
+<script src="js/net.js?v=101"></script>
+<script src="js/map.js?v=101"></script>
+<script src="js/world.js?v=101"></script>
+<script src="js/story.js?v=101"></script>
+<script src="js/hm.js?v=101"></script>
+<script src="js/allies.js?v=101"></script>
+<script src="js/town.js?v=101"></script>
+<script src="js/geo.js?v=101"></script>
+<script src="js/regions.js?v=101"></script>
+<script src="js/audio.js?v=101"></script>
+<script src="js/pad.js?v=101"></script>
+<script src="js/pvp.js?v=101"></script>
+<script src="js/game.js?v=101"></script>
 </body>
 </html>

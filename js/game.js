@@ -1245,7 +1245,7 @@ function update(dt) {
   G.texts = G.texts.filter(t => t.t < t.life);
   for (const f of G.fx) { f.life -= dt; f.r = f.R * (1 - f.life / f.max); }
   G.fx = G.fx.filter(f => f.life > 0);
-  for (const t of G.toasts) t.t -= dt;
+  for (const t of G.toasts) { t.t -= dt; if (!t.logged) { t.logged = 1; G.toastLog = G.toastLog || []; const last = G.toastLog[0]; if (last && last.text === t.text) last.n = (last.n || 1) + 1; else G.toastLog.unshift({ text: t.text, color: t.color, at: G.time }); G.toastLog.length = Math.min(G.toastLog.length, 30); if (!$('tlog').classList.contains('hidden')) renderToastLog(); } }
   G.toasts = G.toasts.filter(t => t.t > 0);
   G.banner = Math.max(0, G.banner - dt);
   G.shake = Math.max(0, G.shake - dt * 20);
@@ -1557,23 +1557,21 @@ function wrapText(text, maxW, maxLines) {
   return lines;
 }
 function drawToasts(topY = 12) {
-  // um aviso por vez, numa faixa fina no canto superior esquerdo, abaixo das linhas da área/missão (o mais recente substitui o anterior)
+  // um aviso por vez, no canto superior esquerdo, abaixo das linhas da área/missão (o mais recente substitui o anterior).
+  // Texto longo quebra em linhas (nada é cortado); o histórico completo fica na tecla [L].
   const t = G.toasts[G.toasts.length - 1];
   if (!t) return;
   const n = G.toasts.filter(x => x.text === t.text).length;
   ctx.save();
   ctx.font = '600 15px Barlow Semi Condensed, system-ui';
-  let txt = t.text + (n > 1 ? ` (×${n})` : '');
-  const maxW = Math.min(560, W * 0.5);
-  while (ctx.measureText(txt).width > maxW && txt.length > 8) txt = txt.slice(0, -2);
-  if (txt.length < (t.text + (n > 1 ? ` (×${n})` : '')).length) txt += '…';
-  const w = ctx.measureText(txt).width + 30, x = 10, y = topY + 8, h = 24;
+  const lines = wrapText(t.text + (n > 1 ? ` (×${n})` : ''), Math.min(560, W * 0.5), 4);
+  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 30, x = 10, y = topY + 8, h = lines.length * 19 + 6;
   ctx.globalAlpha = Math.min(1, t.t * 1.5);
   ctx.fillStyle = 'rgba(13,14,16,.85)'; ctx.fillRect(x, y, w, h);
   ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
   ctx.fillStyle = t.color || '#e5e7eb'; ctx.fillRect(x + 8, y + 9, 6, 6);
-  ctx.fillStyle = '#efe9dc'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillText(txt, x + 20, y + h / 2 + 1);
+  ctx.fillStyle = '#efe9dc'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  lines.forEach((l, k) => ctx.fillText(l, x + 20, y + 4 + k * 19));
   ctx.restore();
 }
 function drawHUD(ox, oy) {
@@ -1939,6 +1937,7 @@ window.addEventListener('keydown', ev => {
   else if (ev.code === 'KeyM') { showMap = (showMap + 1) % 3; if (showMap === 2) G.toasts.push({ text: '🗺️ Mapa da região: só aparece o que você já explorou. [M] de novo esconde.', color: '#e5e7eb', t: 2.5 }); }
   else if (ev.code === 'KeyH') $('help').classList.toggle('hidden');
   else if (ev.code === 'KeyP') toggleDex();
+  else if (ev.code === 'KeyL') { const b = $('tlog'); if (b.classList.toggle('hidden')) return; renderToastLog(); }
   else if (ev.code === 'ShiftLeft' || ev.code === 'ShiftRight') doDash();
   else if (ev.code === 'KeyN') G.toasts.push({ text: cycleSound(), color: '#e5e7eb', t: 1.8 });
   else if (ev.code === 'KeyR') {
@@ -2225,3 +2224,10 @@ function boot() {
   });
 }
 boot();
+
+// histórico dos últimos avisos (tecla L)
+function renderToastLog() {
+  const L = G.toastLog || [];
+  $('tlog').innerHTML = `<div class="dexhead"><span class="dextitle">📜 Avisos recentes</span><span class="small">[L] fecha</span></div>
+    ${L.length ? L.map(t => `<div class="tlrow"><i style="background:${t.color || '#e5e7eb'}"></i><span>${esc(t.text)}${t.n > 1 ? ` <b>(×${t.n})</b>` : ''}</span><em>${Math.max(0, Math.round((G.time - t.at) / 60))} min</em></div>`).join('') : '<div class="small">Nenhum aviso ainda.</div>'}`;
+}
