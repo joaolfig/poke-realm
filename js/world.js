@@ -698,6 +698,7 @@ function buildDex() {
   const add = (id, w) => { if (!id) return; (where[id] = where[id] || new Set()).add(w); };
   for (let z = 1; z <= 5; z++) { for (const id of ZONE_POOLS[z] || []) add(id, `Zona ${z}`); for (const id of WATER_POOLS[z] || []) add(id, `Água · zona ${z}`); }
   for (const id of NIGHT_POOL) add(id, 'à noite');
+  for (const id of REGION.babies || []) add(id, 'Zona 1 (bem raro)');
   for (const id of RARE_POOL) add(id, 'raro (eventos)');
   for (const id of MIGRATION_POOL) add(id, 'migração (eventos)');
   for (const k of Object.keys(THEMES)) { const t = THEMES[k]; if (!t.story) continue; for (const id of t.pool) add(id, t.nome); add(t.boss, t.nome); }

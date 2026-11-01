@@ -38,6 +38,7 @@ const GYM_STYLE = {
 
 const REGIONS = {
   kanto: {
+    babies: [172, 173, 174], // Pichu (Floresta de Viridian), Cleffa e Igglybuff (perto do Mt. Moon)
     nome: 'Kanto', sub: 'Gerações I · onde tudo começou', vila: 'Cidade de Pallet',
     guia: { nome: 'Professor Carvalho', spr: { h: '#9ca3af', b: '#f1f5f9', d: '#64748b' } },
     artesao: 'Mestre Ferro-Velho',
@@ -85,6 +86,7 @@ const REGIONS = {
   },
 
   johto: {
+    babies: [172, 173, 174, 175], // os bebês da Geração II: Pichu, Cleffa, Igglybuff e Togepi
     nome: 'Johto', sub: 'Geração II · tradição e lendas', vila: 'Cidade de New Bark',
     guia: { nome: 'Professor Elm', spr: { h: '#78350f', b: '#fef3c7', d: '#b45309' } },
     artesao: 'Artesã das Bolas',
@@ -107,7 +109,7 @@ const REGIONS = {
       { type: 'bug', nome: 'Ginásio do Casulo', lider: 'Líder Bugsy', boss: 123, pool: [10, 11, 13, 14, 165, 167, 204, 193] },
       { type: 'normal', nome: 'Ginásio do Leite', lider: 'Líder Whitney', boss: 241, pool: [161, 162, 19, 20, 206, 190, 209, 39, 40] },
       { type: 'ghost', nome: 'Ginásio Assombrado', lider: 'Vidente Morty', boss: 94, pool: [92, 93, 200, 92, 93, 200, 201] },
-      { type: 'fighting', nome: 'Ginásio do Dojô', lider: 'Mestre Chuck', boss: 62, pool: [56, 57, 66, 67, 236, 106, 107, 237] },
+      { type: 'fighting', nome: 'Ginásio do Dojô', lider: 'Mestre Chuck', boss: 62, pool: [56, 57, 66, 67, 106, 107, 237] },
       { type: 'steel', nome: 'Ginásio do Farol', lider: 'Líder Jasmine', boss: 208, pool: [81, 82, 204, 205, 227, 95] },
       { type: 'ice', nome: 'Ginásio Congelado', lider: 'Líder Pryce', boss: 221, pool: [86, 87, 220, 215, 124, 225, 91] },
       { type: 'dragon', nome: 'Ginásio dos Dragões', lider: 'Mestra Clair', boss: 230, pool: [147, 148, 116, 117, 130] },
@@ -132,6 +134,7 @@ const REGIONS = {
   },
 
   hoenn: {
+    babies: [298, 360], // Azurill (rios do começo) e Wynaut
     nome: 'Hoenn', sub: 'Geração III · mar, vulcões e céu', vila: 'Cidade de Littleroot',
     hmGym: { 1: 'cut', 2: 'flash', 3: 'smash', 4: 'surf' },
     guia: { nome: 'Professor Birch', spr: { h: '#92400e', b: '#bbf7d0', d: '#15803d' } },
@@ -180,6 +183,7 @@ const REGIONS = {
   },
 
   sinnoh: {
+    babies: [406, 440, 433], // Budew (Rota 204), Happiny e Chingling
     nome: 'Sinnoh', sub: 'Geração IV · neve, mitos e o tempo', vila: 'Cidade de Twinleaf',
     guia: { nome: 'Professor Rowan', spr: { h: '#e5e7eb', b: '#1f2937', d: '#111827' } },
     artesao: 'Artesão das Placas',
@@ -198,9 +202,9 @@ const REGIONS = {
     night: [425, 426, 198, 430, 200, 429, 92, 93, 355, 442], rare: [133, 443, 447, 439, 446, 479, 442, 441], migra: [396, 397, 425], lendas: [480, 481, 482, 485, 486, 488],
     vilao: 'Equipe Galáctica', grunts: [41, 42, 434, 435, 451, 452, 198, 430, 436, 437],
     gyms: [
-      { type: 'rock', nome: 'Ginásio da Mina', lider: 'Líder Roark', boss: 409, pool: [74, 75, 95, 408, 410, 438] },
-      { type: 'grass', nome: 'Ginásio do Jardim', lider: 'Líder Gardenia', boss: 407, pool: [406, 315, 420, 421, 455, 387, 388] },
-      { type: 'fighting', nome: 'Ginásio da Aura', lider: 'Mestra Maylene', boss: 448, pool: [66, 67, 307, 308, 447, 453, 106, 107] },
+      { type: 'rock', nome: 'Ginásio da Mina', lider: 'Líder Roark', boss: 409, pool: [74, 75, 95, 408, 410, 185] },
+      { type: 'grass', nome: 'Ginásio do Jardim', lider: 'Líder Gardenia', boss: 407, pool: [315, 420, 421, 455, 387, 388] },
+      { type: 'fighting', nome: 'Ginásio da Aura', lider: 'Mestra Maylene', boss: 448, pool: [66, 67, 307, 308, 453, 454, 106, 107] },
       { type: 'water', nome: 'Ginásio das Corredeiras', lider: 'Lutador Crasher Wake', boss: 419, pool: [418, 419, 422, 423, 60, 61, 129] },
       { type: 'ghost', nome: 'Ginásio do Velório', lider: 'Atriz Fantina', boss: 429, pool: [92, 93, 200, 425, 426, 442, 355] },
       { type: 'steel', nome: 'Ginásio das Muralhas', lider: 'Líder Byron', boss: 411, pool: [410, 411, 436, 437, 81, 82, 208, 95] },
@@ -277,7 +281,7 @@ let REGION_ID = 'kanto', REGION = REGIONS.kanto;
 
 // todos os Pokémon que a região usa (para pré-carregar)
 function regionIds(R) {
-  const s = new Set([...Object.values(R.pools).flat(), ...Object.values(R.water).flat(), ...R.night, ...R.rare, ...R.migra, ...R.lendas, ...R.grunts, R.final.boss]);
+  const s = new Set([...Object.values(R.pools).flat(), ...Object.values(R.water).flat(), ...R.night, ...R.rare, ...R.migra, ...R.lendas, ...R.grunts, ...(R.babies || []), R.final.boss]);
   for (const g of R.gyms) { s.add(g.boss); g.pool.forEach(id => s.add(id)); }
   return [...s];
 }
