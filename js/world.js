@@ -496,11 +496,11 @@ function updateMeteors(dt) {
     burst(m.x, m.y, '#fb923c', 30); burst(m.x, m.y, '#78716c', 20);
     G.fx.push({ k: 'ring', x: m.x, y: m.y, r: 0, R: m.r, life: 0.4, max: 0.4, color: '#fdba74', fill: true });
     if (P && Math.hypot(P.x - m.x, P.y - m.y) < 700) { G.shake = Math.min(10, G.shake + 5); sfx('boom'); }
-    if (P && Math.hypot(P.x - m.x, P.y - m.y) < m.r + 10) {
+    if (P && Math.hypot(P.x - m.x, P.y - m.y) < m.r + 10 && !(P.dodgeT > 0)) { // o rolamento escapa do impacto
       let eff = typeEff('rock', [pType(P)]);
       if (race(P).resist.includes('rock')) eff *= 0.5;
-      // dano proporcional à vida máxima: 15% na zona 1 até 24% na zona 4 (antes das resistências)
-      const dmg = Math.max(1, Math.round(maxHP(P) * (0.12 + 0.03 * m.zone) * rand(0.9, 1.1) * eff));
+      // dano proporcional à vida máxima: 25% na zona 1 até 45% na zona 5 (antes das resistências e fraquezas)
+      const dmg = Math.max(1, Math.round(maxHP(P) * (0.2 + 0.05 * m.zone) * rand(0.9, 1.1) * eff));
       P.hp -= dmg; P.sinceHit = 0;
       text(P.x, P.y - 34, `-${dmg} meteoro`, '#f87171', 16);
       if (P.hp <= 0) playerDie('uma chuva de meteoros');
