@@ -2142,7 +2142,7 @@ let VIEW_K = 1;
 function resize() {
   const mob = document.body.classList.contains('mobile');
   const cw = mob ? window.innerWidth : window.innerWidth - $('panel').offsetWidth;
-  VIEW_K = mob ? Math.min(1, window.innerHeight / 520) : 1;
+  VIEW_K = mob ? Math.min(1, window.innerHeight / 470) : 1;
   W = cv.width = Math.max(300, Math.round(cw / VIEW_K));
   H = cv.height = Math.round(window.innerHeight / VIEW_K);
   cv.style.width = mob ? cw + 'px' : ''; cv.style.height = mob ? window.innerHeight + 'px' : '';
@@ -2733,7 +2733,7 @@ function equipBest(P) {
  * Nada disso na arena PvP.
  */
 const OPTS_KEY = 'pkr_opts_v1';
-let OPTS = { autoPot: true, autoFlee: true };
+let OPTS = { autoPot: true, autoFlee: true, autoAim: true, vibra: true };
 try { Object.assign(OPTS, JSON.parse(localStorage.getItem(OPTS_KEY) || '{}')); } catch (e) { /* ignora */ }
 const saveOpts = () => { try { localStorage.setItem(OPTS_KEY, JSON.stringify(OPTS)); } catch (e) { /* ignora */ } };
 const AUTO_POT = 0.35, AUTO_FLEE = 0.15;
@@ -2749,4 +2749,6 @@ function autoTick(P, dt) {
 const onMobile = () => typeof MOBILE !== 'undefined' && MOBILE; // MOBILE vem de js/touch.js
 const optsPanel = () => !onMobile() ? '' : `<h4>Opções</h4><div class="opts">
   <button data-opt="autoPot" class="${OPTS.autoPot ? 'good' : ''}" title="Bebe uma poção sozinho com menos de 35% de vida (5 s entre poções automáticas)">🧪 Poção automática: ${OPTS.autoPot ? 'ligada' : 'desligada'}</button>
-  <button data-opt="autoFlee" class="${OPTS.autoFlee ? 'good' : ''}" title="Com menos de 15% de vida, usa o Talismã de Abra sozinho (se você tiver um pronto) e foge para a cidade">🌀 Fuga automática: ${OPTS.autoFlee ? 'ligada' : 'desligada'}</button></div>`;
+  <button data-opt="autoFlee" class="${OPTS.autoFlee ? 'good' : ''}" title="Com menos de 15% de vida, usa o Talismã de Abra sozinho (se você tiver um pronto) e foge para a cidade">🌀 Fuga automática: ${OPTS.autoFlee ? 'ligada' : 'desligada'}</button>
+  <button data-opt="autoAim" class="${OPTS.autoAim ? 'good' : ''}" title="Ligada: atira sozinho no Pokémon mais perto quando você não está mirando. Desligada: só atira quando você mira com o analógico direito ou toca num Pokémon.">🎯 Mira automática: ${OPTS.autoAim ? 'ligada' : 'desligada'}</button>
+  <button data-opt="vibra" class="${OPTS.vibra ? 'good' : ''}" title="Vibra de leve ao levar dano">📳 Vibração: ${OPTS.vibra ? 'ligada' : 'desligada'}</button></div>`;

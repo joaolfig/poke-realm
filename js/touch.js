@@ -5,9 +5,10 @@
  * Os comandos viram as mesmas ações do teclado/controle (keyTap, useAbility, throwBall...),
  * então quem joga no celular joga junto com quem está no PC ou no controle, na mesma sala.
  *  - analógico esquerdo (aparece onde o polegar encosta): andar
- *  - tiro sempre ligado, mirando sozinho (o mais perto; Alfas e chefes têm preferência)
- *  - analógico direito (área livre à direita): escolhe a direção/alvo; a mira trava no Pokémon
- *  - tocar num Pokémon também trava a mira nele
+ *  - mira automática (opção, ligada por padrão): atira sozinho no mais perto (Alfas e chefes têm preferência)
+ *  - analógico direito (área livre à direita): mira livre, para onde você quiser, com uma ajuda leve
+ *    (como no controle); soltar volta para a mira automática
+ *  - tocar num Pokémon trava a mira nele (tocar de novo, ou tocar no chão, destrava)
  *  - botões: ⭐ especial, 💨 rolamento, ⚪ captura (arrastar = mirar), 💬 interagir, 🧪 poção, ☰ painel, ⋯ menu
  */
 const MOBILE = (() => {
@@ -16,7 +17,7 @@ const MOBILE = (() => {
   try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; }
 })();
 const TCH = { ptr: new Map(), lock: null, tgt: null, stickL: null, stickR: null, abil: null, dash: null, cap: null, ui: 0 };
-const T_RANGE = 480, T_CONE = 0.44; // alcance da mira automática; cone de ~25° do analógico direito
+const T_RANGE = 480, T_CONE = 0.21; // alcance da mira automática; cone de ~12° da ajuda do analógico direito
 const T_DRAG = 90, T_DEAD = 18;      // arrasto máximo dos botões (px) e zona morta (voltar ao centro cancela)
 
 function touchSetup() {
@@ -30,13 +31,13 @@ function touchSetup() {
     <div id="t-stickL" class="tstick hidden"><div class="tknob"></div></div>
     <div id="t-stickR" class="tstick hidden"><div class="tknob"></div></div>
     <div class="tbtns">
-      <button id="t-act" class="tb tb-act hidden" data-t="act">💬</button>
-      <button id="t-pot" class="tb tb-pot" data-t="pot">🧪<i></i></button>
-      <button id="t-cap" class="tb tb-cap" data-t="cap">⚪<i></i></button>
-      <button id="t-dash" class="tb tb-dash hidden" data-t="dash">💨</button>
-      <button id="t-abil" class="tb tb-abil" data-t="abil">⭐</button>
+      <button id="t-act" class="tb tb-act hidden" data-t="act" aria-label="Interagir">💬</button>
+      <button id="t-pot" class="tb tb-pot" data-t="pot" aria-label="Poção">🧪<i></i></button>
+      <button id="t-cap" class="tb tb-cap" data-t="cap" aria-label="Capturar (arraste para escolher)">⚪<i></i></button>
+      <button id="t-dash" class="tb tb-dash hidden" data-t="dash" aria-label="Rolamento">💨</button>
+      <button id="t-abil" class="tb tb-abil" data-t="abil" aria-label="Especial (arraste para mirar)">⭐</button>
     </div>
-    <div class="ttop"><button class="tb tb-sm" data-t="more">⋯</button><button class="tb tb-sm" data-t="panel">☰</button></div>
+    <div class="ttop"><button class="tb tb-sm" data-t="more" aria-label="Mais ações">⋯</button><button id="t-menu" class="tb tb-sm" data-t="panel" aria-label="Painel do herói">☰</button><button id="t-eq" class="tb tb-sm tb-eq hidden" data-t="eq" aria-label="Equipar o melhor">⬆</button></div>
     <div id="t-more" class="hidden">
       <button data-k="KeyV">🕊️ Fly</button><button data-k="KeyR">🏠 Voltar à cidade</button><button data-k="KeyX">🐎 Montar</button>
       <button data-k="KeyC">🔄 Trocar Pokémon</button><button data-k="KeyG">⚪ Trocar bola</button><button data-k="Digit3">💎 Cristal</button>
@@ -142,6 +143,7 @@ function tDown(ev) {
     if (t === 'more') { $('t-more').classList.toggle('hidden'); return; }
     if (t === 'act') { keyTap('KeyE'); return; }
     if (t === 'pot') { keyTap('KeyQ'); return; }
+    if (t === 'eq') { keyTap('KeyB'); return; }
     TCH.ptr.set(ev.pointerId, o); b.classList.add('on');
     if (t === 'abil') TCH.abil = o; else if (t === 'dash') TCH.dash = o; else if (t === 'cap') TCH.cap = o;
     return;
@@ -157,7 +159,7 @@ function tDown(ev) {
   const w = tWorld(x, y);
   let hit = null, hd = 1e9;
   for (const e of tPool()) { const d = Math.hypot(e.x - w.x, e.y - w.y); if (d < (e.r || 14) + 28 && d < hd) { hd = d; hit = e; } }
-  if (hit) { TCH.lock = hit; return; }
+  if (hit) { TCH.lock = TCH.lock === hit ? null : hit; tBuzz(12); return; }
   if (!TCH.stickR) { const o = { kind: 'R', x0: x, y0: y, dx: 0, dy: 0 }; TCH.ptr.set(ev.pointerId, o); TCH.stickR = o; tStickEl('t-stickR', o); }
 }
 function tMove(ev) {
@@ -177,7 +179,7 @@ function tUp(ev) {
   if (o.el) o.el.classList.remove('on');
   const m = Math.hypot(o.dx, o.dy), drag = o.max > T_DEAD;
   if (o.kind === 'L') { TCH.stickL = null; $('t-stickL').classList.add('hidden'); for (const k of ['KeyW', 'KeyA', 'KeyS', 'KeyD']) K[k] = false; }
-  else if (o.kind === 'R') { TCH.stickR = null; $('t-stickR').classList.add('hidden'); }
+  else if (o.kind === 'R') { TCH.stickR = null; $('t-stickR').classList.add('hidden'); if (!drag) TCH.lock = null; } // toque no chão: destrava
   else if (o.kind === 'abil') {
     TCH.abil = null;
     if (!tPlaying()) return;
@@ -217,6 +219,8 @@ function tWithAim(p, fn) {
   fn();
 }
 
+const tBuzz = ms => { if (OPTS.vibra !== false && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) { /* ignora */ } };
+
 /* ---------- a cada quadro ---------- */
 function touchTick(dt) {
   if (!MOBILE || !G || !G.P || state !== 'play') { if (MOBILE) mouse.down = false; return; }
@@ -228,17 +232,13 @@ function touchTick(dt) {
     const on = m > 0.3, cx = Math.cos(a), cy = Math.sin(a);
     K.KeyA = on && cx < -0.38; K.KeyD = on && cx > 0.38; K.KeyW = on && cy < -0.38; K.KeyS = on && cy > 0.38;
   }
-  // alvo: travado (até cair ou ficar longe) > analógico direito > automático
+  // mira: analógico direito (livre) > Pokémon travado com um toque > automática (se ligada)
   if (TCH.lock && (!tAlive(TCH.lock) || Math.hypot(TCH.lock.x - P.x, TCH.lock.y - P.y) > 620)) TCH.lock = null;
-  const R = TCH.stickR, rm = R ? Math.hypot(R.dx, R.dy) / 50 : 0;
+  const R = TCH.stickR, rm = R ? Math.min(1, Math.hypot(R.dx, R.dy) / 50) : 0;
   let aimA = null;
-  if (R && rm > 0.3) {
-    aimA = Math.atan2(R.dy, R.dx);
-    const t = tConeTarget(aimA, T_CONE, 560, tPool());
-    if (t) TCH.lock = t;
-  }
-  const t = TCH.lock || (aimA === null ? tAutoTarget() : null);
-  TCH.tgt = t;
+  if (R && rm > 0.3) { aimA = Math.atan2(R.dy, R.dx); TCH.lock = null; }
+  const t = aimA === null ? TCH.lock || (OPTS.autoAim !== false ? tAutoTarget() : null) : null;
+  TCH.tgt = t; TCH.aimA = aimA; TCH.assist = null;
   // o especial e o rolamento sendo arrastados mostram para onde vão; a captura escolhe o alvo pela direção
   if (TCH.cap) {
     const o = TCH.cap;
@@ -247,11 +247,20 @@ function touchTick(dt) {
   const ab = TCH.abil;
   if (ab && ab.max > T_DEAD && Math.hypot(ab.dx, ab.dy) > T_DEAD) { const p = tDragPoint(ab, 380), s = tScreen(p.x, p.y); mouse.x = s.x; mouse.y = s.y; }
   else if (t) { const s = tScreen(t.x, t.y); mouse.x = s.x; mouse.y = s.y; }
-  else if (aimA !== null) { mouse.x = W / 2 + Math.cos(aimA) * 200 + (P.x - G.cam.x); mouse.y = H / 2 + Math.sin(aimA) * 200 + (P.y - G.cam.y); }
+  else if (aimA !== null) {
+    // mira livre com ajuda leve (como no controle): um Pokémon a até ~12° da direção puxa a mira metade do caminho
+    let fa = aimA, fr = 110 + rm * 110;
+    const n = tConeTarget(aimA, T_CONE, 520, tPool());
+    if (n) { const ta = Math.atan2(n.y - P.y, n.x - P.x); fa = aimA + Math.atan2(Math.sin(ta - aimA), Math.cos(ta - aimA)) * 0.5; fr = Math.hypot(n.x - P.x, n.y - P.y); TCH.assist = n; }
+    const s = tScreen(P.x + Math.cos(fa) * fr, P.y + Math.sin(fa) * fr); mouse.x = s.x; mouse.y = s.y;
+  }
   // tiro sempre ligado quando há alvo (ou mirando com o analógico); nunca dentro da vila nem com janela aberta
   const safe = !inDungeonArea(P.x) && inTown(P.x, P.y);
   // segurando a captura o tiro pausa (para não derrubar o Pokémon que você quer pegar)
   mouse.down = !!(t || aimA !== null) && !G.npcOpen && !safe && !TCH.cap;
+  // vibra de leve ao levar dano (dá para desligar nas opções)
+  if (TCH.hp !== undefined && P.hp < TCH.hp - 0.5) tBuzz(P.hp < maxHP(P) * 0.3 ? 45 : 20);
+  TCH.hp = P.hp;
   // botões: só o que faz sentido agora (atualiza 5×/s)
   TCH.ui -= dt;
   if (TCH.ui <= 0) { TCH.ui = 0.2; tButtons(P); }
@@ -266,6 +275,9 @@ function tButtons(P) {
   cd($('t-abil'), P.abilCd / Math.max(0.1, abilCd(P)));
   cd($('t-dash'), (P.dashCd || 0) / 3);
   $('t-pot').lastChild.textContent = P.pots.hp;
+  // ☰ ganha um selo quando há algo para resolver no painel; ⬆ aparece quando há equipamento melhor na mochila
+  $('t-eq').classList.toggle('hidden', !bestSwaps(P).length);
+  $('t-menu').classList.toggle('badge', !!(P.talentOffer || P.talentPending > 0 || P.points > 0));
   $('t-cap').lastChild.textContent = P.balls + (P.bag.grande || 0) + (P.bag.ultra || 0);
 }
 
@@ -279,6 +291,14 @@ function drawTouch() {
     ctx.lineCap = 'round'; ctx.strokeStyle = '#000'; ctx.lineWidth = 5; ctx.stroke(); ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.stroke(); ctx.lineCap = 'butt';
   };
   if (TCH.tgt && tAlive(TCH.tgt)) corners(TCH.tgt, TCH.lock ? '#ff5a4a' : '#ffe14a', (TCH.tgt.r || 14) + 10);
+  if (TCH.aimA !== null && TCH.aimA !== undefined) {
+    // mirando com o analógico: linha até a mira e a mira (igual à do controle)
+    const ps = tScreen(P.x, P.y), x = mouse.x, y = mouse.y;
+    ctx.strokeStyle = 'rgba(255,225,74,.35)'; ctx.lineWidth = 2; ctx.setLineDash([4, 8]); ctx.beginPath(); ctx.moveTo(ps.x, ps.y); ctx.lineTo(x, y); ctx.stroke(); ctx.setLineDash([]);
+    const shape = () => { ctx.beginPath(); ctx.arc(x, y, 10, 0, 7); ctx.moveTo(x - 17, y); ctx.lineTo(x - 6, y); ctx.moveTo(x + 6, y); ctx.lineTo(x + 17, y); ctx.moveTo(x, y - 17); ctx.lineTo(x, y - 6); ctx.moveTo(x, y + 6); ctx.lineTo(x, y + 17); };
+    ctx.lineCap = 'round'; ctx.strokeStyle = '#000'; ctx.lineWidth = 6; shape(); ctx.stroke(); ctx.strokeStyle = '#ffe14a'; ctx.lineWidth = 2.5; shape(); ctx.stroke(); ctx.lineCap = 'butt';
+    if (TCH.assist && tAlive(TCH.assist)) corners(TCH.assist, '#ffe14a', (TCH.assist.r || 14) + 10);
+  }
   const ab = TCH.abil;
   if (ab && ab.max > T_DEAD) {
     const cancel = Math.hypot(ab.dx, ab.dy) <= T_DEAD;
@@ -303,4 +323,61 @@ function drawTouch() {
   }
 }
 
+/* ---------- painel: segurar um item/companheiro abre os detalhes (no PC isso é passar o mouse e o botão direito) ---------- */
+const T_HOLD = '[data-inv],[data-eq],[data-pet],[data-pot],[data-ball]';
+function tSheetSetup() {
+  if (!MOBILE) return;
+  const pan = $('panel'), sh = document.createElement('div');
+  sh.id = 't-sheet'; sh.className = 'hidden';
+  document.body.appendChild(sh);
+  let hold = null;
+  pan.addEventListener('pointerdown', ev => {
+    const t = ev.target.closest(T_HOLD);
+    if (!t) return;
+    hold = { t, x: ev.clientX, y: ev.clientY, id: setTimeout(() => { hold = null; TCH.swallow = Date.now(); tSheet(t); tBuzz(15); }, 450) };
+  });
+  const cancel = ev => { if (hold && (ev.type !== 'pointermove' || Math.hypot(ev.clientX - hold.x, ev.clientY - hold.y) > 10)) { clearTimeout(hold.id); hold = null; } };
+  for (const k of ['pointermove', 'pointerup', 'pointercancel']) pan.addEventListener(k, cancel);
+  // o toque longo do navegador viraria "botão direito" (soltar o item): aqui ele só abre os detalhes
+  pan.addEventListener('contextmenu', ev => { if (ev.tTouch || !ev.target.closest(T_HOLD)) return; ev.preventDefault(); ev.stopImmediatePropagation(); }, true);
+  // o clique que vem logo depois do toque longo não equipa nada
+  pan.addEventListener('click', ev => { if (Date.now() - (TCH.swallow || 0) < 700) { ev.preventDefault(); ev.stopImmediatePropagation(); } }, true);
+  sh.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-sh]'), t = TCH.sheetT;
+    if (!b || !t || !document.contains(t)) { sh.classList.add('hidden'); return; }
+    const k = b.dataset.sh;
+    if (k === 'use') t.click();
+    else if (k === 'lock') t.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }));
+    else if (k === 'drop') { const e = new MouseEvent('contextmenu', { bubbles: true, cancelable: true }); e.tTouch = true; t.dispatchEvent(e); }
+    // soltar um companheiro pede confirmação (toque de novo); o resto fecha na hora
+    if (k === 'drop' && t.dataset.pet !== undefined && !b.dataset.ok) { b.dataset.ok = 1; b.textContent = '⚠ Toque de novo para soltar'; return; }
+    sh.classList.add('hidden');
+  });
+}
+function tSheet(t) {
+  const P = G && G.P, sh = $('t-sheet');
+  if (!P) return;
+  TCH.sheetT = t;
+  let info = '', use = '', drop = '', lock = '';
+  if (t.dataset.pet !== undefined) {
+    const i = +t.dataset.pet;
+    info = petTip(P, i); use = P.petAct.includes(i) ? '⚪ Guardar na Pokébola' : '⚪ Chamar'; drop = '🌿 Soltar na natureza';
+  } else {
+    const ti = t.getAttribute('title') || (t.closest('[title]') && t.closest('[title]').getAttribute('title')) || t.textContent.trim();
+    // tira as dicas de mouse/teclado (Shift+clique, botão direito...): aqui os botões fazem isso
+    info = `<div class="small" style="white-space:pre-line">${ti.split('\n').filter(l => !/Clique|clique|Botão direito/.test(l)).join('\n').replace(/</g, '&lt;')}</div>`;
+    if (t.dataset.inv !== undefined) {
+      const it = P.inv[+t.dataset.inv];
+      if (!it) return;
+      use = it.slot === 'pedra' ? '💎 Usar' : '⬆ Equipar'; drop = '🗑 Soltar no chão'; lock = it.locked ? '🔓 Destravar' : '🔒 Travar';
+    } else if (t.dataset.eq !== undefined) {
+      if (t.dataset.eq === 'anel' || t.dataset.eq === 'amuleto') use = P.equip[t.dataset.eq] ? '⬇ Tirar' : '';
+    } else if (t.dataset.pot) { use = '🧪 Beber'; drop = '🗑 Soltar uma no chão'; }
+    else if (t.dataset.ball) { use = '⚪ Usar esta bola'; drop = '🗑 Soltar uma no chão'; }
+  }
+  sh.innerHTML = `${info}<div class="shb">${use ? `<button data-sh="use" class="good">${use}</button>` : ''}${lock ? `<button data-sh="lock">${lock}</button>` : ''}${drop ? `<button data-sh="drop" class="bad">${drop}</button>` : ''}<button data-sh="x">Fechar</button></div>`;
+  sh.classList.remove('hidden');
+}
+
 touchSetup();
+tSheetSetup();

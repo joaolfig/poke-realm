@@ -75,6 +75,10 @@ Princípio: **cada NPC abre direto no que você mais faz com ele**, com no máxi
 - **Menu "…"**: Fly, voltar à cidade, montar, cristal, trocar Pokémon, mapa, Pokédex, chat, opções.
 - O toque reaproveita a lógica do controle (o que o controle já faz com analógicos e mira assistida).
 - Jogar junto: o toque só gera as mesmas ações do teclado/controle; a rede não muda, então PC + celular + controle jogam na mesma sala.
+- v219: analógico direito = mira livre (ajuda leve de ~12°, como no controle); tocar num Pokémon trava, tocar de novo ou no chão destrava;
+  opção "Mira automática" (desligada: só atira mirando ou com alvo travado) e "Vibração"; dicas mostram os botões ([💬], [⭐], [⋯ Fly]);
+  segurar item/companheiro no painel abre detalhes com Usar/Equipar, Travar e Soltar (não solta mais sem querer; funciona no iPhone);
+  ☰ ganha selo com talento/pontos pendentes; botão ⬆ quando há equipamento melhor; chat no topo (o teclado não cobre); menu inicial compacto.
 - Segurando ⚪ o tiro automático pausa (para não derrubar o Pokémon que se quer capturar). Botão 🧪 de poção manual além da automática.
 
 ## Fase 5 — Ajuste e testes

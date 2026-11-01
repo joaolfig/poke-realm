@@ -257,14 +257,22 @@ document.addEventListener('DOMContentLoaded', () => { setPad(PAD.on); });
 /* ---------- dicas na tela: troca as teclas pelos botões do controle ---------- */
 const PAD_LBL = { E: 'A', 'Espaço': 'RB', Q: 'X', 1: 'X', F: 'Y', 2: 'LB', 3: '↑', X: '↓', R: '←', V: '→', M: 'L3', T: 'R3', H: 'View', Shift: 'LT', Esc: 'B' };
 const PAD_RE = /\[(E|Espaço|Q|F|R|V|X|T|M|H|Shift|Esc|1|2|3)\]|\((T|Esc)\)/g;
-const padText = s => (PAD.on && typeof s === 'string' ? s.replace(PAD_RE, (m, a, b) => (a ? `[${PAD_LBL[a]}]` : `(${PAD_LBL[b]})`)) : s);
+// no celular as teclas viram os botões da tela (o que fica no menu ⋯ aparece como "⋯ Nome")
+const MOB_LBL = { E: '💬', 'Espaço': '⭐', Q: '🧪', 1: '🧪', F: '⚪', Shift: '💨', Esc: '✕', 2: '⋯ Talismã', Z: '⋯ Talismã', 3: '⋯ Cristal', X: '⋯ Montar', R: '⋯ Cidade', V: '⋯ Fly', M: '⋯ Mapa', B: '⬆', C: '⋯ Trocar', G: '⋯ Bola', L: '⋯ Avisos', P: '⋯ Pokédex', T: '', H: '' };
+const MOB_RE = /\s?\[(E|Espaço|Q|F|R|V|X|T|M|H|Shift|Esc|B|C|G|L|P|Z|1|2|3)\]|\s?\((T|Esc)\)/g;
+const isMob = () => typeof MOBILE !== 'undefined' && MOBILE && !PAD.on;
+const padText = s => (typeof s !== 'string' ? s
+  : PAD.on ? s.replace(PAD_RE, (m, a, b) => (a ? `[${PAD_LBL[a]}]` : `(${PAD_LBL[b]})`))
+  : isMob() ? s.replace(MOB_RE, (m, a, b) => { const l = MOB_LBL[a || b]; return l ? `${/^\s/.test(m) ? ' ' : ''}[${l}]` : ''; })
+  : s);
 // aplica nos textos e dicas (title) de um pedaço da interface
 function padFixDom(root) {
-  if (!PAD.on || !root) return;
+  if (!(PAD.on || isMob()) || !root) return;
+  const RE = PAD.on ? PAD_RE : MOB_RE;
   const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  for (let n = w.nextNode(); n; n = w.nextNode()) if (PAD_RE.test(n.nodeValue)) { PAD_RE.lastIndex = 0; n.nodeValue = padText(n.nodeValue); }
-  PAD_RE.lastIndex = 0;
-  root.querySelectorAll('[title]').forEach(el => { const t = el.getAttribute('title'); if (PAD_RE.test(t)) { PAD_RE.lastIndex = 0; el.setAttribute('title', padText(t)); } PAD_RE.lastIndex = 0; });
+  for (let n = w.nextNode(); n; n = w.nextNode()) if (RE.test(n.nodeValue)) { RE.lastIndex = 0; n.nodeValue = padText(n.nodeValue); }
+  RE.lastIndex = 0;
+  root.querySelectorAll('[title]').forEach(el => { const t = el.getAttribute('title'); if (RE.test(t)) { RE.lastIndex = 0; el.setAttribute('title', padText(t)); } RE.lastIndex = 0; });
 }
 // linha de atalhos no fim do painel (teclado ou controle) + botões de som e controle
 function renderHelpHint() {
