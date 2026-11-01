@@ -568,7 +568,7 @@ function startEvent() {
     announce(`✨ Um ${e.p.name} raro foi avistado! Ele foge — enfraqueça e capture (é fácil de pegar).`, '#67e8f9');
   } else {
     G.event = { kind, x: 0, y: 0, ttl: 120, zone: pz, label: 'Noite Sombria' };
-    announce('🌙 A noite caiu: Pokémon Fantasma e Sombrio surgem, todo XP vale +50% e fogos-fátuos flutuam nos campos.', '#a78bfa');
+    announce('🌙 A noite caiu: Pokémon Fantasma e Sombrio surgem, e todo XP vale +50%.', '#a78bfa');
   }
 }
 
@@ -1037,7 +1037,6 @@ function templeKill(P, m) {
 /* ============ Eventos da noite ============
  * Durante a Noite Sombria: (1) um Alfa noturno aparece perto de alguém e deixa um tesouro ao cair;
  * (2) Baús da Lua surgem pelo mapa e só existem até o amanhecer (cada jogador abre o seu);
- * (3) fogos-fátuos flutuam pelos campos: fogem de você, mas quem encosta ganha um presentinho.
  */
 function moonMod(e) {
   e.moonA = 1; e.alfa = true;
@@ -1078,7 +1077,7 @@ function moonAlfaLoot(m) {
   G.toasts.push({ text: '🌕 O Alfa da noite deixou um tesouro!', color: '#c4b5fd', t: 4 });
 }
 // Baús da Lua
-// Baús da Lua e fogos-fátuos só aparecem quando já está bem escuro (o anoitecer leva ~25 s)
+// Baús da Lua só aparecem quando já está bem escuro (o anoitecer leva ~25 s)
 const deepNight = () => isNight() && (G.nightK || 0) > 0.97;
 function moonChestEvent(m) {
   G.moonCh = (G.moonCh || []).concat(m.l);
@@ -1106,35 +1105,10 @@ function openMoonChest(P, c) {
   G.toasts.push({ text: `🌙 Baú da Lua aberto! +${gold} 🪙`, color: '#c4b5fd', t: 4 });
   burst(c.x, c.y, '#c4b5fd', 30); sfx('lvl'); saveGame();
 }
-// fogos-fátuos (cada jogador vê os seus)
 function nightTick(dt) {
   const P = G.P;
   if (!P) return;
-  if (!isNight()) { G.moonCh = []; G.moonOpen = null; G.wisps = []; return; }
-  G.wisps = G.wisps || [];
-  if (deepNight() && !inDungeonArea(P.x) && !inTown(P.x, P.y) && G.wisps.length < 3 && (G.wispT = (G.wispT || 8) - dt) <= 0) {
-    G.wispT = rand(18, 30);
-    const a = Math.random() * 6.28, r = rand(260, 420), x = P.x + Math.cos(a) * r, y = P.y + Math.sin(a) * r;
-    if (zoneAt(x, y) >= 1 && !isWater(x, y)) G.wisps.push({ x, y, t: 0, life: 45 });
-  }
-  for (const w of G.wisps) {
-    w.t += dt; w.life -= dt;
-    const dx = w.x - P.x, dy = w.y - P.y, d = Math.hypot(dx, dy) || 1;
-    // foge quando você chega perto, mas um pouco mais devagar que você correndo
-    const sp = d < 140 ? moveSpeed(P) * 0.75 : 25;
-    w.x += (d < 140 ? dx / d : Math.cos(w.t * 0.7)) * sp * dt; w.y += (d < 140 ? dy / d : Math.sin(w.t * 0.9)) * sp * dt;
-    if (Math.random() < 0.3) G.parts.push({ x: w.x + rand(-5, 5), y: w.y + rand(-5, 5), vx: 0, vy: -20, life: 0.5, color: Math.random() < 0.5 ? '#67e8f9' : '#c4b5fd', size: 2 });
-    if (d < 26) {
-      w.life = 0;
-      const z = clamp(zoneAt(P.x, P.y), 1, 5), r = Math.random();
-      if (r < 0.12) { P.bag.doce++; G.toasts.push({ text: '✨ O fogo-fátuo virou um Doce Raro!', color: '#67e8f9', t: 3 }); }
-      else if (r < 0.3) { G.bags.push({ x: P.x, y: P.y + 20, items: [stone(pick(TYPES))], life: 60 }); G.toasts.push({ text: '✨ O fogo-fátuo deixou um cristal!', color: '#67e8f9', t: 3 }); }
-      else if (r < 0.5) { P.pots.hp++; G.toasts.push({ text: '✨ O fogo-fátuo virou uma Poção de Cura!', color: '#67e8f9', t: 3 }); }
-      else { const g = 20 * z; P.gold += g; G.toasts.push({ text: `✨ O fogo-fátuo se desfez em ${g} 🪙!`, color: '#67e8f9', t: 3 }); }
-      burst(w.x, w.y, '#67e8f9', 24); sfx('pick'); G.dirty = true;
-    }
-  }
-  G.wisps = G.wisps.filter(w => w.life > 0);
+  if (!isNight()) { G.moonCh = []; G.moonOpen = null; }
 }
 function drawNightStuff(ox, oy) {
   if (!deepNight()) return;
@@ -1148,12 +1122,6 @@ function drawNightStuff(ox, oy) {
     ctx.fillStyle = '#a5b4fc'; ctx.fillRect(x - 13, y - 12, 26, 8);
     ctx.fillStyle = '#f8fafc'; ctx.fillRect(x - 2, y - 5, 4, 5);
     if (Math.random() < 0.15) G.parts.push({ x: c.x + rand(-12, 12), y: c.y - 10, vx: 0, vy: -25, life: 0.7, color: '#e0e7ff', size: 2 });
-  }
-  for (const w of G.wisps || []) {
-    const x = w.x + ox, y = w.y + oy + Math.sin(w.t * 3) * 4, a = Math.min(1, w.life / 3);
-    const gr = ctx.createRadialGradient(x, y, 1, x, y, 16);
-    gr.addColorStop(0, `rgba(240,253,255,${a})`); gr.addColorStop(0.4, `rgba(103,232,249,${a * 0.7})`); gr.addColorStop(1, 'rgba(103,232,249,0)');
-    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, 16, 0, 7); ctx.fill();
   }
 }
 
