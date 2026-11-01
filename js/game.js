@@ -208,9 +208,9 @@ const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 
 const XP_TABLE = [
   600, 1300, 1550, 1750, 1900, 2050, // zona 1 (Nv 1-6): medido jogando, ~1 min por nível na simulação (1,5-2 min de verdade)
   5200, 5600, 6000, 6400, 6800, 7200, 7600, // zona 2 (Nv 7-13)
-  5300, 5750, 6200, 6700, 7250, 7800, 8550, // zona 3 (Nv 14-20)
-  9250, 9750, 10200, 10600, 11000, // zona 4 (Nv 21-25)
-  9000, 9300, 9600, 9860, // zona 5 (Nv 26-29 → 30)
+  7400, 8050, 8700, 9400, 10150, 10900, 11950, // zona 3 (Nv 14-20)
+  12950, 13650, 14300, 14850, 15400, // zona 4 (Nv 21-25)
+  12600, 13000, 13450, 13800, // zona 5 (Nv 26-29 → 30) — zonas 3-5 ×1,4 (medido: subiam rápido demais)
 ];
 const xpNeed = l => XP_TABLE[clamp(l, 1, MAX_LVL - 1) - 1];
 
@@ -329,7 +329,7 @@ function enemyStats(pid, zone, kind) {
     speed: (35 + (st.speed || 50) * 0.55) * (legend || dboss ? 0.6 : rare ? 1.5 : 1),
     scale: legend ? 4.2 : dboss ? 3.3 : clamp(1.7 + (p.height || 10) / 35, 1.7, 2.8) * (alfa || rare ? 1.3 : 1),
     xp: Math.round((p.exp || 100) * (0.4 + zone * 0.35) * (1 + (zone - 1) * 0.1) * (legend ? 45 : dboss ? 8 : alfa ? 3 : rare ? 4 : 1)),
-    cdMul: (zone === 2 ? 0.85 : zone >= 5 ? 1.1 : 1) / (1 + (zone - 1) * 0.2 + Math.max(0, zone - 2) * 0.1), // atacam mais rápido nas zonas altas (e um pouco mais no começo)
+    cdMul: (zone >= 5 ? 1.1 : 1) / (1 + (zone - 1) * 0.2 + Math.max(0, zone - 2) * 0.1), // atacam mais rápido nas zonas altas (e um pouco mais no começo)
     cdBoss: legend ? 0.6 : undefined, // lendários atacam mais rápido
   };
 }
@@ -538,7 +538,7 @@ function hostSpawning(dt) {
   for (const e of G.enemies) if (!e.boss && !e.dg && !e.ev && Math.hypot(e.x - pl.x, e.y - pl.y) < 1100) near++;
   const zp = Math.max(1, zoneAt(pl.x, pl.y));
   // limite de Pokémon por perto: cresce com a zona (caótico no fim), mas cada tiro das zonas altas dói menos (ZONE_DMG)
-  if (near >= [0, 12, 16, 22, 28, 34][Math.min(5, zp)] + (pls.length > 1 ? 5 : 0)) return;
+  if (near >= [0, 12, 16, 20, 24, 28][Math.min(5, zp)] + (pls.length > 1 ? 5 : 0)) return;
   let x = 0, y = 0, water = false;
   for (let k = 0; k < 4; k++) {
     const a = Math.random() * 6.28, dist = rand(600, 950);
@@ -558,7 +558,7 @@ function hostSpawning(dt) {
   const pid = own ? pick(REGION.babies) : other ? pick(otherBabies(REGION)) : water || rainy ? pick(WATER_POOLS[z]) : night.length ? pick(night) : pick(ZONE_POOLS[z]);
   if (!POKE[pid]) return;
   // bandos maiores e mais Alfas no meio e no fim do jogo
-  const n = baby ? 1 : randi(z >= 4 ? 3 : z >= 2 ? 2 : 1, z >= 5 ? 7 : z >= 4 ? 6 : z >= 3 ? 5 : 3); // bebê aparece sozinho
+  const n = baby ? 1 : randi(z >= 4 ? 3 : z >= 2 ? 2 : 1, z >= 4 ? 6 : z >= 3 ? 5 : 3); // bebê aparece sozinho
   for (let i = 0; i < n; i++) {
     const ex = x + rand(-50, 50), ey = y + rand(-50, 50);
     if (water && !isWater(ex, ey)) continue;
@@ -2659,7 +2659,7 @@ const grpN = () => 1 + 0.4 * (nPlayers() - 1);
 
 // dificuldade média do começo ao fim (medido com uma IA que desvia das balas): o começo era fácil demais
 // e o fim perigoso demais, então o dano dos tiros inimigos varia por zona
-const ZONE_DMG = [1, 1.1, 1.25, 1, 0.7, 0.6]; // zonas altas: muitos inimigos (caótico), cada tiro dói menos // zona 1 leve para quem começa no Nv 1 // zona 5 aliviada depois de teste em jogo (estava um pouco difícil demais)
+const ZONE_DMG = [1, 1.1, 1.05, 1, 0.7, 0.6]; // zonas altas: muitos inimigos (caótico), cada tiro dói menos // zona 1 leve para quem começa no Nv 1 // zona 5 aliviada depois de teste em jogo (estava um pouco difícil demais)
 
 // Clérigo em grupo: cada outro jogador perto dele na hora da cura aumenta a cura em 10% (até +30%)
 const clericChoir = P => 1 + 0.1 * Math.min(3, [...G.remotes.values()].filter(r => !r.dead && r.name && Math.hypot(r.tx - P.x, r.ty - P.y) < 260).length);
