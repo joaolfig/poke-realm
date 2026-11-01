@@ -1737,7 +1737,7 @@ function drawHUD(ox, oy) {
     if (G.nearPortal) { const p = G.nearPortal; hint = p.exit ? '[E] Sair da masmorra' : `[E] Entrar: ${THEMES[p.theme].nome}`; col = p.exit ? '#facc15' : THEMES[p.theme].accent; }
     else if (nearMoonChest(P)) hint = '[E] Abrir o Baú da Lua';
     else if (nearXChest(P)) hint = nearXChest(P).kind === 'gua' && guardAlive(nearXChest(P)) ? '👑 Derrote o guardião para abrir o baú' : '[E] Abrir o baú';
-    else if (G.nearNPC) hint = G.nearNPC.id === 'pc' ? '[E] Acessar o Banco Pokémon' : G.nearNPC.id === 'tshop' ? '[E] Ver a loja da Torre' : `[E] Falar com ${G.nearNPC.nome}`;
+    else if (G.nearNPC) hint = G.nearNPC.id === 'pc' ? '[E] Acessar o Banco Pokémon' : G.nearNPC.id === 'tshop' ? '[E] Ver a loja da Torre' : G.nearNPC.id === 'grupo' ? '[E] Ler o Mural de Grupo' : `[E] Falar com ${G.nearNPC.nome}`;
     else if (!gateOpen() && [[0, -40], [0, 40], [-40, 0], [40, 0]].some(([dx, dy]) => tileKind(P.x + dx, P.y + dy) === TK.GATE)) { hint = `🏅 Portão da Liga: abre com 7 insígnias (você tem ${badgeCount(P)})`; col = '#fcd34d'; }
     else if (G.nearHM) { hint = hmHint(P, G.nearHM); col = G.nearHM.k === 'chest' || petKnows(P, G.nearHM.k) ? '#86efac' : '#cbd5e1'; }
     if (hint) { ctx.textAlign = 'center'; ctx.font = 'bold 16px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 4; ctx.fillStyle = col; outlined(hint, W / 2, H / 2 + 70); }

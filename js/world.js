@@ -9,7 +9,7 @@ const NPCS = [
   { id: 'torre', nome: 'Guardião da Torre', icon: '🗼', x: 0, y: 150, t2: 1, spr: { h: '#e5e7eb', b: '#6d28d9', d: '#2e1065' }, fala: '' },
   { id: 'pc', nome: 'Banco Pokémon', icon: '💻', x: -62, y: -50, spr: { h: '#94a3b8', b: '#475569', d: '#1e293b' }, fala: '' },
   { id: 'dex', nome: 'Pesquisadora Íris', icon: '📖', x: 60, y: 205, spr: { h: '#7c2d12', b: '#f8fafc', d: '#0f766e' }, fala: '' },
-  { id: 'grupo', nome: 'Capitã Vera', icon: '👥', x: 150, y: 30, spr: { h: '#1e3a8a', b: '#0ea5e9', d: '#0c4a6e' }, fala: '' },
+  { id: 'grupo', nome: 'Mural de Grupo', icon: '📌', x: 150, y: 30, spr: { h: '#78350f', b: '#a16207', d: '#451a03' }, fala: '' }, // mural de madeira (desenhado à parte)
   { id: 'templo', nome: 'Sacerdotisa Aurora', icon: '⛪', x: -150, y: 30, t2: 1, spr: { h: '#fde68a', b: '#f8fafc', d: '#ca8a04' }, fala: '' },
   { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, t2: 1, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '' },
 ];
@@ -51,6 +51,12 @@ function drawNPC(n, ox, oy) {
     ctx.fillStyle = '#1e293b'; ctx.fillRect(x - 12, y - 11, 24, 15);
     ctx.fillStyle = Math.sin(G.time * 3) > 0 ? '#38bdf8' : '#7dd3fc'; ctx.fillRect(x - 10, y - 9, 20, 11);
     ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(x, y + 9, 3, 0, 7); ctx.fill();
+  } else if (n.id === 'grupo') {
+    // mural de madeira com papéis pregados
+    ctx.fillStyle = '#451a03'; ctx.fillRect(x - 22, y - 2, 4, 20); ctx.fillRect(x + 18, y - 2, 4, 20);
+    ctx.fillStyle = '#78350f'; ctx.fillRect(x - 26, y - 22, 52, 28); ctx.fillStyle = '#a16207'; ctx.fillRect(x - 23, y - 19, 46, 22);
+    const pap = ['#fef3c7', '#e0f2fe', '#fde68a', '#fecaca'];
+    [[-19, -17], [-6, -16], [7, -17], [-13, -7], [3, -6]].forEach(([a, b], i) => { ctx.fillStyle = pap[i % 4]; ctx.fillRect(x + a, y + b, 11, 9); ctx.fillStyle = '#dc2626'; ctx.fillRect(x + a + 4, y + b, 2, 2); });
   } else ctx.drawImage(NPC_SPR[n.id], x - 18, y - 18, 36, 36);
   ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = '#fef3c7';
   outlined(`${n.icon} ${n.nome}`, x, y - 26);
@@ -280,16 +286,17 @@ const QGIVERS = {
   cura: ['captura', 'pegar', 'pegar', 'pegaralfa', 'noturno', 'bolaboa'],
   dex: ['pesquisa', 'pesquisa', 'pegar', 'explorar'],
   loja: ['coleta', 'coleta', 'especie', 'tipo'],
-  grupo: ['duoAlfa', 'duoCaca', 'duoTipo', 'duoEspecie', 'duoCaptura'], // Capitã Vera: só contratos de grupo (com outros jogadores na sala)
+  grupo: ['duoAlfa', 'duoCaca', 'duoTipo', 'duoEspecie', 'duoCaptura'], // Mural de Grupo: só contratos de grupo (com outros jogadores na sala)
 };
 // NPC do contrato individual ativo (só pode haver um; o de grupo fica à parte)
 const soloQuest = P => Object.keys(P.quests || {}).find(g => g !== 'grupo' && P.quests[g]);
+const backTo = g => (g === 'grupo' ? 'ao Mural de Grupo' : `a ${giverName(g)}`);
 const giverName = g => (NPCS.find(n => n.id === g) || {}).nome || 'quem te contratou';
 function renderContracts(P, g) {
   P.quests = P.quests || {}; P.qOffers = P.qOffers || {};
   const q = P.quests[g];
   let h = g === 'grupo' ? '<h4>Contratos de grupo</h4>' : '<h4>Contratos</h4>';
-  if (g === 'grupo' && !q && !G.remotes.size) return h + '<p class="fala">"Meu mural é só para quem viaja em grupo. Quando houver outros heróis na sua sala, eu tenho serviço para vocês: o mesmo contrato para todos, e o que cada um faz conta para o grupo."</p>';
+  if (g === 'grupo' && !q && !G.remotes.size) return h + '<p class="fala">Um aviso pregado no topo do mural: <i>"Serviços só para grupos de heróis. Quem aceita, aceita por todos: o contrato vale para a sala inteira, e o que cada um faz conta para o grupo."</i></p><div class="small">Os contratos aparecem quando há outros jogadores na sua sala.</div>';
   if (q) {
     h += `<div class="quest cur"><b>${q.desc}</b><div class="qbar"><div style="width:${Math.min(100, q.have / q.need * 100)}%"></div></div>
       <div class="small">${q.have}/${q.need} · Recompensa: ${q.xp} XP, ${q.gold} 🪙${q.bonus ? ', ' + BONUS_NAMES[q.bonus] : ''}</div></div>
@@ -301,7 +308,7 @@ function renderContracts(P, g) {
     groupOffer(P, g);
     // um contrato individual (em qualquer NPC) e um de grupo ao mesmo tempo
     const busy = g !== 'grupo' && soloQuest(P);
-    if (busy) h += `<div class="small" style="color:#fca5a5">Você já tem um contrato individual com ${giverName(busy)}. Termine ou abandone antes de pegar outro (o de grupo, da Capitã Vera, pode ficar junto).</div>`;
+    if (busy) h += `<div class="small" style="color:#fca5a5">Você já tem um contrato individual com ${giverName(busy)}. Termine ou abandone antes de pegar outro (o de grupo, do Mural de Grupo, pode ficar junto).</div>`;
     h += P.qOffers[g].map((o, i) => `<div class="quest"><b>${o.desc}</b><div class="small">Recompensa: ${o.xp} XP, ${o.gold} 🪙${o.bonus ? ', ' + BONUS_NAMES[o.bonus] : ''}</div>
       <button data-act="accept:${g}:${i}" ${busy ? 'disabled' : ''}>Aceitar</button></div>`).join('');
   }
@@ -430,7 +437,7 @@ function questStep(P, g, q, k, info) {
   q.have++;
   if (q.have >= q.need) {
     q.done = true;
-    G.toasts.push({ text: `📜 Contrato cumprido! Volte a ${giverName(g)}.`, color: '#4ade80', t: 4 });
+    G.toasts.push({ text: `📜 Contrato cumprido! Volte ${backTo(g)}.`, color: '#4ade80', t: 4 });
     sfx('lvl');
   }
   G.dirty = true;
@@ -1134,7 +1141,7 @@ function drawNightStuff(ox, oy) {
   }
 }
 
-/* ---------- Mural de grupo (Capitã Vera) ----------
+/* ---------- Mural de Grupo (um mural de madeira na praça das cidades) ----------
  * Um mural só para a sala inteira: todos veem as MESMAS 3 ofertas (evento 'gq' com o mural). Quando qualquer um aceita,
  * o contrato fica ativo para todos na sala, e o progresso de todos soma (até ~50 m de distância). O XP é recalculado pelo nível de cada um (q.xpk).
  * Quando alguém recebe a recompensa, o mural é refeito para a sala.

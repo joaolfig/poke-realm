@@ -247,7 +247,7 @@ function drawQuestHUD(hy, ox, oy) {
     ctx.textAlign = 'left'; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = q.done ? '#86efac' : '#e5e7eb'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
     const plain = q.desc.replace(/<div[\s\S]*$/, '').replace(/<[^>]+>/g, '');
     const tq = (q.k === 'caca' || q.k === 'duoCaca' || q.k === 'explorar') && !q.done, dist = tq ? ` · ${Math.round(Math.hypot(q.x - P.x, q.y - P.y) / 32)}m` : '';
-    outlined(q.done ? `📜 Contrato cumprido! Volte a ${giverName(g)}` : `📜 ${plain} (${q.have}/${q.need})${dist}`, 12, hy);
+    outlined(q.done ? `📜 Contrato cumprido! Volte ${backTo(g)}` : `📜 ${plain} (${q.have}/${q.need})${dist}`, 12, hy);
   }
   const t = questTarget(P);
   if (t) {
