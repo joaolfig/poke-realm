@@ -2323,7 +2323,7 @@ function blessApply(P, m, over, self) {
   // no próprio Clérigo: escudo pela metade e bônus de dano só 35% (medido no Nv 30: Guerra sozinho ~295/s, abaixo dos atacantes)
   const mh = maxHP(P), b = m.bl, k = !self ? 1 : b === 'escudo' || b === 'escudo2' ? 0.5 : 0.35;
   if (b === 'escudo' || b === 'escudo2') {
-    const big = b === 'escudo2', cap = mh * (big ? 0.25 : 0.15) * k, min = m.quiet ? 0 : mh * (big ? 0.1 : 0.08) * k;
+    const big = b === 'escudo2', cap = mh * (big ? 0.25 : 0.2) * k, min = m.quiet ? 0 : mh * 0.1 * k;
     const add = Math.max(over, min);
     if (add > 0) { P.shield = Math.round(Math.min(cap, Math.max(P.shield || 0, 0) + add)); P.shieldT = 5; }
   } else if (b === 'feras' || b === 'feras2') { P.ferasT = 6; P.ferasK = (b === 'feras2' ? 0.3 : 0.2) * k; }

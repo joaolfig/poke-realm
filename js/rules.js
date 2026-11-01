@@ -110,7 +110,7 @@ const SUBCLASSES = {
  * (exceto a Graça Salvadora, que no próprio Clérigo só volta 5 min depois de salvá-lo).
  */
 const BLESS = {
-  escudo: { nome: 'Escudo da Fé', icon: '🛡️', subs: ['clerigo'], desc: 'A cura que passaria da vida máxima vira escudo (no mínimo 8% da vida) por 5s, até 15% da vida máxima.' },
+  escudo: { nome: 'Escudo da Fé', icon: '🛡️', subs: ['clerigo'], desc: 'A cura que passaria da vida máxima vira escudo (no mínimo 10% da vida) por 5s, até 20% da vida máxima.' },
   feras: { nome: 'Bênção das Feras', icon: '🐾', subs: ['clerigo'], desc: 'Os companheiros de quem você cura causam +20% de dano por 6s.' },
   escudo2: { nome: 'Escudo da Fé Maior', icon: '🛡️', subs: ['vida'], desc: 'A cura que passaria da vida máxima vira escudo (no mínimo 10% da vida) por 5s, até 25% da vida máxima.' },
   graca: { nome: 'Graça Salvadora', icon: '🕊️', subs: ['vida'], desc: 'Os ALIADOS que você cura ficam protegidos por 8s: recebem 10% menos dano e, se levarem um golpe fatal, voltam com 50% da vida, ficam 2s intocáveis e uma explosão de luz paralisa os inimigos em volta. Protege você também. Depois de salvar alguém, só volta para aquele jogador em 90s (em você, em 5 min).' },
