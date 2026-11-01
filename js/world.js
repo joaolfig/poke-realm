@@ -58,11 +58,15 @@ function openNPC(id) { G.npcOpen = id; G.npcRef = G.nearNPC && G.nearNPC.id === 
 function closeNPC() { G.npcOpen = null; G.npcRef = null; $('npc').classList.add('hidden'); }
 
 // loja de Poké Balls (a antiga curandeira): bolas e vagas extras de companheiro
-function ballShop(P) {
+// em qual cidade fica o NPC aberto agora (0 = vila inicial, 1 = 2ª cidade)
+const npcTown = () => (G.npcRef && G.npcRef.town) || 0;
+// a Ultra Ball e os melhores aprimoramentos só existem na 2ª cidade
+function ballShop(P, town = npcTown()) {
   return [
     { id: 'ball', nome: 'Poké Ball', icon: '⚪', preco: 30 },
     { id: 'grande', nome: 'Great Ball (+3 na captura)', icon: '🔵', preco: 70 },
-    { id: 'ultra', nome: 'Ultra Ball (+6 na captura)', icon: '🟡', preco: 150, lock: P.lvl < 8 },
+    town === 1 || !TOWNS[1] ? { id: 'ultra', nome: 'Ultra Ball (+6 na captura)', icon: '🟡', preco: 150, lock: P.lvl < 8 }
+      : { id: 'ultra', nome: 'Ultra Ball', icon: '🟡', preco: 150, lock: 1, why: `esgotada aqui` },
     ...(petCap(P) < PET_CAP_MAX ? [{ id: 'cinto', nome: `Cinto de Poké Balls: +1 vaga de companheiro (${petCap(P)} → ${petCap(P) + 1})`, icon: '🎒', preco: CINTO_PRECO[petCap(P)] }] : []),
   ];
 }
@@ -80,7 +84,7 @@ function shopList(P) {
   ];
 }
 const sellPrice = it => 8 + it.tier * 12 + (it.upg || 0) * 10;
-const upgMax = P => (storyOver(P) ? 8 : 5);
+const upgMax = (P, town = npcTown()) => (town === 1 || !TOWNS[1] ? (storyOver(P) ? 8 : 6) : 4);
 const upgCost = it => Math.round(60 * ((it.upg || 0) + 1) * (1 + it.tier * 0.5));
 
 function renderNPC() {
@@ -92,7 +96,7 @@ function renderNPC() {
     // dica da vendedora: insinua que a Poké Ball comum não segura os Pokémon mais fortes (sem explicar a regra)
     body += `<p class="fala">"Ouvi dizer que, de ${ZONES[3].nome} em diante, os Pokémon não se deixam prender por qualquer bola... Os treinadores que voltam de lá inteiros nunca levam só Poké Ball na mochila. Por que será que a Great Ball e a Ultra Ball vendem tanto?"</p>`;
     body += '<h4>Poké Balls</h4>' + ballShop(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}</span>
-      <button data-act="buy:${s.id}" ${s.lock || P.gold < s.preco ? 'disabled' : ''}>${s.lock ? 'a partir do Nv 8' : s.preco + ' 🪙'}</button></div>`).join('')
+      <button data-act="buy:${s.id}" ${s.lock || P.gold < s.preco ? 'disabled' : ''}>${s.lock ? s.why || 'a partir do Nv 8' : s.preco + ' 🪙'}</button></div>`).join('')
       + `<div class="small">Você tem ${P.balls} Poké Ball, ${P.bag.grande} Great Ball e ${P.bag.ultra} Ultra Ball · ${P.pets.length}/${petCap(P)} companheiros${petCap(P) >= PET_CAP_MAX ? ' (máximo)' : ''}.</div>`;
   } else if (n.id === 'loja') {
     body += '<h4>Comprar</h4>' + shopList(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}${s.tier !== undefined ? ` <i style="color:${TIER_COLORS[s.tier]}">${TIER_NAMES[s.tier]}</i>` : ''}</span>
@@ -107,7 +111,7 @@ function renderNPC() {
       const it = P.equip[s], c = upgCost(it), maxed = (it.upg || 0) >= cap;
       return `<div class="shoprow"><span>${itemIcon(it)} ${esc(it.name)}${it.upg ? ' +' + it.upg : ''} <i>${itemDesc(it)}</i></span>
         <button data-act="upg:${s}" ${maxed || P.gold < c ? 'disabled' : ''}>${maxed ? 'Máximo' : `Aprimorar (${c} 🪙)`}</button></div>`;
-    }).join('') + `<div class="small">Cada aprimoramento dá +1 de dano na arma ou +1 de CA na armadura (até +${cap}${cap < 8 ? '; vencer a história da região libera até +8' : ''}).</div>`;
+    }).join('') + `<div class="small">Cada aprimoramento dá +1 de dano na arma ou +1 de CA na armadura (até +${cap}).</div>${cap === 4 && TOWNS[1] ? `<p class="fala">"Mais que isso, só com a forja de ${TOWNS[1].nome}. Minha bigorna não aguenta."</p>` : cap === 6 ? '<div class="small">Vencer a história da região libera até +8.</div>' : ''}`;
   } else if (n.id === 'guilda') {
     const q = P.quest;
     if (q) {
