@@ -369,7 +369,7 @@ function drawShock(x, y, w, h) {
   ctx.restore();
 }
 function playerStatus(P, st, type) {
-  if (!P || !PST[st] || P.pstT > 0 || P.pvp) return;
+  if (!P || !PST[st] || P.pstT > 0 || P.pvp || (st === 3 && inWaterNow(P))) return;
   if (stImmune([pType(P)], st)) { text(P.x, P.y - 50, `Imune (tipo ${TYPE_PT[pType(P)]})`, '#93c5fd', 12); return; }
   if (MA(P, 'stimm').includes(String(st))) { text(P.x, P.y - 50, 'Imune (encantamento)', '#93c5fd', 12); return; }
   P.pst = st; P.pstT = PST[st].dur * (1 - Math.min(0.75, M(P, 'stcut'))); P.pdotT = 1; P.pstShock = st === 2 && type === 'electric';
@@ -377,8 +377,11 @@ function playerStatus(P, st, type) {
   sfx('hurt');
 }
 function curePlayerStatus(P) { if (P && P.pstT > 0) { P.pstT = 0; P.pst = 0; text(P.x, P.y - 50, '✨ Curado!', '#86efac', 13); } }
+// dentro d'água (raso, nadando ou surfando) não dá para ficar queimado
+const inWaterNow = P => !inDungeonArea(P.x) && (P.wading || P.surfing || isWater(P.x, P.y));
 function updatePlayerStatus(P, dt) {
   if (!(P.pstT > 0)) return;
+  if (P.pst === 3 && inWaterNow(P)) { P.pstT = 0; P.pst = 0; text(P.x, P.y - 50, '💧 A água apagou a queimadura!', '#93c5fd', 13); return; }
   P.pstT -= dt;
   const S = PST[P.pst];
   if (S && S.dot && (P.pdotT -= dt) <= 0) {
