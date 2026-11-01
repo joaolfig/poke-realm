@@ -274,7 +274,7 @@ function allyHit(e, a, sp) {
   dealDamage(e, r.dmg);
   hitText(e, r.dmg, r.eff, false, true);
   // habilidade do companheiro (ex.: Canção de Ninar do Jigglypuff faz dormir)
-  if (ab && !e.dead && e.hp > 0 && !e.st && Math.random() < ab.ch) inflict(e, stPick(ab.st));
+  if (ab && !e.dead && e.hp > 0 && !e.st && Math.random() < ab.ch) { const st = stPick(ab.st); if (st === 2 && a.type === 'electric') e.shockT = G.time + STATUS[2].dur; inflict(e, st); }
 }
 
 /* ---------- Captura ---------- */

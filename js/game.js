@@ -918,7 +918,7 @@ function enemyAttack(b) {
   let dmg = Math.max(1, Math.round((roll(b.dice[0] * (crit ? 2 : 1), b.dice[1]) + b.dice[2]) * eff));
   if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (!dmg) { text(P.x, P.y - 34, 'Escudo!', '#93c5fd', 12); return; } }
   P.hp -= dmg; P.sinceHit = 0;
-  if (b.stc && P.hp > 0 && PST_BY_TYPE[b.type] && Math.random() < PLAYER_ST_CH) playerStatus(P, stPick(PST_BY_TYPE[b.type]));
+  if (b.stc && P.hp > 0 && PST_BY_TYPE[b.type] && Math.random() < PLAYER_ST_CH) playerStatus(P, stPick(PST_BY_TYPE[b.type]), b.type);
   G.shake = Math.min(8, G.shake + 2 + dmg * 0.3);
   const tag = graze ? ' (bloqueado)' : crit ? ' CRÍTICO' : eff > 1 ? ' super efetivo' : eff < 1 ? ' resistido' : '';
   text(P.x, P.y - 34, `-${dmg}${tag}`, graze ? '#cbd5e1' : eff > 1 ? '#ff5e5e' : eff < 1 ? '#fda4af' : '#f87171', graze ? 11 : crit || eff > 1 ? 16 : 14);
@@ -1384,6 +1384,7 @@ function render() {
       if (rt) ctx.filter = rt;
       drawPlayerSprite(r.cls, x, y - lift, r.face || 1, r.mount ? 0 : r.moving ? Math.floor(r.walk * 8) % 2 : 0, r.invis ? (G.P && G.P.pvp ? 0.07 : 0.4) : 1, r.aim || 0, r.ptype);
       ctx.filter = 'none';
+      if (r.pst === 7) drawShock(x, y - lift - 4, 30, 40);
       ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.textAlign = 'center';
       outlined(`${r.name} · Nv ${r.lvl}`, x, y - 26);
       grassOver(r.x, r.y + 14, x, y + 18, 28);
@@ -1405,6 +1406,7 @@ function render() {
       if (tint) ctx.filter = tint;
       drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
       ctx.filter = 'none';
+      if (pst(P, 2) && P.pstShock) drawShock(x, y - lift - 4, 30, 40);
       if (!mpid) grassOver(P.x, P.y + 14, x, y + 18, 28);
       if (G.recall) { ctx.strokeStyle = '#fde68a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - G.recall.t / 1.5)); ctx.stroke(); }
       bar(x - 16, y + 22, 32, 4, P.hp / maxHP(P), '#22c55e');

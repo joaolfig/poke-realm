@@ -322,10 +322,34 @@ const PST_BY_TYPE = { electric: 2, fire: 3, poison: 4, bug: [4, 2], psychic: 6, 
 const stPick = st => (Array.isArray(st) ? pick(st) : st);
 const pst = (P, st) => P && P.pstT > 0 && P.pst === st;
 // filtro que pisca o boneco na cor do status (st = código do status, ou 0)
-const pstTint = st => (st && PST[st] && Math.sin(G.time * 12) > -0.2 ? PST[st].tint : '');
-function playerStatus(P, st) {
+const pstTint = st => { st = st === 7 ? 2 : st; return st && PST[st] && Math.sin(G.time * 12) > -0.2 ? PST[st].tint : ''; };
+const pstNet = P => (P.pstT > 0 ? (P.pst === 2 && P.pstShock ? 7 : P.pst) : 0);
+// choque elétrico: raios em zigue-zague em volta do corpo, em descargas rápidas
+function drawShock(x, y, w, h) {
+  if ((G.time * 3.2) % 1 > 0.45) return;
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let k = 0; k < 3; k++) {
+    const a = Math.random() * 6.28, r0 = Math.max(w, h) * 0.15, r1 = Math.max(w, h) * 0.62;
+    let px = x + Math.cos(a) * r0, py = y + Math.sin(a) * r0;
+    const pts = [[px, py]];
+    for (let s = 1; s <= 4; s++) {
+      const t = s / 4, rr = r0 + (r1 - r0) * t, aa = a + rand(-0.5, 0.5);
+      pts.push([x + Math.cos(aa) * rr, y + Math.sin(aa) * rr]);
+    }
+    for (const [lw, col] of [[4, 'rgba(250,204,21,.55)'], [1.6, '#fffbe6']]) {
+      ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath();
+      pts.forEach(([qx, qy], i) => (i ? ctx.lineTo(qx, qy) : ctx.moveTo(qx, qy)));
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 0.18; ctx.fillStyle = '#fef08a';
+  ctx.beginPath(); ctx.arc(x, y, Math.max(w, h) * 0.55, 0, 7); ctx.fill();
+  ctx.restore();
+}
+function playerStatus(P, st, type) {
   if (!P || !PST[st] || P.pstT > 0 || P.pvp) return;
-  P.pst = st; P.pstT = PST[st].dur; P.pdotT = 1;
+  P.pst = st; P.pstT = PST[st].dur; P.pdotT = 1; P.pstShock = st === 2 && type === 'electric';
   text(P.x, P.y - 50, PST[st].label + '!', PST[st].color, 15);
   sfx('hurt');
 }
@@ -381,6 +405,8 @@ function drawStatus(e, x, y) {
   } else if (st === 6) {
     ctx.font = '12px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center';
     for (let k = 0; k < 3; k++) { const a = G.time * 4 + k * 2.09; ctx.fillText('⭐', x + Math.cos(a) * 14, top - 6 + Math.sin(a) * 4); }
+  } else if (st === 2 && e.shockT > G.time) {
+    drawShock(x, y, e.w, e.h);
   } else if (Math.random() < 0.35) {
     const col = st === 2 ? '#fde047' : st === 3 ? '#fb923c' : '#c084fc';
     G.parts.push({ x: e.x + rand(-e.w * 0.3, e.w * 0.3), y: e.y + rand(-e.h * 0.3, e.h * 0.2), vx: st === 2 ? rand(-60, 60) : 0, vy: st === 2 ? rand(-60, 60) : -35, life: 0.45, color: col, size: st === 4 ? 4 : 3 });
