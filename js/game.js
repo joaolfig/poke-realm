@@ -1557,27 +1557,24 @@ function wrapText(text, maxW, maxLines) {
   return lines;
 }
 function drawToasts() {
-  // junta avisos repetidos seguidos
-  const list = [];
-  for (const t of G.toasts) { const l = list[list.length - 1]; if (l && l.text === t.text) { l.n = (l.n || 1) + 1; l.t = Math.max(l.t, t.t); } else list.push({ ...t }); }
-  const show = list.slice(-4), w = Math.min(360, Math.max(240, W * 0.3)), x = W - w - 12;
-  let y = showMap && !(showMap === 2) ? 186 : 12;
+  // um aviso por vez, numa faixa fina no topo (o mais recente substitui o anterior)
+  const t = G.toasts[G.toasts.length - 1];
+  if (!t) return;
+  const n = G.toasts.filter(x => x.text === t.text).length;
+  const boss = G.P && G.enemies.some(e => e.boss && Math.hypot(e.x - G.P.x, e.y - G.P.y) < 1000);
   ctx.save();
-  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  for (const t of show) {
-    const fade = Math.min(1, t.t * 1.5);
-    ctx.font = `${t.big ? 600 : 500} ${t.big ? 15 : 14}px Barlow Semi Condensed, system-ui`;
-    const lines = wrapText(t.text + (t.n > 1 ? ` (×${t.n})` : ''), w - 22, 3), h = lines.length * 18 + 10;
-    ctx.globalAlpha = 0.9 * fade;
-    ctx.fillStyle = 'rgba(13,14,16,.92)'; ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
-    ctx.fillStyle = t.color || '#e5e7eb'; ctx.fillRect(x, y, 4, h);
-    if (t.big) { ctx.strokeStyle = t.color || '#e5e7eb'; ctx.lineWidth = 1; ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3); }
-    ctx.globalAlpha = fade;
-    ctx.fillStyle = t.big ? (t.color || '#fff') : '#efe9dc';
-    lines.forEach((l, i) => ctx.fillText(l, x + 12, y + 6 + i * 18));
-    y += h + 5;
-  }
+  ctx.font = '600 15px Barlow Semi Condensed, system-ui';
+  let txt = t.text + (n > 1 ? ` (×${n})` : '');
+  const maxW = Math.min(620, W - 420);
+  while (ctx.measureText(txt).width > maxW && txt.length > 8) txt = txt.slice(0, -2);
+  if (txt.length < (t.text + (n > 1 ? ` (×${n})` : '')).length) txt += '…';
+  const w = ctx.measureText(txt).width + 30, x = W / 2 - w / 2, y = boss ? 94 : 58, h = 24;
+  ctx.globalAlpha = Math.min(1, t.t * 1.5);
+  ctx.fillStyle = 'rgba(13,14,16,.85)'; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
+  ctx.fillStyle = t.color || '#e5e7eb'; ctx.fillRect(x + 8, y + 9, 6, 6);
+  ctx.fillStyle = '#efe9dc'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(txt, x + 20, y + h / 2 + 1);
   ctx.restore();
 }
 function drawHUD(ox, oy) {
