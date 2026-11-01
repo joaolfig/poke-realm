@@ -647,7 +647,7 @@ function spawnPB(o) {
   return b;
 }
 // Bomba Arcana: quantos dos 20 projéteis podem acertar o mesmo alvo
-const BOMB_CAP = 8;
+const BOMB_CAP = 6;
 function shootBullet(a, o = {}) {
   const P = G.P, w = CLASSES[P.cls].wpn;
   spawnPB({
