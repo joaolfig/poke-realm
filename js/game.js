@@ -2727,7 +2727,7 @@ function equipBest(P) {
   sfx('pick'); G.dirty = true; saveGame();
 }
 
-/* ---------- Automáticos (todas as plataformas; podem ser desligados no painel) ----------
+/* ---------- Automáticos (só no celular; lá podem ser desligados no painel, em Opções. PC e controle não têm) ----------
  * Vida abaixo de 15% com Talismã de Abra pronto: foge primeiro (uma poção não salvaria no meio de tanta bala).
  * Vida abaixo de 35% (ou abaixo de 15% sem Talismã): bebe uma poção, com 5 s entre as automáticas.
  * Nada disso na arena PvP.
@@ -2738,6 +2738,7 @@ try { Object.assign(OPTS, JSON.parse(localStorage.getItem(OPTS_KEY) || '{}')); }
 const saveOpts = () => { try { localStorage.setItem(OPTS_KEY, JSON.stringify(OPTS)); } catch (e) { /* ignora */ } };
 const AUTO_POT = 0.35, AUTO_FLEE = 0.15;
 function autoTick(P, dt) {
+  if (!onMobile()) return; // poção e fuga automáticas só no celular
   P.autoPotT = Math.max(0, (P.autoPotT || 0) - dt);
   if (!P || P.hp <= 0 || P.pvp || inArena(P.x, P.y)) return;
   const f = P.hp / maxHP(P), safe = !inDungeonArea(P.x) && inTown(P.x, P.y);
@@ -2745,6 +2746,7 @@ function autoTick(P, dt) {
   if (OPTS.autoFlee && f < AUTO_FLEE && P.bag.abra > 0 && !(P.abraCd > 0)) { useAbra(); return; }
   if (OPTS.autoPot && f < AUTO_POT && P.pots.hp > 0 && P.autoPotT <= 0 && !isWolf(P)) { usePotion(); P.autoPotT = 5; }
 }
-const optsPanel = () => `<h4>Opções</h4><div class="opts">
+const onMobile = () => typeof MOBILE !== 'undefined' && MOBILE; // MOBILE vem de js/touch.js
+const optsPanel = () => !onMobile() ? '' : `<h4>Opções</h4><div class="opts">
   <button data-opt="autoPot" class="${OPTS.autoPot ? 'good' : ''}" title="Bebe uma poção sozinho com menos de 35% de vida (5 s entre poções automáticas)">🧪 Poção automática: ${OPTS.autoPot ? 'ligada' : 'desligada'}</button>
   <button data-opt="autoFlee" class="${OPTS.autoFlee ? 'good' : ''}" title="Com menos de 15% de vida, usa o Talismã de Abra sozinho (se você tiver um pronto) e foge para a cidade">🌀 Fuga automática: ${OPTS.autoFlee ? 'ligada' : 'desligada'}</button></div>`;

@@ -2,11 +2,11 @@
 
 Decisões já tomadas: só paisagem no celular · mesma dificuldade para todos (dá para jogar junto) ·
 tiro sempre ligado no celular, com mira e captura mais fáceis que no controle · sem PWA ·
-automáticos valem para todos (ligados por padrão; podem ser desligados no painel, em Opções).
+poção e fuga automáticas só no celular (ligadas por padrão; podem ser desligadas no painel, em Opções; no PC e no controle não existem).
 
 ---
 
-## Fase 1 — Automáticos (todas as plataformas)
+## Fase 1 — Automáticos (só no celular, desde v218)
 
 | Situação | O que acontece |
 |---|---|
