@@ -170,9 +170,9 @@ const MYTH_MODS = [
 function mythItem(f, slot) {
   const it = genItem(6, slot);
   it.myth = f;
-  if (it.slot === 'arma') { it.mythDice = 1 + Math.floor(f / 15); it.dice = [it.dice[0] + it.mythDice, it.dice[1]]; it.bonus += 3 + Math.floor(f / 2); }
-  else if (it.slot === 'armadura') it.ac += 2 + Math.floor(f / 3);
-  else if (it.slot === 'anel') it.bonus += 1 + Math.floor(f / 10);
+  if (it.slot === 'arma') { it.mythDice = 1 + Math.floor(f / 15); it.dice = [it.dice[0] + it.mythDice, it.dice[1]]; it.bonus += 8 + Math.floor(f / 2); }
+  else if (it.slot === 'armadura') it.ac += 6 + Math.floor(f / 3);
+  else if (it.slot === 'anel') it.bonus += 2 + Math.floor(f / 10);
   else it.mods = scaleMods(it.mods, 1.3 + f * 0.03);
   it.mods = Object.assign({}, it.mods || {}, pick(MYTH_MODS)(f));
   it.name = `✦ ${it.name} Mítico · andar ${f}`;
