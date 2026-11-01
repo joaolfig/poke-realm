@@ -360,8 +360,8 @@ function makeEnemy(id, pid, zone, kind, x, y) {
     lv = clamp(Math.round(mid + Math.sqrt(-2 * Math.log(u1)) * Math.cos(6.283 * u2) * (hi - lo + 1) / 4), Math.max(1, lo - 2), hi + 2);
     const dev = clamp(lv - mid, -4, 4), k = 1 + dev * 0.07;
     e.dev = dev; e.maxHp = e.hp = Math.max(1, Math.round(e.maxHp * k)); e.atk += Math.round(dev * 0.5); e.xp = Math.round(e.xp * k);
-    // tamanho acompanha de leve o nível (±4,5% por nível da média, no máximo ±18%): dá para ver quem é mais forte sem virar gigante
-    const sk = 1 + dev * 0.045;
+    // tamanho acompanha o nível (7% por nível da média, no máximo ±25%): dá para ver quem é mais forte sem virar gigante
+    const sk = clamp(1 + dev * 0.07, 0.75, 1.25);
     e.scale *= sk; e.w *= sk; e.h *= sk; e.r = Math.max(12, Math.min(e.w, e.h) * 0.42);
   }
   e.lvl = clamp(lv + (alfa(kind) ? 2 : kind === 4 ? 1 : 0), 1, 30);

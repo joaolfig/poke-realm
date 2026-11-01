@@ -614,9 +614,11 @@ function updateEvent(ev, dt) {
 function endEvent(ev) {
   if (ev.kind === 'meteoros' || ev.kind === 'noite') return eventDone(ev);
   if (ev.kind === 'migracao' && ev.left <= ev.total / 2) return eventDone(ev);
-  for (const id of ev.ids || []) { const e = G.emap.get(id); if (e) { G.emap.delete(id); e.dead = true; } }
+  // horda: quem sobrou não some do nada no meio da luta; vira Pokémon selvagem comum (só não dá mais o prêmio da horda)
+  if (ev.kind === 'horda') for (const id of ev.ids || []) { const e = G.emap.get(id); if (e) e.ev = 0; }
+  else for (const id of ev.ids || []) { const e = G.emap.get(id); if (e) { G.emap.delete(id); e.dead = true; } }
   G.enemies = G.enemies.filter(e => G.emap.has(e.id));
-  const msg = { horda: 'A horda se dispersou...', migracao: 'A revoada passou.', raro: `O ${ev.label} fugiu!` }[ev.kind];
+  const msg = { horda: 'O tempo da horda acabou: os que sobraram continuam por aí, mas sem o prêmio.', migracao: 'A revoada passou.', raro: `O ${ev.label} fugiu!` }[ev.kind];
   emitEvent({ t: 'toast', text: msg, color: '#cbd5e1' });
   G.event = null;
 }
