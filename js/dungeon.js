@@ -361,9 +361,10 @@ function renderDungeonFloor(dg, ox, oy) {
       if (h > 0.97) { ctx.fillStyle = th.accent; ctx.globalAlpha = 0.25; ctx.fillRect(sx + 10, sy + 12, 6, 6); ctx.globalAlpha = 1; }
     } else if (g === 3) {
       // porta selada: grades com brilho do tema
-      ctx.fillStyle = th.floor[0]; ctx.fillRect(sx, sy, TILE, TILE);
-      ctx.fillStyle = '#1f2937'; for (let k = 3; k < TILE; k += 8) ctx.fillRect(sx + k, sy, 4, TILE);
-      ctx.globalAlpha = 0.35 + 0.25 * Math.sin(G.time * 4); ctx.fillStyle = th.accent; ctx.fillRect(sx, sy, TILE, TILE); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#0b0b10'; ctx.fillRect(sx, sy, TILE, TILE);
+      ctx.globalAlpha = 0.25 + 0.2 * Math.sin(G.time * 4); ctx.fillStyle = th.accent; ctx.fillRect(sx, sy, TILE, TILE); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#9ca3af'; for (let k = 4; k < TILE; k += 9) ctx.fillRect(sx + k, sy, 3, TILE); // grades de ferro
+      ctx.fillStyle = '#6b7280'; ctx.fillRect(sx, sy + 6, TILE, 3); ctx.fillRect(sx, sy + TILE - 9, TILE, 3);
     } else if (ty + 1 < DG_H && dg.grid[(ty + 1) * DG_W + tx] >= 1) {
       // face frontal da parede, dá sensação de altura
       ctx.fillStyle = th.top;
