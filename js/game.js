@@ -1604,6 +1604,13 @@ function render() {
   ctx.globalAlpha = 1;
   for (const f of G.fx) {
     const a = f.life / f.max;
+    if (f.k === 'beam') {
+      ctx.save(); ctx.translate(f.x + ox, f.y + oy); ctx.rotate(f.a);
+      ctx.globalAlpha = a * 0.55; ctx.fillStyle = f.color; ctx.fillRect(0, -f.w / 2, f.len, f.w);
+      ctx.globalAlpha = a * 0.9; ctx.fillStyle = '#ffffff'; ctx.fillRect(0, -f.w / 6, f.len, f.w / 3);
+      ctx.restore(); ctx.globalAlpha = 1;
+      continue;
+    }
     if (f.k === 'bolt') {
       ctx.strokeStyle = f.color; ctx.globalAlpha = a; ctx.lineWidth = 3; ctx.beginPath();
       f.pts.forEach(([px, py], i) => { const jx = i ? rand(-6, 6) : 0, jy = i ? rand(-6, 6) : 0; if (i) ctx.lineTo(px + ox + jx, py + oy + jy); else ctx.moveTo(px + ox, py + oy); });
@@ -2570,7 +2577,7 @@ const linBuffs = P => {
 
 /* ============ Golpes de assinatura dos chefes ============
  * Todo chefe (líderes de ginásio, chefes de masmorra, lendários, Procurados e o vilão final) usa de tempos em tempos
- * um golpe próprio do seu tipo, sempre avisado no chão (círculos ou faixas vermelhas que enchem) antes de acertar.
+ * um golpe próprio (os golpes de cada chefe ficam em js/sigs.js), sempre avisado no chão (círculos ou faixas vermelhas que enchem) antes de acertar.
  * O host escolhe o golpe e manda o aviso para todos; cada jogador calcula o próprio dano quando o aviso estoura.
  * Com menos de metade da vida o chefe fica furioso e usa o golpe com mais frequência.
  */
@@ -2582,117 +2589,17 @@ const sigWarn = e => Math.max(1, 1.45 - 0.1 * clamp(e.zone, 1, 5)); // aviso mai
 const near2 = (t, r) => { const a = Math.random() * 6.28, d = Math.random() * r; return [t.x + Math.cos(a) * d, t.y + Math.sin(a) * d]; };
 const tC = (x, y, r, delay) => ({ s: 'c', x: Math.round(x), y: Math.round(y), r, d: +delay.toFixed(2) });
 const tL = (x, y, a, len, w, delay) => ({ s: 'l', x: Math.round(x), y: Math.round(y), a: +a.toFixed(3), len, w, d: +delay.toFixed(2) });
-// formatos de golpe: anel em volta do alvo (centro seguro), cadeia andando até o alvo, leque, faixas paralelas, X, explosão em volta do chefe
-const sRing = (x, y, R, n, r, d, a0 = Math.random() * 6.28) => Array.from({ length: n }, (_, i) => tC(x + Math.cos(a0 + i * 6.283 / n) * R, y + Math.sin(a0 + i * 6.283 / n) * R, r, d));
-const sChain = (e, t, n, r, d0, dd) => { const a = Math.atan2(t.y - e.y, t.x - e.x), L = Math.max(160, Math.hypot(t.x - e.x, t.y - e.y) + 80); return Array.from({ length: n }, (_, i) => tC(e.x + Math.cos(a) * L * (i + 1) / n, e.y + Math.sin(a) * L * (i + 1) / n, r, d0 + i * dd)); };
-const sFan = (e, a, ks, len, w, d) => ks.map(k => tL(e.x, e.y, a + k, len, w, d));
-const sPar = (e, a, offs, len, w, d) => offs.map(o => tL(e.x - Math.sin(a) * o, e.y + Math.cos(a) * o, a, len, w, d));
-const sX = (t, a, len, w, d) => [tL(t.x - Math.cos(a + 0.785) * len / 2, t.y - Math.sin(a + 0.785) * len / 2, a + 0.785, len, w, d), tL(t.x - Math.cos(a - 0.785) * len / 2, t.y - Math.sin(a - 0.785) * len / 2, a - 0.785, len, w, d)];
-const sRain = (t, n, R, r, d0, dd) => Array.from({ length: n }, (_, i) => tC(...near2(t, R), r, d0 + (i % 3) * dd));
-// cada tipo tem 3 golpes; cada espécie tem o seu favorito (sai do número dela) e às vezes usa os outros
-const BOSS_SIG = {
-  fire: [
-    { nome: '🔥 Erupção', f: (e, t) => Array.from({ length: 5 }, () => tC(...near2(t, 170), 70, 1.3)) },
-    { nome: '🔥 Lança-Chamas', f: (e, t, a) => sFan(e, a, [-0.32, 0, 0.32], 640, 64, 1.1) },
-    { nome: '🔥 Anel de Fogo', f: (e, t) => sRing(t.x, t.y, 150, 7, 62, 1.25) },
-  ],
-  water: [
-    { nome: '🌊 Hidro Bomba', f: (e, t, a) => [tL(e.x, e.y, a, 720, 80, 1.0), tL(e.x, e.y, a + 0.5, 600, 60, 1.25), tL(e.x, e.y, a - 0.5, 600, 60, 1.25)] },
-    { nome: '🌊 Surf', f: (e, t, a) => sPar(e, a, [-150, 150], 760, 120, 1.25) },
-    { nome: '💧 Chuva Torrencial', f: (e, t) => sRain(t, 10, 260, 48, 1.0, 0.35) },
-  ],
-  electric: [
-    { nome: '⚡ Trovão', f: (e, t) => [0.9, 1.35, 1.8, 2.25].map(d => tC(...near2(t, 70), 65, d)) },
-    { nome: '⚡ Rede Elétrica', f: (e, t, a) => sX(t, a, 620, 58, 1.2) },
-    { nome: '⚡ Descarga', f: e => [tC(e.x, e.y, 190, 1.2), ...sRing(e.x, e.y, 300, 8, 55, 1.9)] },
-  ],
-  grass: [
-    { nome: '🍃 Tempestade de Folhas', f: (e, t, a) => [-0.4, 0, 0.4].map(k => tL(e.x, e.y, a + k, 620, 60, 1.1)) },
-    { nome: '🌿 Raízes', f: (e, t) => [...sRing(t.x, t.y, 130, 6, 58, 1.1), tC(t.x, t.y, 70, 2.0)] },
-    { nome: '🌸 Dança das Pétalas', f: (e, t) => Array.from({ length: 8 }, (_, i) => tC(t.x + Math.cos(i * 0.9) * (40 + i * 22), t.y + Math.sin(i * 0.9) * (40 + i * 22), 55, 1.0 + i * 0.16)) },
-  ],
-  ice: [
-    { nome: '❄ Nevasca', f: (e, t, a) => [0, 1, 2, 3].map(k => tL(e.x, e.y, a + 0.4 + k * Math.PI / 2, 560, 70, 1.2)) },
-    { nome: '❄ Raio de Gelo', f: (e, t, a) => [tL(e.x, e.y, a, 720, 70, 1.0), tL(e.x, e.y, a + 0.22, 720, 70, 1.7), tL(e.x, e.y, a - 0.22, 720, 70, 1.7)] },
-    { nome: '🧊 Granizo', f: (e, t) => sRain(t, 9, 240, 55, 1.0, 0.4) },
-  ],
-  ground: [
-    { nome: '🌍 Terremoto', f: e => [tC(e.x, e.y, 240, 1.5)] },
-    { nome: '🌍 Fissura', f: (e, t, a) => sPar(e, a, [-110, 0, 110], 640, 55, 1.2) },
-    { nome: '🕳 Escavar', tp: 1, f: (e, t) => [tC(t.x, t.y, 120, 1.4), ...sRing(t.x, t.y, 230, 6, 55, 2.0)] },
-  ],
-  rock: [
-    { nome: '🪨 Deslizamento', f: (e, t) => Array.from({ length: 7 }, (_, i) => tC(...near2(t, 230), 60, 1.1 + i * 0.08)) },
-    { nome: '🪨 Pedra Afiada', f: (e, t) => sChain(e, t, 6, 62, 0.95, 0.18) },
-    { nome: '🪨 Tumba de Rochas', f: (e, t) => sRing(t.x, t.y, 120, 8, 52, 1.3) },
-  ],
-  psychic: [
-    { nome: '🔮 Psíquico', f: (e, t) => [tC(t.x, t.y, 125, 1.25)] },
-    { nome: '🔮 Psicorte', f: (e, t, a) => sX(t, a, 600, 62, 1.15) },
-    { nome: '🔮 Visão do Futuro', f: (e, t) => [1.1, 1.9, 2.7].map(d => tC(...near2(t, 120), 95, d)) },
-  ],
-  ghost: [
-    { nome: '👻 Sombra Ardilosa', tp: 1, f: e => [tC(e.x, e.y, 145, 1.0)] },
-    { nome: '👻 Bola Sombria', f: (e, t) => sChain(e, t, 4, 80, 1.0, 0.3) },
-    { nome: '👻 Pesadelo', f: (e, t) => [...sRing(t.x, t.y, 170, 8, 55, 1.2), ...sRing(t.x, t.y, 90, 5, 50, 1.9)] },
-  ],
-  dark: [
-    { nome: '🌑 Emboscada', tp: 1, f: e => [tC(e.x, e.y, 145, 1.0)] },
-    { nome: '🌑 Pulso Sombrio', f: e => [tC(e.x, e.y, 210, 1.3)] },
-    { nome: '🌑 Golpe Baixo', tp: 1, f: (e, t, a) => sX(t, a, 520, 60, 1.05) },
-  ],
-  fighting: [
-    { nome: '👊 Investida', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 540, 95, 0.95)] },
-    { nome: '👊 Onda de Choque', f: (e, t) => sChain(e, t, 5, 75, 0.95, 0.2) },
-    { nome: '🦵 Chute Giratório', f: e => [tC(e.x, e.y, 170, 1.1), ...sRing(e.x, e.y, 280, 6, 60, 1.7)] },
-  ],
-  normal: [
-    { nome: '💥 Investida', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 540, 95, 0.95)] },
-    { nome: '💥 Hiper Raio', f: (e, t, a) => [tL(e.x, e.y, a, 820, 110, 1.45)] },
-    { nome: '💥 Pisotear', f: e => sRing(e.x, e.y, 150, 7, 70, 1.15) },
-  ],
-  dragon: [
-    { nome: '🐉 Cometa Draco', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 540, 95, 0.95), ...Array.from({ length: 3 }, () => tC(...near2(t, 140), 90, 1.6))] },
-    { nome: '🐉 Fúria do Dragão', f: (e, t, a) => sFan(e, a, [-0.6, -0.3, 0, 0.3, 0.6], 600, 52, 1.2) },
-    { nome: '🐉 Pulso do Dragão', f: (e, t) => [tC(t.x, t.y, 110, 1.1), ...sRing(t.x, t.y, 210, 7, 60, 1.8)] },
-  ],
-  poison: [
-    { nome: '☠ Bomba de Lodo', st: 4, f: (e, t) => Array.from({ length: 4 }, () => tC(...near2(t, 150), 85, 1.2)) },
-    { nome: '☠ Onda Tóxica', st: 4, f: e => [tC(e.x, e.y, 200, 1.3)] },
-    { nome: '☠ Espinhos Tóxicos', st: 4, f: (e, t) => sChain(e, t, 5, 65, 1.0, 0.2) },
-  ],
-  flying: [
-    { nome: '🌪 Furacão', f: (e, t, a) => [tL(t.x - Math.cos(a + 0.8) * 300, t.y - Math.sin(a + 0.8) * 300, a + 0.8, 600, 60, 1.1), tL(t.x - Math.cos(a - 0.8) * 300, t.y - Math.sin(a - 0.8) * 300, a - 0.8, 600, 60, 1.1)] },
-    { nome: '🪶 Ataque Aéreo', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 600, 85, 0.95)] },
-    { nome: '🌬 Rajada', f: (e, t, a) => sPar(e, a, [-140, 0, 140], 700, 60, 1.15) },
-  ],
-  bug: [
-    { nome: '🐝 Enxame', f: (e, t) => Array.from({ length: 9 }, (_, i) => tC(...near2(t, 260), 45, 1.0 + (i % 3) * 0.25)) },
-    { nome: '🕸 Teia', f: (e, t, a) => [...sX(t, a, 560, 50, 1.1), tC(t.x, t.y, 70, 1.8)] },
-    { nome: '🐛 Picada', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 520, 80, 0.95)] },
-  ],
-  steel: [
-    { nome: '⚙ Chuva de Aço', f: (e, t) => { const o = []; for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) if ((i + j) % 2 === 0) o.push(tC(t.x + i * 120, t.y + j * 120, 60, 1.2)); return o; } },
-    { nome: '⚙ Cauda de Ferro', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 560, 100, 1.0)] },
-    { nome: '⚙ Canhão Flash', f: (e, t, a) => [tL(e.x, e.y, a, 800, 120, 1.5)] },
-  ],
-  fairy: [
-    { nome: '🌙 Lua Mágica', f: (e, t) => Array.from({ length: 6 }, (_, i) => tC(t.x + Math.cos(i * 1.047) * 150, t.y + Math.sin(i * 1.047) * 150, 62, 1.2)) },
-    { nome: '🎶 Voz Encantada', f: e => [tC(e.x, e.y, 200, 1.25)] },
-    { nome: '✨ Brilho Deslumbrante', f: (e, t) => sRain(t, 8, 220, 60, 1.0, 0.35) },
-  ],
-};
+// os golpes de cada chefe ficam em js/sigs.js (SIG_MOVES, SIG_SPECIES, SIG_TYPE)
 // host: usa o golpe de assinatura
 function bossSig(e, t) {
-  const L = BOSS_SIG[e.type] || BOSS_SIG.normal, fav = L[Math.floor(hash(e.pid || 0, 77) * L.length)];
-  const S = Math.random() < 0.7 ? fav : pick(L);
+  const S = sigPick(e);
   if (S.tp) { // some e reaparece atrás do alvo
     const a = Math.random() * 6.28, nx = t.x + Math.cos(a) * 110, ny = t.y + Math.sin(a) * 110;
     if (!e.dg || walkableR(nx, ny, Math.min(e.r, 18))) { e.x = nx; e.y = ny; }
   }
   const a = Math.atan2(t.y - e.y, t.x - e.x);
   const list = S.f(e, t, a), wk = sigWarn(e);
-  for (const o of list) o.d = +Math.max(0.95, o.d * wk).toFixed(2);
+  for (const o of list) { o.d = +Math.max(0.95, o.d * wk).toFixed(2); o.fx = S.fx; }
   if (S.dash) e.dash = { a, wait: 0.75 * wk, t: 0.4, spd: 1300 };
   emitEvent({ t: 'tele', l: list, nm: S.nome, bx: Math.round(e.x), by: Math.round(e.y), src: e.name, sid: e.id, ty: e.type, pct: +sigPct(e).toFixed(3), st: S.st || 0 });
 }
@@ -2718,37 +2625,63 @@ function teleHits(o, x, y) {
   const dx = x - o.x, dy = y - o.y, u = dx * Math.cos(o.a) + dy * Math.sin(o.a), v = -dx * Math.sin(o.a) + dy * Math.cos(o.a);
   return u > -10 && u < o.len + 10 && Math.abs(v) < o.w / 2 + 10;
 }
+// dano de um golpe de assinatura no herói; devolve true se ele morreu
+function teleDamage(o, P) {
+  let eff = typeEff(o.ty, [pType(P)]);
+  if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return false; }
+  if (race(P).resist.includes(o.ty) || MA(P, 'resist').includes(o.ty) || (P.lin && LIN[P.lin].resist.includes(o.ty))) eff *= 0.5;
+  eff *= linTaken(P, o.ty) * (P.seloT > 0 ? 0.75 : 1) * (P.graceT > 0 ? 0.9 : 1) * (P.race === 'draconato' ? 0.9 : 1);
+  let dmg = Math.max(1, Math.round(maxHP(P) * o.pct * Math.min(eff, 1.5) * rand(0.9, 1.1)));
+  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; }
+  if (dmg <= 0) return false;
+  P.hp -= dmg; P.sinceHit = 0;
+  text(P.x, P.y - 34, `-${dmg}`, '#f87171', 17); sfx('hit');
+  const st = o.st || PST_BY_TYPE[o.ty];
+  if (st && P.hp > 0 && Math.random() < (o.st ? 1 : 0.35)) playerStatus(P, stPick(st), o.ty);
+  if (P.hp <= 0) { playerDie(o.src || 'um chefe'); return true; }
+  return false;
+}
 function updateTeles(dt) {
   let P = G.P;
   for (const o of G.teles || []) {
+    const mx = o.s === 'c' || o.s === 'm' ? o.x : o.x + Math.cos(o.a) * o.len / 2, my = o.s === 'c' || o.s === 'm' ? o.y : o.y + Math.sin(o.a) * o.len / 2;
     // o chefe caiu antes do golpe sair: o aviso se desfaz (antes o golpe acertava mesmo com ele morto)
-    if (o.sid && !G.emap.has(o.sid)) { o.dead = true; burst(o.s === 'c' ? o.x : o.x + Math.cos(o.a) * o.len / 2, o.s === 'c' ? o.y : o.y + Math.sin(o.a) * o.len / 2, '#9ca3af', 6); continue; }
+    if (o.sid && !G.emap.has(o.sid)) { o.dead = true; const q = o.act ? sigMovePos(o) : { x: mx, y: my }; burst(q.x, q.y, '#9ca3af', 6); continue; }
     o.t -= dt;
     if (o.t > 0) continue;
+    if (o.s === 'm') {
+      // golpe que anda (tornado, redemoinho, pedra, orbe): depois do aviso percorre o caminho e acerta quem tocar, uma vez
+      o.act = (o.act || 0) + dt;
+      const q = sigMovePos(o);
+      sigTrail(o, q);
+      if (P && !o.hit && P.dodgeT <= 0 && !P.pvp && Math.hypot(P.x - q.x, P.y - q.y) < o.r + 12) { o.hit = true; if (teleDamage(o, P)) P = null; }
+      if (o.act >= o.dur) { o.dead = true; sigBurst(o, q.x, q.y); }
+      continue;
+    }
     o.dead = true;
-    const cx = o.s === 'c' ? o.x : o.x + Math.cos(o.a) * o.len / 2, cy = o.s === 'c' ? o.y : o.y + Math.sin(o.a) * o.len / 2;
-    burst(cx, cy, TYPE_COLORS[o.ty] || '#fca5a5', o.s === 'c' ? 18 : 26);
-    G.fx.push(o.s === 'c' ? { k: 'ring', x: o.x, y: o.y, r: 0, R: o.r, life: 0.35, max: 0.35, color: TYPE_COLORS[o.ty] || '#fca5a5', fill: true } : { k: 'ring', x: cx, y: cy, r: 0, R: o.w, life: 0.3, max: 0.3, color: TYPE_COLORS[o.ty] || '#fca5a5' });
-    if (P && Math.hypot(P.x - cx, P.y - cy) < 700) G.shake = Math.min(9, G.shake + 3);
+    sigBurst(o, mx, my);
+    G.fx.push(o.s === 'c' ? { k: 'ring', x: o.x, y: o.y, r: 0, R: o.r, life: 0.35, max: 0.35, color: TYPE_COLORS[o.ty] || '#fca5a5', fill: true } : { k: 'ring', x: mx, y: my, r: 0, R: o.w, life: 0.3, max: 0.3, color: TYPE_COLORS[o.ty] || '#fca5a5' });
+    if (P && Math.hypot(P.x - mx, P.y - my) < 700) G.shake = Math.min(9, G.shake + (o.fx === 'quake' ? 5 : 3));
     if (!P || P.dodgeT > 0 || P.pvp || !teleHits(o, P.x, P.y)) continue;
-    let eff = typeEff(o.ty, [pType(P)]);
-    if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); continue; }
-    if (race(P).resist.includes(o.ty) || MA(P, 'resist').includes(o.ty) || (P.lin && LIN[P.lin].resist.includes(o.ty))) eff *= 0.5;
-    eff *= linTaken(P, o.ty) * (P.seloT > 0 ? 0.75 : 1) * (P.graceT > 0 ? 0.9 : 1) * (P.race === 'draconato' ? 0.9 : 1);
-    let dmg = Math.max(1, Math.round(maxHP(P) * o.pct * Math.min(eff, 1.5) * rand(0.9, 1.1)));
-    if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; }
-    if (dmg <= 0) continue;
-    P.hp -= dmg; P.sinceHit = 0;
-    text(P.x, P.y - 34, `-${dmg}`, '#f87171', 17); sfx('hit');
-    const st = o.st || PST_BY_TYPE[o.ty];
-    if (st && P.hp > 0 && Math.random() < (o.st ? 1 : 0.35)) playerStatus(P, stPick(st), o.ty);
-    if (P.hp <= 0) { playerDie(o.src || 'um chefe'); P = null; } // os outros avisos do mesmo quadro não matam de novo
+    if (teleDamage(o, P)) P = null; // os outros avisos do mesmo quadro não matam de novo
   }
   if (G.teles) G.teles = G.teles.filter(o => !o.dead);
 }
 function drawTeles(ox, oy) {
   for (const o of G.teles || []) {
     const k = 1 - o.t / o.max, col = TYPE_COLORS[o.ty] || '#ef4444';
+    if (o.s === 'm') {
+      if (o.t > 0) {
+        // aviso: o caminho que ele vai fazer, e a bolinha enchendo no começo
+        ctx.save(); ctx.globalAlpha = 0.75; ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([8, 6]); ctx.beginPath();
+        for (let s0 = 0; s0 <= 12; s0++) { const q = sigMovePos({ ...o, act: o.dur * s0 / 12 }); if (s0) ctx.lineTo(q.x + ox, q.y + oy); else ctx.moveTo(q.x + ox, q.y + oy); }
+        ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(220,38,38,.18)'; ctx.beginPath(); ctx.arc(o.x + ox, o.y + oy, o.r, 0, 7); ctx.fill();
+        ctx.fillStyle = 'rgba(239,68,68,.4)'; ctx.beginPath(); ctx.arc(o.x + ox, o.y + oy, o.r * k, 0, 7); ctx.fill();
+        ctx.restore();
+      } else { const q = sigMovePos(o); sigDrawMover(o, q.x + ox, q.y + oy); }
+      continue;
+    }
     ctx.save();
     ctx.globalAlpha = 0.85;
     if (o.s === 'c') {
