@@ -287,14 +287,14 @@ const STATUS = {
   6: { txt: 'confundir o inimigo', label: '💫 Confuso!', dur: 3, color: '#f9a8d4' },
 };
 const ABIL = [
-  { ids: [39, 40, 174], nome: 'Canção de Ninar', st: 1, ch: 0.03 },
-  { ids: [96, 97, 92, 93, 94, 280, 281, 282], nome: 'Hipnose', st: 1, ch: 0.025 },
-  { ids: [12, 43, 44, 45, 182, 69, 70, 71], nome: 'Pó do Sono', st: 1, ch: 0.03 },
-  { ids: [25, 26, 172, 125, 239, 179, 180, 181, 81, 82, 100, 101], nome: 'Estática', st: 2, ch: 0.08 },
-  { ids: [23, 24, 46, 47], nome: 'Olhar Paralisante', st: 2, ch: 0.06 },
-  { ids: [77, 78, 126, 240, 37, 38, 58, 59, 4, 5, 6], nome: 'Corpo Chamejante', st: 3, ch: 0.1 },
-  { ids: [13, 14, 15, 29, 30, 31, 32, 33, 34, 72, 73, 88, 89, 109, 110, 167, 168, 48, 49, 41, 42, 169], nome: 'Ponto Venenoso', st: 4, ch: 0.12 },
-  { ids: [54, 55, 79, 80, 199, 63, 64, 65, 122], nome: 'Confusão', st: 6, ch: 0.06 },
+  { ids: [39, 40, 174], nome: 'Canção de Ninar', st: 1, ch: 0.019 },
+  { ids: [96, 97, 92, 93, 94, 280, 281, 282], nome: 'Hipnose', st: 1, ch: 0.016 },
+  { ids: [12, 43, 44, 45, 182, 69, 70, 71], nome: 'Pó do Sono', st: 1, ch: 0.019 },
+  { ids: [25, 26, 172, 125, 239, 179, 180, 181, 81, 82, 100, 101], nome: 'Estática', st: 2, ch: 0.052 },
+  { ids: [23, 24, 46, 47], nome: 'Olhar Paralisante', st: 2, ch: 0.039 },
+  { ids: [77, 78, 126, 240, 37, 38, 58, 59, 4, 5, 6], nome: 'Corpo Chamejante', st: 3, ch: 0.065 },
+  { ids: [13, 14, 15, 29, 30, 31, 32, 33, 34, 72, 73, 88, 89, 109, 110, 167, 168, 48, 49, 41, 42, 169], nome: 'Ponto Venenoso', st: 4, ch: 0.078 },
+  { ids: [54, 55, 79, 80, 199, 63, 64, 65, 122], nome: 'Confusão', st: 6, ch: 0.039 },
 ];
 const ABIL_BY_ID = {};
 for (const a of ABIL) for (const id of a.ids) ABIL_BY_ID[id] = a;
@@ -302,16 +302,16 @@ for (const a of ABIL) for (const id of a.ids) ABIL_BY_ID[id] = a;
 // Elétrico paralisa, Fogo queima, Veneno e Inseto envenenam, Gelo congela, Planta faz dormir (Pó do Sono),
 // Psíquico, Fantasma (Raio Confuso) e Fada (Beijo Doce) confundem. Os outros tipos não causam status e batem mais.
 const TYPE_ABIL = {
-  electric: { nome: 'Faísca', st: 2, ch: 0.05 }, fire: { nome: 'Brasa', st: 3, ch: 0.06 }, poison: { nome: 'Toxina', st: 4, ch: 0.07 },
-  ice: { nome: 'Toque Gélido', st: 5, ch: 0.03 }, psychic: { nome: 'Mente Confusa', st: 6, ch: 0.04 },
-  bug: { nome: 'Ferrão Venenoso', st: 4, ch: 0.05 }, grass: { nome: 'Pó do Sono', st: 1, ch: 0.025 },
-  ghost: { nome: 'Raio Confuso', st: 6, ch: 0.04 }, fairy: { nome: 'Beijo Doce', st: 6, ch: 0.04 },
+  electric: { nome: 'Faísca', st: 2, ch: 0.033 }, fire: { nome: 'Brasa', st: 3, ch: 0.039 }, poison: { nome: 'Toxina', st: 4, ch: 0.046 },
+  ice: { nome: 'Toque Gélido', st: 5, ch: 0.019 }, psychic: { nome: 'Mente Confusa', st: 6, ch: 0.026 },
+  bug: { nome: 'Ferrão Venenoso', st: 4, ch: 0.033 }, grass: { nome: 'Pó do Sono', st: 1, ch: 0.016 },
+  ghost: { nome: 'Raio Confuso', st: 6, ch: 0.026 }, fairy: { nome: 'Beijo Doce', st: 6, ch: 0.026 },
 };
 // quem causa status bate menos (quanto maior a chance, menor o dano: 12% de chance -> -18% de dano)
 const abilDmgMul = ab => (ab ? 1 - Math.min(0.2, ab.ch * 1.5) : 1);
 // ---------- status no jogador (golpes de Alfas e chefes) ----------
 // 2 paralisado (mais lento e atira menos), 3 queimado (dano por segundo e bate menos), 4 envenenado (dano por segundo), 6 confuso (mira treme: ~60% dos tiros acertam)
-const PLAYER_ST_CH = 0.05;
+const PLAYER_ST_CH = 0.03;
 const PST = {
   2: { label: '⚡ Paralisado', dur: 4, color: '#fde047' },
   3: { label: '🔥 Queimado', dur: 4, color: '#fb923c', dot: 0.025 },
