@@ -23,7 +23,7 @@ const CLASSES = {
     weapons: ['Cajado de Aprendiz', 'Cajado de Carvalho', 'Cajado Arcano', 'Cajado das Tempestades', 'Cajado Astral', 'Cajado do Arquimago', 'Cajado do Vazio'], wicon: '🪄',
   },
   ladino: {
-    nome: 'Ladino', icon: '🗡️', hd: 8, ac: 12, crit: 19, dieAdj: -2, attrs: { POD: 2, AGI: 4, VIG: 1 },
+    nome: 'Ladino', icon: '🗡️', hd: 8, ac: 13, crit: 19, dieAdj: -2, attrs: { POD: 2, AGI: 4, VIG: 1 },
     spr: { h: '#111827', b: '#374151', d: '#1f2937' },
     desc: 'Ataques rápidos. Crítico em 19-20 com Ataque Furtivo.',
     wpn: { shots: 1, speed: 560, life: 0.6, size: 5, rate: 3.0, shape: 'dagger', color: '#cbd5e1' },
