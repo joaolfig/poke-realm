@@ -244,13 +244,18 @@
   #p-pots button { font-size: 13px; }
 
   /* ---------- diálogo de NPC / loja ---------- */
-  #npc { position: fixed; left: calc((100vw - 284px) / 2); bottom: 24px; transform: translateX(-50%); width: min(480px, 92vw); max-height: 70vh; overflow-y: auto; overflow-x: hidden; z-index: 6;
+  /* centralizado na área de jogo; em telas largas o conteúdo se divide em 2 colunas para caber sem rolar */
+  #npc { position: fixed; left: calc((100vw - 284px) / 2); top: 50%; transform: translate(-50%, -50%); width: min(880px, calc(100vw - 320px)); max-height: 88vh; overflow-y: auto; overflow-x: hidden; z-index: 6;
     background: rgba(20, 21, 24, .97); border: 3px solid #000; box-shadow: 0 0 0 2px var(--gold-dk), 0 0 0 5px #000, 0 14px 40px rgba(0,0,0,.7); padding: 12px 14px; }
   .npc-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--line); }
   .npc-head b { font: 700 18px var(--px); color: var(--gold); }
   .npc-head button { padding: 2px 8px; }
   .fala { color: #cfc6b4; margin: 8px 0 12px; padding-left: 10px; border-left: 3px solid var(--gold-dk); }
-  #npc > button { display: block; width: 100%; margin-bottom: 6px; text-align: left; }
+  #npc > button, .npc-body > button { display: block; width: 100%; margin-bottom: 6px; text-align: left; }
+  .npc-body { column-width: 360px; column-gap: 22px; column-rule: 1px solid var(--line); }
+  .npc-body > *, .npc-body .quest, .npc-body .shoprow, .npc-body .sellrow, .npc-body .bulk { break-inside: avoid; }
+  .npc-body h4 { break-after: avoid; }
+  @media (max-width: 900px) { #npc { width: min(560px, 94vw); left: 50%; } }
   .shoprow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
   .shoprow i { font-size: 12px; font-style: normal; color: var(--dim); }
   .shoprow > button { flex: none; white-space: nowrap; }
@@ -384,23 +389,23 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=198"></script>
-<script src="js/data.js?v=198"></script>
-<script src="js/rules.js?v=198"></script>
-<script src="js/items.js?v=198"></script>
-<script src="js/dungeon.js?v=198"></script>
-<script src="js/net.js?v=198"></script>
-<script src="js/map.js?v=198"></script>
-<script src="js/world.js?v=198"></script>
-<script src="js/story.js?v=198"></script>
-<script src="js/hm.js?v=198"></script>
-<script src="js/allies.js?v=198"></script>
-<script src="js/town.js?v=198"></script>
-<script src="js/geo.js?v=198"></script>
-<script src="js/regions.js?v=198"></script>
-<script src="js/audio.js?v=198"></script>
-<script src="js/pad.js?v=198"></script>
-<script src="js/pvp.js?v=198"></script>
-<script src="js/game.js?v=198"></script>
+<script src="js/pokedex.js?v=199"></script>
+<script src="js/data.js?v=199"></script>
+<script src="js/rules.js?v=199"></script>
+<script src="js/items.js?v=199"></script>
+<script src="js/dungeon.js?v=199"></script>
+<script src="js/net.js?v=199"></script>
+<script src="js/map.js?v=199"></script>
+<script src="js/world.js?v=199"></script>
+<script src="js/story.js?v=199"></script>
+<script src="js/hm.js?v=199"></script>
+<script src="js/allies.js?v=199"></script>
+<script src="js/town.js?v=199"></script>
+<script src="js/geo.js?v=199"></script>
+<script src="js/regions.js?v=199"></script>
+<script src="js/audio.js?v=199"></script>
+<script src="js/pad.js?v=199"></script>
+<script src="js/pvp.js?v=199"></script>
+<script src="js/game.js?v=199"></script>
 </body>
 </html>

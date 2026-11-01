@@ -135,7 +135,7 @@ function renderNPC() {
     const bulk = lotBtn('pedra', '💎 Vender cristais') + [0, 1, 2, 3, 4].map(k => lotBtn(k, `Até ${TIER_NAMES[k]}`)).join('');
     body += `<h4>Vender</h4>${bulk ? `<div class="bulk">${bulk}</div><div class="small">Vender em lote nunca vende itens travados 🔒 nem Míticos.</div>` : ''}${inv || '<div class="small">Mochila vazia.</div>'}`;
   } else if (n.id === 'dex') {
-    body += renderDexNPC(P);
+    body += renderContracts(P, 'dex') + renderDexNPC(P); // missões antes das recompensas
   } else if (n.id === 'pc') {
     body += renderPC(P);
   } else if (n.id === 'templo') {
@@ -156,9 +156,9 @@ function renderNPC() {
   } else if (n.id === 'guilda') {
     body += renderContracts(P, 'guilda');
   }
-  if (n.id !== 'guilda' && QGIVERS[n.id]) body += renderContracts(P, n.id);
+  if (n.id !== 'guilda' && n.id !== 'dex' && QGIVERS[n.id]) body += renderContracts(P, n.id);
   body = renderIL(n, P) + body; // etapa da história sempre no topo
-  $('npc').innerHTML = `<div class="npc-head"><span>${n.icon} <b>${n.nome}</b></span><span>🪙 ${P.gold}</span><button data-act="close" title="Fechar (Esc)">✕</button></div>${body}`;
+  $('npc').innerHTML = `<div class="npc-head"><span>${n.icon} <b>${n.nome}</b></span><span>🪙 ${P.gold}</span><button data-act="close" title="Fechar (Esc)">✕</button></div><div class="npc-body">${body}</div>`;
   padFixDom($('npc'));
 }
 
@@ -402,7 +402,7 @@ function genQuests(P, g = 'guilda') {
       // quanto mais difícil, mais longe da vila
       const byDist = [...unknown].sort((p, o) => Math.hypot(p.x, p.y) - Math.hypot(o.x, o.y));
       const l = byDist[Math.min(byDist.length - 1, Math.floor(idx * byDist.length / 3))]; q.lm = l.id; q.need = 1; q.x = l.x; q.y = l.y; diff = 1.5;
-      q.desc = `Descubra o ponto de voo "${l.nome}" (🎯 no mapa)`;
+      q.desc = `Visite "${l.nome}" (🎯 no mapa; o lugar vira destino do Fly)`;
     }
     q.desc = `<span class="qtier t${idx}">${T.n}</span> ${q.desc}<div class="small"><i>${who}: "${why}."</i></div>`;
     // dupla: dá mais trabalho e rende 30% a mais de XP que o contrato individual equivalente (o ouro é o mesmo)

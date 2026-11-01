@@ -117,7 +117,7 @@ function updateHM(dt) {
     if (P.fly.includes(l.id) || Math.hypot(P.x - l.x, P.y - l.y) > 260) continue;
     P.fly.push(l.id);
     questProgress('explorar', { id: l.id });
-    G.toasts.push({ text: `📍 Ponto de voo descoberto: ${l.nome}`, color: '#93c5fd', t: 3.5 });
+    G.toasts.push({ text: `📍 Lugar descoberto: ${l.nome} (agora é um destino do Fly)`, color: '#93c5fd', t: 3.5 });
     saveGame();
   }
 }
