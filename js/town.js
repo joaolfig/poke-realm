@@ -86,6 +86,18 @@ const TOWN_DECOR = [
 // portais nas entradas: onde as ruas cruzam a borda da vila (recalculados a cada região)
 // portais de cada cidade (coordenadas locais, relativas ao centro da cidade)
 const TOWN_GATES = [[], []];
+// peças de um portão para ordenar na tela: cada poste da cerquinha e os dois postes grandes na própria altura;
+// a trave vai junto do poste mais à frente (mais embaixo na tela)
+function gateParts(g) {
+  const parts = [];
+  for (const s of [1, -1]) {
+    for (let k = 1; k <= 3; k++) { const d = 46 + k * 16; parts.push({ k: 'gpost', h: 20, x: g.x + g.tx * s * d, y: g.y + g.ty * s * d }); }
+    parts.push({ k: 'gpost', h: 58, x: g.x + g.tx * s * 46, y: g.y + g.ty * s * 46 });
+  }
+  for (const p of parts) p.sy = p.y;
+  parts.push({ ...g, sy: g.y + Math.abs(g.ty) * 46 + 1 });
+  return parts;
+}
 const decorSy = d => (d.k === 'gate' ? d.y + Math.abs(d.ty) * 46 : d.k === 'tree' ? d.y + 6 : d.k === 'stall' ? d.y + 16 : d.y);
 function rebuildTownDecor() {
   for (let i = TOWN_DECOR.length - 1; i >= 0; i--) if (TOWN_DECOR[i].k === 'gate') TOWN_DECOR.splice(i, 1);
@@ -188,11 +200,10 @@ function drawDecor(d, ox, oy) {
       for (let k = 0; k < 5; k++) { ctx.fillStyle = ['#d9534f', '#f2d24b', '#e88fc0', '#fff', '#b07cd8'][k]; ctx.fillRect(x - 9 + k * 4, y - 16 + (k & 1) * 3, 3, 3); }
       break;
     case 'tree': ctx.drawImage(treeImg(TK.TREE, 1, Math.abs(d.x) % 4), x - 32, y - 76); break;
+    case 'gpost': post(x, y, d.h); break; // poste do portão ou da cerquinha (cada um na sua profundidade)
     case 'gate': {
+      // só a trave, as flâmulas e a placa: os postes são desenhados à parte (gateParts)
       const p1x = x + d.tx * 46, p1y = y + d.ty * 46, p2x = x - d.tx * 46, p2y = y - d.ty * 46;
-      // cerquinha saindo dos dois lados
-      for (const s of [1, -1]) for (let k = 1; k <= 3; k++) post(x + d.tx * s * (46 + k * 16), y + d.ty * s * (46 + k * 16), 20);
-      post(p1x, p1y, 58); post(p2x, p2y, 58);
       ctx.strokeStyle = WOOD.dk; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(p1x, p1y - 54); ctx.lineTo(p2x, p2y - 54); ctx.stroke();
       ctx.strokeStyle = WOOD.lt; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p1x, p1y - 56); ctx.lineTo(p2x, p2y - 56); ctx.stroke();
       // flâmulas

@@ -1473,7 +1473,7 @@ function render() {
     for (const n of t.i ? NPCS2 : NPCS) ents.push({ y: n.y, n });
     for (const b of BUILDINGS) ents.push({ y: t.y + b.y + b.h / 2, bld: b, t });
     for (const d of TOWN_DECOR) ents.push({ y: t.y + d.sy, deco: d, t });
-    for (const d of TOWN_GATES[t.i] || []) ents.push({ y: t.y + d.sy, deco: d, t });
+    for (const g of TOWN_GATES[t.i] || []) for (const d of (g.parts = g.parts || gateParts(g))) ents.push({ y: t.y + d.sy, deco: d, t });
   }
   if (G.P) ents.push({ y: G.P.y, me: G.P });
   ents.sort((a, b) => a.y - b.y);
