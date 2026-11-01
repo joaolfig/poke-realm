@@ -531,8 +531,10 @@ function hostSpawning(dt) {
   if (z < 1 || z > zp + 1) return;
   const night = !water && isNight() && Math.random() < 0.5 ? NIGHT_POOL.filter(id => POKE[id]) : [];
   const rainy = !water && !night.length && weatherAt(x, y) === WEATHER.chuva && Math.random() < 0.3;
-  const baby = z === 1 && !water && REGION.babies && Math.random() < 0.03;
-  const pid = baby ? pick(REGION.babies) : water || rainy ? pick(WATER_POOLS[z]) : night.length ? pick(night) : pick(ZONE_POOLS[z]);
+  // zona 1: bebês da região ~3%; outros bebês ~0,6% (raríssimos)
+  const br = z === 1 && !water ? Math.random() : 1, own = br < 0.03 && REGION.babies && REGION.babies.length, other = !own && br < 0.036;
+  const baby = own || other;
+  const pid = own ? pick(REGION.babies) : other ? pick(otherBabies(REGION)) : water || rainy ? pick(WATER_POOLS[z]) : night.length ? pick(night) : pick(ZONE_POOLS[z]);
   if (!POKE[pid]) return;
   // bandos maiores e mais Alfas no meio e no fim do jogo
   const n = baby ? 1 : randi(z >= 4 ? 4 : z >= 3 ? 3 : z >= 2 ? 2 : 1, z >= 4 ? 7 : z >= 3 ? 5 : 3); // bebê aparece sozinho

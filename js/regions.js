@@ -280,8 +280,11 @@ const REGION_IDS = Object.keys(REGIONS);
 let REGION_ID = 'kanto', REGION = REGIONS.kanto;
 
 // todos os Pokémon que a região usa (para pré-carregar)
+// todos os bebês (fora os aquáticos): os que não combinam com a região aparecem na zona 1, raríssimos
+const ALL_BABIES = [172, 173, 174, 175, 236, 238, 239, 240, 298, 360, 406, 433, 438, 439, 440, 446, 447];
+const otherBabies = R => ALL_BABIES.filter(id => !(R.babies || []).includes(id));
 function regionIds(R) {
-  const s = new Set([...Object.values(R.pools).flat(), ...Object.values(R.water).flat(), ...R.night, ...R.rare, ...R.migra, ...R.lendas, ...R.grunts, ...(R.babies || []), R.final.boss]);
+  const s = new Set([...Object.values(R.pools).flat(), ...Object.values(R.water).flat(), ...R.night, ...R.rare, ...R.migra, ...R.lendas, ...R.grunts, ...ALL_BABIES, R.final.boss]);
   for (const g of R.gyms) { s.add(g.boss); g.pool.forEach(id => s.add(id)); }
   return [...s];
 }
