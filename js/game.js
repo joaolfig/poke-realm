@@ -1245,7 +1245,7 @@ function update(dt) {
   G.texts = G.texts.filter(t => t.t < t.life);
   for (const f of G.fx) { f.life -= dt; f.r = f.R * (1 - f.life / f.max); }
   G.fx = G.fx.filter(f => f.life > 0);
-  for (const t of G.toasts) { t.t -= dt; if (!t.logged) { t.logged = 1; G.toastLog = G.toastLog || []; const last = G.toastLog[0]; if (last && last.text === t.text) last.n = (last.n || 1) + 1; else G.toastLog.unshift({ text: t.text, color: t.color, at: G.time }); G.toastLog.length = Math.min(G.toastLog.length, 30); if (!$('tlog').classList.contains('hidden')) renderToastLog(); } }
+  for (const t of G.toasts) { t.t -= dt; if (!t.logged) { t.logged = 1; if (!t.big) { const l = G.chat[G.chat.length - 1]; if (l && l.log && l.text === t.text) { l.n = (l.n || 1) + 1; l.t = G.time; } else { G.chat.push({ text: t.text, log: 1, color: t.color, t: G.time }); if (G.chat.length > 9) G.chat.shift(); } t.t = 0; } G.toastLog = G.toastLog || []; const last = G.toastLog[0]; if (last && last.text === t.text) last.n = (last.n || 1) + 1; else G.toastLog.unshift({ text: t.text, color: t.color, at: G.time }); G.toastLog.length = Math.min(G.toastLog.length, 30); if (!$('tlog').classList.contains('hidden')) renderToastLog(); } }
   G.toasts = G.toasts.filter(t => t.t > 0);
   G.banner = Math.max(0, G.banner - dt);
   G.shake = Math.max(0, G.shake - dt * 20);
@@ -1559,15 +1559,15 @@ function wrapText(text, maxW, maxLines) {
 function drawToasts(topY = 12) {
   // um aviso por vez, no canto superior esquerdo, abaixo das linhas da área/missão (o mais recente substitui o anterior).
   // Texto longo quebra em linhas (nada é cortado); o histórico completo fica na tecla [L].
-  const t = G.toasts[G.toasts.length - 1];
+  const big = G.toasts.filter(x => x.big), t = big[big.length - 1];
   if (!t) return;
-  const n = G.toasts.filter(x => x.text === t.text).length;
+  const n = big.filter(x => x.text === t.text).length;
   ctx.save();
   ctx.font = '600 15px Barlow Semi Condensed, system-ui';
   const lines = wrapText(t.text + (n > 1 ? ` (×${n})` : ''), Math.min(560, W * 0.5), 4);
-  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 30, x = 10, y = topY + 8, h = lines.length * 19 + 6;
+  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 30, x = 10, y = 10, h = lines.length * 19 + 6;
   ctx.globalAlpha = Math.min(1, t.t * 1.5);
-  ctx.fillStyle = 'rgba(13,14,16,.85)'; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = 'rgba(13,14,16,.96)'; ctx.fillRect(x, y, w, h);
   ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
   ctx.fillStyle = t.color || '#e5e7eb'; ctx.fillRect(x + 8, y + 9, 6, 6);
   ctx.fillStyle = '#efe9dc'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
@@ -1634,7 +1634,6 @@ function drawHUD(ox, oy) {
     if (hint) { ctx.textAlign = 'center'; ctx.font = 'bold 16px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 4; ctx.fillStyle = col; outlined(hint, W / 2, H / 2 + 70); }
   }
 
-  drawToasts(hy);
 
   let boss = null, bd = 1000;
   for (const e of G.enemies) if (e.boss && P) { const dd = Math.hypot(e.x - P.x, e.y - P.y); if (dd < bd) { bd = dd; boss = e; } }
@@ -1742,10 +1741,12 @@ function drawHUD(ox, oy) {
     const age = G.time - c.t;
     ctx.globalAlpha = age > 20 ? Math.max(0.25, 1 - (age - 20) / 5) : 1;
     const y = H - 160 - (G.chat.length - 1 - i) * 18;
-    ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = c.sys ? '#fcd34d' : '#e5e7eb';
-    outlined(c.sys ? c.text : `${c.name}: ${c.text}`, 12, y);
+    ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = c.log ? '#cfc9bd' : c.sys ? '#fcd34d' : '#e5e7eb';
+    if (c.log) { ctx.fillStyle = c.color || '#cfc9bd'; ctx.fillRect(12, y - 9, 5, 5); ctx.fillStyle = '#cfc9bd'; outlined(c.text + (c.n > 1 ? ` (×${c.n})` : ''), 22, y); }
+    else outlined(c.sys ? c.text : `${c.name}: ${c.text}`, 12, y);
   });
   ctx.globalAlpha = 1;
+  drawToasts();
 }
 
 /* ---------- Painel lateral ---------- */
