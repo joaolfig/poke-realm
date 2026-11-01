@@ -196,9 +196,10 @@ const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
 // XP por nível = abates desejados × XP médio de um abate na zona recomendada para aquele nível.
 // Assim o ritmo cresce suave e não trava na troca de zona (Nv 1-6 zona 1, 7-13 zona 2, 14-20 zona 3, 21-25 zona 4, 26+ zona 5).
-const XP_KILLS = [4, 8, 12, 16, 20, 26, 32, 38, 44, 50, 56, 62, 66, 70, 74, 78, 82, 86, 90, 94, 96, 98, 100, 102, 104, 106, 108, 110, 112];
-const XP_PER_KILL = [38, 73, 200, 400, 650];
-const xpNeed = l => { const i = clamp(l, 1, MAX_LVL - 1); return Math.round(XP_KILLS[i - 1] * XP_PER_KILL[lvlZone(i) - 1]); };
+// XP para passar de cada nível (1→2 ... 29→30), calibrada pelo tempo medido em jogo (abates na zona recomendada):
+// começo mais lento e fim mais rápido que antes — ~2 min no Nv 1 subindo aos poucos até ~8 min no Nv 29 (~3 h só com abates)
+const XP_TABLE = [1550, 1940, 2320, 2710, 3100, 3490, 10660, 11300, 11940, 12580, 13220, 13860, 14500, 15610, 15830, 16060, 16290, 16510, 16740, 16970, 25750, 26090, 26430, 26770, 27110, 38220, 38700, 39170, 39640];
+const xpNeed = l => XP_TABLE[clamp(l, 1, MAX_LVL - 1) - 1];
 
 // raça, classe e tipo são sorteados
 function rollHero() {
