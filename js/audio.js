@@ -138,7 +138,7 @@ function sfx(k) {
 /* ---------- música ---------- */
 const SCALES = {
   major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10], dorian: [0, 2, 3, 5, 7, 9, 10],
-  mixo: [0, 2, 4, 5, 7, 9, 10], phryg: [0, 1, 3, 5, 7, 8, 10], harm: [0, 2, 3, 5, 7, 8, 11],
+  mixo: [0, 2, 4, 5, 7, 9, 10], phryg: [0, 1, 3, 5, 7, 8, 10], harm: [0, 2, 3, 5, 7, 8, 11], lydian: [0, 2, 4, 6, 7, 9, 11],
 };
 // prog: graus da escala (0 = tônica), um por compasso. drums: k = bumbo, s = caixa, h = chimbal (16 passos)
 const TRACKS = {
@@ -150,7 +150,20 @@ const TRACKS = {
   sombra: { bpm: 92, root: 48, scale: 'harm', prog: [0, 5, 3, 4], pad: 0.04, arp: [0, 1, 2, 1], arpRate: 2, arpVol: 0.02, bass: [0, 7], lead: 0.3, leadVol: 0.04, seed: 9, drums: { k: [0, 7], s: [12], h: [] } },
   masmorra: { bpm: 100, root: 50, scale: 'phryg', prog: [0, 1, 0, 6], pad: 0.035, arp: [0, 2], arpRate: 4, arpVol: 0.02, bass: [0, 3, 8, 11], lead: 0.25, leadVol: 0.035, seed: 17, drums: { k: [0, 8], s: [], h: [4, 12] } },
   chefe: { bpm: 150, root: 52, scale: 'harm', prog: [0, 0, 5, 4], arp: [0, 1, 2, 3, 2, 1], arpRate: 1, arpVol: 0.02, bass: [0, 2, 4, 6, 8, 10, 12, 14], lead: 0.7, leadVol: 0.05, seed: 5, drums: { k: [0, 4, 8, 10, 12], s: [4, 12], h: [0, 2, 4, 6, 8, 10, 12, 14] } },
+  // temas de cada região (composições originais que lembram o clima de cada jogo; tocam nos campos e bosques)
+  reg_kanto: { bpm: 128, root: 55, scale: 'major', prog: [0, 3, 4, 0, 5, 3, 4, 4], arp: [0, 1, 2, 1], arpRate: 2, arpVol: 0.022, bass: [0, 4, 8, 12], lead: 0.65, leadVol: 0.05, seed: 101, drums: { k: [0, 8], s: [4, 12, 14], h: [0, 2, 4, 6, 8, 10, 12, 14] } },
+  reg_johto: { bpm: 116, root: 57, scale: 'mixo', prog: [0, 6, 3, 0, 0, 6, 4, 4], pad: 0.025, arp: [0, 2, 1, 2, 3, 2], arpRate: 1, arpVol: 0.016, bass: [0, 6, 10], lead: 0.55, leadVol: 0.045, seed: 202, drums: { k: [0, 10], s: [8], h: [2, 6, 10, 14] } },
+  reg_hoenn: { bpm: 132, root: 53, scale: 'lydian', prog: [0, 4, 5, 3, 0, 4, 1, 4], arp: [0, 2, 1, 3], arpRate: 2, arpVol: 0.022, bass: [0, 3, 6, 10, 14], lead: 0.6, leadVol: 0.048, seed: 303, drums: { k: [0, 6, 10], s: [4, 12], h: [0, 2, 4, 6, 8, 10, 12, 14] } },
+  reg_sinnoh: { bpm: 110, root: 50, scale: 'dorian', prog: [0, 5, 3, 4, 0, 5, 6, 4], pad: 0.04, arp: [0, 2, 4, 2, 1, 2], arpRate: 1, arpVol: 0.015, bass: [0, 8], lead: 0.45, leadVol: 0.042, seed: 404, drums: { k: [0, 8], s: [12], h: [4, 12] } },
+  reg_unova: { bpm: 138, root: 52, scale: 'minor', prog: [0, 5, 6, 4, 0, 5, 3, 6], arp: [0, 1, 2, 3, 2, 1], arpRate: 1, arpVol: 0.017, bass: [0, 3, 8, 11, 14], lead: 0.7, leadVol: 0.048, seed: 505, drums: { k: [0, 3, 8, 11], s: [4, 12], h: [0, 2, 4, 6, 8, 10, 12, 14] } },
+  // masmorras: algumas faixas que variam com o tema
+  dg_fogo: { bpm: 132, root: 52, scale: 'harm', prog: [0, 1, 0, 6], arp: [0, 1, 2, 1], arpRate: 2, arpVol: 0.02, bass: [0, 3, 6, 8, 11, 14], lead: 0.45, leadVol: 0.042, seed: 61, drums: { k: [0, 6, 8, 14], s: [4, 12], h: [0, 2, 4, 6, 8, 10, 12, 14] } },
+  dg_agua: { bpm: 94, root: 50, scale: 'dorian', prog: [0, 3, 6, 4], pad: 0.04, arp: [0, 2, 4, 2], arpRate: 1, arpVol: 0.014, bass: [0, 10], lead: 0.3, leadVol: 0.036, seed: 62, drums: { k: [0, 10], s: [], h: [4, 12] } },
+  dg_sombra: { bpm: 84, root: 46, scale: 'harm', prog: [0, 5, 0, 4], pad: 0.05, arp: [0, 1, 2, 1], arpRate: 4, arpVol: 0.018, bass: [0, 7], lead: 0.22, leadVol: 0.034, seed: 63, drums: { k: [0], s: [12], h: [] } },
+  dg_ruinas: { bpm: 108, root: 48, scale: 'phryg', prog: [0, 1, 0, 5], pad: 0.03, arp: [0, 2], arpRate: 4, arpVol: 0.02, bass: [0, 3, 6, 8, 11, 14], lead: 0.3, leadVol: 0.036, seed: 64, drums: { k: [0, 8], s: [4], h: [2, 6, 10, 14] } },
 };
+// faixa de cada tema de masmorra (ginásios: pelo tipo do líder)
+const DG_MUSIC = { fire: 'dg_fogo', dragon: 'dg_fogo', water: 'dg_agua', ice: 'dg_agua', ghost: 'dg_sombra', psychic: 'dg_sombra', dark: 'dg_sombra', poison: 'dg_sombra', fairy: 'dg_sombra', grass: 'dg_ruinas', electric: 'dg_ruinas', mine: 'dg_ruinas', rock: 'dg_ruinas', ground: 'dg_ruinas', steel: 'dg_ruinas', bug: 'dg_ruinas', fighting: 'dg_fogo', normal: 'dg_ruinas', flying: 'dg_agua' };
 
 function seeded(seed) { let a = seed * 9973 + 1; return () => { a = (a * 16807) % 2147483647; return (a - 1) / 2147483646; }; }
 // gera 4 frases (A A B A) de 16 passos para a faixa: [grau relativo | null, duração em passos]

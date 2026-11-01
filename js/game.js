@@ -2385,10 +2385,16 @@ function musicKey() {
   if (!P || state !== 'play') return 'menu';
   if (inArena(P.x, P.y)) return 'chefe';
   if (G.enemies.some(e => e.boss && e.hp > 0 && Math.hypot(e.x - P.x, e.y - P.y) < 650)) return 'chefe';
-  if (inDungeonArea(P.x)) return 'masmorra';
+  if (inDungeonArea(P.x)) {
+    // masmorra: faixa pelo tema (ginásios e o final: pelo tipo do líder)
+    const dg = dungeonAt(P.x), th = dg && THEMES[dg.theme];
+    const ty = dg && (DG_MUSIC[dg.theme] ? dg.theme : th && POKE[th.boss] ? POKE[th.boss].types[0] : '');
+    return DG_MUSIC[ty] || 'masmorra';
+  }
   if (inTown(P.x, P.y)) return 'vila';
-  const z = ZONES[zoneAt(P.x, P.y)];
-  return z ? { campo: 'campo', floresta: 'floresta', montanha: 'montanha', neve: 'montanha', deserto: 'montanha', vulcao: 'sombra', sombrio: 'sombra', pantano: 'sombra' }[z.bio] || 'campo' : 'campo';
+  // campos e bosques tocam o tema da região; montanhas e lugares sombrios mantêm a faixa do bioma
+  const z = ZONES[zoneAt(P.x, P.y)], reg = TRACKS['reg_' + REGION_ID] ? 'reg_' + REGION_ID : 'campo';
+  return z ? { campo: reg, floresta: reg, montanha: 'montanha', neve: 'montanha', deserto: 'montanha', vulcao: 'sombra', sombrio: 'sombra', pantano: 'sombra' }[z.bio] || reg : reg;
 }
 /* ---------- Fundo do menu: paisagem em pixel art de baixa resolução ---------- */
 const MBG = { cv: $('menu-bg'), stars: [], flies: [], ridges: [] };
