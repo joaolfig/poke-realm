@@ -1943,6 +1943,14 @@ function drawHUD(ox, oy) {
 
 /* ---------- Painel lateral ---------- */
 const typeBadge = t => `<span class="tbadge" style="background:${TYPE_COLORS[t]}">${TYPE_PT[t]}</span>`;
+// contra quem o tipo do herói é forte (os ataques dele dão dano em dobro) e fraco (os ataques desses tipos dão dano em dobro nele)
+function typeMatchHTML(t) {
+  const C = TYPE_CHART[t];
+  if (!C) return '';
+  const all = Object.keys(TYPE_CHART), fraco = all.filter(x => TYPE_CHART[x].s.includes(t)), imune = all.filter(x => TYPE_CHART[x].i.includes(t));
+  const L = l => (l.length ? l.map(typeBadge).join(' ') : '<i>nenhum</i>');
+  return `<div class="tmatch"><div title="Seus ataques causam o dobro de dano nesses tipos"><b>⚔ Forte contra</b> ${L(C.s)}</div><div title="Ataques desses tipos causam o dobro de dano em você"><b>🛡 Fraco contra</b> ${L(fraco)}</div>${imune.length ? `<div title="Ataques desses tipos não causam dano em você"><b>✨ Imune a</b> ${L(imune)}</div>` : ''}</div>`;
+}
 function updatePanel() {
   const P = G.P;
   if (!P) return;
@@ -1966,7 +1974,7 @@ function updatePanel() {
   if (!G.dirty) return;
   G.dirty = false;
   const rc = race(P), sub = P.subclass ? subInfo(P.subclass) : null;
-  $('p-head').innerHTML = `<div class="pname">${esc(P.name)}</div>${P.title ? `<div class="ptitle" data-title="1" title="${(P.titles || []).length > 1 ? 'Clique para trocar o título' : 'Seu título'}">🏅 ${esc(P.title)}${(P.titles || []).length > 1 ? ' ⇄' : ''}</div>` : ''}<div class="pcls" title="${rc.traco}">${rc.nome} ${c.nome}${sub ? ` (${sub.nome})` : ''} · Nível ${P.lvl}</div>`;
+  $('p-head').innerHTML = `<div class="pname">${esc(P.name)}</div>${P.title ? `<div class="ptitle" data-title="1" title="${(P.titles || []).length > 1 ? 'Clique para trocar o título' : 'Seu título'}">🏅 ${esc(P.title)}${(P.titles || []).length > 1 ? ' ⇄' : ''}</div>` : ''}<div class="pcls" title="${rc.traco}">${rc.nome} ${c.nome}${sub ? ` (${sub.nome})` : ''} · Nível ${P.lvl}</div><div class="ptm">Seu tipo: ${typeBadge(pType(P))}${P.tempTypeT > 0 ? ' <span class="small">(cristal)</span>' : ''}${typeMatchHTML(pType(P))}</div>`;
   let choose = '';
   if (P.lvl >= SUB_LVL && !P.subclass) {
     choose += `<h4>Escolha sua subclasse <span class="pts">nível ${SUB_LVL}!</span></h4>` + SUBCLASSES[P.cls].map(s =>
@@ -2222,7 +2230,7 @@ function renderHero() {
     </div>
     <div class="hero-stats" style="grid-column:1/-1">${ATTRS.map(k => `<span title="${ATTR_DESC[k]}">${ATTR_NAMES[k]} <b>${h.attrs[k]}</b></span>`).join('')}
       <span>PV <b>${maxHP(fake)}</b></span><span>CA <b>${AC(fake)}</b></span>${h.points ? `<span class="free">Pontos livres <b>+${h.points}</b></span>` : ''}</div>
-    <div class="small" style="grid-column:1/-1">Tipo ${TYPE_PT[h.type]}: forte contra ${TYPE_CHART[h.type].s.map(t => TYPE_PT[t]).join(', ') || 'nada'}.</div>`;
+    <div style="grid-column:1/-1">${typeMatchHTML(h.type)}</div>`;
   const x = $('hero-spr').getContext('2d');
   x.imageSmoothingEnabled = false;
   x.drawImage(CLS_SPR[h.cls][0], 0, 0, 96, 96);
