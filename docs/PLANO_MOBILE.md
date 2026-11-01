@@ -55,14 +55,14 @@ Princípio: **cada NPC abre direto no que você mais faz com ele**, com no máxi
 - Etapa da história sempre no topo de quem a dá.
 - Fechar: Esc / B / toque fora / botão grande.
 
-## Fase 3 — Base responsiva (celular e telas pequenas)
+## Fase 3 — Base responsiva (celular e telas pequenas) — FEITO (v217, js/touch.js)
 - Detectar toque e tamanho de tela; classe `mobile` no body.
 - Paisagem obrigatória (tela "gire o aparelho" em retrato).
 - Painel vira gaveta (botão ☰), com as 4 abas.
 - Janelas (NPC, Pokédex, Banco, ajuda) em tela cheia, botões ≥ 44 px.
 - HUD do canvas em escala (textos legíveis), sem gestos do navegador (zoom, puxar para atualizar).
 
-## Fase 4 — Toque
+## Fase 4 — Toque — FEITO (v217; ?mobile=1 força no PC, ?mobile=0 desliga)
 - **Analógico esquerdo** (aparece onde o polegar encosta): andar.
 - **Tiro sempre ligado** com mira automática (prioridade: quem está mais perto, com Alfas/chefes
   preferidos quando estão a distância parecida).
@@ -74,6 +74,8 @@ Princípio: **cada NPC abre direto no que você mais faz com ele**, com no máxi
   💬 Interagir (só aparece quando há algo perto).
 - **Menu "…"**: Fly, voltar à cidade, montar, cristal, trocar Pokémon, mapa, Pokédex, chat, opções.
 - O toque reaproveita a lógica do controle (o que o controle já faz com analógicos e mira assistida).
+- Jogar junto: o toque só gera as mesmas ações do teclado/controle; a rede não muda, então PC + celular + controle jogam na mesma sala.
+- Segurando ⚪ o tiro automático pausa (para não derrubar o Pokémon que se quer capturar). Botão 🧪 de poção manual além da automática.
 
 ## Fase 5 — Ajuste e testes
 - Resolução adaptativa (desenhar menor em telas muito densas; menos partículas se cair FPS).

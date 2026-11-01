@@ -382,14 +382,25 @@ function cycleBall() {
   G.dirty = true;
 }
 const ballCount = (P, k) => (k === 'poke' ? P.balls : P.bag[k] || 0);
-function throwBall() {
+// rolagem de captura: d20 + nível/2 + bônus da bola contra uma CD que cai com a vida do alvo
+// CD sobe com o nível do Pokémon e com a vida que ainda tem
+function catchRoll(P, e, k) {
+  const elv = e.lvl || e.zone * 5;
+  const dc = 6 + Math.floor(elv * 0.6) + (e.alfa ? 4 : 0) + Math.round(e.hp / e.maxHp * 10) - (e.kind === 4 ? 6 : 0);
+  const pen = k === 'poke' ? Math.max(0, elv - POKE_BALL_FREE) * 2 : 0;
+  const mod = Math.floor(P.lvl / 2) + (hasT(P, 'domador') ? 4 : 0) + BALLS[k].bonus + M(P, 'cap') - pen;
+  return { dc, pen, mod, chance: clamp((21 - dc + mod) / 20, 0.05, 1) };
+}
+// forceE/forceK: alvo e bola já escolhidos (botão de captura do celular)
+function throwBall(forceE, forceK) {
   const P = G.P;
-  let k = P.ballSel || 'poke';
+  let k = (forceK && ballCount(P, forceK) > 0 && forceK) || P.ballSel || 'poke';
   if (ballCount(P, k) <= 0) k = ['ultra', 'grande', 'poke'].find(b => ballCount(P, b) > 0);
   if (!k) { text(P.x, P.y - 40, 'Sem Poké Balls!', '#fca5a5', 13); return; }
   const mw = mouseWorld();
   let e = null, bd = 1e9;
-  if (typeof PAD !== 'undefined' && PAD.on) {
+  if (forceE) e = forceE;
+  else if (typeof PAD !== 'undefined' && PAD.on) {
     // no controle a bola usa a mesma faixa da mira assistida dos ataques, com o mesmo alcance do mouse
     const cone = padCone(PAD.rm || 0, true);
     for (const o of G.enemies) {
@@ -408,12 +419,8 @@ function throwBall() {
   if (e.boss) { text(e.x, e.y - e.h / 2, 'Não pode ser capturado!', '#fca5a5', 13); return; }
   if (k === 'poke') P.balls--; else P.bag[k]--;
   G.dirty = true;
-  // rolagem de captura: d20 + nível/2 + bônus da bola contra uma CD que cai com a vida do alvo
-  // CD sobe com o nível do Pokémon e com a vida que ainda tem
-  const elv = e.lvl || e.zone * 5;
-  const dc = 6 + Math.floor(elv * 0.6) + (e.alfa ? 4 : 0) + Math.round(e.hp / e.maxHp * 10) - (e.kind === 4 ? 6 : 0);
-  const pen = k === 'poke' ? Math.max(0, elv - POKE_BALL_FREE) * 2 : 0;
-  const nat = d(20), total = nat + Math.floor(P.lvl / 2) + (hasT(P, 'domador') ? 4 : 0) + BALLS[k].bonus + M(P, 'cap') - pen;
+  const { dc, pen, mod } = catchRoll(P, e, k);
+  const nat = d(20), total = nat + mod;
   const ok = nat === 20 || total >= dc, rollTxt = `${BALLS[k].icon} 🎲 ${nat}${total - nat >= 0 ? '+' : ''}${total - nat} vs CD ${dc}`;
   if (pen && !ok && !G.ballTip) { G.ballTip = 1; G.toasts.push({ text: '⚪ Essa Poké Ball não segurou... será que é forte o bastante?', color: '#fde68a', t: 8 }); }
   // a bola voa em arco até o Pokémon; o resultado sai quando ela chega

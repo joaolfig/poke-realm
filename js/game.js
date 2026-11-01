@@ -1645,7 +1645,10 @@ function drawTargetCard() {
   }
   if (!e || !e.p) return;
   if (e.hp <= 0 || e.dead) return;
-  const w = 214, h = 58, x = W - w - 12, y = H - h - 74; // logo acima da barra de status (canto inferior direito)
+  const w = 214, h = 58;
+  const x = W - w - 12;
+  let y = H - h - 74; // logo acima da barra de status (canto inferior direito)
+  if (typeof MOBILE !== 'undefined' && MOBILE) y = 184; // celular: abaixo do minimapa (embaixo ficam os botões)
   ctx.fillStyle = 'rgba(13,14,16,.86)'; ctx.fillRect(x, y, w, h);
   ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
   ctx.strokeStyle = e.legend ? '#f87171' : e.alfa ? '#facc15' : e.boss ? '#a78bfa' : '#44474f'; ctx.lineWidth = 1; ctx.strokeRect(x - 2.5, y - 2.5, w + 5, h + 5);
@@ -1748,6 +1751,7 @@ function drawHUD(ox, oy) {
     outlined(`💎 Tipo ${TYPE_PT[P.tempType]}: ${Math.ceil(P.tempTypeT)}s`, 12, hy);
   }
   drawPadReticle();
+  if (typeof drawTouch === 'function') drawTouch();
   try { drawTargetCard(); } catch (e) { /* o cartão nunca pode travar o desenho do jogo */ }
   if (autofire) { hy += 18; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fde047'; outlined('TIRO AUTOMÁTICO (T)', 12, hy); }
   if (P && catchUp(P) > 1 && !inDungeonArea(P.x)) { hy += 18; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#86efac'; outlined(`⏫ Recuperação: +50% de XP até o Nv ${STORY[P.story.ch].lvl}`, 12, hy); }
@@ -2133,9 +2137,15 @@ cv.addEventListener('mousedown', ev => { if (ev.button === 0) mouse.down = true;
 window.addEventListener('mouseup', ev => { if (ev.button === 0) mouse.down = false; });
 cv.addEventListener('contextmenu', ev => ev.preventDefault());
 
+// celular: o mundo é desenhado numa área maior e encolhido (VIEW_K < 1), para ver mais do mapa numa tela baixa
+let VIEW_K = 1;
 function resize() {
-  W = cv.width = Math.max(300, window.innerWidth - $('panel').offsetWidth);
-  H = cv.height = window.innerHeight;
+  const mob = document.body.classList.contains('mobile');
+  const cw = mob ? window.innerWidth : window.innerWidth - $('panel').offsetWidth;
+  VIEW_K = mob ? Math.min(1, window.innerHeight / 520) : 1;
+  W = cv.width = Math.max(300, Math.round(cw / VIEW_K));
+  H = cv.height = Math.round(window.innerHeight / VIEW_K);
+  cv.style.width = mob ? cw + 'px' : ''; cv.style.height = mob ? window.innerHeight + 'px' : '';
 }
 window.addEventListener('resize', resize);
 
@@ -2308,6 +2318,7 @@ function step(now, draw) {
   last = now;
   musicTick(musicKey(), dt);
   padTick(dt);
+  if (typeof touchTick === 'function') touchTick(dt);
   if (G && state !== 'lost') { update(dt); if (draw) render(); }
   else if (!G && draw) { ctx.fillStyle = '#0f0b1a'; ctx.fillRect(0, 0, W, H); }
 }
