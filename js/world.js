@@ -118,8 +118,8 @@ function renderNPC() {
   } else if (n.id === 'loja') {
     body += '<h4>Comprar</h4>' + shopList(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}${s.tier !== undefined ? ` <i style="color:${TIER_COLORS[s.tier]}">${TIER_NAMES[s.tier]}</i>` : ''}</span>
       <button data-act="buy:${s.id}" ${P.gold < s.preco ? 'disabled' : ''}>${s.preco} 🪙</button></div>`).join('');
-    const inv = P.inv.map((it, i) => it ? `<button class="sell" data-act="sell:${i}" title="${esc(it.name)}">${itemIcon(it)} ${esc(it.name)} → ${sellPrice(it)} 🪙</button>` : '').join('');
-    const cheap = P.inv.filter(it => it && it.tier <= 1 && !it.myth && it.slot !== 'pedra');
+    const inv = P.inv.map((it, i) => it ? `<div class="sellrow"><button class="sell" data-act="sell:${i}" title="${esc(it.name)}" ${it.locked ? 'disabled' : ''}>${itemIcon(it)} ${esc(it.name)} → ${sellPrice(it)} 🪙</button><button data-act="lock:${i}" title="${it.locked ? 'Destravar' : 'Travar: não vende nem solta'}">${it.locked ? '🔒' : '🔓'}</button></div>` : '').join('');
+    const cheap = P.inv.filter(it => it && it.tier <= 1 && !it.myth && it.slot !== 'pedra' && !it.locked);
     body += `<h4>Vender</h4>${cheap.length ? `<button data-act="sellcheap" class="good">💰 Vender tudo Comum/Incomum (${cheap.length} itens · ${cheap.reduce((s, it) => s + sellPrice(it), 0)} 🪙)</button>` : ''}${inv || '<div class="small">Mochila vazia.</div>'}`;
   } else if (n.id === 'dex') {
     body += renderDexNPC(P);
@@ -165,11 +165,14 @@ $('npc').addEventListener('click', ev => {
   else if (act === 'buy') buyItem(P, arg);
   else if (act === 'sellcheap') {
     let g = 0, n = 0;
-    P.inv.forEach((it, i) => { if (it && it.tier <= 1 && !it.myth && it.slot !== 'pedra') { g += sellPrice(it); n++; P.inv[i] = null; } });
+    P.inv.forEach((it, i) => { if (it && it.tier <= 1 && !it.myth && it.slot !== 'pedra' && !it.locked) { g += sellPrice(it); n++; P.inv[i] = null; } });
     if (n) { P.gold += g; G.toasts.push({ text: `💰 Vendeu ${n} itens por ${g} 🪙`, color: '#facc15', t: 3 }); sfx('pick'); }
+  } else if (act === 'lock') {
+    const it = P.inv[+arg];
+    if (it) { it.locked = !it.locked; sfx('ui'); }
   } else if (act === 'sell') {
     const it = P.inv[+arg];
-    if (it) { P.gold += sellPrice(it); P.inv[+arg] = null; sfx('pick'); }
+    if (it && !it.locked) { P.gold += sellPrice(it); P.inv[+arg] = null; sfx('pick'); }
   } else if (act === 'upg') {
     const it = P.equip[arg], c = upgCost(it);
     if (P.gold >= c && (it.upg || 0) < upgMax(P)) {

@@ -1845,7 +1845,7 @@ function updatePanel() {
     if (!it) return `<div class="slot"></div>`;
     const better = it.slot !== 'pedra' && itemScore(it) > itemScore(P.equip[it.slot] || null);
     const hint = it.slot === 'pedra' ? 'Clique: usar' : 'Clique: equipar';
-    return `<div class="slot" data-inv="${i}" style="border-color:${itemColor(it)}" title="${esc(it.name)} — ${itemDesc(it)}${it.slot === 'pedra' ? '' : ` (${TIER_NAMES[it.tier]})`}\n${hint} · Botão direito: soltar no chão">${itemIcon(it)}${better ? '<i class="up">▲</i>' : ''}</div>`;
+    return `<div class="slot" data-inv="${i}" style="border-color:${itemColor(it)}" title="${esc(it.name)} — ${itemDesc(it)}${it.slot === 'pedra' ? '' : ` (${TIER_NAMES[it.tier]})`}\n${hint} · Shift+clique: ${it.locked ? 'destravar' : 'travar (não vende nem solta)'} · Botão direito: soltar no chão">${itemIcon(it)}${better ? '<i class="up">▲</i>' : ''}${it.locked ? '<i class="lock">🔒</i>' : ''}</div>`;
   }).join('') + '</div>';
   const bsel = P.ballSel || 'poke';
   $('p-pots').innerHTML = `<div class="potrow"><button data-pot="1" title="Poção de cura [Q] · botão direito: soltar uma no chão">❤️ ×${P.pots.hp}</button></div>
@@ -1889,7 +1889,8 @@ $('panel').addEventListener('click', ev => {
   else if (t.dataset.pet !== undefined && !ev.target.closest('[data-teach],[data-eevee]')) { togglePet(P, +t.dataset.pet); saveGame(); }
   else if (t.dataset.inv !== undefined) {
     const i = +t.dataset.inv, it = P.inv[i];
-    if (it && it.slot === 'pedra') useStone(i);
+    if (it && ev.shiftKey) { it.locked = !it.locked; G.toasts.push({ text: `${it.locked ? '🔒 Travado' : '🔓 Destravado'}: ${it.name}`, color: '#e5e7eb', t: 2 }); sfx('ui'); }
+    else if (it && it.slot === 'pedra') useStone(i);
     else if (it) { const old = maxHP(P); P.inv[i] = P.equip[it.slot] || null; P.equip[it.slot] = it; P.hp += Math.max(0, maxHP(P) - old); sfx('pick'); }
   } else if ((t.dataset.eq === 'anel' || t.dataset.eq === 'amuleto') && P.equip[t.dataset.eq]) {
     const i = P.inv.indexOf(null);
@@ -1912,7 +1913,8 @@ $('panel').addEventListener('contextmenu', ev => {
   const P = G.P;
   if (t.dataset.inv !== undefined) {
     const i = +t.dataset.inv;
-    if (P.inv[i]) { dropItems([P.inv[i]]); P.inv[i] = null; }
+    if (P.inv[i] && P.inv[i].locked) G.toasts.push({ text: '🔒 Item travado: destrave com Shift+clique para soltar.', color: '#fca5a5', t: 2.5 });
+    else if (P.inv[i]) { dropItems([P.inv[i]]); P.inv[i] = null; }
   } else if (t.dataset.pot) { if (P.pots.hp > 0) { P.pots.hp--; dropItems([potion()]); } }
   else if (t.dataset.ball) {
     const k = t.dataset.ball;
