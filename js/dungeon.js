@@ -463,8 +463,9 @@ function towerCleared(dg) {
   dg.cleared = true;
   const r = dg.rooms[dg.rooms.length - 1], c = roomCenter(dg, r);
   // saque do andar e escada para o próximo
-  const items = [genItem(clamp(5 + Math.floor(dg.floor / 10), 0, 6))];
-  if (dg.floor % 5 === 0) items.push(statPot(), genItem(clamp(5 + Math.floor(dg.floor / 8), 0, 6)));
+  // a cada andar um item mítico; nos andares de guardião, mais um e uma poção de atributo
+  const items = [mythItem(dg.floor)];
+  if (dg.floor % 5 === 0) items.push(statPot(), mythItem(dg.floor));
   if (Math.random() < 0.5) items.push(consItem('ultra'));
   G.bags.push({ x: c.x - 60, y: c.y, items, life: 180 });
   const nx = createDungeon(c.x, c.y, null, 5, { theme: 'torre', force: true, quiet: true, floor: dg.floor + 1, ttl: 600 });
@@ -519,4 +520,42 @@ function renderTowerNPC(P) {
     <h4>Começar no andar</h4>
     ${starts.map(f => `<div class="shoprow"><span>🗼 Andar ${f} <i>(${f === 1 ? 'nível da zona 5' : `+${Math.round((Math.pow(1.08, f - 1) - 1) * 100)}% de força`})</i></span><button data-act="torre:${f}" class="good">Abrir portal</button></div>`).join('')}
     <div class="small">O grupo entra junto pelo portal. Cada andar dá itens; os guardiões dão mais.</div>`;
+}
+
+/* ---------- Loja da Torre: aparece no fim de cada andar limpo ---------- */
+function towerShopOf(dg) {
+  if (!dg || !dg.floor || !G.portals.some(p => !p.exit && dungeonAt(p.x) === dg)) return null; // a escada já apareceu
+  const c = roomCenter(dg, dg.rooms[dg.rooms.length - 1]);
+  return { id: 'tshop', nome: 'Mercadora da Torre', icon: '🛒', x: c.x + 110, y: c.y + 30, town: 2 };
+}
+function nearTowerShop(P) { const n = towerShopOf(dungeonAt(P.x)); return n && Math.hypot(n.x - P.x, n.y - P.y) < 60 ? n : null; }
+function towerShopList(P) {
+  return [
+    { id: 'pot', nome: 'Poção de Cura', icon: '❤️', preco: 40 },
+    { id: 'grande', nome: 'Great Ball', icon: '🔵', preco: 80 },
+    { id: 'ultra', nome: 'Ultra Ball', icon: '🟡', preco: 180 },
+    { id: 'doce', nome: 'Doce Raro (+1 nível do companheiro)', icon: '🍬', preco: 220 },
+    { id: 'stone', nome: 'Cristal de tipo aleatório', icon: '💎', preco: 70 },
+    { id: 'statpot', nome: 'Poção de Atributo (+2 permanente, aleatório)', icon: '⚗️', preco: 1500 },
+  ];
+}
+function renderTowerShop(P) {
+  const cap = upgMax(P, 2);
+  return `<p class="fala">"Subiu até aqui? Então merece o melhor que eu tenho. Só aqui na torre eu passo dos limites das forjas lá de baixo."</p>
+    <h4>Forja da Torre (até +${cap})</h4>
+    ${['arma', 'armadura'].map(s => { const it = P.equip[s], c = upgCost(it), maxed = (it.upg || 0) >= cap;
+      return `<div class="shoprow"><span>${itemIcon(it)} ${esc(it.name)}${it.upg ? ' +' + it.upg : ''}</span><button data-act="upg:${s}" ${maxed || P.gold < c ? 'disabled' : ''}>${maxed ? 'Máximo' : `Aprimorar (${c} 🪙)`}</button></div>`; }).join('')}
+    <h4>Suprimentos</h4>
+    ${towerShopList(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}</span><button data-act="buy:${s.id}" ${P.gold < s.preco ? 'disabled' : ''}>${s.preco} 🪙</button></div>`).join('')}
+    <div class="small">Você tem ${P.gold} 🪙.</div>`;
+}
+function drawTowerShop(ox, oy) {
+  const P = G.P, n = P && towerShopOf(dungeonAt(P.x));
+  if (!n) return;
+  const x = n.x + ox, y = n.y + oy;
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y + 17, 14, 5, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#6d28d9'; ctx.fillRect(x - 30, y + 2, 22, 14); ctx.fillStyle = '#a78bfa'; ctx.fillRect(x - 30, y - 2, 22, 5); // banca
+  if (NPC_SPR.loja) ctx.drawImage(NPC_SPR.loja, x - 18, y - 18, 36, 36);
+  ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = '#e9d5ff';
+  outlined('🛒 Mercadora da Torre', x, y - 26);
 }

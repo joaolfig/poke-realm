@@ -162,11 +162,27 @@ function genItem(tier, slot) {
   }
   return it;
 }
+// Itens míticos: só caem na Torre Infinita. Partem de um Artefato e ficam mais fortes quanto mais alto o andar.
+const MYTH_MODS = [
+  f => ({ dmg: 2 + Math.floor(f / 5) }), f => ({ rate: +(0.1 + f * 0.005).toFixed(3) }), f => ({ hp: +(0.1 + f * 0.005).toFixed(3) }),
+  f => ({ steal: +(0.03 + f * 0.002).toFixed(3) }), () => ({ cd: 0.12 }), () => ({ crit: 1 }), f => ({ regen: +(0.3 + f * 0.02).toFixed(2) }),
+];
+function mythItem(f, slot) {
+  const it = genItem(6, slot);
+  it.myth = f;
+  if (it.slot === 'arma') { it.mythDice = 1 + Math.floor(f / 15); it.dice = [it.dice[0] + it.mythDice, it.dice[1]]; it.bonus += 3 + Math.floor(f / 2); }
+  else if (it.slot === 'armadura') it.ac += 2 + Math.floor(f / 3);
+  else if (it.slot === 'anel') it.bonus += 1 + Math.floor(f / 10);
+  else it.mods = scaleMods(it.mods, 1.3 + f * 0.03);
+  it.mods = Object.assign({}, it.mods || {}, pick(MYTH_MODS)(f));
+  it.name = `✦ ${it.name} Mítico · andar ${f}`;
+  return it;
+}
 // arma de outra classe (achada no chão) vira a arma equivalente da sua classe
 function adaptWeapon(it, P) {
   if (it.slot !== 'arma' || !it.cls || it.cls === P.cls) return it;
   const c = CLASSES[P.cls];
-  return { ...it, cls: P.cls, dice: [WDICE[it.tier][0], WDICE[it.tier][1] + c.dieAdj], name: fullName(c.weapons[it.tier], it) + (it.upg ? '' : '') };
+  return { ...it, cls: P.cls, dice: [WDICE[it.tier][0] + (it.mythDice || 0), WDICE[it.tier][1] + c.dieAdj], name: fullName(c.weapons[it.tier], it) + (it.upg ? '' : '') };
 }
 
 const pct = v => `${Math.round(v * 100)}%`;
@@ -206,11 +222,16 @@ function itemIcon(it) {
   if (it.slot === 'cons') return CONS[it.k].icon;
   return it.slot === 'ball' ? '⚪' : '❤️';
 }
-const itemColor = it => (it.slot === 'pedra' ? TYPE_COLORS[it.type] : TIER_COLORS[it.tier]);
+const itemColor = it => (it.slot === 'pedra' ? TYPE_COLORS[it.type] : it.myth ? '#e879f9' : TIER_COLORS[it.tier]);
 const isPocket = it => it.slot === 'pot' || it.slot === 'ball' || it.slot === 'cons';
 
 function rollLoot(m) {
   const P = G.P;
+  const tdg = inDungeonArea(m.x) && dungeonAt(m.x);
+  if (tdg && tdg.floor) {
+    const f = tdg.floor, ch = m.kind === 3 ? 1 : m.kind === 1 ? 0.35 : 0.06 + f * 0.003;
+    if (Math.random() < ch) G.bags.push({ x: m.x + rand(-10, 10), y: m.y + rand(-10, 10), items: [mythItem(f)], life: 120 });
+  }
   const tes = hasT(P, 'tesouro');
   const chance = m.kind >= 2 ? 1 : m.kind === 1 ? 0.85 : 0.16 + (tes ? 0.12 : 0) + M(P, 'loot');
   if (Math.random() > chance) return;

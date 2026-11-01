@@ -1354,6 +1354,7 @@ function render() {
   }
   drawPortals(ox, oy);
   drawDgChests(ox, oy);
+  drawTowerShop(ox, oy);
 
   // entidades ordenadas por Y
   const ents = [];

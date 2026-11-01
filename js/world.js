@@ -35,7 +35,8 @@ function rebuildTownNPCs() {
 }
 const allNPCs = () => NPCS.filter(n => !n.t2).concat(NPCS2); // o guardião da torre só existe na 2ª cidade
 function nearNPC(P) {
-  if (inDungeonArea(P.x) || !inTown(P.x, P.y)) return null;
+  if (inDungeonArea(P.x)) return nearTowerShop(P);
+  if (!inTown(P.x, P.y)) return null;
   return allNPCs().find(n => (!n.show || n.show(P)) && Math.hypot(n.x - P.x, n.y - P.y) < 60) || null;
 }
 function drawNPC(n, ox, oy) {
@@ -94,8 +95,9 @@ function shopList(P) {
     { id: 'amuleto', nome: 'Amuleto aleatório', icon: '📿', preco: 90 + tier * 40, tier },
   ];
 }
-const sellPrice = it => 8 + it.tier * 12 + (it.upg || 0) * 10;
-const upgMax = (P, town = npcTown()) => (town === 1 || !TOWNS[1] ? (storyOver(P) ? 8 : 6) : 4);
+const sellPrice = it => 8 + it.tier * 12 + (it.upg || 0) * 10 + (it.myth ? 150 + it.myth * 10 : 0);
+// vila: +4 · 2ª cidade: +6 (+8 depois da história) · loja da torre: +12
+const upgMax = (P, town = npcTown()) => (town === 2 ? 12 : town === 1 || !TOWNS[1] ? (storyOver(P) ? 8 : 6) : 4);
 const upgCost = it => Math.round(60 * ((it.upg || 0) + 1) * (1 + it.tier * 0.5));
 
 function renderNPC() {
@@ -120,6 +122,8 @@ function renderNPC() {
     body += renderPC(P);
   } else if (n.id === 'torre') {
     body += renderTowerNPC(P);
+  } else if (n.id === 'tshop') {
+    body += renderTowerShop(P);
   } else if (n.id === 'sildo' || n.id === 'gundo') {
     body += renderStoryNPC(n, P);
   } else if (n.id === 'ferreiro') {
@@ -191,7 +195,7 @@ $('npc').addEventListener('click', ev => {
 });
 
 function buyItem(P, id) {
-  const s = shopList(P).concat(ballShop(P)).find(x => x.id === id);
+  const s = (G.npcOpen === 'tshop' ? towerShopList(P) : shopList(P).concat(ballShop(P))).find(x => x.id === id);
   if (!s || s.lock || P.gold < s.preco) return;
   let it = null;
   if (id === 'stone') it = stone(pick(TYPES));
@@ -203,6 +207,7 @@ function buyItem(P, id) {
   } else if (id === 'pot') P.pots.hp++;
   else if (id === 'ball') P.balls++;
   else if (CONS[id]) P.bag[id]++;
+  else if (id === 'statpot') drinkStat(P, pick(ATTRS));
   else if (id === 'cinto') { P.petCap = petCap(P) + 1; G.toasts.push({ text: `🎒 Agora você pode levar ${P.petCap} companheiros!`, color: '#86efac', t: 3 }); G.dirty = true; }
   P.gold -= s.preco;
   sfx('pick');
