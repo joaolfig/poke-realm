@@ -262,7 +262,8 @@ function loadSave() {
 /* ---------- Talentos e subclasses ---------- */
 function ensureTalentOffer(P) {
   if (P.talentOffer || P.talentPending <= 0) return;
-  const pool = Object.keys(TALENTS).filter(k => !TALENTS[k].off && tRank(P, k) < (TALENTS[k].max || 1) && (!TALENTS[k].types || TALENTS[k].types.includes(P.ptype))).sort(() => Math.random() - 0.5);
+  // talentos de tipo: só para os tipos que ganham com eles, e nunca para o Druida (o tipo dele muda na Forma Selvagem)
+  const pool = Object.keys(TALENTS).filter(k => !TALENTS[k].off && tRank(P, k) < (TALENTS[k].max || 1) && (!TALENTS[k].types || (P.cls !== 'druida' && TALENTS[k].types.includes(P.ptype)))).sort(() => Math.random() - 0.5);
   if (!pool.length) { P.talentPending = 0; return; }
   P.talentOffer = pool.slice(0, 3);
   // pelo menos uma opção de tipo, quando o seu tipo tem acesso a alguma
