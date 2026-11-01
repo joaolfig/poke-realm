@@ -1718,10 +1718,10 @@ function drawHUD(ox, oy) {
   ctx.textAlign = 'left'; ctx.font = 'bold 14px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
   let hy = 22;
   if (dg && dg.floor) { outlined(`🗼 Torre Infinita · Andar ${dg.floor}`, 12, hy); if (dg.mods.length) { hy += 18; ctx.fillStyle = '#c4b5fd'; outlined(dg.mods.map(m => TOWER_MODS[m]).join(' · '), 12, hy); ctx.fillStyle = '#fff'; } }
-  else if (dg) outlined(`${name} · ${dgLevelTxt(dg)}`, 12, hy);
+  else if (dg) outlined(`${name} · Zona ${clamp(dg.zone, 1, 5)}/5 · ${dgLevelTxt(dg)}`, 12, hy);
   else {
     const z = zoneAt(cx, cy);
-    if (z >= 0) outlined(`${REGION.nome} · ${name} ${z === ARENA_Z ? '(duelo entre jogadores)' : z ? `· Nv ${ZONES[z].lvl}–${ZONES[z].lvlMax}` : '· área segura'}`, 12, hy);
+    if (z >= 0) outlined(`${REGION.nome} · ${name} ${z === ARENA_Z ? '(duelo entre jogadores)' : z ? `· Zona ${z}/5 · Nv ${ZONES[z].lvl}–${ZONES[z].lvlMax}` : '· área segura'}`, 12, hy);
     const wxh = P && weatherAt(P.x, P.y);
     if (wxh) { hy += 18; ctx.fillStyle = wxh.color; outlined(`${wxh.icon} ${wxh.nome}: ${wxh.fx}`, 12, hy); ctx.fillStyle = '#fff'; }
   }
