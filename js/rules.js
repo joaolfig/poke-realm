@@ -106,14 +106,14 @@ const SUBCLASSES = {
 /* ============ Bênçãos do Clérigo ============
  * Cada fase do Clérigo tem as suas bênçãos; ele escolhe UMA ativa no templo da 2ª cidade.
  * A bênção vai junto com as curas dele (Tomo, Santuário e Hino) e vale para quem for curado.
- * No próprio Clérigo ela vale menos (escudo pela metade, bônus de dano 35%: é uma classe de suporte), e a Graça Salvadora nunca o protege
- * (a morte continua definitiva para quem joga sozinho).
+ * No próprio Clérigo ela vale menos (escudo pela metade, bônus de dano 35%: é uma classe de suporte),
+ * (exceto a Graça Salvadora, que no próprio Clérigo só volta 5 min depois de salvá-lo).
  */
 const BLESS = {
   escudo: { nome: 'Escudo da Fé', icon: '🛡️', subs: ['clerigo'], desc: 'A cura que passaria da vida máxima vira escudo (no mínimo 8% da vida) por 5s, até 15% da vida máxima.' },
   feras: { nome: 'Bênção das Feras', icon: '🐾', subs: ['clerigo'], desc: 'Os companheiros de quem você cura causam +20% de dano por 6s.' },
   escudo2: { nome: 'Escudo da Fé Maior', icon: '🛡️', subs: ['vida'], desc: 'A cura que passaria da vida máxima vira escudo (no mínimo 10% da vida) por 5s, até 25% da vida máxima.' },
-  graca: { nome: 'Graça Salvadora', icon: '🕊️', subs: ['vida'], desc: 'Os ALIADOS que você cura ficam protegidos por 8s: recebem 10% menos dano e, se levarem um golpe fatal, voltam com 50% da vida, ficam 2s intocáveis e uma explosão de luz paralisa os inimigos em volta. Cada jogador só pode ser salvo uma vez a cada 90s. Não protege você.' },
+  graca: { nome: 'Graça Salvadora', icon: '🕊️', subs: ['vida'], desc: 'Os ALIADOS que você cura ficam protegidos por 8s: recebem 10% menos dano e, se levarem um golpe fatal, voltam com 50% da vida, ficam 2s intocáveis e uma explosão de luz paralisa os inimigos em volta. Protege você também. Depois de salvar alguém, só volta para aquele jogador em 90s (em você, em 5 min).' },
   feras2: { nome: 'Bênção das Feras Maior', icon: '🐾', subs: ['guerra'], desc: 'Os companheiros de quem você cura causam +30% de dano por 6s.' },
   ritmo: { nome: 'Ritmo Sagrado', icon: '🎵', subs: ['guerra'], desc: 'Quem você cura atira 20% mais rápido por 6s.' },
 };

@@ -981,13 +981,13 @@ function playerDie(src) {
   const tdg = inDungeonArea(P.x) && dungeonAt(P.x);
   if (tdg && tdg.floor) return towerFall(P, tdg, src); // nem na torre
   if (P.graceT > 0) { // Graça Salvadora de um Clérigo aliado
-    P.graceT = 0; P.graceCd = 90; P.hp = Math.round(maxHP(P) * 0.5); P.sinceHit = 0; P.dodgeT = 2; P.pstT = 0;
+    P.graceT = 0; P.graceCd = P.graceSelf ? 300 : 90; P.hp = Math.round(maxHP(P) * 0.5); P.sinceHit = 0; P.dodgeT = 2; P.pstT = 0;
     // explosão de luz: paralisa os inimigos em volta (chefes resistem metade das vezes)
     for (const e of enemiesNear(P.x, P.y, 170)) { if (!e.boss || Math.random() < 0.5) inflict(e, 2); e.slowT = Math.max(e.slowT || 0, 2); }
     G.fx.push({ k: 'ring', x: P.x, y: P.y, r: 0, R: 170, life: 0.7, max: 0.7, color: '#fde68a' }); G.shake = Math.min(10, G.shake + 5);
     burst(P.x, P.y, '#fde68a', 40); burst(P.x, P.y, '#ffffff', 24); sfx('lvl');
-    G.toasts.push({ text: `🕊️ A Graça Salvadora de ${P.graceBy || 'um Clérigo'} te salvou de ${src}!`, color: '#fde68a', t: 5, big: 1 });
-    emitEvent({ t: 'chat', sys: 1, text: `🕊️ ${P.name} foi salvo da morte pela Graça Salvadora de ${P.graceBy || 'um Clérigo'}.` });
+    G.toasts.push({ text: P.graceSelf ? `🕊️ Sua Graça Salvadora te salvou de ${src}! (volta em 5 min)` : `🕊️ A Graça Salvadora de ${P.graceBy || 'um Clérigo'} te salvou de ${src}!`, color: '#fde68a', t: 5, big: 1 });
+    emitEvent({ t: 'chat', sys: 1, text: P.graceSelf ? `🕊️ ${P.name} foi salvo da morte pela própria Graça Salvadora.` : `🕊️ ${P.name} foi salvo da morte pela Graça Salvadora de ${P.graceBy || 'um Clérigo'}.` });
     return;
   }
   burst(P.x, P.y, '#ef4444', 40);
@@ -2328,7 +2328,8 @@ function blessApply(P, m, over, self) {
     if (add > 0) { P.shield = Math.round(Math.min(cap, Math.max(P.shield || 0, 0) + add)); P.shieldT = 5; }
   } else if (b === 'feras' || b === 'feras2') { P.ferasT = 6; P.ferasK = (b === 'feras2' ? 0.3 : 0.2) * k; }
   else if (b === 'ritmo') { P.ritmoT = 6; P.ritmoK = 0.2 * k; }
-  else if (b === 'graca' && !self && !(P.graceCd > 0)) { if (!(P.graceT > 0)) text(P.x, P.y - 50, `🕊️ Graça Salvadora (${m.name})`, '#fde68a', 12); P.graceT = 8; P.graceBy = m.name; }
+  // Graça: no próprio Clérigo também, mas depois de salvá-lo ela só volta em 5 min (nos aliados, 90 s)
+  else if (b === 'graca' && !(P.graceCd > 0)) { if (!(P.graceT > 0) && !self) text(P.x, P.y - 50, `🕊️ Graça Salvadora (${m.name})`, '#fde68a', 12); P.graceT = 8; P.graceBy = self ? null : m.name; P.graceSelf = self; }
 }
 const blessBuffs = P => {
   const l = [];
