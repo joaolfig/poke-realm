@@ -188,7 +188,7 @@ $('npc').addEventListener('click', ev => {
   } else if (act === 'accept') {
     if (arg !== 'grupo' && soloQuest(P)) return;
     const q = P.qOffers[arg][+arg2]; P.quests[arg] = q; P.qOffers[arg] = null; P.recentQ = [q.k, ...(P.recentQ || [])].slice(0, 4); sfx('pick');
-    if (q.gid) emitEvent({ t: 'gq', acc: P.name, desc: q.desc.replace(/<div[\s\S]*$/, '').replace(/<[^>]+>/g, '') }); // avisa o grupo para pegar o mesmo
+    if (q.gid) emitEvent({ t: 'gq', acc: P.name, start: groupStrip(q), desc: q.desc.replace(/<div[\s\S]*$/, '').replace(/<[^>]+>/g, '') }); // o contrato fica ativo para a sala toda
   }
   else if (act === 'abandon') { delete P.quests[arg]; }
   else if (act === 'claim') claimQuest(P, arg);
@@ -1135,8 +1135,8 @@ function drawNightStuff(ox, oy) {
 }
 
 /* ---------- Mural de grupo (Capitã Vera) ----------
- * Um mural só para a sala inteira: todos veem as MESMAS 3 ofertas (evento 'gq' com o mural), então qualquer um
- * pode pegar o mesmo contrato e o progresso de todos soma. O XP é recalculado pelo nível de cada um (q.xpk).
+ * Um mural só para a sala inteira: todos veem as MESMAS 3 ofertas (evento 'gq' com o mural). Quando qualquer um aceita,
+ * o contrato fica ativo para todos na sala, e o progresso de todos soma (até ~50 m de distância). O XP é recalculado pelo nível de cada um (q.xpk).
  * Quando alguém recebe a recompensa, o mural é refeito para a sala.
  */
 const groupStrip = q => { const c = { ...q }; delete c.have; delete c.done; delete c.seen; return c; };
@@ -1150,5 +1150,13 @@ function groupQEvent(m, local) {
   const P = G.P;
   if (m.board) { if (!local) G.groupBoard = m.board; return; }
   if (m.reset) { if (!local) G.groupBoard = null; return; }
-  if (!local && m.acc && P && !(P.quests || {}).grupo) G.toasts.push({ text: `👥 ${m.acc} aceitou um contrato de grupo: "${m.desc}". Fale com a Capitã Vera para pegar o mesmo!`, color: '#93c5fd', t: 7, big: 1 });
+  if (local || !m.start || !P) return;
+  // quem aceita ativa o contrato para todos na sala (cada um com o XP do próprio nível)
+  P.quests = P.quests || {};
+  const cur = P.quests.grupo;
+  if (cur && cur.gid === m.start.gid) return;
+  P.quests.grupo = { ...m.start, have: 0, done: false, seen: [], xp: Math.round(xpNeed(P.lvl) * m.start.xpk) };
+  P.qOffers = P.qOffers || {}; P.qOffers.grupo = null;
+  G.toasts.push({ text: `👥 ${m.acc} aceitou um contrato de grupo e ele já está ativo para você: "${m.desc}"`, color: '#93c5fd', t: 7, big: 1 });
+  G.dirty = true; saveGame();
 }
