@@ -98,7 +98,7 @@ function shopList(P) {
     { id: 'pot', nome: 'Poção de Cura', icon: '❤️', preco: 25 },
     { id: 'doce', nome: 'Doce Raro (+1 nível do companheiro)', icon: '🍬', preco: 140 },
     { id: 'stone', nome: 'Cristal de tipo aleatório', icon: '💎', preco: 50 },
-    { id: 'abra', nome: 'Talismã de Abra (fuga instantânea para a cidade, [Z]; só 1 por vez)', icon: '🌀', preco: 1000 },
+    { id: 'abra', nome: 'Talismã de Abra <i>fuga instantânea [Z] · 1 por vez</i>', icon: '🌀', preco: 1000 },
     { id: 'arma', nome: CLASSES[P.cls].weapons[tier], icon: CLASSES[P.cls].wicon, preco: 60 + tier * 45, tier },
     { id: 'armadura', nome: ARMORS[tier], icon: '🛡️', preco: 50 + tier * 40, tier },
     { id: 'anel', nome: 'Anel aleatório', icon: '💍', preco: 70 + tier * 30, tier },
