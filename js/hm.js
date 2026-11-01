@@ -370,6 +370,7 @@ function drawShock(x, y, w, h) {
 }
 function playerStatus(P, st, type) {
   if (!P || !PST[st] || P.pstT > 0 || P.pvp) return;
+  if (stImmune([pType(P)], st)) { text(P.x, P.y - 50, `Imune (tipo ${TYPE_PT[pType(P)]})`, '#93c5fd', 12); return; }
   P.pst = st; P.pstT = PST[st].dur; P.pdotT = 1; P.pstShock = st === 2 && type === 'electric';
   text(P.x, P.y - 50, PST[st].label + '!', PST[st].color, 15);
   sfx('hurt');
@@ -395,14 +396,19 @@ function petAbility(pid) {
   for (const t of p.types) if (TYPE_ABIL[t]) return TYPE_ABIL[t];
   return null;
 }
+// imunidades naturais (sempre): Elétrico não paralisa, Veneno e Inseto não se envenenam, Fogo não queima, Gelo não congela
+const ST_IMMUNE = { 2: ['electric'], 3: ['fire'], 4: ['poison', 'bug'], 5: ['ice'] };
+const stImmune = (types, st) => !!(ST_IMMUNE[st] && types.some(t => ST_IMMUNE[st].includes(t)));
 // host: aplica o status (chefes não dormem, não congelam nem ficam confusos)
 function applyStatus(e, st, from = NET.myId) {
   if (!e || e.dead || !STATUS[st]) return;
   if (e.boss && (st === 1 || st === 5 || st === 6)) return;
+  if (stImmune(e.p.types, st)) return;
   if (e.st === 1 || e.st === 5) return;
   e.st = st; e.stT = STATUS[st].dur; e.dotT = 1; e.stBy = from; // dano do veneno/queimadura conta para quem aplicou
 }
 function inflict(e, st) {
+  if (stImmune(e.p.types, st)) return;
   text(e.x, e.y - e.h / 2 - 22, STATUS[st].label, STATUS[st].color, 13);
   if (isHost()) applyStatus(e, st);
   else { e.st = st; if (NET.host && NET.host.open) NET.host.send({ t: 'st', id: e.id, st }); }
