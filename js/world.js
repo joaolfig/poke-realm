@@ -847,10 +847,10 @@ function dexTick(dt) {
 }
 const regTitle = s => s.replace('{R}', REGION.nome);
 const DEX_GOALS = [
-  { pc: 10, txt: '5 Great Balls', give: P => { P.bag.grande += 5; } },
-  { pc: 25, txt: '3 Ultra Balls e +1 vaga de companheiro', give: P => { P.bag.ultra += 3; if (petCap(P) < PET_CAP_MAX) P.petCap = petCap(P) + 1; else P.bag.ultra += 3; } },
+  { pc: 10, txt: '3 Great Balls', give: P => { P.bag.grande += 3; } },
+  { pc: 25, txt: '5 Great Balls e +1 vaga de companheiro', give: P => { P.bag.grande += 5; if (petCap(P) < PET_CAP_MAX) P.petCap = petCap(P) + 1; else P.bag.grande += 5; } },
   { pc: 50, txt: 'Amuleto do Colecionador e o título "Pesquisador(a) de {R}"', title: 'Pesquisador(a) de {R}',
-    give: P => giveItem(P, { slot: 'amuleto', tier: 4, name: 'Amuleto do Colecionador', mods: { cap: 2, xp: 0.1 } }) },
+    give: P => giveItem(P, { slot: 'amuleto', tier: 3, name: 'Amuleto do Colecionador', mods: { cap: 2, xp: 0.1 } }) },
   { pc: 75, txt: 'Poção de atributo, 5 Ultra Balls e o título "Colecionador(a) de {R}"', title: 'Colecionador(a) de {R}', give: P => { drinkStat(P, pick(ATTRS)); P.bag.ultra += 5; } },
   { pc: 100, txt: 'Um item Artefato e o título "Mestre Pokémon de {R}"', title: 'Mestre Pokémon de {R}', give: P => giveItem(P, genItem(6)) },
 ];
@@ -988,9 +988,9 @@ function drawXChests(ox, oy) {
 // marcos de exploração do mapa (porcentagem da TERRA revelada, por região)
 const EXPLORE_GOALS = [
   { pc: 25, txt: '3 Great Balls e um Doce Raro', give: P => { P.bag.grande += 3; P.bag.doce += 1; } },
-  { pc: 50, txt: '5 Ultra Balls e uma Poção de Atributo', give: P => { P.bag.ultra += 5; drinkStat(P, pick(ATTRS)); } },
-  { pc: 75, txt: 'um anel ou amuleto encantado ✧', give: P => giveItem(P, enchant(genItem(5, pick(['anel', 'amuleto'])))) },
-  { pc: 95, txt: 'um Artefato e o título "Explorador(a) de {R}"', title: 'Explorador(a) de {R}', give: P => giveItem(P, genItem(6)) },
+  { pc: 50, txt: '3 Ultra Balls e uma Poção de Atributo', give: P => { P.bag.ultra += 3; drinkStat(P, pick(ATTRS)); } },
+  { pc: 75, txt: 'um anel ou amuleto encantado ✧ (melhor que o do seu nível)', give: P => giveItem(P, enchant(genItem(zoneTier(5, 1.5), pick(['anel', 'amuleto'])))) },
+  { pc: 95, txt: 'um equipamento excelente para o seu nível (Artefato no fim do jogo) e o título "Explorador(a) de {R}"', title: 'Explorador(a) de {R}', give: P => giveItem(P, genItem(zoneTier(5, 2.5))) },
 ];
 function landExplored() { return G.landTotal ? G.landSeen / G.landTotal * 100 : 0; }
 function exploreCheck(P) {
