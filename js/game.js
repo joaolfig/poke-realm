@@ -190,7 +190,8 @@ const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armad
   + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
 const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
-const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (pst(P, 2) ? 0.85 : 1) * wxSlow(P) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
+const outOfCombat = P => P.sinceHit > 4 && G.time - (P.shotT || -99) > 4 && !P.pvp;
+const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (outOfCombat(P) ? 1.3 : 1) * (pst(P, 2) ? 0.85 : 1) * wxSlow(P) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
 const fireRate = P => CLASSES[P.cls].wpn.rate * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
@@ -596,7 +597,7 @@ function onKill(m) {
   if (m.kind === 2) { P.legends = (P.legends || 0) + 1; dexCatch(P, m.pid); } // lendário: conta para todos que estavam perto (e entra na Pokédex)
   rollLoot(m); // saque: cada jogador perto rola o seu, mesmo sem ter acertado
   const xp = Math.max(1, Math.round(m.xp * xpShare * (1 + M(P, 'xp'))));
-  gainXP(xp);
+  gainXP(Math.round(xp * catchUp(P)));
   petGainXP(xp * (isNight() ? 1.5 : 1));
   if (share <= 0) { G.dirty = true; return; }
   P.kills++;
@@ -617,6 +618,8 @@ function onKill(m) {
 }
 
 /* ---------- Jogador ---------- */
+// recuperação: quem está abaixo do nível recomendado do próximo capítulo da história ganha +50% de XP nos abates
+const catchUp = P => { const s = P.story && !storyOver(P) && STORY[P.story.ch]; return s && s.lvl && P.lvl < s.lvl ? 1.5 : 1; };
 function gainXP(n, raw) {
   const P = G.P;
   if (!raw && isNight()) n = Math.round(n * 1.5);
@@ -670,6 +673,7 @@ function addCosmetic(s, own) {
 
 function playerShoot() {
   const P = G.P, w = CLASSES[P.cls].wpn;
+  P.shotT = G.time;
   const ca = pst(P, 6) ? rand(-0.2, 0.2) : 0; // confuso: a mira treme
   for (let i = 0; i < w.shots; i++) shootBullet(P.aim + ca, { ph: i * Math.PI });
   if (hasT(P, 'atirador')) { P.alt = -P.alt; shootBullet(P.aim + P.alt); }
@@ -709,7 +713,7 @@ function useAbility() {
   const P = G.P;
   if (P.abilCd > 0) return;
   if (!inDungeonArea(P.x) && inTown(P.x, P.y)) { text(P.x, P.y - 40, '🕊️ A vila é zona de paz', '#fef3c7', 12); return; }
-  P.abilCd = abilCd(P);
+  P.abilCd = abilCd(P); P.shotT = G.time;
   const mw = mouseWorld(), tp = pType(P), lv = P.lvl, pod = A(P, 'POD');
   const fxAt = (x, y, r, color) => emitEvent({ t: 'fx', x: Math.round(x), y: Math.round(y), r, color });
   switch (P.subclass || P.cls) {
@@ -1045,6 +1049,7 @@ function updatePlayer(dt) {
   }
   P.sinceHit += dt;
   updatePlayerStatus(P, dt);
+  if (outOfCombat(P) && P.moving && Math.random() < 0.25) G.parts.push({ x: P.x + rand(-8, 8), y: P.y + 16, vx: rand(-15, 15), vy: -10, life: 0.35, color: '#e7dcc4', size: 2 });
 
   const inV = !inDg && inTown(P.x, P.y);
   const regenK = (hasT(P, 'regeneracao') ? 2.5 : 1) * (1 + M(P, 'regen'));
@@ -1643,6 +1648,7 @@ function drawHUD(ox, oy) {
   drawPadReticle();
   try { drawTargetCard(); } catch (e) { /* o cartão nunca pode travar o desenho do jogo */ }
   if (autofire) { hy += 18; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fde047'; outlined('TIRO AUTOMÁTICO (T)', 12, hy); }
+  if (P && catchUp(P) > 1 && !inDungeonArea(P.x)) { hy += 18; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#86efac'; outlined(`⏫ Recuperação: +50% de XP até o Nv ${STORY[P.story.ch].lvl}`, 12, hy); }
   G.hudY = hy; // a caixinha de avisos importantes fica logo abaixo destas linhas
 
   if (G.banner > 0 && name) {

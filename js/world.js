@@ -119,7 +119,8 @@ function renderNPC() {
     body += '<h4>Comprar</h4>' + shopList(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}${s.tier !== undefined ? ` <i style="color:${TIER_COLORS[s.tier]}">${TIER_NAMES[s.tier]}</i>` : ''}</span>
       <button data-act="buy:${s.id}" ${P.gold < s.preco ? 'disabled' : ''}>${s.preco} 🪙</button></div>`).join('');
     const inv = P.inv.map((it, i) => it ? `<button class="sell" data-act="sell:${i}" title="${esc(it.name)}">${itemIcon(it)} ${esc(it.name)} → ${sellPrice(it)} 🪙</button>` : '').join('');
-    body += `<h4>Vender</h4>${inv || '<div class="small">Mochila vazia.</div>'}`;
+    const cheap = P.inv.filter(it => it && it.tier <= 1 && !it.myth && it.slot !== 'pedra');
+    body += `<h4>Vender</h4>${cheap.length ? `<button data-act="sellcheap" class="good">💰 Vender tudo Comum/Incomum (${cheap.length} itens · ${cheap.reduce((s, it) => s + sellPrice(it), 0)} 🪙)</button>` : ''}${inv || '<div class="small">Mochila vazia.</div>'}`;
   } else if (n.id === 'dex') {
     body += renderDexNPC(P);
   } else if (n.id === 'pc') {
@@ -162,7 +163,11 @@ $('npc').addEventListener('click', ev => {
   if (act === 'heal') { P.hp = maxHP(P); burst(P.x, P.y, '#f9a8d4', 20); sfx('pot'); }
   else if (act === 'gift') { P.pots.hp = Math.max(P.pots.hp, 2); P.giftT = 300; sfx('pick'); }
   else if (act === 'buy') buyItem(P, arg);
-  else if (act === 'sell') {
+  else if (act === 'sellcheap') {
+    let g = 0, n = 0;
+    P.inv.forEach((it, i) => { if (it && it.tier <= 1 && !it.myth && it.slot !== 'pedra') { g += sellPrice(it); n++; P.inv[i] = null; } });
+    if (n) { P.gold += g; G.toasts.push({ text: `💰 Vendeu ${n} itens por ${g} 🪙`, color: '#facc15', t: 3 }); sfx('pick'); }
+  } else if (act === 'sell') {
     const it = P.inv[+arg];
     if (it) { P.gold += sellPrice(it); P.inv[+arg] = null; sfx('pick'); }
   } else if (act === 'upg') {
