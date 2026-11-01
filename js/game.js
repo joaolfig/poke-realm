@@ -625,8 +625,8 @@ function gainXP(n, raw) {
     P.points++; // 1 ponto de atributo por nível
     if (P.lvl % 4 === 0) P.talentPending++;
     P.hp = maxHP(P);
-    G.toasts.push({ text: `⭐ Nível ${P.lvl}!${P.lvl % 2 === 0 ? ' +1 ponto de atributo' : ''}`, color: '#fde047', t: 3 });
-    if (P.lvl === 10) G.toasts.push({ text: '🏅 Nível 10: escolha sua subclasse no painel!', color: '#fde047', t: 5, big: 1 });
+    G.toasts.push({ text: `⭐ Nível ${P.lvl}! +1 ponto de atributo${P.lvl % 4 === 0 ? ' e um talento novo' : ''}`, color: '#fde047', t: 3 });
+    if (P.lvl === SUB_LVL) G.toasts.push({ text: `🏅 Nível ${SUB_LVL}: escolha sua subclasse no painel!`, color: '#fde047', t: 5, big: 1 });
     G.fx.push({ k: 'ring', x: P.x, y: P.y, r: 0, R: 120, life: 0.8, max: 0.8, color: '#fde047' });
     sfx('lvl');
     G.dirty = true;
