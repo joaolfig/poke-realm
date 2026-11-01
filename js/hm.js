@@ -291,21 +291,19 @@ const ABIL = [
   { ids: [96, 97, 92, 93, 94, 280, 281, 282], nome: 'Hipnose', st: 1, ch: 0.016 },
   { ids: [12, 43, 44, 45, 182, 69, 70, 71], nome: 'Pó do Sono', st: 1, ch: 0.019 },
   { ids: [25, 26, 172, 125, 239, 179, 180, 181, 81, 82, 100, 101], nome: 'Estática', st: 2, ch: 0.052 },
-  { ids: [23, 24, 46, 47], nome: 'Olhar Paralisante', st: 2, ch: 0.039 },
   { ids: [77, 78, 126, 240, 37, 38, 58, 59, 4, 5, 6], nome: 'Corpo Chamejante', st: 3, ch: 0.065 },
   { ids: [13, 14, 15, 29, 30, 31, 32, 33, 34, 72, 73, 88, 89, 109, 110, 167, 168, 48, 49, 41, 42, 169], nome: 'Ponto Venenoso', st: 4, ch: 0.078 },
-  { ids: [54, 55, 79, 80, 199, 63, 64, 65, 122], nome: 'Confusão', st: 6, ch: 0.039 },
+  { ids: [79, 80, 199, 63, 64, 65, 122], nome: 'Confusão', st: 6, ch: 0.039 },
 ];
 const ABIL_BY_ID = {};
 for (const a of ABIL) for (const id of a.ids) ABIL_BY_ID[id] = a;
-// por tipo (quando a espécie não tem habilidade própria), só onde o status combina com o tipo nos jogos:
-// Elétrico paralisa, Fogo queima, Veneno e Inseto envenenam, Gelo congela, Planta faz dormir (Pó do Sono),
-// Psíquico, Fantasma (Raio Confuso) e Fada (Beijo Doce) confundem. Os outros tipos não causam status e batem mais.
+// por tipo (quando a espécie não tem habilidade própria): paralisia só no Elétrico, queimadura só no Fogo,
+// veneno só no Veneno e no Inseto, confusão só no Psíquico e no Fantasma (e o Gelo congela).
+// Os outros tipos não causam status e batem com força total. A mesma regra vale para os golpes que acertam o jogador.
 const TYPE_ABIL = {
   electric: { nome: 'Faísca', st: 2, ch: 0.033 }, fire: { nome: 'Brasa', st: 3, ch: 0.039 }, poison: { nome: 'Toxina', st: 4, ch: 0.046 },
-  ice: { nome: 'Toque Gélido', st: 5, ch: 0.019 }, psychic: { nome: 'Mente Confusa', st: 6, ch: 0.026 },
-  bug: { nome: 'Ferrão Venenoso', st: 4, ch: 0.033 }, grass: { nome: 'Pó do Sono', st: 1, ch: 0.016 },
-  ghost: { nome: 'Raio Confuso', st: 6, ch: 0.026 }, fairy: { nome: 'Beijo Doce', st: 6, ch: 0.026 },
+  bug: { nome: 'Ferrão Venenoso', st: 4, ch: 0.033 }, psychic: { nome: 'Mente Confusa', st: 6, ch: 0.026 }, ghost: { nome: 'Raio Confuso', st: 6, ch: 0.026 },
+  ice: { nome: 'Toque Gélido', st: 5, ch: 0.019 },
 };
 // quem causa status bate menos (quanto maior a chance, menor o dano: 12% de chance -> -18% de dano)
 const abilDmgMul = ab => (ab ? 1 - Math.min(0.2, ab.ch * 1.5) : 1);
@@ -319,7 +317,7 @@ const PST = {
   6: { label: '💫 Confuso', dur: 3, color: '#f9a8d4', fx: 'a mira treme', tint: 'sepia(1) saturate(4) hue-rotate(285deg) brightness(1.15)' },
 };
 // qual status cada tipo de ataque pode causar no jogador
-const PST_BY_TYPE = { electric: 2, dragon: 2, fire: 3, poison: 4, bug: 4, grass: 4, psychic: 6, ghost: 6, fairy: 6, dark: 6, fighting: 6 };
+const PST_BY_TYPE = { electric: 2, fire: 3, poison: 4, bug: 4, psychic: 6, ghost: 6 };
 const pst = (P, st) => P && P.pstT > 0 && P.pst === st;
 // filtro que pisca o boneco na cor do status (st = código do status, ou 0)
 const pstTint = st => (st && PST[st] && Math.sin(G.time * 12) > -0.2 ? PST[st].tint : '');
