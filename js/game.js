@@ -640,7 +640,7 @@ function spawnPB(o) {
   const b = {
     ox: o.x, oy: o.y, x: o.x, y: o.y, dx: Math.cos(o.a), dy: Math.sin(o.a), a: o.a, spd: o.spd, t: 0, life: o.life,
     amp: o.amp || 0, ph: o.ph || 0, r: o.r, color: o.color, shape: o.shape, pierce: !!o.pierce || !!o.left, hit: o.pierce || o.left || o.skip ? new Set(o.skip ? [o.skip] : []) : null, ally: o.ally || null, sp: o.sp || 0, spell: o.spell || 0,
-    left: o.left || 0, rico: !!o.rico, pd: o.pd || 0,
+    left: o.left || 0, rico: !!o.rico, pd: o.pd || 0, bomb: o.bomb || 0,
   };
   G.pb.push(b);
   if (netActive()) NET.outS.push([Math.round(b.ox), Math.round(b.oy), +o.a.toFixed(3), b.spd, +b.life.toFixed(2), b.amp, +b.ph.toFixed(2), b.r, b.shape, b.color, b.pd]);
@@ -740,7 +740,7 @@ function useAbility() {
       const t = aimPoint(P, 360);
       let tot = 0;
       for (const e of enemiesNear(t.x, t.y, 110)) tot += abilHit(e, roll(1 + Math.floor(lv / 5), 10) + Math.floor(pod / 2), tp);
-      if (P.pvp && pvpFoesNear(t.x, t.y, 110).length) { const dm = roll(1 + Math.floor(lv / 5), 10) + Math.floor(pod / 2); pvpBlast(t.x, t.y, 110, dm); tot += Math.round(dm * 0.6); }
+      if (P.pvp && pvpFoesNear(t.x, t.y, 110).length) { const dm = roll(1 + Math.floor(lv / 5), 10) + Math.floor(pod / 2); pvpBlast(t.x, t.y, 110, dm); tot += Math.round(dm * PVP_K); }
       if (tot) { const h = Math.ceil(tot * 0.2); P.hp = Math.min(maxHP(P), P.hp + h); text(P.x, P.y - 34, `+${h}`, '#86efac', 14); }
       fxAt(t.x, t.y, 110, '#a78bfa'); sfx('boom'); break;
     }
@@ -749,7 +749,7 @@ function useAbility() {
     case 'assassino': { // Frasco de Veneno (Assassino): nuvem que corrói
       const t = aimPoint(P, 330);
       G.zones.push({ k: 'veneno', x: t.x, y: t.y, r: 100, t: 4.4, wait: 0.4, every: 0.5, tick: 0 });
-      if (P.pvp) emitEvent({ t: 'pvpaoe', x: Math.round(t.x), y: Math.round(t.y), r: 100, dur: 4, wait: 0.4, dmg: Math.max(1, Math.round((roll(1 + Math.floor(lv / 6), 6)) * 0.6)), name: P.name });
+      if (P.pvp) emitEvent({ t: 'pvpaoe', x: Math.round(t.x), y: Math.round(t.y), r: 100, dur: 4, wait: 0.4, dmg: Math.max(1, Math.round((roll(1 + Math.floor(lv / 6), 6)) * PVP_K)), name: P.name });
       fxAt(t.x, t.y, 100, '#a3e635'); sfx('pot'); break;
     }
     case 'trapaceiro': { // Prisma Ilusório (Trapaceiro): teleporte + ilusão que atrai os inimigos
@@ -777,7 +777,7 @@ function useAbility() {
     case 'feras': { // Armadilha da Caçadora (Caçadora)
       const t = aimPoint(P, 300);
       G.zones.push({ k: 'armadilha', x: t.x, y: t.y, r: 120, t: 6, wait: 0.5, every: 0.1, tick: 0 });
-      if (P.pvp) emitEvent({ t: 'pvpaoe', x: Math.round(t.x), y: Math.round(t.y), r: 90, dur: 6, wait: 0.5, once: 1, dmg: Math.max(1, Math.round((roll(2 + Math.floor(lv / 4), 8) + pod) * 0.6)), name: P.name });
+      if (P.pvp) emitEvent({ t: 'pvpaoe', x: Math.round(t.x), y: Math.round(t.y), r: 90, dur: 6, wait: 0.5, once: 1, dmg: Math.max(1, Math.round((roll(2 + Math.floor(lv / 4), 8) + pod) * PVP_K)), name: P.name });
       sfx('pick'); break;
     }
     case 'arcano': // Aljava Arcana: leque de flechas perfurantes

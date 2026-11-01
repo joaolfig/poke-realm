@@ -80,11 +80,18 @@ function pvpLeave(lost, by) {
 }
 
 /* ---------- dano entre jogadores ---------- */
+// Só vale na arena (nada disso muda o dano contra Pokémon).
+// PVP_K: fração do dano normal que chega no rival (baixa, para as lutas durarem e dar tempo de desviar).
+// PVP_CLS: ajuste do tiro básico por classe (medido no Nv 30): quem tem pouco alcance bate mais, o Mago (2 projéteis) bate menos.
+const PVP_K = 0.35;
+const PVP_CLS = { guerreiro: 1.25, mago: 0.62, ladino: 1.06, clerigo: 1.09, patrulheiro: 1.14 };
+// de cada rajada (projéteis que saem juntos do mesmo ponto: leque, Bomba Arcana, flechas) no máximo PVP_VOLLEY acertam
+const PVP_VOLLEY = 3;
 // rivais da arena como alvos dos especiais de área (raio do Evocador, explosão do Necromante)
 const pvpFoesNear = (x, y, r) => [...G.remotes.values()].filter(o => !o.dead && o.name && inArena(o.tx, o.ty) && Math.hypot(o.tx - x, o.ty - y) < r + 12).map(o => ({ x: o.tx, y: o.ty, pvpFoe: 1 }));
-// explosão instantânea: quem estiver dentro do raio calcula o próprio dano (60%, como os tiros)
+// explosão instantânea: quem estiver dentro do raio calcula o próprio dano (PVP_K, como os tiros)
 function pvpBlast(x, y, r, dmg) {
-  emitEvent({ t: 'pvpaoe', x: Math.round(x), y: Math.round(y), r, dur: 0.05, wait: 0, once: 1, dmg: Math.max(1, Math.round(dmg * 0.6)), name: G.P.name });
+  emitEvent({ t: 'pvpaoe', x: Math.round(x), y: Math.round(y), r, dur: 0.05, wait: 0, once: 1, dmg: Math.max(1, Math.round(dmg * PVP_K)), name: G.P.name });
 }
 // dano de PvP que vai junto com cada tiro meu (os tiros dos outros chegam como cosméticos)
 function pvpShotDmg(P, o) {
@@ -94,7 +101,7 @@ function pvpShotDmg(P, o) {
     : sp ? roll(2 + Math.floor(P.lvl / 4), 8) + A(P, 'POD')
       : roll(w.dice[0], w.dice[1]) + A(P, 'POD') + w.bonus + M(P, 'dmg');
   // a Bomba Arcana (spell 1) solta 20 projéteis no mesmo ponto: cada um vale bem menos contra jogadores
-  let dmg = Math.max(1, Math.round(base * (sp === 1 ? 0.25 : 0.6) * (infernal(P) ? 1.2 : 1)));
+  let dmg = Math.max(1, Math.round(base * PVP_K * (sp ? 1 : PVP_CLS[P.cls] || 1) * (infernal(P) ? 1.2 : 1)));
   if (P.nextCrit && !sp) { dmg *= 2; P.nextCrit = false; } // Manto do Ladino: o próximo ataque é crítico também no rival
   return dmg;
 }
@@ -102,6 +109,10 @@ function pvpHitCheck(b) {
   const P = G.P;
   if (!P || !P.pvp || !b.dmg || b.own === NET.myId || P.pvp.t > 0 || P.dodgeT > 0) return false;
   if ((b.x - P.x) ** 2 + (b.y - P.y) ** 2 > (b.r + 10) ** 2) return false;
+  const vk = `${b.own}|${b.ox}|${b.oy}`, V = PVP.volley = PVP.volley || new Map();
+  if ((V.get(vk) || 0) >= PVP_VOLLEY) return false;
+  V.set(vk, (V.get(vk) || 0) + 1);
+  if (V.size > 40) V.delete(V.keys().next().value);
   let dmg = Math.round(b.dmg * clamp(1 - (AC(P) - 12) * 0.03, 0.5, 1) * (P.race === 'draconato' ? 0.9 : 1));
   if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; }
   if (dmg > 0) {
