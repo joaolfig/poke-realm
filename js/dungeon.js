@@ -516,7 +516,7 @@ function hazardTick(dt) {
   const dmg = Math.max(1, Math.round(maxHP(P) * 0.025));
   P.hp -= dmg; P.sinceHit = 0;
   text(P.x, P.y - 34, `-${dmg} ${z.nome}`, z.c2, 12);
-  if (z.st && Math.random() < 0.15) playerStatus(P, z.st);
+  if (z.st && (z.st === 4 || Math.random() < 0.15)) playerStatus(P, z.st); // ácido sempre envenena; lava queima às vezes
   if (P.hp <= 0) playerDie(z.nome);
 }
 

@@ -484,11 +484,25 @@ function updateEnemiesHost(dt) {
     } else {
       // sem ninguém para atacar: perde o interesse, volta para casa (longe da vila) e passeia por lá
       e.calmT = (e.calmT || 0) + dt;
+      if (e.calmK === undefined) { e.calmK = rand(0.4, 1.6); e.calmSp = rand(0.8, 1.15); } // cada um reage num tempo e anda num ritmo
       let hx = e.hx === undefined ? e.x : e.hx, hy = e.hy === undefined ? e.y : e.hy;
-      if (!e.dg) for (const t of TOWNS) { const dx = hx - t.x, dy = hy - t.y, d0 = Math.hypot(dx, dy); if (d0 < VILA_R + 260) { const k = (VILA_R + 420) / (d0 || 1); hx = t.x + dx * k; hy = t.y + dy * k; e.hx = hx; e.hy = hy; } }
+      if (!e.dg) for (const t of TOWNS) {
+        const dx = hx - t.x, dy = hy - t.y, d0 = Math.hypot(dx, dy);
+        if (d0 >= VILA_R + 260) continue;
+        // nova casa fora da vila: cada espécie tem o seu rumo (bando), com um desvio de cada um e distância variada
+        const a = Math.atan2(dy, dx) + (hash(e.pid, (t.i || 0) + 31) - 0.5) * 2.2 + rand(-0.45, 0.45), R = VILA_R + rand(330, 650);
+        hx = t.x + Math.cos(a) * R; hy = t.y + Math.sin(a) * R; e.hx = hx; e.hy = hy;
+      }
       const dh = Math.hypot(hx - e.x, hy - e.y);
-      if (!e.dg && e.calmT > 0.8 && dh > 220) {
-        vx = (hx - e.x) / dh * e.speed * 0.7; vy = (hy - e.y) / dh * e.speed * 0.7;
+      if (!e.dg && e.calmT > e.calmK && dh > 220) {
+        // vai meio em bando: segue um pouco o rumo dos da mesma espécie por perto e ziguezagueia de leve
+        let ux = (hx - e.x) / dh, uy = (hy - e.y) / dh, ax = 0, ay = 0;
+        for (const o of G.enemies) if (o !== e && o.pid === e.pid && !o.dg && (o.vx || o.vy) && Math.abs(o.x - e.x) < 200 && Math.abs(o.y - e.y) < 200) { ax += o.vx; ay += o.vy; }
+        const am = Math.hypot(ax, ay);
+        if (am > 1) { ux = ux * 0.65 + ax / am * 0.35; uy = uy * 0.65 + ay / am * 0.35; }
+        const w = Math.sin(e.t * 1.3 + e.spin) * 0.35, c = Math.cos(w), s0 = Math.sin(w), um = Math.hypot(ux, uy) || 1;
+        const sp = e.speed * e.calmSp * (0.55 + 0.15 * Math.sin(e.t * 0.7 + e.spin));
+        vx = (ux * c - uy * s0) / um * sp; vy = (ux * s0 + uy * c) / um * sp;
       } else {
         e.wanderT -= dt;
         if (e.wanderT <= 0) { e.wanderA = Math.random() * 6.28; e.wanderT = rand(1.5, 3.5); e.idle = Math.random() < 0.35; }
@@ -522,6 +536,7 @@ function updateEnemiesHost(dt) {
       pushOutTown(e);
       clampWorld(e);
     }
+    e.vx = vx; e.vy = vy; // rumo atual (os do mesmo bando seguem um pouco)
     e.moving = Math.abs(vx) + Math.abs(vy) > 1;
     if (Math.abs(vx) > 12 && G.time - (e.faceT || -9) > 0.25) { const f = vx > 0 ? 1 : -1; if (f !== e.face) { e.face = f; e.faceT = G.time; } }
   }
