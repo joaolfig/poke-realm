@@ -1034,13 +1034,13 @@ function templeKill(P, m) {
 }
 
 /* ============ Eventos da noite ============
- * Durante a Noite Sombria: (1) um Alfa da Lua aparece perto de alguém e deixa um tesouro ao cair;
+ * Durante a Noite Sombria: (1) um Alfa noturno aparece perto de alguém e deixa um tesouro ao cair;
  * (2) Baús da Lua surgem pelo mapa e só existem até o amanhecer (cada jogador abre o seu);
  * (3) fogos-fátuos flutuam pelos campos: fogem de você, mas quem encosta ganha um presentinho.
  */
 function moonMod(e) {
   e.moonA = 1; e.alfa = true;
-  e.name = `Alfa da Lua (${e.p.name})`;
+  e.name = `Alfa ${e.p.name}`;
   e.maxHp = Math.round(e.maxHp * 1.6); e.hp = e.maxHp;
   e.scale *= 1.15; e.w *= 1.15; e.h *= 1.15; e.r *= 1.15;
   e.color = '#c4b5fd';
@@ -1067,14 +1067,14 @@ function nightHost(ev, dt) {
     emitEvent({ t: 'toast', text: `🌕 Um ${e.name} uivou sob a lua! Derrote-o para pegar o tesouro dele.`, color: '#c4b5fd', big: 1 });
   }
 }
-// todos: tesouro do Alfa da Lua (cada jogador perto ganha o seu)
+// todos: tesouro do Alfa noturno (cada jogador perto ganha o seu)
 function moonAlfaLoot(m) {
   const P = G.P;
   if (!P || Math.hypot(P.x - m.x, P.y - m.y) > 900) return;
   const z = m.zone || 1, items = [stone(pick(TYPES)), genItem(clamp(z + 2, 0, 6))];
   if (Math.random() < 0.4) items.push(consItem('doce'));
   G.bags.push({ x: m.x, y: m.y + 10, items, life: 120 });
-  G.toasts.push({ text: '🌕 O Alfa da Lua deixou um tesouro!', color: '#c4b5fd', t: 4 });
+  G.toasts.push({ text: '🌕 O Alfa da noite deixou um tesouro!', color: '#c4b5fd', t: 4 });
 }
 // Baús da Lua
 // Baús da Lua e fogos-fátuos só aparecem quando já está bem escuro (o anoitecer leva ~25 s)
