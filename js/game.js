@@ -202,7 +202,8 @@ const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 
 // Assim o ritmo cresce suave e não trava na troca de zona (Nv 1-6 zona 1, 7-13 zona 2, 14-20 zona 3, 21-25 zona 4, 26+ zona 5).
 // XP para passar de cada nível (1→2 ... 29→30), calibrada pelo tempo medido em jogo só com abates na zona recomendada:
 // ~2 min por nível nas zonas 1 e 5, ~3 min nas zonas 2 a 4 (o XP por abate cresce com a zona). Total ~1 h 20 até o Nv 30.
-const XP_TABLE = [1550, 1550, 1550, 1550, 1550, 1550, 6400, 6400, 6400, 6400, 6400, 6400, 6400, 6790, 6790, 6790, 6790, 6790, 6790, 6790, 10160, 10160, 10160, 10160, 10160, 9440, 9440, 9440, 9440];
+// os primeiros níveis sobem mais rápido (Nv 1→2 em ~40 s, chegando aos ~2 min do Nv 6)
+const XP_TABLE = [600, 850, 1100, 1300, 1450, 1550, 6400, 6400, 6400, 6400, 6400, 6400, 6400, 6790, 6790, 6790, 6790, 6790, 6790, 6790, 10160, 10160, 10160, 10160, 10160, 9440, 9440, 9440, 9440];
 const xpNeed = l => XP_TABLE[clamp(l, 1, MAX_LVL - 1) - 1];
 
 // raça, classe e tipo são sorteados
