@@ -537,7 +537,8 @@ function hostSpawning(dt) {
   let near = 0;
   for (const e of G.enemies) if (!e.boss && !e.dg && !e.ev && Math.hypot(e.x - pl.x, e.y - pl.y) < 1100) near++;
   const zp = Math.max(1, zoneAt(pl.x, pl.y));
-  if (near >= 14 + zp * 4 + Math.max(0, zp - 2) * 4 + (pls.length > 1 ? 5 : 0)) return; // mais Pokémon por perto nas zonas 3-5
+  // limite de Pokémon por perto: 10, 13, 16, 18 e 20 da zona 1 à 5 (antes chegava a 38-46 nas zonas 4-5 e cercava o jogador)
+  if (near >= [0, 10, 13, 16, 18, 20][Math.min(5, zp)] + (pls.length > 1 ? 5 : 0)) return;
   let x = 0, y = 0, water = false;
   for (let k = 0; k < 4; k++) {
     const a = Math.random() * 6.28, dist = rand(600, 950);
@@ -557,7 +558,7 @@ function hostSpawning(dt) {
   const pid = own ? pick(REGION.babies) : other ? pick(otherBabies(REGION)) : water || rainy ? pick(WATER_POOLS[z]) : night.length ? pick(night) : pick(ZONE_POOLS[z]);
   if (!POKE[pid]) return;
   // bandos maiores e mais Alfas no meio e no fim do jogo
-  const n = baby ? 1 : randi(z >= 4 ? 4 : z >= 3 ? 3 : z >= 2 ? 2 : 1, z >= 4 ? 7 : z >= 3 ? 5 : 3); // bebê aparece sozinho
+  const n = baby ? 1 : randi(z >= 4 ? 3 : z >= 2 ? 2 : 1, z >= 4 ? 5 : z >= 3 ? 4 : 3); // bebê aparece sozinho
   for (let i = 0; i < n; i++) {
     const ex = x + rand(-50, 50), ey = y + rand(-50, 50);
     if (water && !isWater(ex, ey)) continue;
