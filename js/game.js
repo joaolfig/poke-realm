@@ -1161,6 +1161,7 @@ function updatePlayer(dt) {
       it = adaptWeapon(it, P);
       P.inv[i] = it;
       text(P.x, P.y - 50, it.name, itemColor(it), 13);
+      if (it.slot !== 'pedra' && itemScore(it) > itemScore(P.equip[it.slot] || null)) text(P.x, P.y - 66, '▲ Melhor que o seu! [B] equipa', '#86efac', 12);
     }
     if (left.length && G.time - G.fullWarn > 3) { G.fullWarn = G.time; G.toasts.push({ text: 'Mochila cheia! (venda na loja ou solte no chão com botão direito)', color: '#fca5a5', t: 2.5 }); }
     if (left.length !== bag.items.length) {
@@ -1944,7 +1945,8 @@ function updatePanel() {
     return `<div class="slot" ${it ? `style="border-color:${TIER_COLORS[it.tier]}" title="${esc(it.name)}${it.upg ? ' +' + it.upg : ''} — ${itemDesc(it)} (${TIER_NAMES[it.tier]})${s === 'anel' || s === 'amuleto' ? ' · clique para guardar' : ''}"` : `title="${label} vazio"`} data-eq="${s}">
       ${it ? itemIcon(it) : '<span class="empty">' + label + '</span>'}</div>`;
   };
-  $('p-equip').innerHTML = `<h4>Equipamento</h4><div class="eqrow">${slot('arma', 'Arma')}${slot('armadura', 'Armad.')}${slot('anel', 'Anel')}${slot('amuleto', 'Amul.')}</div>
+  const nb = bestSwaps(P).length;
+  $('p-equip').innerHTML = `<h4>Equipamento${nb ? `<button data-eqbest="1" class="eqbest" title="Troca o que está equipado pelos itens melhores da mochila [B]">⬆ Equipar o melhor (${nb})</button>` : ''}</h4><div class="eqrow">${slot('arma', 'Arma')}${slot('armadura', 'Armad.')}${slot('anel', 'Anel')}${slot('amuleto', 'Amul.')}</div>
     <div class="small">${esc(P.equip.arma.name)}${P.equip.arma.upg ? ' +' + P.equip.arma.upg : ''}: ${itemDesc(P.equip.arma)}</div>`;
   $('p-inv').innerHTML = `<h4>Mochila</h4><div class="inv">` + P.inv.map((it, i) => {
     if (!it) return `<div class="slot"></div>`;
@@ -1979,7 +1981,7 @@ function updatePanel() {
 }
 
 $('panel').addEventListener('click', ev => {
-  const t = ev.target.closest('[data-attr],[data-inv],[data-eq],[data-pot],[data-ball],[data-copy],[data-tal],[data-sub],[data-pet],[data-candy],[data-save],[data-teach],[data-stoneevo],[data-abra]');
+  const t = ev.target.closest('[data-attr],[data-inv],[data-eq],[data-pot],[data-ball],[data-copy],[data-tal],[data-sub],[data-pet],[data-candy],[data-save],[data-teach],[data-stoneevo],[data-abra],[data-eqbest]');
   if (!t || !G || !G.P) return;
   const P = G.P;
   if (t.dataset.attr) {
@@ -2003,6 +2005,7 @@ $('panel').addEventListener('click', ev => {
     if (i >= 0) { P.inv[i] = P.equip[t.dataset.eq]; P.equip[t.dataset.eq] = null; }
   } else if (t.dataset.pot) usePotion();
   else if (t.dataset.abra) useAbra();
+  else if (t.dataset.eqbest) equipBest(P);
   else if (t.dataset.candy) giveCandy();
   else if (t.dataset.save) exportSave();
   else if (t.dataset.stoneevo !== undefined) crystalEvolve(+t.dataset.stoneevo);
@@ -2074,6 +2077,7 @@ window.addEventListener('keydown', ev => {
   else if (ev.code === 'KeyQ' || ev.code === 'Digit1') usePotion();
   else if (ev.code === 'KeyX') toggleRide();
   else if (ev.code === 'KeyZ' || ev.code === 'Digit2') useAbra();
+  else if (ev.code === 'KeyB') equipBest(P);
   else if (ev.code === 'KeyV') { if (G.npcOpen === 'fly') closeNPC(); else openFly(); }
   else if (ev.code === 'KeyF') throwBall();
   else if (ev.code === 'KeyG') cycleBall();
@@ -2686,4 +2690,25 @@ function waterZone(x, y) {
   }
   WZC.set(key, z);
   return z;
+}
+
+/* ---------- Equipar o melhor: troca cada espaço pelo item mais forte da mochila (itens travados também valem) ---------- */
+function bestSwaps(P) {
+  const out = [];
+  for (const sl of ['arma', 'armadura', 'anel', 'amuleto']) {
+    let bi = -1, bs = itemScore(P.equip[sl] || null);
+    P.inv.forEach((it, i) => { if (it && it.slot === sl && itemScore(it) > bs) { bs = itemScore(it); bi = i; } });
+    if (bi >= 0) out.push([sl, bi]);
+  }
+  return out;
+}
+function equipBest(P) {
+  if (!P) return;
+  const sw = bestSwaps(P);
+  if (!sw.length) return text(P.x, P.y - 40, 'Você já está com o melhor equipamento', '#cbd5e1', 12);
+  const old = maxHP(P), names = [];
+  for (const [sl, i] of sw) { const it = P.inv[i]; P.inv[i] = P.equip[sl] || null; P.equip[sl] = it; names.push(it.name); }
+  P.hp += Math.max(0, maxHP(P) - old);
+  G.toasts.push({ text: `⬆ Equipado: ${names.join(', ')}`, color: '#86efac', t: 3 });
+  sfx('pick'); G.dirty = true; saveGame();
 }
