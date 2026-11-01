@@ -159,7 +159,28 @@ function renderNPC() {
   if (n.id !== 'guilda' && n.id !== 'dex' && QGIVERS[n.id]) body += renderContracts(P, n.id);
   body = renderIL(n, P) + body; // etapa da história sempre no topo
   $('npc').innerHTML = `<div class="npc-head"><span>${n.icon} <b>${n.nome}</b></span><span>🪙 ${P.gold}</span><button data-act="close" title="Fechar (Esc)">✕</button></div><div class="npc-body">${body}</div>`;
+  npcLayout($('npc').lastElementChild);
   padFixDom($('npc'));
+}
+// colunas fixas: o que vem antes do primeiro título (fala, história) fica no topo; a primeira seção (a ação principal)
+// fica sempre à esquerda e as outras sempre à direita. Antes o texto corria em colunas automáticas e as seções
+// pulavam de uma coluna para a outra quando algo mudava (comprar, vender, aceitar).
+function npcLayout(bodyEl) {
+  const nodes = [...bodyEl.childNodes], secs = [];
+  const top = document.createElement('div');
+  top.className = 'npc-top';
+  for (const nd of nodes) {
+    if (nd.nodeType === 1 && nd.tagName === 'H4') secs.push([]);
+    if (secs.length) secs[secs.length - 1].push(nd); else top.appendChild(nd);
+  }
+  bodyEl.textContent = '';
+  if (top.childNodes.length) bodyEl.appendChild(top);
+  if (!secs.length) return;
+  const cols = document.createElement('div'), col = () => { const c = document.createElement('div'); c.className = 'npc-col'; cols.appendChild(c); return c; };
+  cols.className = 'npc-cols' + (secs.length > 1 ? ' two' : '');
+  const left = col(), right = secs.length > 1 ? col() : left;
+  secs.forEach((sec, i) => { for (const nd of sec) (i ? right : left).appendChild(nd); });
+  bodyEl.appendChild(cols);
 }
 
 $('npc').addEventListener('click', ev => {
@@ -868,7 +889,7 @@ function toggleDex() {
 }
 function renderDexNPC(P) {
   const d = dexOf(P), pc = d.c.length / DEX_IDS.length * 100;
-  return `<p class="fala">"Estou registrando todas as espécies de ${REGION.nome}. Cada Pokémon que você captura me ajuda muito, e eu sei recompensar quem ajuda!"</p>
+  return `<h4>Pokédex</h4><p class="fala">"Estou registrando todas as espécies de ${REGION.nome}. Cada Pokémon que você captura me ajuda muito, e eu sei recompensar quem ajuda!"</p>
     <div class="small">Capturados: <b>${d.c.length}/${DEX_IDS.length}</b> (${Math.floor(pc)}%) · vistos: ${d.s.length}. Abra a Pokédex com <b>[P]</b>.</div>
     ${DEX_GOALS.map(g => { const ok = d.claim.includes(g.pc), can = !ok && pc >= g.pc;
       return `<div class="shoprow"><span>${ok ? '✅' : can ? '🎁' : '🔒'} <b>${g.pc}%</b>: ${regTitle(g.txt)}</span>${can ? `<button data-act="dex:${g.pc}" class="good">Receber</button>` : ''}</div>`; }).join('')}

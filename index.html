@@ -253,10 +253,15 @@
   .npc-head b { font: 700 18px var(--px); color: var(--gold); }
   .npc-head button { padding: 2px 8px; }
   .fala { color: #cfc6b4; margin: 8px 0 12px; padding-left: 10px; border-left: 3px solid var(--gold-dk); }
-  #npc > button, .npc-body > button { display: block; width: 100%; margin-bottom: 6px; text-align: left; }
-  .npc-body { column-width: 360px; column-gap: 22px; column-rule: 1px solid var(--line); }
-  .npc-body > *, .npc-body .quest, .npc-body .shoprow, .npc-body .sellrow, .npc-body .bulk { break-inside: avoid; }
-  .npc-body h4 { break-after: avoid; }
+  #npc > button, .npc-top > button, .npc-col > button { display: block; width: 100%; margin-bottom: 6px; text-align: left; }
+  /* colunas fixas: ação principal à esquerda, o resto à direita (nada muda de coluna quando a janela é redesenhada) */
+  .npc-cols { display: grid; grid-template-columns: 1fr; gap: 0 22px; align-items: start; }
+  .npc-cols.two { grid-template-columns: 1fr 1fr; }
+  .npc-cols.two > .npc-col + .npc-col { border-left: 1px solid var(--line); padding-left: 22px; }
+  .npc-col > h4:first-child { margin-top: 4px; }
+  /* janela estreita (a 560px no PC abaixo de 900px de largura): uma coluna só; no celular deitado ela ocupa a tela toda, então mantém duas */
+  @media (max-width: 900px) { body:not(.mobile) .npc-cols.two { grid-template-columns: 1fr; } body:not(.mobile) .npc-cols.two > .npc-col + .npc-col { border-left: 0; padding-left: 0; } }
+  @media (max-width: 620px) { body.mobile .npc-cols.two { grid-template-columns: 1fr; } body.mobile .npc-cols.two > .npc-col + .npc-col { border-left: 0; padding-left: 0; } }
   @media (max-width: 900px) { #npc { width: min(560px, 94vw); left: 50%; } }
   /* menus compactos: linhas mais baixas e o botão do contrato ao lado do texto */
   .npc-body .shoprow { padding: 3px 0; } .npc-body .shoprow > button, .npc-body .sellrow button { padding: 3px 8px 4px; }
@@ -476,24 +481,24 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=222"></script>
-<script src="js/data.js?v=222"></script>
-<script src="js/rules.js?v=222"></script>
-<script src="js/items.js?v=222"></script>
-<script src="js/dungeon.js?v=222"></script>
-<script src="js/net.js?v=222"></script>
-<script src="js/map.js?v=222"></script>
-<script src="js/world.js?v=222"></script>
-<script src="js/story.js?v=222"></script>
-<script src="js/hm.js?v=222"></script>
-<script src="js/allies.js?v=222"></script>
-<script src="js/town.js?v=222"></script>
-<script src="js/geo.js?v=222"></script>
-<script src="js/regions.js?v=222"></script>
-<script src="js/audio.js?v=222"></script>
-<script src="js/pad.js?v=222"></script>
-<script src="js/pvp.js?v=222"></script>
-<script src="js/game.js?v=222"></script>
-<script src="js/touch.js?v=222"></script>
+<script src="js/pokedex.js?v=223"></script>
+<script src="js/data.js?v=223"></script>
+<script src="js/rules.js?v=223"></script>
+<script src="js/items.js?v=223"></script>
+<script src="js/dungeon.js?v=223"></script>
+<script src="js/net.js?v=223"></script>
+<script src="js/map.js?v=223"></script>
+<script src="js/world.js?v=223"></script>
+<script src="js/story.js?v=223"></script>
+<script src="js/hm.js?v=223"></script>
+<script src="js/allies.js?v=223"></script>
+<script src="js/town.js?v=223"></script>
+<script src="js/geo.js?v=223"></script>
+<script src="js/regions.js?v=223"></script>
+<script src="js/audio.js?v=223"></script>
+<script src="js/pad.js?v=223"></script>
+<script src="js/pvp.js?v=223"></script>
+<script src="js/game.js?v=223"></script>
+<script src="js/touch.js?v=223"></script>
 </body>
 </html>
