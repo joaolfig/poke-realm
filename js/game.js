@@ -183,7 +183,7 @@ const A = (P, k) => P.attrs[k] / 2 + (P.equip.anel && P.equip.anel.attr === k ? 
 // valor mostrado no painel (pontos)
 const Araw = (P, k) => P.attrs[k] + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus * 2 : 0);
 // começo: vida e defesa extras que diminuem a cada nível e zeram no Nv 7 (no fim da zona 1 o herói fica como antes)
-let ROOKIE_HP = 30, ROOKIE_AC = 3;
+let ROOKIE_HP = 50, ROOKIE_AC = 4; // calibrado na zona 1: sem bônus ~1,3 morte por partida até o Nv 7; com +50/+4, ~0,2
 const rookie = P => Math.max(0, (7 - P.lvl) / 6);
 const maxHP = P => {
   const c = CLASSES[P.cls];
