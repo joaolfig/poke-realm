@@ -105,6 +105,11 @@ function rebuildTownDecor() {
       g.sy = decorSy(g);
       gates.push(g);
     }
+    // enfeites (árvores, barris, postes...) que cairiam em cima ou na frente de um portão somem nesta cidade
+    for (const d of TOWN_DECOR) {
+      d.hide = d.hide || {};
+      d.hide[ti] = d.k !== 'fountain' && gates.some(g => Math.hypot(d.x - g.x, d.y - g.y) < (d.k === 'tree' ? 95 : 70));
+    }
   });
 }
 
