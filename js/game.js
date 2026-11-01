@@ -945,6 +945,7 @@ function enemyAttack(b) {
   if (P.furia > 0 && hasS(P, 'barbaro')) eff *= 0.5;
   if (P.seloT > 0) eff *= 0.75;
   if (P.race === 'draconato') eff *= 0.9; // escamas
+  if (P.graceT > 0) eff *= 0.9; // Graça Salvadora
   let dmg = Math.max(1, Math.round((roll(b.dice[0] * (crit ? 2 : 1), b.dice[1]) + b.dice[2]) * eff));
   if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (!dmg) { text(P.x, P.y - 34, 'Escudo!', '#93c5fd', 12); return; } }
   P.hp -= dmg; P.sinceHit = 0;
@@ -980,7 +981,10 @@ function playerDie(src) {
   const tdg = inDungeonArea(P.x) && dungeonAt(P.x);
   if (tdg && tdg.floor) return towerFall(P, tdg, src); // nem na torre
   if (P.graceT > 0) { // Graça Salvadora de um Clérigo aliado
-    P.graceT = 0; P.graceCd = 180; P.hp = Math.round(maxHP(P) * 0.3); P.sinceHit = 0; P.dodgeT = 1.5; P.pstT = 0;
+    P.graceT = 0; P.graceCd = 90; P.hp = Math.round(maxHP(P) * 0.5); P.sinceHit = 0; P.dodgeT = 2; P.pstT = 0;
+    // explosão de luz: paralisa os inimigos em volta (chefes resistem metade das vezes)
+    for (const e of enemiesNear(P.x, P.y, 170)) { if (!e.boss || Math.random() < 0.5) inflict(e, 2); e.slowT = Math.max(e.slowT || 0, 2); }
+    G.fx.push({ k: 'ring', x: P.x, y: P.y, r: 0, R: 170, life: 0.7, max: 0.7, color: '#fde68a' }); G.shake = Math.min(10, G.shake + 5);
     burst(P.x, P.y, '#fde68a', 40); burst(P.x, P.y, '#ffffff', 24); sfx('lvl');
     G.toasts.push({ text: `🕊️ A Graça Salvadora de ${P.graceBy || 'um Clérigo'} te salvou de ${src}!`, color: '#fde68a', t: 5, big: 1 });
     emitEvent({ t: 'chat', sys: 1, text: `🕊️ ${P.name} foi salvo da morte pela Graça Salvadora de ${P.graceBy || 'um Clérigo'}.` });

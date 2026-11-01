@@ -113,7 +113,7 @@ const BLESS = {
   escudo: { nome: 'Escudo da Fé', icon: '🛡️', subs: ['clerigo'], desc: 'A cura que passaria da vida máxima vira escudo (no mínimo 8% da vida) por 5s, até 15% da vida máxima.' },
   feras: { nome: 'Bênção das Feras', icon: '🐾', subs: ['clerigo'], desc: 'Os companheiros de quem você cura causam +20% de dano por 6s.' },
   escudo2: { nome: 'Escudo da Fé Maior', icon: '🛡️', subs: ['vida'], desc: 'A cura que passaria da vida máxima vira escudo (no mínimo 10% da vida) por 5s, até 25% da vida máxima.' },
-  graca: { nome: 'Graça Salvadora', icon: '🕊️', subs: ['vida'], desc: 'Os ALIADOS que você cura ficam protegidos por 8s: um golpe fatal os deixa com 30% da vida em vez de matar. Cada jogador só pode ser salvo uma vez a cada 3 minutos. Não protege você.' },
+  graca: { nome: 'Graça Salvadora', icon: '🕊️', subs: ['vida'], desc: 'Os ALIADOS que você cura ficam protegidos por 8s: recebem 10% menos dano e, se levarem um golpe fatal, voltam com 50% da vida, ficam 2s intocáveis e uma explosão de luz paralisa os inimigos em volta. Cada jogador só pode ser salvo uma vez a cada 90s. Não protege você.' },
   feras2: { nome: 'Bênção das Feras Maior', icon: '🐾', subs: ['guerra'], desc: 'Os companheiros de quem você cura causam +30% de dano por 6s.' },
   ritmo: { nome: 'Ritmo Sagrado', icon: '🎵', subs: ['guerra'], desc: 'Quem você cura atira 20% mais rápido por 6s.' },
 };
