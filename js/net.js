@@ -186,6 +186,7 @@ function clientOnData(m) {
 
     dungeonsFromNet(m.dg, m.po);
     G.evInfo = m.ev || null;
+    if (m.wx) G.wx = m.wx;
     for (const b of m.b) spawnEB(G.emap.get(b[0]), b);
     for (const s of m.cs) if (s[0] !== NET.myId) addCosmetic(s.slice(1), s[0]);
     return;
@@ -200,7 +201,7 @@ function sendSnapshot() {
   if (P) pl.push([NET.myId, P.name, P.cls, Math.round(P.x), Math.round(P.y), P.face, P.moving ? 1 : 0, P.invis > 0 ? 1 : 0, Math.round(P.hp), maxHP(P), P.lvl, +P.aim.toFixed(2), myType(P), alliesToNet(), mountPid(P), pstNet(P)]);
   for (const r of G.remotes.values()) if (!r.dead && r.name) pl.push([r.id, r.name, r.cls, Math.round(r.tx), Math.round(r.ty), r.face, r.moving ? 1 : 0, r.invis ? 1 : 0, r.hp, r.maxHp, r.lvl, r.aim || 0, r.ptype || '', r.allies || [], r.mount || 0, r.pst || 0]);
   const cs = NET.outS.map(s => [NET.myId, ...s]).concat(NET.relayS);
-  const m = { t: 'snap', e, pl, b: NET.outB, cs, dg: dungeonsToNet(), po: portalsToNet(), ev: G.evInfo };
+  const m = { t: 'snap', e, pl, b: NET.outB, cs, dg: dungeonsToNet(), po: portalsToNet(), ev: G.evInfo, wx: G.wx };
   for (const c of NET.conns.values()) if (c.open) c.send(m);
   NET.outB = []; NET.outS = []; NET.relayS = [];
 }

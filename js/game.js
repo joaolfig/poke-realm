@@ -172,6 +172,7 @@ const curAbil = P => (P.subclass && subInfo(P.subclass) && subInfo(P.subclass).a
 const petSlots = P => Math.min(4, 1 + tRank(P, 'equipe'));
 const hasS = (P, id) => P.subclass === id;
 const race = P => RACES[P.race] || RACES.humano;
+const wxSlow = P => { const w = P && G && G.wx && weatherAt(P.x, P.y); return w && w.slow && pType(P) !== 'ice' ? w.slow : 1; };
 // Tiefling: +20% de dano com menos da metade da vida
 const infernal = P => (P.race !== 'tiefling' ? 1 : P.hp < maxHP(P) / 2 ? 1.25 : 1.1);
 const pType = P => (P.tempTypeT > 0 ? P.tempType : P.ptype);
@@ -189,7 +190,7 @@ const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armad
   + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
 const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - M(P, 'crit'));
-const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (pst(P, 2) ? 0.85 : 1) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
+const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (pst(P, 2) ? 0.85 : 1) * wxSlow(P) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (1 + M(P, 'speed'));
 const fireRate = P => CLASSES[P.cls].wpn.rate * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
@@ -524,7 +525,8 @@ function hostSpawning(dt) {
   if (water && z < 1) z = zp;
   if (z < 1 || z > zp + 1) return;
   const night = !water && isNight() && Math.random() < 0.5 ? NIGHT_POOL.filter(id => POKE[id]) : [];
-  const pid = water ? pick(WATER_POOLS[z]) : night.length ? pick(night) : pick(ZONE_POOLS[z]);
+  const rainy = !water && !night.length && weatherAt(x, y) === WEATHER.chuva && Math.random() < 0.3;
+  const pid = water || rainy ? pick(WATER_POOLS[z]) : night.length ? pick(night) : pick(ZONE_POOLS[z]);
   if (!POKE[pid]) return;
   // bandos maiores e mais Alfas no meio e no fim do jogo
   const n = randi(z >= 4 ? 4 : z >= 3 ? 3 : z >= 2 ? 2 : 1, z >= 4 ? 7 : z >= 3 ? 5 : 3);
@@ -672,6 +674,7 @@ function playerShoot() {
 // aplica a tabela de tipos a um ataque aliado
 function typed(P, e, dmg, atkType) {
   let eff = typeEff(atkType, e.p.types);
+  dmg *= wxBoost(e.x, e.y, atkType); // clima
   if (eff > 1 && hasT(P, 'adepto')) eff *= 1.5;
   return { dmg: eff === 0 ? 0 : Math.max(1, Math.round(dmg * eff)), eff };
 }
@@ -911,6 +914,7 @@ function enemyAttack(b) {
   let eff = typeEff(b.type, [pType(P)]);
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
   if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type)) eff *= 0.5;
+  eff *= wxBoost(P.x, P.y, b.type); // clima
   if (graze) eff *= 0.34;
   if (P.furia > 0 && hasS(P, 'barbaro')) eff *= 0.5;
   if (P.seloT > 0) eff *= 0.75;
@@ -1177,8 +1181,9 @@ function update(dt) {
   updateHM(dt);
   if (P) { storyTick(dt); questTick(dt); }
 
-  if (isHost()) { updateEnemiesHost(dt); hostSpawning(dt); hostBoss(dt); hostDungeons(dt); hostEvents(dt); }
+  if (isHost()) { updateEnemiesHost(dt); hostSpawning(dt); hostBoss(dt); hostDungeons(dt); hostEvents(dt); hostWeather(dt); }
   else { updateEnemiesClient(dt); for (const p of G.portals) p.ttl -= dt; }
+  weatherTick(dt);
 
   for (const r of G.remotes.values()) {
     if (r.tx === undefined) continue;
@@ -1453,6 +1458,7 @@ function render() {
     if (isNight()) drawNight(ox, oy, flash ? 420 : 150, flash ? 'rgba(8,6,30,0.62)' : 'rgba(4,3,16,0.88)');
     else if (fog) drawNight(ox, oy, flash ? 380 : 180, flash ? 'rgba(70,60,90,0.6)' : 'rgba(45,38,60,0.84)');
   }
+  drawWeather();
   drawPetHover(ox, oy);
   for (const t of G.texts) {
     ctx.globalAlpha = 1 - t.t / t.life;
@@ -1538,6 +1544,8 @@ function drawHUD(ox, oy) {
   else {
     const z = zoneAt(cx, cy);
     if (z >= 0) outlined(`${REGION.nome} · ${name}  ${z === ARENA_Z ? '(duelo entre jogadores)' : z ? `Perigo ${z}/5 · Nv ${ZONES[z].lvl}–${ZONES[z].lvlMax}` : '(área segura)'}`, 12, hy);
+    const wxh = P && weatherAt(P.x, P.y);
+    if (wxh) { hy += 18; ctx.fillStyle = wxh.color; outlined(`${wxh.icon} ${wxh.nome}: ${wxh.fx}`, 12, hy); ctx.fillStyle = '#fff'; }
   }
   ctx.font = '12px Barlow Semi Condensed, system-ui';
   if (NET.mode !== 'solo') { hy += 18; outlined(`Sala ${NET.room} · ${G.remotes.size + 1} jogador(es)${NET.mode === 'host' ? ' · você é o host' : ''}`, 12, hy); }

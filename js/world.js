@@ -555,3 +555,77 @@ function updateWorld(dt) {
   } else if (G.npcOpen) closeNPC();
   updateMeteors(dt);
 }
+
+/* ============ Clima por zona ============
+ * Cada zona sorteia um clima conforme o bioma (o host decide e manda no snapshot).
+ * Dura 4-6 min e às vezes não há clima. À noite o clima some (a noite já é o "clima" dela).
+ * Os efeitos valem para todos: tiros do jogador, companheiros e golpes dos inimigos.
+ */
+const WEATHER = {
+  chuva: { k: 'chuva', icon: '🌧', nome: 'Chuva', fx: 'Água e Elétrico +20% · Fogo −30%', boost: { water: 1.2, electric: 1.2, fire: 0.7 }, color: '#93c5fd' },
+  sol: { k: 'sol', icon: '☀️', nome: 'Sol forte', fx: 'Fogo +20% · Água −30%', boost: { fire: 1.2, water: 0.7 }, color: '#fcd34d' },
+  areia: { k: 'areia', icon: '🌪', nome: 'Tempestade de areia', fx: 'quem não é Pedra, Terra ou Aço perde vida', boost: { rock: 1.1, ground: 1.1 }, chip: ['rock', 'ground', 'steel'], color: '#e7c98a' },
+  neve: { k: 'neve', icon: '❄️', nome: 'Nevasca', fx: 'quem não é Gelo perde vida e fica mais lento', boost: { ice: 1.2 }, chip: ['ice'], slow: 0.88, color: '#e0f2fe' },
+};
+const WEATHER_BY_BIO = { campo: ['chuva', 'sol'], floresta: ['chuva'], pantano: ['chuva'], deserto: ['sol', 'areia'], vulcao: ['sol'], neve: ['neve'], montanha: ['neve', 'chuva'] };
+// clima no ponto (null à noite, nas cidades e onde não há clima)
+function weatherAt(x, y) {
+  if (!G || isNight()) return null;
+  if (inDungeonArea(x)) { const dg = dungeonAt(x); return dg && dg.wx ? WEATHER[dg.wx] : null; }
+  const z = zoneAt(x, y);
+  return z >= 1 && z <= 5 && G.wx ? WEATHER[G.wx[z]] || null : null;
+}
+const wxBoost = (x, y, type) => { const w = weatherAt(x, y); return w && w.boost[type] || 1; };
+function hostWeather(dt) {
+  G.wx = G.wx || ['', '', '', '', '', ''];
+  G.wxT = G.wxT || [0, rand(5, 60), rand(5, 60), rand(5, 60), rand(5, 60), rand(5, 60)];
+  for (let z = 1; z <= 5; z++) {
+    if ((G.wxT[z] -= dt) > 0) continue;
+    G.wxT[z] = rand(240, 360);
+    const opts = ZONES[z] && WEATHER_BY_BIO[ZONES[z].bio] || [];
+    G.wx[z] = !opts.length || Math.random() < 0.4 ? '' : pick(opts);
+  }
+}
+// local (todo jogador): avisa quando o clima onde você está muda, e aplica o desgaste da areia/neve
+function weatherTick(dt) {
+  const P = G.P;
+  if (!P) return;
+  const w = weatherAt(P.x, P.y), k = w ? w.k : '';
+  if (k !== G.wxSeen) {
+    if (w) G.toasts.push({ text: `${w.icon} ${w.nome} em ${areaName(P.x, P.y)}: ${w.fx}`, color: w.color, t: 5, big: 1 });
+    else if (G.wxSeen && !isNight()) G.toasts.push({ text: '🌤 O tempo abriu.', color: '#e5e7eb', t: 2.5 });
+    G.wxSeen = k;
+  }
+  if (w && w.chip && !P.pvp && !w.chip.includes(pType(P)) && (G.wxChipT = (G.wxChipT || 2) - dt) <= 0) {
+    G.wxChipT = 2;
+    const dmg = Math.max(0, Math.min(P.hp - 1, Math.round(maxHP(P) * 0.015))); // incomoda, mas não mata
+    if (dmg > 0) { P.hp -= dmg; text(P.x, P.y - 34, `-${dmg} ${w.icon}`, w.color, 12); }
+  }
+}
+// camada de clima por cima do mundo
+function drawWeather() {
+  const P = G.P, w = P && weatherAt(G.cam.x, G.cam.y);
+  if (!w) return;
+  const t = G.time;
+  ctx.save();
+  if (w.k === 'chuva') {
+    ctx.fillStyle = 'rgba(30,58,138,.16)'; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(191,219,254,.55)'; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let i = 0; i < 160; i++) { const x = ((i * 97.13 + t * 260) % (W + 60)) - 30, y = ((i * 53.71 + t * 900) % (H + 60)) - 30; ctx.moveTo(x, y); ctx.lineTo(x - 5, y + 16); }
+    ctx.stroke();
+  } else if (w.k === 'sol') {
+    ctx.fillStyle = 'rgba(253,186,116,.13)'; ctx.fillRect(0, 0, W, H);
+    const g = ctx.createRadialGradient(W * 0.85, -40, 10, W * 0.85, -40, W * 0.7);
+    g.addColorStop(0, 'rgba(255,240,180,.35)'); g.addColorStop(1, 'rgba(255,240,180,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  } else if (w.k === 'areia') {
+    ctx.fillStyle = 'rgba(180,140,70,.28)'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(231,201,138,.6)';
+    for (let i = 0; i < 140; i++) { const x = ((i * 131.7 + t * 520) % (W + 80)) - 40, y = (i * 61.3 + Math.sin(t * 2 + i) * 20) % H; ctx.fillRect(x, y, 10, 2); }
+  } else if (w.k === 'neve') {
+    ctx.fillStyle = 'rgba(224,242,254,.14)'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    for (let i = 0; i < 150; i++) { const x = ((i * 89.3 + Math.sin(t + i) * 30 + t * 40) % (W + 40)) - 20, y = ((i * 47.9 + t * 110) % (H + 40)) - 20; ctx.fillRect(x, y, i % 3 ? 2 : 3, i % 3 ? 2 : 3); }
+  }
+  ctx.restore();
+}
