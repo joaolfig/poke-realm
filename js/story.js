@@ -18,7 +18,7 @@ const hubName = P => townName(TOWNS[storyHub(P)]);
 // A 1ª captura (Vendedora de Poké Balls, antes do 1º ginásio) vale em todas.
 // st.ilT = já falou com o NPC · st.ilN = progresso · st.ilD = cumprida (zeram a cada capítulo)
 const IL_CAP1 = { ch: 1, npc: 'cura', kind: 'cap1', n: 1, titulo: 'Primeiro passo: um companheiro', fala: 'Ninguém enfrenta um ginásio sozinho! Leve estas duas Poké Balls: procure um Pokémon no mato alto aqui perto, enfraqueça ele sem derrotar e jogue a bola ([F], ou Y no controle).', obj: 'Capture seu primeiro Pokémon' };
-const ilFill = s => s.replace(/\{Z(\d)\}/g, (_, z) => ZONES[+z].nome);
+const ilFill = s => s.replace(/\{Z(\d)\}/g, (_, z) => `Zona ${z}`);
 function storyStep(P) {
   const st = P && P.story;
   if (!st || st.done || storyOver(P) || needT2(P)) return null;
@@ -183,9 +183,9 @@ function renderStoryNPC(n, P) {
     const hm = HM_GYM[st.ch], H = hm && HMS[hm];
     const gift = H ? `<div class="quest cur" style="margin-top:8px"><b>📀 ${s.nome} entrega a ${H.mo} ${H.nome}</b>
       <p class="fala">"${HM_LINES[hm](s.nome)}"</p>
-      <div class="small">${HM_ZONE[hm] ? `Ela abre o caminho para <b>${ZONES[HM_ZONE[hm]].nome}</b> (ícone ${HM_ICON[hm]} no minimapa).` : 'Ela ilumina ginásios escuros, a noite e a névoa.'}
+      <div class="small">${HM_ZONE[hm] ? `Ela abre o caminho para a <b>Zona ${HM_ZONE[hm]}</b> (${ZONES[HM_ZONE[hm]].nome}, ícone ${HM_ICON[hm]} no minimapa).` : 'Ela ilumina ginásios escuros, a noite e a névoa.'}
       Depois, ensine a HM a um companheiro no painel (botão <b>+${H.icon}</b>) e deixe ele fora da Poké Ball.</div></div>` : '';
-    const gate = st.ch === 7 ? `<div class="quest cur" style="margin-top:8px"><b>🏅 7 insígnias!</b><p>Com elas, o Portão da Liga se abre para ${ZONES[5].nome}.</p></div>` : '';
+    const gate = st.ch === 7 ? `<div class="quest cur" style="margin-top:8px"><b>🏅 7 insígnias!</b><p>Com elas, o Portão da Liga se abre para a Zona 5 (${ZONES[5].nome}).</p></div>` : '';
     return `<p>${s.fim}</p>${gift}${gate}<button data-act="story:next" class="good">${H ? `📀 Receber a ${H.mo} ${H.nome} e continuar` : '📖 Continuar a história (recompensa)'}</button>`;
   }
   const warn = P.lvl < s.lvl ? ` <span style="color:#fca5a5">(recomendado nível ${s.lvl}, você é nível ${P.lvl})</span>` : '';

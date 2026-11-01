@@ -340,7 +340,7 @@ function genQuests(P, g = 'guilda') {
       q.desc = `Derrote ${q.need} Pokémon do tipo ${TYPE_PT[q.type]}`;
     } else if (k === 'zona') {
       q.need = need(18 + z * 5);
-      q.desc = `Derrote ${q.need} Pokémon em ${ZONES[z].nome}`;
+      q.desc = `Derrote ${q.need} Pokémon na Zona ${z}`;
     } else if (k === 'alfa') {
       q.need = need(1 + Math.floor(z / 2)); diff = 2;
       q.desc = `Derrote ${q.need} Pokémon Alfa`;
@@ -349,7 +349,7 @@ function genQuests(P, g = 'guilda') {
       q.desc = q.need > 1 ? `Conclua ${q.need} masmorras (derrote os chefes)` : 'Conclua uma masmorra (derrote o chefe)';
     } else if (k === 'captura') {
       const p = POKE[pick(pool)]; q.type = p ? mainType(p) : 'normal'; q.need = need(1 + Math.floor(z / 3)); diff = 1.6;
-      q.desc = `Capture ${q.need} Pokémon do tipo ${TYPE_PT[q.type]} em ${ZONES[z].nome} ou mais adiante`;
+      q.desc = `Capture ${q.need} Pokémon do tipo ${TYPE_PT[q.type]} na Zona ${z} ou acima`;
     } else if (k === 'evento') {
       q.need = need(idx === 2 ? 1.3 : 1); diff = 2;
       q.desc = q.need > 1 ? `Complete ${q.need} eventos do mundo` : 'Complete um evento do mundo';
@@ -383,19 +383,19 @@ function genQuests(P, g = 'guilda') {
       q.desc = `Derrote ${q.need} ${POKE[q.pid] ? POKE[q.pid].name : 'Pokémon'}`;
     } else if (k === 'pegar') {
       q.pid = pick(pool); q.need = idx === 2 ? 2 : 1; diff = 1.8;
-      q.desc = `Capture ${q.need > 1 ? q.need + ' ' : 'um '}${POKE[q.pid] ? POKE[q.pid].name : 'Pokémon'} (aparece em ${ZONES[z].nome})`;
+      q.desc = `Capture ${q.need > 1 ? q.need + ' ' : 'um '}${POKE[q.pid] ? POKE[q.pid].name : 'Pokémon'} (aparece na Zona ${z})`;
     } else if (k === 'pegaralfa') {
       q.need = 1; diff = 2.6;
       q.desc = 'Capture um Pokémon Alfa (enfraqueça bem: eles resistem mais)';
     } else if (k === 'pesquisa') {
       q.need = need(3 + Math.floor(z / 2)); q.seen = []; diff = 1.7;
-      q.desc = `Pesquisa de campo: capture ${q.need} espécies diferentes em ${ZONES[z].nome}`;
+      q.desc = `Pesquisa de campo: capture ${q.need} espécies diferentes na Zona ${z}`;
     } else if (k === 'noturno') {
       q.need = need(2); diff = 1.8;
-      q.desc = `Capture ${q.need} Pokémon durante a noite em ${ZONES[z].nome} ou mais adiante`;
+      q.desc = `Capture ${q.need} Pokémon durante a noite na Zona ${z} ou acima`;
     } else if (k === 'bolaboa') {
       q.need = need(2); diff = 1.6;
-      q.desc = `Capture ${q.need} Pokémon usando Great Ball ou Ultra Ball em ${ZONES[z].nome} ou mais adiante`;
+      q.desc = `Capture ${q.need} Pokémon usando Great Ball ou Ultra Ball na Zona ${z} ou acima`;
     } else if (k === 'coleta') {
       const p = POKE[pick(pool)]; q.type = p ? mainType(p) : 'normal'; q.need = need(5 + z * 2); diff = 1.4;
       q.desc = `Colete ${q.need} ${MATERIAL[q.type]} de Pokémon do tipo ${TYPE_PT[q.type]}`;

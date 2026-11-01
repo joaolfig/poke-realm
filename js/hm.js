@@ -37,10 +37,10 @@ function needFor(P, z) {
 function pathChecklist(P) {
   const row = (ok, txt) => `<div class="small" style="color:${ok ? '#86efac' : '#fca5a5'}">${ok ? '✔' : '✖'} ${txt}</div>`;
   return '<h4>Caminhos</h4>'
-    + row(P.hms.includes('cut'), `✂️ Cut abre as rotas para ${ZONES[2].nome} (${hmGymOf('cut')}º ginásio)`)
-    + row(P.hms.includes('smash'), `🪨 Rock Smash abre as rotas para ${ZONES[3].nome} (${hmGymOf('smash')}º ginásio)`)
-    + row(P.hms.includes('surf'), `🌊 Surf atravessa o rio até ${ZONES[4].nome}, o mar e as ilhas distantes (${hmGymOf('surf')}º ginásio)`)
-    + row(badgeCount(P) >= 7, `🏅 O Portão da Liga para ${ZONES[5].nome} abre com 7 insígnias (você tem ${badgeCount(P)})`)
+    + row(P.hms.includes('cut'), `✂️ Cut abre as rotas para a Zona 2 (${ZONES[2].nome}, ${hmGymOf('cut')}º ginásio)`)
+    + row(P.hms.includes('smash'), `🪨 Rock Smash abre as rotas para a Zona 3 (${ZONES[3].nome}, ${hmGymOf('smash')}º ginásio)`)
+    + row(P.hms.includes('surf'), `🌊 Surf atravessa o rio até a Zona 4 (${ZONES[4].nome}), o mar e as ilhas distantes (${hmGymOf('surf')}º ginásio)`)
+    + row(badgeCount(P) >= 7, `🏅 O Portão da Liga para a Zona 5 (${ZONES[5].nome}) abre com 7 insígnias (você tem ${badgeCount(P)})`)
     + row(P.hms.includes('flash'), `💡 Flash ilumina ginásios escuros, a noite e a névoa (${hmGymOf('flash')}º ginásio)`)
     + row(P.hms.includes('fly'), `🪶 Fly leva você a qualquer cidade já visitada com [V] (missão em ${TOWNS[1] ? TOWNS[1].nome : 'outra cidade'})`)
     + '<div class="small">HMs só funcionam com um companheiro que as saiba fora da Poké Ball (ensine no painel). Os bloqueios aparecem no minimapa.</div>';

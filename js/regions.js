@@ -48,7 +48,7 @@ const REGIONS = {
     // etapas da história dadas por outros NPCs (antes do ginásio do capítulo ch); a 1ª captura vale em todas as regiões
     interludes: [
       { ch: 3, npc: 'dex', kind: 'dexn', n: 8, titulo: 'Páginas da Pokédex', fala: 'O Professor Carvalho quer dados de campo antes de você seguir. A Pokédex de Kanto ainda tem páginas demais em branco: registre pelo menos 8 espécies capturadas e volte à estrada.', obj: 'Tenha 8 espécies capturadas na Pokédex de Kanto' },
-      { ch: 7, npc: 'cura', kind: 'capball', n: 1, z: 4, titulo: 'A prova do treinador', fala: 'Os últimos líderes não recebem qualquer um. Eles querem ver se você sabe lidar com os Pokémon de {Z4}... e esses não se entregam fácil. Traga a prova: capture um deles com uma Great Ball ou uma Ultra Ball.', obj: 'Capture um Pokémon em {Z4} com Great Ball ou Ultra Ball' },
+      { ch: 7, npc: 'cura', kind: 'capball', n: 1, z: 4, titulo: 'A prova do treinador', fala: 'Os últimos líderes não recebem qualquer um. Eles querem ver se você sabe lidar com os Pokémon da {Z4}... e esses não se entregam fácil. Traga a prova: capture um deles com uma Great Ball ou uma Ultra Ball.', obj: 'Capture um Pokémon na {Z4} com Great Ball ou Ultra Ball' },
     ],
     // Alfas da Lua: Pokémon noturnos de verdade (pela lore e pelos jogos)
     moon: [94, 93, 42, 97, 36, 49, 53], // Gengar, Haunter, Golbat, Hypno, Clefable (a lua), Venomoth (mariposa da noite), Persian
@@ -165,7 +165,7 @@ const REGIONS = {
       explorar: [['Mergulhadora de Mossdeep', 'quero saber o que existe além das correntes']] } },
     interludes: [
       { ch: 3, npc: 'dex', kind: 'explore', n: 25, titulo: 'O mapa de Hoenn', fala: 'Hoenn é mar, vulcão e floresta, e metade dos mapas está errada. Antes de seguir, explore pelo menos 25% da região para eu corrigir as rotas.', obj: 'Explore 25% de Hoenn (o mapa revela por onde você passa)' },
-      { ch: 7, npc: 'cura', kind: 'capball', n: 1, z: 4, titulo: 'A prova do treinador', fala: 'Os últimos líderes querem ver se você sabe lidar com os Pokémon de {Z4}. Traga a prova: capture um deles com uma Great Ball ou uma Ultra Ball.', obj: 'Capture um Pokémon em {Z4} com Great Ball ou Ultra Ball' },
+      { ch: 7, npc: 'cura', kind: 'capball', n: 1, z: 4, titulo: 'A prova do treinador', fala: 'Os últimos líderes querem ver se você sabe lidar com os Pokémon da {Z4}. Traga a prova: capture um deles com uma Great Ball ou uma Ultra Ball.', obj: 'Capture um Pokémon na {Z4} com Great Ball ou Ultra Ball' },
     ],
     // Alfas da Lua: Pokémon noturnos de verdade (pela lore e pelos jogos)
     moon: [354, 356, 302, 262, 359, 337, 269], // Banette, Dusclops, Sableye, Mightyena, Absol, Lunatone, Dustox
@@ -224,7 +224,7 @@ const REGIONS = {
       captura: [['Guarda das Ruínas', 'os Pokémon das ruínas guardam segredos antigos']] } },
     interludes: [
       { ch: 3, npc: 'dex', kind: 'dexn', n: 10, titulo: 'A pesquisa do Prof. Rowan', fala: 'O Professor Rowan estuda a evolução dos Pokémon de Sinnoh e precisa de exemplares. Registre pelo menos 10 espécies capturadas na Pokédex antes do próximo ginásio.', obj: 'Tenha 10 espécies capturadas na Pokédex de Sinnoh' },
-      { ch: 7, npc: 'guilda', kind: 'alfa', n: 3, z: 4, titulo: 'Os líderes da nevasca', fala: 'Os bandos de {Z4} estão descendo para as cidades, puxados pelos Alfas. A Liga não abre o caminho enquanto eles estiverem soltos: derrote 3 Alfas lá.', obj: 'Derrote 3 Pokémon Alfa em {Z4} ou além' },
+      { ch: 7, npc: 'guilda', kind: 'alfa', n: 3, z: 4, titulo: 'Os líderes da nevasca', fala: 'Os bandos da {Z4} estão descendo para as cidades, puxados pelos Alfas. A Liga não abre o caminho enquanto eles estiverem soltos: derrote 3 Alfas lá.', obj: 'Derrote 3 Pokémon Alfa na {Z4} ou além' },
     ],
     // Alfas da Lua: Pokémon noturnos de verdade (pela lore e pelos jogos)
     moon: [430, 429, 426, 442, 405, 477], // Honchkrow, Mismagius, Drifblim, Spiritomb, Luxray (enxerga no escuro), Dusknoir
@@ -281,7 +281,7 @@ const REGIONS = {
       evento: [['Repórter de Castelia', 'preciso de imagens no meio da confusão']],
       pegar: [['Libertadora arrependida', 'quero cuidar de um Pokémon do jeito certo']] } },
     interludes: [
-      { ch: 3, npc: 'guilda', kind: 'alfa', n: 2, z: 2, titulo: 'Força de verdade', fala: 'A Equipe Plasma diz que treinadores maltratam Pokémon. Mostre o contrário: enfrente os Alfas de {Z2} de igual para igual. Derrote 2 deles.', obj: 'Derrote 2 Pokémon Alfa em {Z2} ou além' },
+      { ch: 3, npc: 'guilda', kind: 'alfa', n: 2, z: 2, titulo: 'Força de verdade', fala: 'A Equipe Plasma diz que treinadores maltratam Pokémon. Mostre o contrário: enfrente os Alfas da {Z2} de igual para igual. Derrote 2 deles.', obj: 'Derrote 2 Pokémon Alfa na {Z2} ou além' },
       { ch: 7, npc: 'ferreiro', kind: 'forja', n: 4, titulo: 'Lâmina para o lendário', fala: 'Se o que dizem do Reshiram for verdade, você vai precisar de mais que coragem. Deixe sua arma pelo menos +4 na minha bigorna.', obj: 'Aprimore sua arma até +4 na Ferreira' },
     ],
     // Alfas da Lua: Pokémon noturnos de verdade (pela lore e pelos jogos)
