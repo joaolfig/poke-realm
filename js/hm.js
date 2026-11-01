@@ -310,7 +310,7 @@ const TYPE_ABIL = {
 // quem causa status bate menos (quanto maior a chance, menor o dano: 12% de chance -> -18% de dano)
 const abilDmgMul = ab => (ab ? 1 - Math.min(0.2, ab.ch * 1.5) : 1);
 // ---------- status no jogador (golpes de Alfas e chefes) ----------
-// 2 paralisado (mais lento e atira menos), 3 queimado (dano por segundo e bate menos), 4 envenenado (dano por segundo), 6 confuso (mira treme)
+// 2 paralisado (mais lento e atira menos), 3 queimado (dano por segundo e bate menos), 4 envenenado (dano por segundo), 6 confuso (mira treme: ~60% dos tiros acertam)
 const PLAYER_ST_CH = 0.05;
 const PST = {
   2: { label: '⚡ Paralisado', dur: 4, color: '#fde047' },
@@ -319,7 +319,7 @@ const PST = {
   6: { label: '💫 Confuso', dur: 3, color: '#f9a8d4' },
 };
 // qual status cada tipo de ataque pode causar no jogador
-const PST_BY_TYPE = { electric: 2, normal: 2, dragon: 2, fire: 3, poison: 4, bug: 4, grass: 4, psychic: 6, ghost: 6, fairy: 6, dark: 6, fighting: 6 };
+const PST_BY_TYPE = { electric: 2, dragon: 2, fire: 3, poison: 4, bug: 4, grass: 4, psychic: 6, ghost: 6, fairy: 6, dark: 6, fighting: 6 };
 const pst = (P, st) => P && P.pstT > 0 && P.pst === st;
 function playerStatus(P, st) {
   if (!P || !PST[st] || P.pstT > 0 || P.pvp) return;

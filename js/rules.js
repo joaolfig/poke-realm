@@ -86,7 +86,7 @@ const SUBCLASSES = {
   ],
   clerigo: [
     { id: 'vida', nome: 'Domínio da Vida', icon: '💖', desc: 'Curas 50% mais fortes e aliados perto de você regeneram PV.',
-      abil: { nome: 'Santuário', cd: 10, desc: 'Tomo da Vida: cria um santuário por 6s que cura (1 + nível/6)d6 + Vigor/2 por segundo quem estiver dentro e deixa os inimigos lentos.' } },
+      abil: { nome: 'Santuário', cd: 10, desc: 'Tomo da Vida: cria um santuário por 6s que cura (1 + nível/6)d6 + Vigor/2 por segundo quem estiver dentro, tira os status e deixa os inimigos lentos.' } },
     { id: 'guerra', nome: 'Domínio da Guerra', icon: '⚔️', desc: '+2 CA e seus tiros causam +1d6 de dano.',
       abil: { nome: 'Hino de Batalha', cd: 9, desc: 'Hino: você e os aliados próximos entram em fúria por 5s, são curados em 1d8 + nível/2 e os inimigos em volta ficam paralisados.' } },
   ],

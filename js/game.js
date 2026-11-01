@@ -663,7 +663,7 @@ function addCosmetic(s, own) {
 
 function playerShoot() {
   const P = G.P, w = CLASSES[P.cls].wpn;
-  const ca = pst(P, 6) ? rand(-0.45, 0.45) : 0; // confuso: a mira treme
+  const ca = pst(P, 6) ? rand(-0.2, 0.2) : 0; // confuso: a mira treme
   for (let i = 0; i < w.shots; i++) shootBullet(P.aim + ca, { ph: i * Math.PI });
   if (hasT(P, 'atirador')) { P.alt = -P.alt; shootBullet(P.aim + P.alt); }
   if (Math.random() < 0.5) sfx('shoot');
