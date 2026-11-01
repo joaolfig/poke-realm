@@ -1085,7 +1085,7 @@ function updatePlayer(dt) {
   if (G.recall) {
     G.recall.t -= dt;
     if (P.moving || P.sinceHit < 0.05) { G.recall = null; text(P.x, P.y - 40, 'Retorno cancelado', '#fca5a5', 12); }
-    else if (G.recall.t <= 0) { const t = TOWNS[P.lastTown] || TOWNS[0]; G.recall = null; burst(P.x, P.y, '#fde68a', 20); P.x = t.x + rand(-50, 50); P.y = t.y + rand(55, 80); P.recallCd = 45; burst(P.x, P.y, '#fde68a', 20); sfx('pot'); }
+    else if (G.recall.t <= 0) { const t = TOWNS[P.lastTown] || TOWNS[0]; G.recall = null; burst(P.x, P.y, '#fde68a', 20); P.x = t.x + rand(-50, 50); P.y = t.y + rand(55, 80); P.recallCd = 45; burst(P.x, P.y, '#fde68a', 20); sfx('pot'); G.cam.x = P.x; G.cam.y = P.y; return; } // o resto do quadro ainda achava que você estava na masmorra (travava o jogo ao voltar dela)
   }
   const wasSurf = P.surfing;
   if (P.riding && (inDg || !activePet(P) || !G.allies.some(a => a.pet) || !canRide(activePet(P).pid) || G.evo)) P.riding = false;
@@ -1140,7 +1140,8 @@ function updatePlayer(dt) {
     if (safe && mouse.down && !G.npcOpen && G.time - (G.peaceWarn || -9) > 4) { G.peaceWarn = G.time; text(P.x, P.y - 40, '🕊️ Não dá para atacar de dentro da vila', '#fef3c7', 12); }
   }
 
-  const area = inDg ? 'dg' + dungeonAt(P.x).id : 'z' + zoneAt(P.x, P.y);
+  const dgNow = inDungeonArea(P.x) && dungeonAt(P.x); // posição atual (um teleporte no meio do quadro muda o lugar)
+  const area = dgNow ? 'dg' + dgNow.id : 'z' + zoneAt(P.x, P.y);
   if (area !== G.area) { G.area = area; G.banner = 2.5; }
   G.nearPortal = nearPortal(P);
 
@@ -1723,7 +1724,12 @@ function drawHUD(ox, oy) {
   ctx.textAlign = 'left'; ctx.font = 'bold 14px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
   let hy = 22;
   if (dg && dg.floor) { outlined(`🗼 Torre Infinita · Andar ${dg.floor}`, 12, hy); if (dg.mods.length) { hy += 18; ctx.fillStyle = '#c4b5fd'; outlined(dg.mods.map(m => TOWER_MODS[m]).join(' · '), 12, hy); ctx.fillStyle = '#fff'; } }
-  else if (dg) outlined(`${name} · Zona ${clamp(dg.zone, 1, 5)}/5 · ${dgLevelTxt(dg)}`, 12, hy);
+  else if (dg) {
+    outlined(`${name} · Zona ${clamp(dg.zone, 1, 5)}/5 · ${dgLevelTxt(dg)}`, 12, hy);
+    ctx.font = 'bold 12px Barlow Semi Condensed, system-ui';
+    for (const [t, c] of dgInfo(dg, P)) { hy += 16; ctx.fillStyle = c; outlined(t, 12, hy); }
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Barlow Semi Condensed, system-ui';
+  }
   else {
     const z = zoneAt(cx, cy);
     if (z >= 0) outlined(`${REGION.nome} · ${name} ${z === ARENA_Z ? '(duelo entre jogadores)' : z ? `· Zona ${z}/5 · Nv ${ZONES[z].lvl}–${ZONES[z].lvlMax}` : '· área segura'}`, 12, hy);
@@ -2381,7 +2387,8 @@ function drawMenuBg(now) {
   }
 }
 function frame() {
-  if (!document.hidden) step(performance.now(), true);
+  // um erro num quadro não pode parar o jogo (antes a tela congelava)
+  try { if (!document.hidden) step(performance.now(), true); } catch (e) { console.error(e); }
   if (!document.hidden && !$('menu').classList.contains('hidden')) drawMenuBg(performance.now());
   requestAnimationFrame(frame);
 }
@@ -2389,7 +2396,7 @@ function frame() {
 // um timer dentro de um Worker não é limitado e mantém o mundo (e o host) rodando.
 try {
   const wk = new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),33)'], { type: 'text/javascript' })));
-  wk.onmessage = () => { if (document.hidden) step(performance.now(), false); };
+  wk.onmessage = () => { if (document.hidden) try { step(performance.now(), false); } catch (e) { console.error(e); } };
 } catch (e) { setInterval(() => { if (document.hidden) step(performance.now(), false); }, 33); }
 
 function boot() {
@@ -2573,7 +2580,7 @@ function bossSig(e, t) {
   const S = BOSS_SIG[e.type] || BOSS_SIG.normal;
   if (S.tp) { // some e reaparece atrás do alvo
     const a = Math.random() * 6.28, nx = t.x + Math.cos(a) * 110, ny = t.y + Math.sin(a) * 110;
-    if (!e.dg || walkableR(nx, ny, 16)) { e.x = nx; e.y = ny; }
+    if (!e.dg || walkableR(nx, ny, Math.min(e.r, 18))) { e.x = nx; e.y = ny; }
   }
   const a = Math.atan2(t.y - e.y, t.x - e.x);
   const list = S.f(e, t, a), wk = sigWarn(e);
@@ -2586,7 +2593,7 @@ function bossDash(e, dt) {
   const d = e.dash;
   if (d.wait > 0) { d.wait -= dt; e.moving = false; return; }
   const nx = e.x + Math.cos(d.a) * d.spd * dt, ny = e.y + Math.sin(d.a) * d.spd * dt;
-  if (e.dg ? walkableR(nx, ny, Math.min(e.r, 18)) : true) { e.x = nx; e.y = ny; clampWorld(e); }
+  if (e.dg ? walkableR(nx, ny, Math.min(e.r, 18)) : true) { e.x = nx; e.y = ny; if (!e.dg) clampWorld(e); }
   else d.t = 0;
   e.moving = true;
   if ((d.t -= dt) <= 0) e.dash = null;

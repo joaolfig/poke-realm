@@ -182,9 +182,10 @@ const roomCenter = (dg, r) => ({ x: dg.ox + (r.x + r.w / 2) * TILE, y: dg.oy + (
 function roomPos(dg, r) {
   for (let k = 0; k < 30; k++) {
     const x = dg.ox + (r.x + 2 + Math.random() * (r.w - 4)) * TILE, y = dg.oy + (r.y + 2 + Math.random() * (r.h - 4)) * TILE;
-    if (walkableR(x, y, 16)) return { x, y };
+    if (walkableR(x, y, 20)) return { x, y };
   }
-  return roomCenter(dg, r);
+  const c = roomCenter(dg, r);
+  return dgFree(c.x, c.y, 18) || c;
 }
 
 /* ---------- Lado do host ---------- */
@@ -202,7 +203,9 @@ function createDungeon(x, y, type, zone, o = {}) {
   return dg;
 }
 
-function spawnRoom(dg, r) {
+// nasce a sala e já confere: ninguém começa dentro de pilar, buraco ou parede (os chefes crescem depois de nascer)
+function spawnRoom(dg, r) { spawnRoomInner(dg, r); dgKeepValid(dg); }
+function spawnRoomInner(dg, r) {
   const th = THEMES[dg.theme];
   const pool = th.pool.filter(id => POKE[id]);
   const fallback = ZONE_POOLS[clamp(dg.zone, 1, 5)];
@@ -254,6 +257,7 @@ function spawnRoom(dg, r) {
         e.cd = rand(1.5, 2.8); // tempo para o grupo reagir ao entrar na sala
         if (dg.mod === 'frenesi') { e.speed *= 1.25; e.cdBoss = 0.8; }
       }
+      dgKeepValid(dg);
     };
     const base = Math.round((3 + dg.zone + randi(0, 1)) * grpN()); // mais Pokémon por sala com mais jogadores
     if (v === 'elite') wave((2 + Math.floor(dg.zone / 2)) * inf, true, 1);
@@ -261,6 +265,39 @@ function spawnRoom(dg, r) {
     else if (v === 'emboscada') { wave(Math.ceil(base / 2) * inf, false, 1); setTimeout(() => { if (G.dungeons.get(dg.id)) { wave(Math.ceil(base / 2) * inf, false, 1); emitEvent({ t: 'toast', text: '⚠ Emboscada! Mais Pokémon chegaram!', color: '#fca5a5' }); } }, 2500); }
     else wave(base * inf, false, 1);
   }
+}
+
+// ponto de chão livre mais perto (para um corpo de raio r), procurando em anéis em volta de (x, y)
+function dgFree(x, y, r) {
+  if (walkableR(x, y, r)) return { x, y };
+  for (let dd = 10; dd <= 360; dd += 10) for (let k = 0; k < 20; k++) {
+    const a = k / 20 * 6.283, nx = x + Math.cos(a) * dd, ny = y + Math.sin(a) * dd;
+    if (walkableR(nx, ny, r)) return { x: nx, y: ny };
+  }
+  return null;
+}
+// todo Pokémon de masmorra precisa estar em chão livre dela: nasceu num pilar ou buraco, foi empurrado
+// para a parede ou saiu da masmorra -> vai para o chão livre mais perto (ou para a sala onde a luta está)
+function dgKeepValid(dg) {
+  for (const e of G.enemies) {
+    if (e.dg !== dg.id || e.dead || e.hp <= 0 || e.dash) continue;
+    const rr = Math.min(e.r, 18);
+    if (dungeonAt(e.x) === dg && walkableR(e.x, e.y, rr)) continue;
+    let p = dungeonAt(e.x) === dg ? dgFree(e.x, e.y, rr) : null;
+    if (!p) {
+      const rooms = dg.rooms.filter(r => r.state && r.kind !== 'start'), r = e.kind === 3 ? dg.rooms[dg.rooms.length - 1] : rooms[rooms.length - 1] || dg.rooms[dg.rooms.length - 1];
+      const c = roomPos(dg, r); p = dgFree(c.x, c.y, rr) || c;
+    }
+    e.x = p.x; e.y = p.y; e.hx = p.x; e.hy = p.y; e.tx = p.x; e.ty = p.y;
+  }
+}
+// fim da masmorra: portal de saída na sala do chefe
+function dgFinish(dg) {
+  if (dg.done) return;
+  dg.done = true; dg.doneT = G.time;
+  const c = roomCenter(dg, dg.rooms[dg.rooms.length - 1]), p = dgFree(c.x, c.y, 14) || c;
+  G.portals.push({ id: ++G.poNext, x: Math.round(p.x), y: Math.round(p.y), theme: dg.theme, ttl: 120, dg: dg.id, exit: 1 });
+  emitEvent({ t: 'toast', text: `🏆 ${THEMES[dg.theme].nome} concluída! Um portal de saída surgiu.`, color: '#facc15', big: 1 });
 }
 
 function closeDungeon(dg) {
@@ -283,6 +320,9 @@ function hostDungeons(dt) {
       if (inside.some(p => inRoom(dg, r, p.x, p.y))) { r.state = 1; spawnRoom(dg, r); }
     }
     if (dg.floor && !dg.cleared && dg.rooms.every(r => r.kind === 'start' || r.state) && !G.enemies.some(e => e.dg === dg.id && e.hp > 0 && !e.dead)) towerCleared(dg);
+    dgKeepValid(dg);
+    // rede de segurança: o chefe sumiu sem ser derrotado (não deveria acontecer) -> a saída abre mesmo assim
+    if (!dg.floor && !dg.done && dg.bossId && dg.rooms[dg.rooms.length - 1].state && !G.emap.has(dg.bossId)) dgFinish(dg);
     dg.emptyT = inside.length ? 0 : dg.emptyT + 0.25;
     const entOpen = G.portals.some(p => p.dg === dg.id && !p.exit);
     if ((dg.emptyT > 15 && !entOpen) || (dg.done && G.time - dg.doneT > 120)) closeDungeon(dg);
@@ -295,12 +335,7 @@ function hostOnKill(e) {
   if (tdg && tdg.mods && tdg.mods.includes('explosivos')) for (let k = 0; k < 8; k++) eShot(e, k * Math.PI / 4, 170);
   if (e.kind === 3 && e.dg) {
     const dg = G.dungeons.get(e.dg);
-    if (dg && !dg.done) {
-      dg.done = true; dg.doneT = G.time;
-      const c = roomCenter(dg, dg.rooms[dg.rooms.length - 1]);
-      G.portals.push({ id: ++G.poNext, x: Math.round(c.x), y: Math.round(c.y), theme: dg.theme, ttl: 120, dg: dg.id, exit: 1 });
-      emitEvent({ t: 'toast', text: `🏆 ${THEMES[dg.theme].nome} concluída! Um portal de saída surgiu.`, color: '#facc15', big: 1 });
-    }
+    if (dg) dgFinish(dg);
   } else if (!e.dg && !inDungeonArea(e.x) && (e.kind === 1 || (e.kind === 0 && Math.random() < 0.008))) {
     createDungeon(e.x, e.y, e.type, e.zone);
   }
@@ -383,6 +418,27 @@ function dgLevelTxt(dg) {
   if (st && STORY[st] && STORY[st].lvl) return `Nv ${STORY[st].lvl}+`;
   const z = clamp(dg.zone, 1, 5);
   return `Nv ${ZONE_LVL[z]}–${ZONE_LVL_MAX[z]}`;
+}
+// linhas de informação no topo de uma masmorra: o que tem dentro, quanto falta e quão perigosa é para você
+function dgInfo(dg, P) {
+  const th = THEMES[dg.theme], gs = gymStage(dg.theme), z = clamp(dg.zone, 1, 5);
+  const fights = dg.rooms.filter(r => r.kind === 'fight').length;
+  const done = dg.rooms.filter(r => r.kind !== 'start' && r.state).length, total = dg.rooms.length - 1;
+  const lo = ZONE_LVL[z], hi = ZONE_LVL_MAX[z], need = gs && STORY[gs] && STORY[gs].lvl ? STORY[gs].lvl : lo;
+  const boss = gs ? STORY[gs] && STORY[gs].nome : POKE[th.boss] ? POKE[th.boss].name : 'um Pokémon forte';
+  const stars = gs ? Math.ceil(gs / 2) : z, starTxt = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+  const L = [];
+  L.push([`${starTxt} · ${dg.done ? '✔ Concluída: pegue o portal de saída' : `Sala ${Math.min(done, total)}/${total}`} · ${fights} ${fights === 1 ? 'sala' : 'salas'} de luta + ${gs ? boss : 'o chefe ' + boss}`, '#fde68a']);
+  const extra = gs ? 'chefes do time do líder no caminho, Pokémon do ginásio com +30% de vida' : `Pokémon com +30% de vida${dg.mod ? ' · ' + DG_MODS[dg.mod].split(':')[0] : ''}`;
+  L.push([`Pokémon Nv ${lo}–${hi} · ${extra}`, '#cbd5e1']);
+  if (P && !dg.done) {
+    const d = P.lvl - need;
+    L.push(d <= -4 ? [`☠ Muito perigosa para o seu nível (você: Nv ${P.lvl}, recomendado ${need}+)`, '#f87171']
+      : d < 0 ? [`⚠ Difícil para o seu nível (você: Nv ${P.lvl}, recomendado ${need}+)`, '#fdba74']
+      : P.lvl > hi + 3 ? [`Fácil para o seu nível (Nv ${P.lvl})`, '#86efac']
+      : [`Equilibrada para o seu nível (Nv ${P.lvl})`, '#a7f3d0']);
+  }
+  return L;
 }
 function drawPortals(ox, oy) {
   for (const p of G.portals) {
