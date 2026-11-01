@@ -458,6 +458,8 @@ function teamEdit(P, fn) {
   const out = P.petAct.map(i => P.pets[i]);
   fn();
   P.petAct = out.map(m => P.pets.indexOf(m)).filter(i => i >= 0).slice(0, petSlots(P));
+  // quem saiu estava fora da Poké Ball? o próximo da equipe assume o lugar
+  for (let i = 0; i < P.pets.length && P.petAct.length < Math.min(petSlots(P), out.length || 1); i++) if (!P.petAct.includes(i)) P.petAct.push(i);
   P.petIdx = P.petAct.length ? P.petAct[0] : -1;
   G.dirty = true; saveGame();
 }
