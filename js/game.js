@@ -215,8 +215,12 @@ const XP_TABLE = [
 const xpNeed = l => XP_TABLE[clamp(l, 1, MAX_LVL - 1) - 1];
 
 // raça, classe e tipo são sorteados
+// o sorteio evita a classe, a raça e o tipo do herói anterior (o que morreu ou o que estava na tela)
+let heroAvoid = { cls: [], race: [], type: [] };
 function rollHero() {
-  const cls = pick(Object.keys(CLASSES)), rc = pick(Object.keys(RACES)), type = pick(TYPES);
+  const fresh = (all, av) => { const ok = all.filter(x => !av.includes(x)); return pick(ok.length ? ok : all); };
+  const cls = fresh(Object.keys(CLASSES), heroAvoid.cls), rc = fresh(Object.keys(RACES), heroAvoid.race), type = fresh(TYPES, heroAvoid.type);
+  heroAvoid = { cls: [cls], race: [rc], type: [type] };
   const attrs = { ...CLASSES[cls].attrs };
   for (const k in RACES[rc].bonus) attrs[k] += RACES[rc].bonus[k];
   attrs[pick(ATTRS)]++;
@@ -1015,6 +1019,7 @@ function heroLabel(P) {
 function playerDie(src) {
   const P = G.P;
   if (P.pvp || inArena(P.x, P.y)) return pvpLeave(true, src); // na arena ninguém morre de verdade
+  heroAvoid = { cls: [P.cls], race: [P.race], type: [P.ptype] }; // o próximo herói sorteado vem diferente
   const tdg = inDungeonArea(P.x) && dungeonAt(P.x);
   if (tdg && tdg.floor) return towerFall(P, tdg, src); // nem na torre
   if (P.graceT > 0) { // Graça Salvadora de um Clérigo aliado
@@ -1636,7 +1641,7 @@ function drawTargetCard() {
   }
   if (!e || !e.p) return;
   if (e.hp <= 0 || e.dead) return;
-  const w = 214, h = 58, x = W - w - 12, y = H - h - 12;
+  const w = 214, h = 58, x = W - w - 12, y = H - h - 74; // logo acima da barra de status (canto inferior direito)
   ctx.fillStyle = 'rgba(13,14,16,.86)'; ctx.fillRect(x, y, w, h);
   ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
   ctx.strokeStyle = e.legend ? '#f87171' : e.alfa ? '#facc15' : e.boss ? '#a78bfa' : '#44474f'; ctx.lineWidth = 1; ctx.strokeRect(x - 2.5, y - 2.5, w + 5, h + 5);
