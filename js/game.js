@@ -204,6 +204,9 @@ const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWo
 // mas nunca abaixo da duração do efeito + 1 s (nenhum buff fica ligado para sempre)
 const ABIL_DUR = { guerreiro: 5, barbaro: 3, paladino: 6, ladino: 3, assassino: 4.4, trapaceiro: 4, vida: 6, guerra: 5, feras: 6, druida: 12, lua: 18, terra: 12 };
 const abilDur = P => ABIL_DUR[P.subclass || P.cls] || 0;
+// força de cada uso do especial: com a recarga mais curta do fim do jogo ele sai bem mais vezes, então cada uso fica
+// um pouco mais fraco (raiz da proporção entre a recarga atual e a base: 5 s -> 2 s = 63%), e o total ainda cresce
+const abilPow = P => clamp(Math.sqrt(abilCd(P) / curAbil(P).cd), 0.55, 1);
 function abilCd(P) {
   // Forma Selvagem (Druida, Lua e Terra): espera de 30 s depois que a forma acaba no Nv 1, caindo até 10 s no Nv 30
   if (P.cls === 'druida') {
@@ -781,6 +784,7 @@ function hitText(e, dmg, eff, crit, hit, extra = '') {
 
 // dano de especial: aplica tipo, mostra o número e devolve o dano causado
 function abilHit(e, dmg, type, slow) {
+  dmg *= abilPow(G.P);
   const P = G.P, r = typed(P, e, Math.max(1, Math.round(dmg)), type || pType(P));
   dealDamage(e, r.dmg, slow || 0);
   hitText(e, r.dmg, r.eff, false, true);
@@ -810,7 +814,7 @@ function useAbility() {
     }
     case 'paladino': // Selo Sagrado (Paladino): dano extra e proteção para o grupo
       emitEvent({ t: 'buff', k: 'selo', x: Math.round(P.x), y: Math.round(P.y), dur: 6, name: P.name });
-      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: roll(2, 8) + lv, name: P.name });
+      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.round((roll(2, 8) + lv) * abilPow(P)), name: P.name });
       fxAt(P.x, P.y, 200, '#fde68a'); sfx('lvl'); break;
     case 'mago': { // Feitiço: bomba de projéteis no cursor
       const t = aimPoint(P, 380);
@@ -860,14 +864,14 @@ function useAbility() {
     }
     case 'clerigo': { // Tomo: cura em área
       const amt = roll(2 + Math.floor(lv / 3), 8) + A(P, 'VIG');
-      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.max(1, Math.round(amt * clericChoir(P))), name: P.name, bl: blessOf(P), r: 260 }); break;
+      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.max(1, Math.round(amt * clericChoir(P) * abilPow(P))), name: P.name, bl: blessOf(P), r: 260 }); break;
     }
     case 'vida': // Santuário (Sacerdote): área de cura contínua
       G.zones.push({ k: 'santuario', x: P.x, y: P.y, r: 150, t: 6, wait: 0, every: 1, tick: 0 });
       fxAt(P.x, P.y, 150, '#fde68a'); sfx('pot'); break;
     case 'guerra': // Hino de Batalha (Bardo): fúria para o grupo e paralisia em volta
       emitEvent({ t: 'buff', k: 'furia', x: Math.round(P.x), y: Math.round(P.y), dur: 5, name: P.name });
-      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.round((d(8) + Math.floor(lv / 2)) * clericChoir(P)), name: P.name, quiet: 1, bl: blessOf(P), r: 260 });
+      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.round((d(8) + Math.floor(lv / 2)) * clericChoir(P) * abilPow(P)), name: P.name, quiet: 1, bl: blessOf(P), r: 260 });
       for (const e of enemiesNear(P.x, P.y, 170)) if (!e.boss || Math.random() < 0.5) inflict(e, 2);
       fxAt(P.x, P.y, 170, '#f97316'); sfx('boom'); break;
     case 'patrulheiro': // Aljava: flechada pesada que perfura e deixa lento
@@ -956,7 +960,7 @@ function dealDamage(e, dmg, slow) {
 // Forma Selvagem: o Druida transformado causa (o dano normal dele + o do companheiro em que virou) × WILD_K, repartido
 // pelos tiros da forma. Transformado, o companheiro líder não bate; assim a forma sempre rende um pouco mais que o grupo
 // rendia antes, acompanha a força do companheiro escolhido e não depende da cadência de cada estilo de tiro.
-const WILD_K = 1.2;
+const WILD_K = 1.4;
 function wildShotDmg(P, dmg) {
   const pt = P.pets[P.wildSlot];
   if (!pt || !POKE[pt.pid]) return dmg;
@@ -983,6 +987,7 @@ function playerHit(e, b) {
     : sp === 2 ? roll((3 + Math.floor(P.lvl / 3)) * (crit ? 2 : 1), 8) + A(P, 'POD')
       : sp === 3 || sp === 4 ? roll((2 + Math.floor(P.lvl / 4)) * (crit ? 2 : 1), 8) + A(P, 'POD')
       : roll(w.dice[0] * (crit ? 2 : 1), w.dice[1]) + A(P, 'POD') + w.bonus + M(P, 'dmg');
+  if (sp) dmg *= abilPow(P);
   if (P.wildT > 0 && !sp) dmg = wildShotDmg(P, dmg);
   if (P.furia > 0) dmg += d(6);
   if (P.seloT > 0) dmg += d(6);
@@ -1012,10 +1017,13 @@ function playerHit(e, b) {
   }
   const steal = M(P, 'steal');
   if (steal) P.hp = Math.min(maxHP(P), P.hp + res.dmg * steal);
-  if (hasS(P, 'arcano')) {
+  // Atirador Arcano: a flecha explode uma vez (no primeiro acerto) e causa 1/3 do dano em volta
+  // (explodia a cada inimigo atravessado, com metade do dano: num grupo de 4 cada flecha valia ~10 tiros)
+  if (hasS(P, 'arcano') && !(b && b.boomed)) {
+    if (b) b.boomed = true;
     for (const o of G.enemies) {
       if (o === e || o.hp <= 0 || Math.hypot(o.x - e.x, o.y - e.y) > 70 + o.r) continue;
-      const s = typed(P, o, Math.max(1, Math.floor(dmg / 2)), pType(P));
+      const s = typed(P, o, Math.max(1, Math.floor(dmg / 3)), pType(P));
       dealDamage(o, s.dmg); hitText(o, s.dmg, s.eff, false, true);
     }
     G.fx.push({ k: 'ring', x: e.x, y: e.y, r: 0, R: 70, life: 0.25, max: 0.25, color: '#fbbf24' });
