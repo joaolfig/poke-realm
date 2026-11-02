@@ -851,6 +851,23 @@ function dexCatch(P, pid) {
   d.c.push(pid);
   const pc = Math.floor(d.c.length / DEX_IDS.length * 100), next = DEX_GOALS.find(g => !d.claim.includes(g.pc) && pc >= g.pc);
   G.toasts.push({ text: `📖 ${POKE[pid] ? POKE[pid].name : 'Novo Pokémon'} registrado na Pokédex (${d.c.length}/${DEX_IDS.length})${next ? ' · fale com a Pesquisadora!' : ''}`, color: '#a7f3d0', t: 3.5 });
+  dexZoneCheck(P);
+}
+// Pokémon de cada zona (terra e água) e prêmio por capturar todos os de uma zona (no nível dela)
+const dexZoneIds = z => [...new Set([...(ZONE_POOLS[z] || []), ...(WATER_POOLS[z] || [])])].filter(id => DEX_WHERE[id]);
+function dexZoneCheck(P) {
+  const d = dexOf(P);
+  d.zc = d.zc || [];
+  for (let z = 1; z <= 5; z++) {
+    const ids = dexZoneIds(z);
+    if (d.zc.includes(z) || !ids.length || !ids.every(id => d.c.includes(id))) continue;
+    d.zc.push(z);
+    const ball = z >= 3 ? 'ultra' : 'grande', gold = 120 * z;
+    P.gold += gold;
+    G.bags.push({ x: P.x, y: P.y + 24, items: [genItem(zoneTier(z, 1.75)), consItem(ball), consItem(ball), consItem('doce')], life: 120 });
+    G.toasts.push({ text: `🏅 Você capturou todos os Pokémon de ${ZONES[z].nome} (Zona ${z})! Prêmio no chão e +${gold} 🪙`, color: '#fde047', t: 6, big: 1 });
+    sfx('lvl'); saveGame();
+  }
 }
 // marca como vistos os Pokémon por perto
 function dexTick(dt) {
@@ -882,8 +899,10 @@ const dexIcon = pid => `https://raw.githubusercontent.com/PokeAPI/sprites/master
 const dexName = pid => (POKE[pid] || (typeof POKEDEX_PRELOAD !== 'undefined' && POKEDEX_PRELOAD[pid]) || {}).name || '???';
 function renderDex() {
   const P = G.P, d = dexOf(P), box = $('dex');
-  const f = G.dexF || 'todos';
-  const ids = DEX_IDS.filter(pid => { const c = d.c.includes(pid), s = c || d.s.includes(pid); return f === 'todos' || (f === 'cap' ? c : f === 'vis' ? s && !c : !s); });
+  const f = G.dexF || 'todos', fz = G.dexZ || 0;
+  const zIds = z => (z === 'o' ? DEX_IDS.filter(pid => ![1, 2, 3, 4, 5].some(k => dexZoneIds(k).includes(pid))) : dexZoneIds(z));
+  const inZ = fz ? new Set(zIds(fz)) : null;
+  const ids = DEX_IDS.filter(pid => { const c = d.c.includes(pid), s = c || d.s.includes(pid); return (!inZ || inZ.has(pid)) && (f === 'todos' || (f === 'cap' ? c : f === 'vis' ? s && !c : !s)); });
   const cells = ids.map(pid => {
     const c = d.c.includes(pid), s = c || d.s.includes(pid), p = POKE[pid] || (typeof POKEDEX_PRELOAD !== 'undefined' && POKEDEX_PRELOAD[pid]);
     const ty = s && p ? p.types.map(t => `<i class="dt" style="background:${TYPE_COLORS[t]}"></i>`).join('') : '';
@@ -896,8 +915,10 @@ function renderDex() {
   box.innerHTML = `<div class="dexhead"><span class="dextitle">Pokédex · ${REGION.nome}</span><button data-dexf="x" title="Fechar ([P])">✕</button></div>
     <div class="bar dexbar"><div style="width:${pc}%"></div><span>${d.c.length}/${DEX_IDS.length} capturados · ${d.s.length} vistos · ${Math.floor(pc)}%</span></div>
     <div class="dextabs">${tab('todos', 'Todos')}${tab('cap', 'Capturados')}${tab('vis', 'Só vistos')}${tab('falta', 'Faltando')}</div>
+    <div class="dextabs dexzones">${[0, 1, 2, 3, 4, 5, 'o'].map(z => { const L = z ? zIds(z) : DEX_IDS, n = L.filter(pid => d.c.includes(pid)).length, done = z && z !== 'o' && L.length && n === L.length;
+      return `<button data-dexz="${z}" class="${fz === z ? 'on' : ''}" title="${z === 'o' ? 'Noite, eventos, ginásios e lendários' : z ? `${ZONES[z].nome}: capture todos para ganhar um prêmio do nível da zona` : ''}">${z === 'o' ? 'Outros' : z ? `${done ? '✅ ' : ''}Zona ${z}` : 'Todas'} · ${n}/${L.length}</button>`; }).join('')}</div>
     <div class="dexgrid">${cells || '<div class="small">Nada aqui ainda.</div>'}</div>
-    <div class="small dexfoot">Passe o mouse para ver onde cada um aparece · lendários contam ao serem derrotados · recompensas com a Pesquisadora Íris (vila e 2ª cidade)</div>`;
+    <div class="small dexfoot">Passe o mouse para ver onde cada um aparece · capture todos de uma zona para ganhar um prêmio do nível dela · lendários contam ao serem derrotados · recompensas com a Pesquisadora Íris (vila e 2ª cidade)</div>`;
 }
 function toggleDex() {
   const box = $('dex');
@@ -911,6 +932,7 @@ function renderDexNPC(P) {
       return `<div class="shoprow"><span>${ok ? '✅' : can ? '🎁' : '🔒'} <b>${g.pc}%</b>: ${regTitle(g.txt)}</span>${can ? `<button data-act="dex:${g.pc}" class="good">Receber</button>` : ''}</div>`; }).join('')}
     <button data-act="dexopen">📖 Abrir a Pokédex</button>`;
 }
+document.addEventListener('click', ev => { const z = ev.target.closest('[data-dexz]'); if (z && G && G.P) { const v = z.dataset.dexz; G.dexZ = v === 'o' ? 'o' : +v; renderDex(); } });
 document.addEventListener('click', ev => { const b = ev.target.closest('[data-dexf]'); if (!b || !G || !G.P) return; if (b.dataset.dexf === 'x') $('dex').classList.add('hidden'); else { G.dexF = b.dataset.dexf; renderDex(); } });
 // clicar no título (no painel) troca entre os títulos conquistados, de qualquer região
 document.addEventListener('click', ev => { if (!ev.target.closest('[data-title]') || !G || !G.P) return; const P = G.P, T = P.titles || []; if (T.length < 2) return; P.title = T[(T.indexOf(P.title) + 1) % T.length]; G.dirty = true; saveGame(); });
