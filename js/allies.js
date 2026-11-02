@@ -21,24 +21,25 @@ const MOVES = {
 /* ---------- Traços únicos de alguns companheiros ----------
  * Além da habilidade de status, mais ou menos uma a cada 5 ou 6 famílias tem um traço próprio (fraquinho, para dar
  * variedade sem desbalancear) que combina com o que a espécie faz nos jogos.
- * Para não ficarem mais fortes que as outras, quem tem traço bate menos (dmg). Os traços de "líder" valem só
+ * Para não ficarem mais fortes que as outras, quem tem traço bate menos (dmg). Medido: o companheiro faz ~25% do dano
+ * total, então cortar 20% do dano dele custa ~5% do dano do grupo; cada traço foi ajustado para valer mais ou menos isso. Os traços de "líder" valem só
  * para o companheiro líder (o primeiro da equipe que está fora da Pokébola) e entram como bônus no herói.
  */
 const TRAITS = {
   // suporte puro: não ataca, só cuida de você (Softboiled / Heal Pulse)
-  cura: { nome: 'Ovo Curativo', desc: 'não ataca: a cada 10 s cura 4% da sua vida', dmg: 0, heal: [0.04, 10], ids: [113, 242, 440, 531] },
+  cura: { nome: 'Ovo Curativo', desc: 'não ataca: a cada 10 s cura 5% da sua vida', dmg: 0, heal: [0.05, 10], ids: [113, 242, 440, 531] },
   // cura mais fraca, mas ainda ataca (Moonlight / Milk Drink / Wish)
-  curinha: { nome: 'Luz Curativa', desc: 'a cada 12 s cura 2% da sua vida', dmg: 0.6, heal: [0.02, 12], ids: [35, 36, 173, 241, 594] },
-  escudo: { nome: 'Couraça', desc: 'a cada 18 s te dá um escudo de 4% da vida (até 8%)', dmg: 0.7, ids: [213, 204, 205, 410, 411, 436, 437, 597, 598, 7, 8, 9, 90, 91, 11, 616, 589, 557, 558, 324] },
+  curinha: { nome: 'Luz Curativa', desc: 'a cada 12 s cura 2% da sua vida', dmg: 0.75, heal: [0.02, 12], ids: [35, 36, 173, 241, 594] },
+  escudo: { nome: 'Couraça', desc: 'a cada 18 s te dá um escudo de 4% da vida (até 8%)', dmg: 0.8, ids: [213, 204, 205, 410, 411, 436, 437, 597, 598, 7, 8, 9, 90, 91, 11, 616, 589, 557, 558, 324] },
   guarda: { nome: 'Guarda-Costas', desc: 'destrói as balas inimigas que encostam nele', dmg: 0.8, ids: [66, 67, 68, 296, 297, 532, 533, 534, 559, 560] },
   cabecas: { nome: 'Várias Cabeças', desc: 'atira com cada cabeça de uma vez (o dano é dividido entre elas)', dmg: 1, ids: [84, 85, 634, 635, 51, 103, 599, 600, 601, 415] },
   explosao: { nome: 'Explosivo', desc: 'o golpe especial vira uma explosão em área no alvo', dmg: 0.9, ids: [74, 75, 76, 524, 525, 526, 100, 101, 425, 426] },
-  drenar: { nome: 'Dreno', desc: '10% do dano que ele causa vira vida para você', dmg: 0.85, ids: [46, 47, 285, 286, 590, 591, 527, 528] },
+  drenar: { nome: 'Dreno', desc: 'uma pontinha (2,5%) do dano que ele causa vira vida para você', dmg: 0.8, ids: [46, 47, 285, 286, 590, 591, 527, 528] },
   rugido: { nome: 'Voz Potente', desc: 'o golpe especial apaga as balas inimigas em volta dele', dmg: 0.9, ids: [293, 294, 295, 401, 402, 441, 433, 358] },
   atirador: { nome: 'Atirador', desc: 'alcance maior e tiros mais rápidos', dmg: 0.9, ids: [116, 117, 230, 223, 224, 21, 22] },
   moedas: { nome: 'Pega-Moedas', desc: 'como líder: +15% de ouro', dmg: 0.85, lider: { gold: 0.15 }, ids: [52, 53, 509, 510] },
   coleta: { nome: 'Coleta', desc: 'como líder: caem mais itens dos inimigos', dmg: 0.85, lider: { loot: 0.02 }, ids: [263, 264, 190, 424, 302, 216, 417, 572, 573] },
-  aura: { nome: 'Aura', desc: 'como líder: você atira 4% mais rápido', dmg: 0.85, lider: { rate: 0.04 }, ids: [447, 448] },
+  aura: { nome: 'Aura', desc: 'como líder: você atira 4% mais rápido', dmg: 0.9, lider: { rate: 0.04 }, ids: [447, 448] },
   sorte: { nome: 'Sorte Serena', desc: 'como líder: 2% de chance de esquivar', dmg: 0.85, lider: { dodge: 0.02 }, ids: [175, 176, 468] },
   barriga: { nome: 'Barriga Cheia', desc: 'como líder: +5% de vida máxima', dmg: 0.85, lider: { hp: 0.05 }, ids: [143, 446, 320, 321] },
   veloz: { nome: 'Velocidade', desc: 'como líder: você anda 4% mais rápido', dmg: 0.85, lider: { speed: 0.04 }, ids: [290, 291, 617, 522, 523, 276, 277] },
@@ -422,7 +423,7 @@ function allyHit(e, a, sp) {
   const r = typed(P, e, Math.max(1, Math.round(dmg)), a.type, true);
   dealDamage(e, r.dmg);
   hitText(e, r.dmg, r.eff, false, true);
-  if (tr && tr.k === 'drenar' && P.hp > 0) P.hp = Math.min(maxHP(P), P.hp + r.dmg * 0.1);
+  if (tr && tr.k === 'drenar' && P.hp > 0) P.hp = Math.min(maxHP(P), P.hp + r.dmg * 0.025);
   // habilidade do companheiro (ex.: Canção de Ninar do Jigglypuff faz dormir)
   if (ab && !e.dead && e.hp > 0 && !e.st && Math.random() < ab.ch) { const st = stPick(ab.st); if (st === 2 && a.type === 'electric') e.shockT = G.time + STATUS[2].dur; inflict(e, st); }
 }
