@@ -205,6 +205,11 @@ const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWo
 const ABIL_DUR = { guerreiro: 5, barbaro: 3, paladino: 6, ladino: 3, assassino: 4.4, trapaceiro: 4, vida: 6, guerra: 5, feras: 6, druida: 12, lua: 18, terra: 12 };
 const abilDur = P => ABIL_DUR[P.subclass || P.cls] || 0;
 function abilCd(P) {
+  // Forma Selvagem (Druida, Lua e Terra): espera de 30 s depois que a forma acaba no Nv 1, caindo até 10 s no Nv 30
+  if (P.cls === 'druida') {
+    const gap = (30 - 20 * clamp((P.lvl - 1) / 29, 0, 1)) * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
+    return wildDur(P) + Math.max(1, gap);
+  }
   const t = clamp((P.lvl - 1) / 29, 0, 1), start = curAbil(P).cd * (abilDur(P) ? 1.2 : 1.6), end = Math.min(start, abilDur(P) + 2); // nunca cresce com o nível
   const cd = (start + (end - start) * t) * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
   return Math.max(abilDur(P) + 1, 1, cd);
