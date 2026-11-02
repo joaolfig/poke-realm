@@ -17,8 +17,8 @@ const CLASSES = {
   mago: {
     nome: 'Mago', icon: '🔮', hd: 7, ac: 11, crit: 20, dieAdj: 0, attrs: { POD: 4, AGI: 2, VIG: 1 },
     spr: { h: '#312e81', b: '#4338ca', d: '#1e1b4b' },
-    desc: 'Frágil, mas com longo alcance e explosões em área. Escudo Arcano: absorve até 20% da vida e se recarrega depois de 4 s sem levar dano.',
-    wpn: { shots: 2, speed: 420, life: 1.15, size: 6, rate: 1.55, wave: true, shape: 'orb', color: '#c4b5fd' },
+    desc: 'Frágil, mas com longo alcance e explosões em área. Escudo Arcano: absorve até 28% da vida e se recarrega depois de 4 s sem levar dano.',
+    wpn: { shots: 2, speed: 420, life: 1.15, size: 6, rate: 1.75, wave: true, shape: 'orb', color: '#c4b5fd' },
     abil: { nome: 'Bomba Arcana', cd: 5, desc: 'Feitiço: 20 projéteis explodem em círculo no cursor, cada um causando (1 + nível/6)d6 + Poder/2 do seu tipo (cada alvo leva no máximo 6). Ótimo contra grupos!' },
     weapons: ['Cajado de Aprendiz', 'Cajado de Carvalho', 'Cajado Arcano', 'Cajado das Tempestades', 'Cajado Astral', 'Cajado do Arquimago', 'Cajado do Vazio'], wicon: '🪄',
   },

@@ -202,7 +202,7 @@ const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWo
 // recarga do especial: no Nv 1 é 1,6x a recarga base (1,2x nos que têm efeito com duração); cai aos poucos até, no Nv 30, voltar 2 s depois que o efeito
 // acaba (no fim do jogo dá para usar o especial o tempo todo). O talento Foco e os itens "do Foco" reduzem mais,
 // mas nunca abaixo da duração do efeito + 1 s (nenhum buff fica ligado para sempre)
-const ABIL_DUR = { guerreiro: 5, barbaro: 3, paladino: 6, ladino: 3, assassino: 4.4, trapaceiro: 4, vida: 6, guerra: 5, feras: 6, druida: 12, lua: 18, terra: 12 };
+const ABIL_DUR = { guerreiro: 5, barbaro: 3, paladino: 6, ladino: 3, assassino: 4.4, trapaceiro: 3, vida: 6, guerra: 5, feras: 6, druida: 12, lua: 18, terra: 12 };
 const abilDur = P => ABIL_DUR[P.subclass || P.cls] || 0;
 // força de cada uso do especial: com a recarga mais curta do fim do jogo ele sai bem mais vezes, então cada uso fica
 // um pouco mais fraco (raiz da proporção entre a recarga atual e a base: 5 s -> 2 s = 63%), e o total ainda cresce
@@ -768,7 +768,8 @@ function typed(P, e, dmg, atkType, pet) {
   // pouco efetivo do herói mais suave (½ → 0,65; ¼ → ~0,48), para nenhum ginásio ficar impossível só pelo tipo
   if (!pet && eff > 0 && eff < 1) eff = 1 - (1 - eff) * 0.7;
   if (!pet && eff > 0 && eff < 1 && hasT(P, 'persistencia')) eff = 1 - (1 - eff) / 2;
-  if (!pet && eff === 0 && hasT(P, 'quebra')) eff = 0.3;
+  // imune: o herói ainda causa 15% (antes 0: um herói Elétrico não conseguia matar Pokémon de Terra e ficava preso); Quebra-Imunidade 40%
+  if (!pet && eff === 0) eff = hasT(P, 'quebra') ? 0.4 : 0.15;
   dmg *= wxBoost(e.x, e.y, atkType); // clima
   if (eff > 1 && hasT(P, 'adepto')) eff *= 1.5;
   return { dmg: eff === 0 ? 0 : Math.max(1, Math.round(dmg * eff)), eff };
@@ -857,10 +858,10 @@ function useAbility() {
     }
     case 'trapaceiro': { // Prisma Ilusório (Trapaceiro): teleporte + ilusão que atrai os inimigos
       const t = aimPoint(P, 280);
-      emitEvent({ t: 'decoy', x: Math.round(P.x), y: Math.round(P.y), dur: 4, cls: P.cls, ptype: pType(P) });
+      emitEvent({ t: 'decoy', x: Math.round(P.x), y: Math.round(P.y), dur: 3, cls: P.cls, ptype: pType(P) });
       burst(P.x, P.y, '#c084fc', 16);
       if (walkableR(t.x, t.y, 10) && !solidR(t.x, t.y, 10)) { P.x = t.x; P.y = t.y; }
-      P.invis = 2; P.nextCrit = true; burst(P.x, P.y, '#c084fc', 20); sfx('pot'); break;
+      P.invis = 1.5; P.nextCrit = true; burst(P.x, P.y, '#c084fc', 20); sfx('pot'); break;
     }
     case 'clerigo': { // Tomo: cura em área
       const amt = roll(2 + Math.floor(lv / 3), 8) + A(P, 'VIG');
@@ -1165,7 +1166,7 @@ function updatePlayer(dt) {
   P.abilCd = Math.max(0, P.abilCd - dt);
   P.dashCd = Math.max(0, (P.dashCd || 0) - dt); P.dodgeT = Math.max(0, (P.dodgeT || 0) - dt); P.seloT = Math.max(0, (P.seloT || 0) - dt);
   // Mago: Escudo Arcano (absorve até 20% da vida e se recarrega depois de 4 s sem levar dano)
-  if (P.cls === 'mago') { const cap = maxHP(P) * 0.2; if (P.sinceHit > 4 && P.shield < cap) P.shield = Math.min(cap, (P.shield || 0) + cap * dt / 2); if (P.shield > 0) P.shieldT = Math.max(P.shieldT || 0, 0.5); }
+  if (P.cls === 'mago') { const cap = maxHP(P) * 0.28; if (P.sinceHit > 4 && P.shield < cap) P.shield = Math.min(cap, (P.shield || 0) + cap * dt / 2); if (P.shield > 0) P.shieldT = Math.max(P.shieldT || 0, 0.5); }
   if ((P.shieldT = Math.max(0, (P.shieldT || 0) - dt)) <= 0) P.shield = 0;
   P.breathCd = Math.max(0, P.breathCd - dt);
   P.furia = Math.max(0, P.furia - dt);

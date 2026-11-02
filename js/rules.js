@@ -82,7 +82,7 @@ const SUBCLASSES = {
     { id: 'assassino', nome: 'Assassino', icon: '🗡️', desc: 'Margem de crítico +1 e críticos causam +30% de dano.',
       abil: { nome: 'Frasco de Veneno', cd: 5, desc: 'Veneno: arremessa um frasco no cursor; a nuvem causa (1 + nível/6)d6 a cada 0,5s por 4s em quem estiver dentro.' } },
     { id: 'trapaceiro', nome: 'Trapaceiro', icon: '🎭', desc: '10% de chance de esquivar de qualquer ataque.',
-      abil: { nome: 'Prisma Ilusório', cd: 7, desc: 'Prisma: você se teleporta até o cursor e deixa uma ilusão que atrai os inimigos por 4s. Fica invisível por 2s e o próximo ataque é crítico.' } },
+      abil: { nome: 'Prisma Ilusório', cd: 7, desc: 'Prisma: você se teleporta até o cursor e deixa uma ilusão que atrai os inimigos por 3s. Fica invisível por 1,5s e o próximo ataque é crítico.' } },
   ],
   clerigo: [
     { id: 'vida', nome: 'Domínio da Vida', icon: '💖', desc: 'Curas 50% mais fortes e aliados perto de você regeneram PV.',
@@ -146,7 +146,7 @@ const TALENTS = {
   // talentos de tipo: só aparecem para os tipos (naturais) que ganham de verdade com eles
   couraca: { nome: 'Couraça Elemental', icon: '🛡️', max: 2, types: ['rock', 'grass', 'ice', 'fire', 'flying', 'bug', 'psychic', 'dark'], desc: 'Golpes super efetivos em você causam 20% menos dano (no nível 2: 35% menos).' },
   persistencia: { nome: 'Persistência', icon: '🪨', types: ['poison', 'bug', 'grass', 'normal', 'rock', 'fire', 'electric', 'ice'], desc: 'Seus golpes pouco efetivos perdem só metade do dano que perderiam (65% vira ~83%, 48% vira ~74%).' },
-  quebra: { nome: 'Quebra-Imunidade', icon: '🔨', types: ['electric', 'normal', 'poison', 'psychic'], desc: 'Contra alvos imunes ao seu tipo, você ainda causa 30% do dano.' },
+  quebra: { nome: 'Quebra-Imunidade', icon: '🔨', types: ['electric', 'normal', 'poison', 'psychic'], desc: 'Contra alvos imunes ao seu tipo, você causa 40% do dano (sem o talento, 15%).' },
   // antigos: continuam funcionando em saves velhos, mas não são mais oferecidos
   robusto: { nome: 'Robusto', icon: '💪', off: 1, desc: '+2 PV máximos por nível.' },
   maos: { nome: 'Mãos Ligeiras', icon: '⚡', off: 1, desc: '+20% de cadência de tiro.' },
