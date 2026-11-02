@@ -290,6 +290,7 @@ const ABIL = [
   { ids: [39, 40, 174], nome: 'Canção de Ninar', st: 1, ch: 0.019 },
   { ids: [96, 97, 92, 93, 94, 280, 281, 282], nome: 'Hipnose', st: 1, ch: 0.016 },
   { ids: [12, 43, 44, 45, 182, 69, 70, 71], nome: 'Pó do Sono', st: 1, ch: 0.019 },
+  { ids: [46, 47, 285, 286, 590, 591], nome: 'Esporo', st: 1, ch: 0.019 },
   { ids: [25, 26, 172, 125, 239, 179, 180, 181, 81, 82, 100, 101], nome: 'Estática', st: 2, ch: 0.052 },
   { ids: [77, 78, 126, 240, 37, 38, 58, 59, 4, 5, 6], nome: 'Corpo Chamejante', st: 3, ch: 0.065 },
   { ids: [13, 14, 15, 29, 30, 31, 32, 33, 34, 72, 73, 88, 89, 109, 110, 167, 168, 48, 49, 41, 42, 169], nome: 'Ponto Venenoso', st: 4, ch: 0.078 },
@@ -394,6 +395,7 @@ function updatePlayerStatus(P, dt) {
   if (P.pstT <= 0) P.pst = 0;
 }
 function petAbility(pid) {
+  if (typeof petTrait === 'function' && petTrait(pid)) return null; // quem tem traço próprio não tem habilidade de status (um ou outro)
   if (ABIL_BY_ID[pid]) return ABIL_BY_ID[pid];
   const p = POKE[pid];
   if (!p) return null;
@@ -463,7 +465,7 @@ function petTip(P, i) {
     <div>🎯 Tiro: (${1 + Math.floor(pt.lvl / 8)}d8 + ${Math.floor(pt.lvl / 2)}) × ${f.toFixed(2)}, tipo ${TYPE_PT[pt.type]}</div>
     <div>✨ Golpe especial: <b>${MOVES[pt.type] || 'Investida'}</b> (leque a cada 6s)</div>
     ${hmDmgMul(pt.pid) > 1 ? `<div>💪 ${hmCount(pt.pid) ? 'Só 1 HM' : 'Nenhum HM'}: +${Math.round((hmDmgMul(pt.pid) - 1) * 100)}% de dano</div>` : ''}
-    ${petTrait(pt.pid) ? `<div>⭐ Traço: <b>${petTrait(pt.pid).nome}</b>: ${petTrait(pt.pid).desc}${petTrait(pt.pid).dmg < 1 ? ` (bate ${Math.round((1 - petTrait(pt.pid).dmg) * 100)}% menos)` : ''}</div>` : ''}
+    ${petTrait(pt.pid) ? `<div>⭐ Traço: <b>${petTrait(pt.pid).nome}</b>: ${petTrait(pt.pid).desc}${petTrait(pt.pid).dmg === 0 ? '' : petTrait(pt.pid).dmg < 1 ? ` (bate ${Math.round((1 - petTrait(pt.pid).dmg) * 100)}% menos)` : ''}${petTrait(pt.pid).k !== 'cabecas' && petTrait(pt.pid).k !== 'explosao' ? ` · força ${Math.round(traitK(pt.lvl) * 100)}% (cresce com o nível dele)` : ''}</div>` : ''}
     <div>🌀 ${ab ? `<b>${ab.nome}</b>: ${Math.round(ab.ch * 100)}% por acerto de ${[].concat(ab.st).map(s => STATUS[s].txt).join(' ou ')} (bate ${Math.round((1 - abilDmgMul(ab)) * 100)}% menos)` : 'Sem habilidade especial (bate com força total)'}</div>
     <div>🧬 ${evt} · XP ${pt.xp}/${petNeed(pt.lvl)}</div>
     ${petIsFlyer(pt.pid) ? '<div>🪽 Voa sobre a água</div>' : ''}
