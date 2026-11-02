@@ -65,9 +65,10 @@ const WILD_STYLE = {
   electric: 'rajada', psychic: 'rajada', fairy: 'rajada', ghost: 'rajada', flying: 'rajada', water: 'rajada',
 };
 const WILD_WPN = {
-  golpe: { shots: 1, speed: 480, life: 0.55, size: 12, rate: 4.0, shape: 'blade', pierce: true },
-  leque: { shots: 3, spread: 0.12, speed: 420, life: 0.68, size: 7, rate: 2.1, shape: 'orb' },
-  rajada: { shots: 2, speed: 480, life: 0.9, size: 7, rate: 2.5, shape: 'orb', wave: true },
+  // calibrado para o Druida transformado bater ~1,7x o normal em qualquer tipo (medido: o golpe chegava a 3,7x)
+  golpe: { shots: 1, speed: 480, life: 0.55, size: 12, rate: 1.9, shape: 'blade', pierce: true },
+  leque: { shots: 3, spread: 0.12, speed: 420, life: 0.68, size: 7, rate: 1.5, shape: 'orb' },
+  rajada: { shots: 2, speed: 480, life: 0.9, size: 7, rate: 1.65, shape: 'orb', wave: true },
 };
 const wildWpn = t => ({ ...WILD_WPN[WILD_STYLE[t] || 'rajada'], color: TYPE_COLORS[t] || '#86efac' });
 

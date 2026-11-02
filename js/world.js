@@ -683,7 +683,7 @@ function updateMeteors(dt) {
       if (P.hp <= 0) playerDie('uma chuva de meteoros');
     }
     if (isHost()) for (const e of G.enemies) if (e.hp > 0 && Math.hypot(e.x - m.x, e.y - m.y) < m.r + e.r) applyHit(e, Math.max(1, Math.round(e.maxHp * (e.boss ? 0.05 : 0.35))), null);
-    if (G.P && Math.hypot(G.P.x - m.x, G.P.y - m.y) < 700 && Math.random() < 0.3) G.bags.push({ x: m.x, y: m.y, items: [stone(pick(TYPES))], life: 60 });
+    if (G.P && Math.hypot(G.P.x - m.x, G.P.y - m.y) < 700 && Math.random() < 0.15) G.bags.push({ x: m.x, y: m.y, items: [stone(pick(TYPES))], life: 60 });
   }
   G.meteors = G.meteors.filter(m => !m.dead);
 }
@@ -1110,7 +1110,7 @@ function moonAlfaLoot(m) {
   const P = G.P;
   if (!P || Math.hypot(P.x - m.x, P.y - m.y) > 900) return;
   const z = m.zone || 1, items = [genItem(zoneTier(z, 1))];
-  if (Math.random() < 0.35) items.push(monStone(m)); // cristal de um dos tipos do Alfa
+  if (Math.random() < 0.175) items.push(monStone(m)); // cristal de um dos tipos do Alfa
   if (Math.random() < 0.25) items.push(consItem('doce'));
   G.bags.push({ x: m.x, y: m.y + 10, items, life: 120 });
   G.toasts.push({ text: '🌕 O Alfa da noite deixou um tesouro!', color: '#c4b5fd', t: 4 });
@@ -1137,7 +1137,8 @@ function nearMoonChest(P) {
 }
 function openMoonChest(P, c) {
   G.moonOpen.add(c.id);
-  const items = [genItem(zoneTier(c.z, 1)), stone(pick(TYPES)), consItem(c.z >= 3 ? 'ultra' : 'grande')];
+  const items = [genItem(zoneTier(c.z, 1)), consItem(c.z >= 3 ? 'ultra' : 'grande')];
+  if (Math.random() < 0.5) items.push(stone(pick(TYPES)));
   const gold = 40 * c.z;
   P.gold += gold;
   G.bags.push({ x: c.x, y: c.y + 16, items, life: 120 });

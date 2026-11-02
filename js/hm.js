@@ -209,7 +209,7 @@ function useHMTile(P, h) {
   if (h.k === 'dive') {
     if (!isDeep(P.x, P.y)) { text(P.x, P.y - 40, 'Surfe até ficar em cima do ponto escuro', '#cbd5e1', 12); return; }
     G.usedDive.add(h.i);
-    const items = [stone(pick(TYPES)), genItem(zoneTier(zoneOf(P), 1)), Math.random() < 0.3 ? consItem(zoneOf(P) >= 3 ? 'ultra' : 'grande') : consItem('doce')];
+    const items = [...(Math.random() < 0.5 ? [stone(pick(TYPES))] : []), genItem(zoneTier(zoneOf(P), 1)), Math.random() < 0.3 ? consItem(zoneOf(P) >= 3 ? 'ultra' : 'grande') : consItem('doce')];
     G.bags.push({ x: P.x, y: P.y + 10, items, life: 60 });
     G.toasts.push({ text: `🤿 ${pt.name} mergulhou e trouxe um tesouro do fundo!`, color: '#93c5fd', t: 3 });
     burst(P.x, P.y, '#93c5fd', 30);
@@ -236,7 +236,7 @@ function openChest(P, i) {
   if (!sc || P.chests.includes(sc.id)) return;
   P.chests.push(sc.id);
   const z = Math.max(1, sc.zone);
-  const items = [genItem(zoneTier(z, 1.5)), genItem(zoneTier(z, 0.5)), consItem('doce'), z >= 2 ? statPot() : stone(pick(TYPES))];
+  const items = [genItem(zoneTier(z, 1.5)), genItem(zoneTier(z, 0.5)), consItem('doce'), ...(z >= 2 ? [statPot()] : Math.random() < 0.5 ? [stone(pick(TYPES))] : [])];
   if (z >= 3) items.push(consItem('ultra'));
   const gold = 60 * z;
   P.gold += gold;
@@ -447,29 +447,33 @@ function drawStatus(e, x, y) {
 }
 
 /* ---------- Ficha do companheiro (tooltip) ---------- */
+// força do companheiro em estrelas (ataque da espécie, já descontando status, traço e HMs)
+function petStars(pid) {
+  const p = POKE[pid], st = p ? p.stats : {}, tr = typeof petTrait === 'function' && petTrait(pid);
+  if (tr && tr.dmg === 0) return 0;
+  const f = clamp(Math.max(st.attack || 60, st['special-attack'] || 60) / 80, 0.7, 1.7) * abilDmgMul(petAbility(pid)) * hmDmgMul(pid) * (tr ? tr.dmg : 1);
+  return clamp(Math.round((f - 0.45) / 0.3) + 1, 1, 5);
+}
+// o que o companheiro tem de especial, numa linha (traço OU habilidade de status)
+function petPerk(pid, lvl) {
+  const tr = typeof petTrait === 'function' && petTrait(pid);
+  if (tr) return `⭐ ${tr.nome}: ${tr.desc}${tr.k !== 'cabecas' && tr.k !== 'explosao' && lvl < 30 ? ` (${Math.round(traitK(lvl) * 100)}% da força, cresce com o nível)` : ''}`;
+  const ab = petAbility(pid);
+  return ab ? `🌀 ${ab.nome}: pode ${[].concat(ab.st).map(s => STATUS[s].txt).join(' ou ')}` : '';
+}
+/* ---------- Ficha do companheiro (tooltip): curta, uma linha para cada coisa ---------- */
 function petTip(P, i) {
   const pt = P.pets[i];
   if (!pt) return '';
-  const p = POKE[pt.pid], st = p ? p.stats : {};
-  const ev = evoLevel(pt.pid);
-  const evt = ev === undefined ? 'carregando evolução...' : ev ? `evolui no Nv ${ev}` : 'forma final';
-  const f = clamp(Math.max(st.attack || 60, st['special-attack'] || 60) / 80, 0.7, 1.7);
-  const ab = petAbility(pt.pid);
-  const hm = HM_KEYS.map(k => {
-    const h = HMS[k], knows = pt.hms && pt.hms.includes(k), can = canLearn(pt.pid, k);
-    const s = knows ? '✅ conhece' : can ? (P.hms.includes(k) ? '📘 pode aprender (clique no +)' : `📘 pode aprender (precisa da ${h.mo})`) : '— não aprende';
-    return `<div class="${knows ? 'ok' : can ? '' : 'no'}">${h.icon} ${h.nome}: ${s}</div>`;
-  }).join('');
+  const p = POKE[pt.pid], ev = evoLevel(pt.pid), stars = petStars(pt.pid), perk = petPerk(pt.pid, pt.lvl);
+  const evt = ev === undefined ? '' : ev ? `🧬 Evolui no Nv ${ev}` : stoneOpts(pt.pid).length ? '🧬 Evolui com cristal' : '🧬 Forma final';
+  const knows = HM_KEYS.filter(k => pt.hms && pt.hms.includes(k)), can = HM_KEYS.filter(k => !(pt.hms && pt.hms.includes(k)) && canLearn(pt.pid, k));
+  const hm = knows.length || can.length ? `🧭 ${knows.map(k => HMS[k].icon + ' ' + HMS[k].nome).join(', ') || 'nenhuma HM'}${can.length ? ` · aprende: ${can.map(k => HMS[k].icon).join(' ')}` : ''}` : '';
   return `<div class="tip-h"><b>${esc(pt.name)}</b> Nv ${pt.lvl} ${(p ? p.types : [pt.type]).map(typeBadge).join(' ')}</div>
-    <div>⚔️ Ataque ${Math.max(st.attack || 0, st['special-attack'] || 0) || '?'} · ❤️ PV ${st.hp || '?'} · 💨 Vel ${st.speed || '?'}</div>
-    <div>🎯 Tiro: (${1 + Math.floor(pt.lvl / 8)}d8 + ${Math.floor(pt.lvl / 2)}) × ${f.toFixed(2)}, tipo ${TYPE_PT[pt.type]}</div>
-    <div>✨ Golpe especial: <b>${MOVES[pt.type] || 'Investida'}</b> (leque a cada 6s)</div>
-    ${hmDmgMul(pt.pid) > 1 ? `<div>💪 ${hmCount(pt.pid) ? 'Só 1 HM' : 'Nenhum HM'}: +${Math.round((hmDmgMul(pt.pid) - 1) * 100)}% de dano</div>` : ''}
-    ${petTrait(pt.pid) ? `<div>⭐ Traço: <b>${petTrait(pt.pid).nome}</b>: ${petTrait(pt.pid).desc}${petTrait(pt.pid).dmg === 0 ? '' : petTrait(pt.pid).dmg < 1 ? ` (bate ${Math.round((1 - petTrait(pt.pid).dmg) * 100)}% menos)` : ''}${petTrait(pt.pid).k !== 'cabecas' && petTrait(pt.pid).k !== 'explosao' ? ` · força ${Math.round(traitK(pt.lvl) * 100)}% (cresce com o nível dele)` : ''}</div>` : ''}
-    <div>🌀 ${ab ? `<b>${ab.nome}</b>: ${Math.round(ab.ch * 100)}% por acerto de ${[].concat(ab.st).map(s => STATUS[s].txt).join(' ou ')} (bate ${Math.round((1 - abilDmgMul(ab)) * 100)}% menos)` : 'Sem habilidade especial (bate com força total)'}</div>
-    <div>🧬 ${evt} · XP ${pt.xp}/${petNeed(pt.lvl)}</div>
-    ${petIsFlyer(pt.pid) ? '<div>🪽 Voa sobre a água</div>' : ''}
-    <div class="tip-hm"><b>HMs</b>${hm}</div>`;
+    <div>⚔ ${stars ? `Força ${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}` : 'Não ataca'}${petIsFlyer(pt.pid) ? ' · 🪽 voa sobre a água' : ''}</div>
+    ${perk ? `<div>${perk}</div>` : ''}
+    ${evt ? `<div>${evt} · XP ${pt.xp}/${petNeed(pt.lvl)}</div>` : ''}
+    ${hm ? `<div>${hm}</div>` : ''}`;
 }
 // passar o mouse sobre o companheiro no mapa mostra um resumo
 function drawPetHover(ox, oy) {
@@ -480,7 +484,8 @@ function drawPetHover(ox, oy) {
   const pt = activePet(P);
   if (!pt) return;
   const ab = petAbility(pt.pid);
-  const lines = [`${pt.name} · Nv ${pt.lvl} · ${TYPE_PT[pt.type]}`, `Especial: ${MOVES[pt.type] || 'Investida'}`, ab ? `Habilidade: ${ab.nome}` : 'Sem habilidade', ...(petTrait(pt.pid) ? [`⭐ ${petTrait(pt.pid).nome}: ${petTrait(pt.pid).desc}`] : []),
+  const perk = petTrait(pt.pid) ? `⭐ ${petTrait(pt.pid).nome}` : ab ? `🌀 ${ab.nome}` : '';
+  const lines = [`${pt.name} · Nv ${pt.lvl} · ${TYPE_PT[pt.type]}`, ...(perk ? [perk] : []),
     'HMs: ' + (HM_KEYS.filter(k => pt.hms && pt.hms.includes(k)).map(k => HMS[k].icon + ' ' + HMS[k].nome).join(', ') || 'nenhuma')];
   ctx.font = '12px Barlow Semi Condensed, system-ui';
   const w = Math.max(...lines.map(s => ctx.measureText(s).width)) + 16, x = a.x + ox + 20, y = a.y + oy - 70;

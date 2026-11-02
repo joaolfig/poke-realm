@@ -280,20 +280,23 @@ function rollLoot(m) {
     items.push(relic(m.pid), monStone(m), potion(), potion(), consItem('ultra'), consItem('ultra'), consItem('doce'), consItem('doce'), statPot(), statPot());
   } else if (m.kind === 3) {
     items.push(genItem(zoneTier(m.zone, 1.75)), genItem(zoneTier(m.zone, 0.75)));
-    maybe(0.6, () => monStone(m)); maybe(0.7, potion); maybe(0.7, great); maybe(0.7, () => consItem('doce'));
+    maybe(0.3, () => monStone(m)); maybe(0.7, potion); maybe(0.7, great); maybe(0.7, () => consItem('doce'));
     maybe(0.28, ultra); maybe(z >= 2 ? 0.245 : 0.1, statPot);
   } else if (m.kind === 4) {
     items.push(genItem(zoneTier(z, 0.9 + (tes ? 0.5 : 0)))); // raro: no nível do Alfa
-    maybe(0.6, () => monStone(m)); maybe(0.7, ballItem); maybe(0.7, great); maybe(0.7, () => consItem('doce')); maybe(0.175, statPot);
+    maybe(0.3, () => monStone(m)); maybe(0.7, ballItem); maybe(0.7, great); maybe(0.7, () => consItem('doce')); maybe(0.175, statPot);
   } else if (m.kind === 1) {
     items.push(genItem(zoneTier(z, 0.9 + (tes ? 0.5 : 0))), potion()); // Alfa: meio degrau acima dos comuns, abaixo dos chefes (tem muitos pelo mapa)
-    maybe(0.5, ballItem); maybe(0.2, () => monStone(m)); maybe(0.25, () => consItem('doce')); maybe(0.25, great); maybe((z >= 2 ? 0.06 : 0.02) + (m.st >= 10 && m.st < 40 ? 0.5 : 0), statPot); // Procurados (recompensa de contrato) dão mais; mini-chefes do ginásio não
+    maybe(0.5, ballItem); maybe(0.1, () => monStone(m)); maybe(0.25, () => consItem('doce')); maybe(0.25, great); maybe((z >= 2 ? 0.06 : 0.02) + (m.st >= 10 && m.st < 40 ? 0.5 : 0), statPot); // Procurados (recompensa de contrato) dão mais; mini-chefes do ginásio não
   } else {
     const r = Math.random();
-    items.push(r < 0.38 ? potion() : r < 0.48 ? ballItem() : r < 0.52 ? great() : r < (z >= 2 ? 0.545 : 0.53) ? consItem('doce')
-      : Math.random() < 0.08 ? monStone(m) : genItem(tier()));
+    let it = r < 0.38 ? potion() : r < 0.48 ? ballItem() : r < 0.52 ? great() : r < (z >= 2 ? 0.545 : 0.53) ? consItem('doce') : null;
+    // cristal 4%, equipamento 92% (a parte que era do cristal antes fica vazia: nada mais cai no lugar dele)
+    if (!it) { const q = Math.random(); it = q < 0.04 ? monStone(m) : q < 0.08 ? null : genItem(tier()); }
+    if (it) items.push(it);
   }
   if (m.kind === 0 && m.zone >= 3 && Math.random() < 0.003) items.push(statPot());
+  if (!items.length) return;
   G.bags.push({ x: m.x + rand(-10, 10), y: m.y + rand(-10, 10), items, life: 90 });
 }
 

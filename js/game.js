@@ -199,7 +199,10 @@ const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 :
 const outOfCombat = P => P.sinceHit > 4 && G.time - (P.shotT === undefined ? -99 : P.shotT) > 4 && !P.pvp;
 const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (outOfCombat(P) ? 1.3 : 1) * (pst(P, 2) ? 0.85 : 1) * wxSlow(P) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (P.lin === 'lobisomem' ? 1.05 : 1) * (isBat(P) ? 1.3 : 1) * (1 + M(P, 'speed'));
 const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWolf(P) ? 1.35 : 1) * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
-const abilCd = P => curAbil(P).cd * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
+// recarga do especial cai com o nível do herói: 1,6x no Nv 1 até 1x no Nv 30 (o fim do jogo continua como calibrado);
+// o talento Foco e os itens "do Foco" reduzem mais
+const cdLvlK = P => 1.6 - 0.6 * clamp((P.lvl - 1) / 29, 0, 1);
+const abilCd = P => curAbil(P).cd * cdLvlK(P) * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
 // XP para cada nível: acompanha o dano do herói (medido: XP por segundo matando na zona recomendada, nível a nível).
 // Dentro de cada zona o herói mata mais rápido a cada nível: ~+13%/nível na zona 1, +6,6% na 2, +8% na 3, ~+4% na 4 e na 5.
