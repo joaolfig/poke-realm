@@ -9,6 +9,8 @@ const INT_MODS = new Set(['dmg', 'hit', 'crit', 'ac', 'cap', 'pierce']);
 function M(P, k) {
   let s = 0;
   for (const sl of EQ_SLOTS) { const it = P.equip[sl]; if (it && it.mods && it.mods[k]) s += it.mods[k]; }
+  const lm = P === (G && G.P) && typeof leaderMods === 'function' && leaderMods(P); // traço do companheiro líder
+  if (lm && lm[k]) s += lm[k];
   return s;
 }
 function MA(P, k) {

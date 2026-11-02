@@ -90,6 +90,12 @@ function ballShop(P, town = npcTown()) {
     ...(petCap(P) < PET_CAP_MAX ? [{ id: 'cinto', nome: `Cinto de Poké Balls: +1 vaga de companheiro (${petCap(P)} → ${petCap(P) + 1})`, icon: '🎒', preco: CINTO_PRECO[petCap(P)] }] : []),
   ];
 }
+// venda em lote: cristais, ou equipamentos (nunca travados, Míticos nem os melhores que o equipado)
+function bulkSellable(P, it, k) {
+  if (!it || it.locked || it.myth) return false;
+  if (k === 'pedra') return it.slot === 'pedra';
+  return it.slot !== 'pedra' && !(itemScore(it) > itemScore(P.equip[it.slot]));
+}
 function shopList(P) {
   // a loja só vende até Muito Raro: os melhores itens vêm de chefes e masmorras
   // na vila inicial o estoque para em Raro; os itens Muito Raros só chegam à loja da 2ª cidade
@@ -137,11 +143,11 @@ function renderNPC() {
     body += '<h4>Comprar</h4>' + shopList(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}${s.tier !== undefined ? ` <i style="color:${TIER_COLORS[s.tier]}">${TIER_NAMES[s.tier]}</i>` : ''}</span>
       <button data-act="buy:${s.id}" ${s.lock || P.gold < s.preco ? 'disabled' : ''}>${s.lock ? s.why || 'travado' : s.preco + ' 🪙'}</button></div>`).join('');
     const inv = P.inv.map((it, i) => it ? `<div class="sellrow"><button class="sell" data-act="sell:${i}" title="${esc(it.name)}" ${it.locked ? 'disabled' : ''}>${itemIcon(it)} ${esc(it.name)} → ${sellPrice(it)} 🪙</button><button data-act="lock:${i}" title="${it.locked ? 'Destravar' : 'Travar: não vende nem solta'}">${it.locked ? '🔒' : '🔓'}</button></div>` : '').join('');
-    // vender em lote: cristais, ou equipamentos até a raridade escolhida (nunca Míticos nem travados)
-    const lot = k => P.inv.filter(it => it && !it.locked && !it.myth && (k === 'pedra' ? it.slot === 'pedra' : it.slot !== 'pedra' && it.tier <= k));
+    // vender em lote: todos os equipamentos ou todos os cristais
+    const lot = k => P.inv.filter(it => bulkSellable(P, it, k));
     const lotBtn = (k, txt) => { const L = lot(k); return L.length ? `<button data-act="sellbulk:${k}">${txt} (${L.length} · ${L.reduce((s, it) => s + sellPrice(it), 0)} 🪙)</button>` : ''; };
-    const bulk = lotBtn('pedra', '💎 Vender cristais') + [0, 1, 2, 3, 4].map(k => lotBtn(k, `Até ${TIER_NAMES[k]}`)).join('');
-    body += `<h4>Vender</h4>${bulk ? `<div class="bulk">${bulk}</div><div class="small">Vender em lote nunca vende itens travados 🔒 nem Míticos.</div>` : ''}${inv || '<div class="small">Mochila vazia.</div>'}`;
+    const bulk = lotBtn('equip', '⚔ Vender todos os equipamentos') + lotBtn('pedra', '💎 Vender todos os cristais');
+    body += `<h4>Vender</h4>${bulk ? `<div class="bulk">${bulk}</div><div class="small">Nunca vende itens travados 🔒, Míticos nem os melhores que o seu (▲).</div>` : ''}${inv || '<div class="small">Mochila vazia.</div>'}`;
   } else if (n.id === 'dex') {
     body += renderContracts(P, 'dex') + renderDexNPC(P); // missões antes das recompensas
   } else if (n.id === 'pc') {
@@ -203,8 +209,7 @@ $('npc').addEventListener('click', ev => {
   else if (act === 'bless' && BLESS[arg] && BLESS[arg].subs.includes(blessPhase(P))) { P.bless = arg; burst(P.x, P.y, '#fde68a', 24); sfx('lvl'); G.toasts.push({ text: `✝ Bênção ativa: ${BLESS[arg].nome}`, color: '#fde68a', t: 3 }); saveGame(); }
   else if (act === 'sellbulk') {
     let g = 0, n = 0;
-    const k = arg === 'pedra' ? 'pedra' : +arg;
-    P.inv.forEach((it, i) => { if (it && !it.locked && !it.myth && (k === 'pedra' ? it.slot === 'pedra' : it.slot !== 'pedra' && it.tier <= k)) { g += sellPrice(it); n++; P.inv[i] = null; } });
+    P.inv.forEach((it, i) => { if (bulkSellable(P, it, arg)) { g += sellPrice(it); n++; P.inv[i] = null; } });
     if (n) { P.gold += g; G.toasts.push({ text: `💰 Vendeu ${n} itens por ${g} 🪙`, color: '#facc15', t: 3 }); sfx('pick'); }
   } else if (act === 'lock') {
     const it = P.inv[+arg];

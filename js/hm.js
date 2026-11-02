@@ -463,6 +463,7 @@ function petTip(P, i) {
     <div>🎯 Tiro: (${1 + Math.floor(pt.lvl / 8)}d8 + ${Math.floor(pt.lvl / 2)}) × ${f.toFixed(2)}, tipo ${TYPE_PT[pt.type]}</div>
     <div>✨ Golpe especial: <b>${MOVES[pt.type] || 'Investida'}</b> (leque a cada 6s)</div>
     ${hmDmgMul(pt.pid) > 1 ? `<div>💪 ${hmCount(pt.pid) ? 'Só 1 HM' : 'Nenhum HM'}: +${Math.round((hmDmgMul(pt.pid) - 1) * 100)}% de dano</div>` : ''}
+    ${petTrait(pt.pid) ? `<div>⭐ Traço: <b>${petTrait(pt.pid).nome}</b>: ${petTrait(pt.pid).desc}${petTrait(pt.pid).dmg < 1 ? ` (bate ${Math.round((1 - petTrait(pt.pid).dmg) * 100)}% menos)` : ''}</div>` : ''}
     <div>🌀 ${ab ? `<b>${ab.nome}</b>: ${Math.round(ab.ch * 100)}% por acerto de ${[].concat(ab.st).map(s => STATUS[s].txt).join(' ou ')} (bate ${Math.round((1 - abilDmgMul(ab)) * 100)}% menos)` : 'Sem habilidade especial (bate com força total)'}</div>
     <div>🧬 ${evt} · XP ${pt.xp}/${petNeed(pt.lvl)}</div>
     ${petIsFlyer(pt.pid) ? '<div>🪽 Voa sobre a água</div>' : ''}
@@ -477,7 +478,7 @@ function drawPetHover(ox, oy) {
   const pt = activePet(P);
   if (!pt) return;
   const ab = petAbility(pt.pid);
-  const lines = [`${pt.name} · Nv ${pt.lvl} · ${TYPE_PT[pt.type]}`, `Especial: ${MOVES[pt.type] || 'Investida'}`, ab ? `Habilidade: ${ab.nome}` : 'Sem habilidade',
+  const lines = [`${pt.name} · Nv ${pt.lvl} · ${TYPE_PT[pt.type]}`, `Especial: ${MOVES[pt.type] || 'Investida'}`, ab ? `Habilidade: ${ab.nome}` : 'Sem habilidade', ...(petTrait(pt.pid) ? [`⭐ ${petTrait(pt.pid).nome}: ${petTrait(pt.pid).desc}`] : []),
     'HMs: ' + (HM_KEYS.filter(k => pt.hms && pt.hms.includes(k)).map(k => HMS[k].icon + ' ' + HMS[k].nome).join(', ') || 'nenhuma')];
   ctx.font = '12px Barlow Semi Condensed, system-ui';
   const w = Math.max(...lines.map(s => ctx.measureText(s).width)) + 16, x = a.x + ox + 20, y = a.y + oy - 70;

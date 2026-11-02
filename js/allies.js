@@ -18,6 +18,40 @@ const MOVES = {
   ghost: 'Bola Sombria', dragon: 'Fúria do Dragão', dark: 'Mordida', steel: 'Cauda de Ferro', fairy: 'Brilho Mágico',
 };
 
+/* ---------- Traços únicos de alguns companheiros ----------
+ * Além da habilidade de status, algumas famílias têm um traço próprio que muda o jeito de jogar com elas.
+ * Para não ficarem mais fortes que as outras, quem tem traço bate menos (dmg). Os traços de "líder" valem só
+ * para o companheiro líder (o primeiro da equipe que está fora da Pokébola) e entram como bônus no herói.
+ */
+const TRAITS = {
+  cura: { nome: 'Ovo Curativo', desc: 'a cada 10 s cura 5% da sua vida', dmg: 0.6, ids: [113, 242, 440, 531] },
+  escudo: { nome: 'Couraça', desc: 'a cada 14 s te dá um escudo de 6% da vida (até 15%)', dmg: 0.7, ids: [213, 204, 205, 410, 411, 436, 437, 597, 598] },
+  guarda: { nome: 'Guarda-Costas', desc: 'destrói as balas inimigas que encostam nele', dmg: 0.8, ids: [66, 67, 68, 296, 297, 532, 533, 534] },
+  cabecas: { nome: 'Várias Cabeças', desc: 'atira com cada cabeça de uma vez (cada tiro é mais fraco)', dmg: 1, ids: [84, 85, 634, 635] },
+  explosao: { nome: 'Explosivo', desc: 'o golpe especial vira uma explosão em área no alvo', dmg: 0.9, ids: [74, 75, 76, 524, 525, 526] },
+  drenar: { nome: 'Esporo Drenante', desc: '25% do dano que ele causa vira vida para você', dmg: 0.85, ids: [46, 47, 285, 286, 590, 591] },
+  rugido: { nome: 'Voz Potente', desc: 'o golpe especial apaga as balas inimigas em volta dele', dmg: 0.9, ids: [293, 294, 295] },
+  atirador: { nome: 'Atirador', desc: 'alcance bem maior e tiros mais rápidos', dmg: 0.9, ids: [116, 117, 230, 223, 224] },
+  moedas: { nome: 'Pega-Moedas', desc: 'como líder: +30% de ouro', dmg: 0.85, lider: { gold: 0.3 }, ids: [52, 53, 509, 510] },
+  coleta: { nome: 'Coleta', desc: 'como líder: caem mais itens dos inimigos', dmg: 0.85, lider: { loot: 0.05 }, ids: [263, 264, 190, 424, 302] },
+  aura: { nome: 'Aura', desc: 'como líder: você atira 8% mais rápido', dmg: 0.85, lider: { rate: 0.08 }, ids: [447, 448] },
+  sorte: { nome: 'Sorte Serena', desc: 'como líder: críticos mais fáceis e 3% de esquiva', dmg: 0.85, lider: { crit: 1, dodge: 0.03 }, ids: [175, 176, 468] },
+  barriga: { nome: 'Barriga Cheia', desc: 'como líder: +10% de vida máxima', dmg: 0.85, lider: { hp: 0.1 }, ids: [143, 446] },
+  veloz: { nome: 'Velocidade', desc: 'como líder: você anda 8% mais rápido', dmg: 0.85, lider: { speed: 0.08 }, ids: [290, 291, 617, 135] },
+  adapt: { nome: 'Adaptável', desc: 'como líder: +15% de XP', dmg: 0.85, lider: { xp: 0.15 }, ids: [133] },
+};
+const TRAIT_BY_ID = {};
+for (const k in TRAITS) for (const id of TRAITS[k].ids) TRAIT_BY_ID[id] = Object.assign({ k }, TRAITS[k]);
+const petTrait = pid => TRAIT_BY_ID[pid] || null;
+const HEADS = { 84: 2, 85: 3, 634: 2, 635: 3 }; // quantas cabeças atiram
+// bônus do companheiro líder (entra em M(), junto dos equipamentos); só vale com ele fora da Pokébola
+function leaderMods(P) {
+  if (!P || !P.pets || !P.petAct || !P.petAct.length || !G || !G.allies) return null;
+  const i = P.petAct[0], pt = P.pets[i], tr = pt && petTrait(pt.pid);
+  if (!tr || !tr.lider || !G.allies.some(a => a.pet && a.slot === i)) return null;
+  return tr.lider;
+}
+
 /* ---------- Evolução (PokeAPI: pokemon-species -> evolution-chain) ---------- */
 const EVO_KEY = 'pkr_evo_v2'; // v2: guarda também o tipo do cristal das evoluções por pedra
 let EVO = null;
@@ -289,11 +323,13 @@ function updateAllies(dt) {
     if (a.pet && a.pid === 132) dittoLook(a, dt);
     if (a.pet && a.slot === P.petIdx && (P.riding || P.surfing || P.wildT > 0)) { a.x = P.x; a.y = P.y; return; } // está carregando o jogador (ou o Druida virou ele)
     if (a.rageT > 0) a.rageT -= dt;
+    const tr = a.pet && petTrait(a.pid);
+    if (tr) traitTick(P, a, tr, dt);
     a.cd -= dt;
     if (a.pet) a.spT -= dt;
     if (a.cd > 0 || (G.evo && a.pet)) return;
     if (!inDungeonArea(P.x) && inTown(P.x, P.y)) { a.cd = 0.3; return; } // paz na vila
-    let best = null, bd = 400;
+    let best = null, bd = tr && tr.k === 'atirador' ? 650 : 400;
     for (const e of G.enemies) {
       if (e.hp <= 0) continue;
       const dd = Math.hypot(e.x - a.x, e.y - a.y);
@@ -303,15 +339,51 @@ function updateAllies(dt) {
     const shotAng = Math.atan2(best.y - a.y, best.x - a.x);
     a.face = Math.cos(shotAng) >= 0 ? 1 : -1;
     const col = TYPE_COLORS[a.type];
+    const far = tr && tr.k === 'atirador';
     if (a.pet && a.spT <= 0) {
-      // golpe especial: leque de projéteis mais fortes
-      const shots = 3 + Math.floor(a.lvl / 10) * 2;
-      for (let s = 0; s < shots; s++) spawnPB({ x: a.x, y: a.y, a: shotAng + (s - (shots - 1) / 2) * 0.16, spd: 420, life: 1.1, r: 8, color: col, shape: 'orb', ally: a, sp: 1 });
-      text(a.x, a.y - 34, `${POKE[a.pid] ? POKE[a.pid].name : ''} usou ${MOVES[a.type] || 'Investida'}!`, col, 13);
+      if (tr && tr.k === 'explosao') traitBlast(a, best, col);
+      else {
+        // golpe especial: leque de projéteis mais fortes
+        const shots = 3 + Math.floor(a.lvl / 10) * 2;
+        for (let s = 0; s < shots; s++) spawnPB({ x: a.x, y: a.y, a: shotAng + (s - (shots - 1) / 2) * 0.16, spd: far ? 560 : 420, life: far ? 1.3 : 1.1, r: 8, color: col, shape: 'orb', ally: a, sp: 1 });
+        text(a.x, a.y - 34, `${POKE[a.pid] ? POKE[a.pid].name : ''} usou ${MOVES[a.type] || 'Investida'}!`, col, 13);
+      }
+      if (tr && tr.k === 'rugido') traitRoar(a);
       a.spT = (a.lvl >= 15 ? 5 : 6.5) * (hasT(P, 'mentor') ? 0.7 : 1);
-    } else spawnPB({ x: a.x, y: a.y, a: shotAng, spd: 380, life: 1.1, r: 5, color: col, shape: 'orb', ally: a });
+    } else {
+      // Várias Cabeças: um tiro por cabeça, em leque
+      const n = tr && tr.k === 'cabecas' ? HEADS[a.pid] || 1 : 1;
+      for (let s = 0; s < n; s++) spawnPB({ x: a.x, y: a.y, a: shotAng + (s - (n - 1) / 2) * 0.12, spd: far ? 560 : 380, life: far ? 1.3 : 1.1, r: 5, color: col, shape: 'orb', ally: a });
+    }
     a.cd = (a.ghost ? 1.2 : 0.9) / (a.rageT > 0 ? 1.6 : 1);
   });
+}
+
+// traços que agem sozinhos: curar, dar escudo, bloquear balas
+function traitTick(P, a, tr, dt) {
+  if (tr.k === 'cura') {
+    a.trT = (a.trT === undefined ? 4 : a.trT) - dt;
+    if (a.trT <= 0 && P.hp < maxHP(P)) { a.trT = 10; const h = Math.round(maxHP(P) * 0.05); P.hp = Math.min(maxHP(P), P.hp + h); text(P.x, P.y - 40, `🥚 +${h}`, '#86efac', 13); burst(P.x, P.y, '#fbcfe8', 12); }
+  } else if (tr.k === 'escudo') {
+    a.trT = (a.trT === undefined ? 4 : a.trT) - dt;
+    if (a.trT <= 0) { a.trT = 14; const cap = maxHP(P) * 0.15; if ((P.shield || 0) < cap) { P.shield = Math.round(Math.min(cap, (P.shield || 0) + maxHP(P) * 0.06)); P.shieldT = Math.max(P.shieldT || 0, 8); text(P.x, P.y - 40, '🛡 Couraça!', '#93c5fd', 12); } }
+  } else if (tr.k === 'guarda') {
+    for (const b of G.eb) if (!b.dead && Math.abs(b.x - a.x) < 24 && Math.abs(b.y - a.y) < 24) { b.dead = true; burst(b.x, b.y, '#fde68a', 4); }
+  }
+}
+// Explosivo: o especial explode no alvo e acerta todos em volta
+function traitBlast(a, t, col) {
+  burst(t.x, t.y, col, 26); burst(t.x, t.y, '#fde68a', 14);
+  G.fx.push({ k: 'ring', x: t.x, y: t.y, r: 0, R: 95, life: 0.4, max: 0.4, color: col, fill: true });
+  for (const e of G.enemies) if (e.hp > 0 && !e.dead && Math.hypot(e.x - t.x, e.y - t.y) < 95 + (e.r || 12)) allyHit(e, a, 2);
+  text(a.x, a.y - 34, `${POKE[a.pid] ? POKE[a.pid].name : ''} usou Explosão!`, col, 13); sfx('boom');
+}
+// Voz Potente: o especial apaga as balas inimigas em volta
+function traitRoar(a) {
+  let n = 0;
+  for (const b of G.eb) if (!b.dead && Math.hypot(b.x - a.x, b.y - a.y) < 170) { b.dead = true; n++; }
+  G.fx.push({ k: 'ring', x: a.x, y: a.y, r: 0, R: 170, life: 0.45, max: 0.45, color: '#e9d5ff' });
+  if (n) text(a.x, a.y - 48, `🔊 ${n} balas apagadas`, '#e9d5ff', 12);
 }
 
 // Ditto copia a aparência do Pokémon mais perto (Transformação)
@@ -338,11 +410,14 @@ function allyHit(e, a, sp) {
   let dmg = petDmg(a) * (1 + M(P, 'pet')) * (sp ? 1.5 : 1) * (a.ghost ? 1 : [1, 0.8, 0.7, 0.62][Math.max(0, nPets - 1)] || 0.62);
   if (P.subclass === 'feras') dmg *= 1.5;
   if (P.ferasT > 0) dmg *= 1 + P.ferasK; // Bênção das Feras (Clérigo)
-  const ab = !a.ghost && petAbility(a.pid);
-  dmg *= abilDmgMul(ab) * hmDmgMul(a.pid);
+  const ab = !a.ghost && petAbility(a.pid), tr = !a.ghost && petTrait(a.pid);
+  dmg *= abilDmgMul(ab) * hmDmgMul(a.pid) * (tr ? tr.dmg : 1);
+  if (tr && tr.k === 'cabecas' && !sp) dmg *= 1.1 / (HEADS[a.pid] || 1);
+  if (sp === 2) dmg *= 0.8; // explosão: cada Pokémon da área leva um pouco menos
   const r = typed(P, e, Math.max(1, Math.round(dmg)), a.type, true);
   dealDamage(e, r.dmg);
   hitText(e, r.dmg, r.eff, false, true);
+  if (tr && tr.k === 'drenar' && P.hp > 0) P.hp = Math.min(maxHP(P), P.hp + r.dmg * 0.25);
   // habilidade do companheiro (ex.: Canção de Ninar do Jigglypuff faz dormir)
   if (ab && !e.dead && e.hp > 0 && !e.st && Math.random() < ab.ch) { const st = stPick(ab.st); if (st === 2 && a.type === 'electric') e.shockT = G.time + STATUS[2].dur; inflict(e, st); }
 }
