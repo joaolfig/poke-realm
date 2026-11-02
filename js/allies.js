@@ -22,7 +22,9 @@ const MOVES = {
  * Além da habilidade de status, mais ou menos uma a cada 5 ou 6 famílias tem um traço próprio (fraquinho, para dar
  * variedade sem desbalancear) que combina com o que a espécie faz nos jogos.
  * Para não ficarem mais fortes que as outras, quem tem traço bate menos (dmg). Medido: o companheiro faz ~25% do dano
- * total, então cortar 20% do dano dele custa ~5% do dano do grupo; cada traço foi ajustado para valer mais ou menos isso. Os traços de "líder" valem só
+ * total, então cortar 20% do dano dele custa ~5% do dano do grupo; cada traço foi ajustado para valer mais ou menos isso.
+ * Os que não são dano valem de 1/4 a 1/2 de um afixo de equipamento equivalente (ex.: ouro +15% contra +30% do anel
+ * da Fortuna; cura do Ovo ≈ uma poção por minuto de luta), para não tirar a importância de itens, talentos e poções. Os traços de "líder" valem só
  * para o companheiro líder (o primeiro da equipe que está fora da Pokébola) e entram como bônus no herói.
  */
 const TRAITS = {
@@ -43,7 +45,7 @@ const TRAITS = {
   sorte: { nome: 'Sorte Serena', desc: 'como líder: 2% de chance de esquivar', dmg: 0.85, lider: { dodge: 0.02 }, ids: [175, 176, 468] },
   barriga: { nome: 'Barriga Cheia', desc: 'como líder: +5% de vida máxima', dmg: 0.85, lider: { hp: 0.05 }, ids: [143, 446, 320, 321] },
   veloz: { nome: 'Velocidade', desc: 'como líder: você anda 4% mais rápido', dmg: 0.85, lider: { speed: 0.04 }, ids: [290, 291, 617, 522, 523, 276, 277] },
-  adapt: { nome: 'Adaptável', desc: 'como líder: +8% de XP', dmg: 0.85, lider: { xp: 0.08 }, ids: [133, 137, 233, 474, 585, 586] },
+  adapt: { nome: 'Adaptável', desc: 'como líder: +5% de XP', dmg: 0.85, lider: { xp: 0.05 }, ids: [133, 137, 233, 474, 585, 586] },
 };
 const TRAIT_BY_ID = {};
 for (const k in TRAITS) for (const id of TRAITS[k].ids) TRAIT_BY_ID[id] = Object.assign({ k }, TRAITS[k]);
