@@ -199,13 +199,13 @@ const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 :
 const outOfCombat = P => P.sinceHit > 4 && G.time - (P.shotT === undefined ? -99 : P.shotT) > 4 && !P.pvp;
 const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (outOfCombat(P) ? 1.3 : 1) * (pst(P, 2) ? 0.85 : 1) * wxSlow(P) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (P.lin === 'lobisomem' ? 1.05 : 1) * (isBat(P) ? 1.3 : 1) * (1 + M(P, 'speed'));
 const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWolf(P) ? 1.35 : 1) * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
-// recarga do especial: no Nv 1 é 1,6x a recarga base; cai aos poucos até, no Nv 30, voltar 2 s depois que o efeito
+// recarga do especial: no Nv 1 é 1,6x a recarga base (1,2x nos que têm efeito com duração); cai aos poucos até, no Nv 30, voltar 2 s depois que o efeito
 // acaba (no fim do jogo dá para usar o especial o tempo todo). O talento Foco e os itens "do Foco" reduzem mais,
 // mas nunca abaixo da duração do efeito + 1 s (nenhum buff fica ligado para sempre)
 const ABIL_DUR = { guerreiro: 5, barbaro: 3, paladino: 6, ladino: 3, assassino: 4.4, trapaceiro: 4, vida: 6, guerra: 5, feras: 6, druida: 12, lua: 18, terra: 12 };
 const abilDur = P => ABIL_DUR[P.subclass || P.cls] || 0;
 function abilCd(P) {
-  const t = clamp((P.lvl - 1) / 29, 0, 1), start = curAbil(P).cd * 1.6, end = abilDur(P) + 2;
+  const t = clamp((P.lvl - 1) / 29, 0, 1), start = curAbil(P).cd * (abilDur(P) ? 1.2 : 1.6), end = Math.min(start, abilDur(P) + 2); // nunca cresce com o nível
   const cd = (start + (end - start) * t) * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
   return Math.max(abilDur(P) + 1, 1, cd);
 }
@@ -948,6 +948,22 @@ function dealDamage(e, dmg, slow) {
   else { e.hp -= dmg; e.localHitT = G.time; if (NET.host && NET.host.open) NET.host.send(slow ? { t: 'h', id: e.id, dmg, slow } : { t: 'h', id: e.id, dmg }); }
 }
 
+// Forma Selvagem: o Druida transformado causa (o dano normal dele + o do companheiro em que virou) × WILD_K, repartido
+// pelos tiros da forma. Transformado, o companheiro líder não bate; assim a forma sempre rende um pouco mais que o grupo
+// rendia antes, acompanha a força do companheiro escolhido e não depende da cadência de cada estilo de tiro.
+const WILD_K = 1.2;
+function wildShotDmg(P, dmg) {
+  const pt = P.pets[P.wildSlot];
+  if (!pt || !POKE[pt.pid]) return dmg;
+  const st = POKE[pt.pid].stats, tr = petTrait(pt.pid);
+  const f = clamp(Math.max(st.attack || 60, st['special-attack'] || 60) / 80, 0.7, 1.7);
+  const shot = ((1 + Math.floor(pt.lvl / 8)) * 4.5 + Math.floor(pt.lvl / 2)) * f; // tiro médio do companheiro (como em petDmg)
+  const nPets = G.allies.filter(x => x.pet).length;
+  const mul = (1 + M(P, 'pet')) * ([1, 0.8, 0.7, 0.62][Math.max(0, nPets - 1)] || 0.62) * abilDmgMul(petAbility(pt.pid)) * hmDmgMul(pt.pid) * (tr ? tr.dmg : 1);
+  const petDps = shot * mul / 0.9 * 1.15; // tiro a cada 0,9 s; o golpe especial em leque soma ~15% num alvo (medido)
+  const wn = CLASSES[P.cls].wpn, ww = curWpn(P), hits = ww.shots || 1; // de perto todos os tiros do leque acertam
+  return Math.max(1, Math.round((dmg + petDps / wn.rate) * WILD_K * wn.rate / (ww.rate * hits)));
+}
 function playerHit(e, b) {
   if (b && b.ally) return allyHit(e, b.ally, b.sp);
   const P = G.P, c = CLASSES[P.cls], w = P.equip.arma;
@@ -962,6 +978,7 @@ function playerHit(e, b) {
     : sp === 2 ? roll((3 + Math.floor(P.lvl / 3)) * (crit ? 2 : 1), 8) + A(P, 'POD')
       : sp === 3 || sp === 4 ? roll((2 + Math.floor(P.lvl / 4)) * (crit ? 2 : 1), 8) + A(P, 'POD')
       : roll(w.dice[0] * (crit ? 2 : 1), w.dice[1]) + A(P, 'POD') + w.bonus + M(P, 'dmg');
+  if (P.wildT > 0 && !sp) dmg = wildShotDmg(P, dmg);
   if (P.furia > 0) dmg += d(6);
   if (P.seloT > 0) dmg += d(6);
   dmg = Math.round(dmg * infernal(P) * (pst(P, 3) ? 0.8 : 1));

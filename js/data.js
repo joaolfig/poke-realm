@@ -65,10 +65,10 @@ const WILD_STYLE = {
   electric: 'rajada', psychic: 'rajada', fairy: 'rajada', ghost: 'rajada', flying: 'rajada', water: 'rajada',
 };
 const WILD_WPN = {
-  // calibrado com o grupo todo: transformado, o companheiro líder para de bater, então a forma rende ~1,2-1,3x o dano
-  // do herói + companheiro (o golpe sozinho chegava a 3,7x o herói antes do ajuste)
-  golpe: { shots: 1, speed: 480, life: 0.55, size: 12, rate: 3.0, shape: 'blade', pierce: true },
-  leque: { shots: 3, spread: 0.12, speed: 420, life: 0.68, size: 7, rate: 1.5, shape: 'orb' },
+  // a cadência aqui é só o estilo: o dano de cada tiro é calculado em wildShotDmg (game.js) para a forma render
+  // (dano do Druida + do companheiro) × 1,25, qualquer que seja o estilo
+  golpe: { shots: 1, speed: 480, life: 0.55, size: 12, rate: 2.4, shape: 'blade', pierce: true },
+  leque: { shots: 3, spread: 0.12, speed: 420, life: 0.68, size: 7, rate: 1.8, shape: 'orb' },
   rajada: { shots: 2, speed: 480, life: 0.9, size: 7, rate: 2.0, shape: 'orb', wave: true },
 };
 const wildWpn = t => ({ ...WILD_WPN[WILD_STYLE[t] || 'rajada'], color: TYPE_COLORS[t] || '#86efac' });
