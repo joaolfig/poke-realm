@@ -68,7 +68,7 @@ const SUB_LVL = 16;
 const SUBCLASSES = {
   guerreiro: [
     { id: 'barbaro', nome: 'Bárbaro', icon: '🪓', desc: '+25% PV máximos e dano recebido pela metade enquanto em fúria.',
-      abil: { nome: 'Escudo de Impacto', cd: 6, desc: 'Escudo: golpeia à frente com 7 estilhaços pesados ((2 + nível/4)d8 + Poder) que podem paralisar, e entra em fúria por 3s.' } },
+      abil: { nome: 'Escudo de Impacto', cd: 6, desc: 'Escudo: golpeia à frente com 7 estilhaços pesados ((2 + nível/4)d8 + Poder) que podem paralisar, e você e os aliados próximos entram em fúria por 3s.' } },
     { id: 'paladino', nome: 'Paladino', icon: '🛡️', desc: '+2 CA, recebe 15% menos dano e seus golpes causam +2d6 de dano.',
       abil: { nome: 'Selo Sagrado', cd: 10, desc: 'Selo: por 6s você e os aliados próximos causam +2d6 de dano e recebem 40% menos dano, e todos são curados em (2 + nível/4)d8 + nível.' } },
   ],
@@ -76,11 +76,11 @@ const SUBCLASSES = {
     { id: 'evocador', nome: 'Evocador', icon: '⚡', desc: '+5% de cadência de tiro.',
       abil: { nome: 'Bomba Arcana', cd: 5, desc: 'Feitiço: 20 projéteis explodem em círculo no cursor, cada um causando (1 + nível/6)d6 + Poder/2 do seu tipo (cada alvo leva no máximo 3). Ótimo contra grupos!' } },
     { id: 'necromante', nome: 'Necromante', icon: '💀', desc: 'Pokémon derrotados podem voltar como espírito aliado por 20s (50%, máx. 3).',
-      abil: { nome: 'Crânio Ceifador', cd: 4.5, desc: 'Crânio: explosão no cursor que causa (5 + nível/3)d10 + Poder/2 em área e cura você em 50% do dano causado.' } },
+      abil: { nome: 'Crânio Ceifador', cd: 4.5, desc: 'Crânio: explosão no cursor que causa (5 + nível/3)d10 + Poder/2 em área, cura você em 50% do dano causado e os aliados próximos na metade disso.' } },
   ],
   ladino: [
     { id: 'assassino', nome: 'Assassino', icon: '🗡️', desc: 'Margem de crítico +1 e críticos causam +60% de dano.',
-      abil: { nome: 'Frasco de Veneno', cd: 5, desc: 'Veneno: arremessa um frasco no cursor e some nas sombras por 1s; a nuvem causa (2 + nível/5)d6 a cada 0,5s por 4s em quem estiver dentro.' } },
+      abil: { nome: 'Frasco de Veneno', cd: 5, desc: 'Veneno: arremessa um frasco no cursor e some nas sombras por 1s; a nuvem causa (2 + nível/5)d6 a cada 0,5s por 4s em quem estiver dentro e os deixa lentos.' } },
     { id: 'trapaceiro', nome: 'Trapaceiro', icon: '🎭', desc: '10% de chance de esquivar de qualquer ataque.',
       abil: { nome: 'Prisma Ilusório', cd: 7, desc: 'Prisma: você se teleporta até o cursor e deixa uma ilusão que atrai os inimigos por 2,5s. Fica invisível por 1,5s e o próximo ataque é crítico.' } },
   ],
@@ -97,8 +97,8 @@ const SUBCLASSES = {
       abil: { nome: 'Aljava Arcana', cd: 5, desc: 'Aljava: dispara 3 flechas arcanas que atravessam até 2 inimigos em leque ((2 + nível/4)d8 + Poder) que podem paralisar.' } },
   ],
   druida: [
-    { id: 'lua', nome: 'Círculo da Lua', icon: '🌙', desc: 'A Forma Selvagem fica bem maior, dura 18s, causa +20% de dano, dá +50% de PV (em vez de 30%) e cura 25% da vida ao transformar.',
-      abil: { nome: 'Forma Selvagem Lunar', cd: 28, desc: 'Forma Selvagem: vira o seu companheiro líder por 18s, com +50% de PV, e se cura em 25% da vida ao transformar.' } },
+    { id: 'lua', nome: 'Círculo da Lua', icon: '🌙', desc: 'A Forma Selvagem fica bem maior, dura 18s, causa +20% de dano, dá +50% de PV (em vez de 30%) e cura 25% da vida ao transformar (os aliados próximos recebem 15% da sua vida máxima).',
+      abil: { nome: 'Forma Selvagem Lunar', cd: 28, desc: 'Forma Selvagem: vira o seu companheiro líder por 18s, com +50% de PV, e se cura em 25% da vida ao transformar; o uivo cura os aliados próximos em 15% da sua vida máxima.' } },
     { id: 'terra', nome: 'Círculo da Terra', icon: '🌱', desc: 'A Forma Selvagem fica um pouco maior e causa +20% de dano e, ao transformar, raízes espinhosas brotam em volta por 6s: curam você e os aliados, ferem e deixam lentos os inimigos.',
       abil: { nome: 'Forma Selvagem da Terra', cd: 24, desc: 'Forma Selvagem: vira o seu companheiro líder por 12s (+30% de PV) e faz brotar raízes que curam (1 + nível/6)d6 + Vigor/2 por segundo e ferem os inimigos em (2 + nível/5)d6 + Poder.' } },
   ],

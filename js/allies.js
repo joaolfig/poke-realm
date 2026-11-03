@@ -283,7 +283,7 @@ function wildShape(P) {
   P.riding = false;
   P.wildT = wildDur(P); P.wildPid = pt.pid; P.wildType = mainType(POKE[pt.pid]); P.wildSlot = P.petIdx;
   P.hp += maxHP(P) - before; // os PV extras chegam cheios
-  if (hasS(P, 'lua')) P.hp = Math.min(maxHP(P), P.hp + maxHP(P) * 0.25);
+  if (hasS(P, 'lua')) { P.hp = Math.min(maxHP(P), P.hp + maxHP(P) * 0.25); emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.round(maxHP(P) * 0.15), name: P.name, quiet: 1, others: 1, r: 240 }); } // uivo: cura também os aliados perto
   if (hasS(P, 'terra')) G.zones.push({ k: 'raizes', x: P.x, y: P.y, r: 150, t: 6, wait: 0, every: 1, tick: 0 });
   burst(P.x, P.y, '#86efac', 30); burst(P.x, P.y, TYPE_COLORS[P.wildType], 24);
   emitEvent({ t: 'fx', x: Math.round(P.x), y: Math.round(P.y), r: 90, color: '#86efac' });

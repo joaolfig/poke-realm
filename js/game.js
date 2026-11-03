@@ -814,7 +814,7 @@ function useAbility() {
       fxAt(P.x, P.y, 160, '#ef4444'); sfx('boom'); break;
     case 'barbaro': { // Escudo de Impacto (Cavaleiro): leque curto de estilhaços que paralisam
       for (let i = 0; i < 7; i++) shootBullet(P.aim + (i - 3) * 0.13, { spd: 520, life: 0.38, r: 10, color: '#e5e7eb', shape: 'blade', spell: 3 });
-      P.furia = Math.max(P.furia, 3);
+      emitEvent({ t: 'buff', k: 'furia', x: Math.round(P.x), y: Math.round(P.y), dur: 3, name: P.name }); // fúria para você e os aliados perto
       fxAt(P.x + Math.cos(P.aim) * 60, P.y + Math.sin(P.aim) * 60, 70, '#e5e7eb'); sfx('boom'); break;
     }
     case 'paladino': // Selo Sagrado (Paladino): dano extra e proteção para o grupo
@@ -849,7 +849,7 @@ function useAbility() {
       let tot = 0;
       for (const e of enemiesNear(t.x, t.y, 130)) tot += abilHit(e, roll(5 + Math.floor(lv / 3), 10) + Math.floor(pod / 2), tp);
       if (P.pvp && pvpFoesNear(t.x, t.y, 110).length) { const dm = roll(1 + Math.floor(lv / 5), 10) + Math.floor(pod / 2); pvpBlast(t.x, t.y, 110, dm); tot += Math.round(dm * PVP_K); }
-      if (tot) { const h = Math.ceil(tot * 0.5); P.hp = Math.min(maxHP(P), P.hp + h); text(P.x, P.y - 34, `+${h}`, '#86efac', 14); }
+      if (tot) { const h = Math.ceil(tot * 0.5); P.hp = Math.min(maxHP(P), P.hp + h); text(P.x, P.y - 34, `+${h}`, '#86efac', 14); emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.ceil(h / 2), name: P.name, quiet: 1, others: 1 }); }
       fxAt(t.x, t.y, 130, '#a78bfa'); sfx('boom'); break;
     }
     case 'ladino': // Manto: invisibilidade
@@ -912,7 +912,7 @@ function updateZones(dt) {
     z.tick = z.every;
     if (!P) continue;
     if (z.k === 'veneno') {
-      for (const e of enemiesNear(z.x, z.y, z.r)) abilHit(e, roll(2 + Math.floor(P.lvl / 5), 6), 'poison');
+      for (const e of enemiesNear(z.x, z.y, z.r)) abilHit(e, roll(2 + Math.floor(P.lvl / 5), 6), 'poison', 1);
     } else if (z.k === 'santuario' || z.k === 'raizes') {
       emitEvent({ t: 'heal', x: Math.round(z.x), y: Math.round(z.y), amt: Math.round((roll(1 + Math.floor(P.lvl / 6), 6) + Math.floor(A(P, 'VIG') / 2)) * (z.k === 'raizes' ? 1 : 1.5)), name: P.name, quiet: 1, r: z.r, bl: z.k === 'santuario' ? blessOf(P) : null });
       // a luz do santuário e os espinhos das raízes também ferem quem está dentro
@@ -1302,6 +1302,7 @@ function handleEvent(m, local) {
     case 'heal': {
       const P = G.P;
       if (P && P.pvp && !local) break; // na arena só a sua própria cura vale
+      if (m.others && local) break;
       if (P && Math.hypot(P.x - m.x, P.y - m.y) < (m.r || 220)) {
         const before = P.hp;
         P.hp = Math.min(maxHP(P), P.hp + m.amt);
