@@ -662,12 +662,12 @@ function onKill(m) {
     questProgress('duoEspecie', { pid: m.pid });
   }
   if (!P || Math.hypot(P.x - m.x, P.y - m.y) > 900) return;
-  // ouro proporcional ao dano que cada um causou. XP: metade dividida igualmente entre os jogadores
-  // perto do abate e metade proporcional ao dano (o total por abate continua o mesmo)
+  // ouro proporcional ao dano que cada um causou. XP: 70% dividido igualmente entre os jogadores
+  // perto do abate e 30% proporcional ao dano (o total por abate continua o mesmo)
   const by = m.by || {}, total = Object.values(by).reduce((a, b) => a + b, 0);
   const share = total > 0 ? (by[NET.myId] || 0) / total : 0;
   const nNear = Math.max(1, allPlayers().filter(p => Math.hypot(p.x - m.x, p.y - m.y) <= 900).length);
-  const xpShare = 0.5 / nNear + 0.5 * share;
+  const xpShare = 0.7 / nNear + 0.3 * share;
   // chefes, caçadas e história contam para quem estava junto (cooperação)
   if (m.kind === 3) questProgress('masmorra');
   if (m.st >= 10 && m.st < 40) { questProgress('caca', { pid: m.pid }); questProgress('duoCaca', { pid: m.pid }); }
