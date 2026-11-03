@@ -69,19 +69,19 @@ const SUBCLASSES = {
   guerreiro: [
     { id: 'barbaro', nome: 'Bárbaro', icon: '🪓', desc: '+25% PV máximos e dano recebido pela metade enquanto em fúria.',
       abil: { nome: 'Escudo de Impacto', cd: 6, desc: 'Escudo: golpeia à frente com 7 estilhaços pesados ((2 + nível/4)d8 + Poder) que podem paralisar, e entra em fúria por 3s.' } },
-    { id: 'paladino', nome: 'Paladino', icon: '🛡️', desc: '+2 CA.',
-      abil: { nome: 'Selo Sagrado', cd: 10, desc: 'Selo: por 6s você e os aliados próximos causam +1d6 de dano e recebem 25% menos dano, e todos são curados em 2d8 + nível.' } },
+    { id: 'paladino', nome: 'Paladino', icon: '🛡️', desc: '+2 CA e seus golpes causam +1d6 de dano.',
+      abil: { nome: 'Selo Sagrado', cd: 10, desc: 'Selo: por 6s você e os aliados próximos causam +2d6 de dano e recebem 25% menos dano, e todos são curados em 2d8 + nível.' } },
   ],
   mago: [
     { id: 'evocador', nome: 'Evocador', icon: '⚡', desc: '+15% de cadência de tiro.',
-      abil: { nome: 'Bomba Arcana', cd: 5, desc: 'Feitiço: 20 projéteis explodem em círculo no cursor, cada um causando (1 + nível/6)d6 + Poder/2 do seu tipo (cada alvo leva no máximo 6). Ótimo contra grupos!' } },
+      abil: { nome: 'Bomba Arcana', cd: 5, desc: 'Feitiço: 20 projéteis explodem em círculo no cursor, cada um causando (1 + nível/6)d6 + Poder/2 do seu tipo (cada alvo leva no máximo 4). Ótimo contra grupos!' } },
     { id: 'necromante', nome: 'Necromante', icon: '💀', desc: 'Pokémon derrotados podem voltar como espírito aliado por 15s (30%, máx. 3).',
-      abil: { nome: 'Crânio Ceifador', cd: 4.5, desc: 'Crânio: explosão no cursor que causa (1 + nível/5)d10 + Poder/2 em área e cura você em 20% do dano causado.' } },
+      abil: { nome: 'Crânio Ceifador', cd: 4.5, desc: 'Crânio: explosão no cursor que causa (2 + nível/4)d10 + Poder/2 em área e cura você em 20% do dano causado.' } },
   ],
   ladino: [
     { id: 'assassino', nome: 'Assassino', icon: '🗡️', desc: 'Margem de crítico +1 e críticos causam +30% de dano.',
-      abil: { nome: 'Frasco de Veneno', cd: 5, desc: 'Veneno: arremessa um frasco no cursor; a nuvem causa (1 + nível/6)d6 a cada 0,5s por 4s em quem estiver dentro.' } },
-    { id: 'trapaceiro', nome: 'Trapaceiro', icon: '🎭', desc: '10% de chance de esquivar de qualquer ataque.',
+      abil: { nome: 'Frasco de Veneno', cd: 5, desc: 'Veneno: arremessa um frasco no cursor; a nuvem causa (1 + nível/6)d6 a cada 0,7s por 4s em quem estiver dentro.' } },
+    { id: 'trapaceiro', nome: 'Trapaceiro', icon: '🎭', desc: '10% de chance de esquivar de qualquer ataque e +15% de dano.',
       abil: { nome: 'Prisma Ilusório', cd: 7, desc: 'Prisma: você se teleporta até o cursor e deixa uma ilusão que atrai os inimigos por 3s. Fica invisível por 1,5s e o próximo ataque é crítico.' } },
   ],
   clerigo: [
@@ -91,7 +91,7 @@ const SUBCLASSES = {
       abil: { nome: 'Hino de Batalha', cd: 9, desc: 'Hino: você e os aliados próximos entram em fúria por 5s, são curados em 1d8 + nível/2 e os inimigos em volta ficam paralisados.' } },
   ],
   patrulheiro: [
-    { id: 'feras', nome: 'Mestre das Feras', icon: '🐾', desc: 'Seus companheiros causam +50% de dano.',
+    { id: 'feras', nome: 'Mestre das Feras', icon: '🐾', desc: 'Seus companheiros causam +75% de dano.',
       abil: { nome: 'Armadilha da Caçadora', cd: 5, desc: 'Armadilha: arma no cursor e explode quando um inimigo chega perto ((2 + nível/4)d8 + Poder em área, deixa lentos) e agita seus companheiros.' } },
     { id: 'arcano', nome: 'Atirador Arcano', icon: '✴️', desc: 'Flechas explodem ao acertar, causando metade do dano em volta.',
       abil: { nome: 'Aljava Arcana', cd: 5, desc: 'Aljava: dispara 3 flechas arcanas que atravessam até 2 inimigos em leque ((2 + nível/4)d8 + Poder) que podem paralisar.' } },

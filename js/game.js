@@ -738,7 +738,7 @@ function spawnPB(o) {
   return b;
 }
 // Bomba Arcana: quantos dos 20 projéteis podem acertar o mesmo alvo
-const BOMB_CAP = 6;
+const BOMB_CAP = 4;
 function shootBullet(a, o = {}) {
   const P = G.P, w = curWpn(P);
   spawnPB({
@@ -843,7 +843,7 @@ function useAbility() {
     case 'necromante': { // Crânio Ceifador (Necromante): explosão que drena vida
       const t = aimPoint(P, 360);
       let tot = 0;
-      for (const e of enemiesNear(t.x, t.y, 110)) tot += abilHit(e, roll(1 + Math.floor(lv / 5), 10) + Math.floor(pod / 2), tp);
+      for (const e of enemiesNear(t.x, t.y, 110)) tot += abilHit(e, roll(2 + Math.floor(lv / 4), 10) + Math.floor(pod / 2), tp);
       if (P.pvp && pvpFoesNear(t.x, t.y, 110).length) { const dm = roll(1 + Math.floor(lv / 5), 10) + Math.floor(pod / 2); pvpBlast(t.x, t.y, 110, dm); tot += Math.round(dm * PVP_K); }
       if (tot) { const h = Math.ceil(tot * 0.2); P.hp = Math.min(maxHP(P), P.hp + h); text(P.x, P.y - 34, `+${h}`, '#86efac', 14); }
       fxAt(t.x, t.y, 110, '#a78bfa'); sfx('boom'); break;
@@ -852,7 +852,7 @@ function useAbility() {
       P.invis = 3; P.nextCrit = true; burst(P.x, P.y, '#6b7280', 20); break;
     case 'assassino': { // Frasco de Veneno (Assassino): nuvem que corrói
       const t = aimPoint(P, 330);
-      G.zones.push({ k: 'veneno', x: t.x, y: t.y, r: 100, t: 4.4, wait: 0.4, every: 0.5, tick: 0 });
+      G.zones.push({ k: 'veneno', x: t.x, y: t.y, r: 100, t: 4.4, wait: 0.4, every: 0.7, tick: 0 });
       if (P.pvp) emitEvent({ t: 'pvpaoe', x: Math.round(t.x), y: Math.round(t.y), r: 100, dur: 4, wait: 0.4, dmg: Math.max(1, Math.round((roll(1 + Math.floor(lv / 6), 6)) * PVP_K)), name: P.name });
       fxAt(t.x, t.y, 100, '#a3e635'); sfx('pot'); break;
     }
@@ -889,7 +889,7 @@ function useAbility() {
       if (!wildShape(P)) return;
       break;
     case 'arcano': // Aljava Arcana: leque de flechas perfurantes
-      for (let i = 0; i < 3; i++) shootBullet(P.aim + (i - 1) * 0.14, { spd: 620, life: 0.85, r: 9, color: '#c084fc', shape: 'arrow', pierce: true, left: 2, spell: 4 }); // cada flecha atravessa até 2 inimigos
+      for (let i = 0; i < 3; i++) shootBullet(P.aim + (i - 1) * 0.06, { spd: 620, life: 0.85, r: 9, color: '#c084fc', shape: 'arrow', pierce: true, left: 2, spell: 4 }); // cada flecha atravessa até 2 inimigos
       sfx('crit'); break;
   }
   if (hasT(P, 'barreira')) { P.shield = Math.round(maxHP(P) * 0.15); P.shieldT = 4; }
@@ -991,11 +991,12 @@ function playerHit(e, b) {
   if (sp) dmg *= abilPow(P);
   if (P.wildT > 0 && !sp) dmg = wildShotDmg(P, dmg);
   if (P.furia > 0) dmg += d(6);
-  if (P.seloT > 0) dmg += d(6);
+  if (P.seloT > 0) dmg += roll(2, 6);
   dmg = Math.round(dmg * infernal(P) * (pst(P, 3) ? 0.8 : 1));
   { const w = weatherAt(P.x, P.y); if (w) dmg = Math.round(dmg * (1 + M(P, 'wx' + w.k))); } // encantamento de clima
   if (P.tempTypeT > 0) dmg += d(4);
-  if (hasS(P, 'guerra')) dmg += d(6);
+  if (hasS(P, 'guerra') || hasS(P, 'paladino')) dmg += d(6);
+  if (hasS(P, 'trapaceiro')) dmg = Math.round(dmg * 1.15);
   if (crit && P.cls === 'ladino') dmg += roll(Math.ceil(P.lvl / 4), 6);
   if (crit && hasS(P, 'assassino')) dmg = Math.round(dmg * 1.3);
   if (crit && P.race === 'elfo') dmg = Math.round(dmg * 1.5); // precisão élfica
