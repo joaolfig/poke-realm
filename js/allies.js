@@ -590,7 +590,7 @@ function hostRemoveCaptured(id) {
 }
 
 /* ---------- Desenho e rede ---------- */
-const alliesToNet = () => G.allies.filter(a => !(a.pet && a.slot === G.P.petIdx && (mountPid(G.P) || G.P.wildT > 0))).map(a => [a.look || a.pid, Math.round(a.x), Math.round(a.y), a.ghost ? 1 : 0]);
+const alliesToNet = () => G.allies.filter(a => !(a.pet && a.slot === carrySlot(G.P))).map(a => [a.look || a.pid, Math.round(a.x), Math.round(a.y), a.ghost ? 1 : 0]);
 const pokeLoading = new Set();
 function ensurePoke(id) {
   if (POKE[id] || pokeLoading.has(id)) return;
