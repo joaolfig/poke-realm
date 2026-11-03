@@ -161,7 +161,7 @@ function renderStoryNPC(n, P) {
       <p>Daqui em diante a jornada fica longe de casa, e ${t2.nome} fica bem no meio de ${REGION.nome}: é daqui que você parte para os próximos ginásios, e é aqui que você volta depois de cada vitória.</p>
       <div class="quest cur" style="margin-top:8px"><b>📀 ${n.nome} entrega a ${HMS.fly.mo} ${HMS.fly.nome}</b>
       <p class="fala">"Com Fly, um companheiro voador te leva para <b>qualquer cidade que você já visitou</b>: aperte <b>[V]</b> e escolha o destino. Toda cidade por onde você passa vira um destino novo."</p>
-      <div class="small">Ensine Fly a um Pokémon do tipo Voador no painel (botão <b>+🪶</b>) e deixe ele fora da Poké Ball.<br>
+      <div class="small">Ensine Fly a um Pokémon do tipo Voador no painel (botão <b>+🪶</b>). Vale mesmo com ele na Poké Ball.<br>
       E lembre: <b>[R]</b> agora te leva de volta à <b>última cidade</b> em que você esteve, não só à ${ZONES[0].nome}.</div></div>
       <button data-act="story:t2" class="good">📀 Receber a ${HMS.fly.mo} ${HMS.fly.nome}</button>`;
     if (!st.t2 && !storyOver(P)) return `<p class="fala">"Olá! ${REGION.guia.nome} me pediu para cuidar dos treinadores que chegam a ${t2.nome}. Quando a sua jornada passar por aqui, venha falar comigo."</p>`;
@@ -184,7 +184,7 @@ function renderStoryNPC(n, P) {
     const gift = H ? `<div class="quest cur" style="margin-top:8px"><b>📀 ${s.nome} entrega a ${H.mo} ${H.nome}</b>
       <p class="fala">"${HM_LINES[hm](s.nome)}"</p>
       <div class="small">${HM_ZONE[hm] ? `Ela abre o caminho para a <b>Zona ${HM_ZONE[hm]}</b> (${ZONES[HM_ZONE[hm]].nome}, ícone ${HM_ICON[hm]} no minimapa).` : 'Ela ilumina ginásios escuros, a noite e a névoa.'}
-      Depois, ensine a HM a um companheiro no painel (botão <b>+${H.icon}</b>) e deixe ele fora da Poké Ball.</div></div>` : '';
+      Depois, ensine a HM a um companheiro no painel (botão <b>+${H.icon}</b>). Vale mesmo com ele na Poké Ball.</div></div>` : '';
     const gate = st.ch === 7 ? `<div class="quest cur" style="margin-top:8px"><b>🏅 7 insígnias!</b><p>Com elas, o Portão da Liga se abre para a Zona 5 (${ZONES[5].nome}).</p></div>` : '';
     return `<p>${s.fim}</p>${gift}${gate}<button data-act="story:next" class="good">${H ? `📀 Receber a ${H.mo} ${H.nome} e continuar` : '📖 Continuar a história (recompensa)'}</button>`;
   }

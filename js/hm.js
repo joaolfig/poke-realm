@@ -2,7 +2,8 @@
 /* ============ HMs, pontos de voo, baús secretos e habilidades ============
  * As HMs são itens-chave reutilizáveis (P.hms). Cada companheiro só aprende
  * as HMs que aprenderia nos jogos (lista de golpes da PokeAPI: POKE[id].hm).
- * Só o companheiro ATIVO e que conhece a HM permite usar o efeito.
+ * Qualquer companheiro da equipe que conheça a HM permite usar o efeito (mesmo guardado na Poké Ball:
+ * ele sai para usar e aparece fazendo o golpe; no Surf o herói sobe nele).
  */
 // move = nome do golpe na PokeAPI (usado para saber quem pode aprender)
 // Só 4 HMs, cada uma com um papel claro. Fly ficou nas montarias voadoras (como no Let's Go).
@@ -43,13 +44,13 @@ function pathChecklist(P) {
     + row(badgeCount(P) >= 7, `🏅 O Portão da Liga para a Zona 5 (${ZONES[5].nome}) abre com 7 insígnias (você tem ${badgeCount(P)})`)
     + row(P.hms.includes('flash'), `💡 Flash ilumina ginásios escuros, a noite e a névoa (${hmGymOf('flash')}º ginásio)`)
     + row(P.hms.includes('fly'), `🪶 Fly leva você a qualquer cidade já visitada com [V] (missão em ${TOWNS[1] ? TOWNS[1].nome : 'outra cidade'})`)
-    + '<div class="small">HMs só funcionam com um companheiro que as saiba fora da Poké Ball (ensine no painel). Os bloqueios aparecem no minimapa.</div>';
+    + '<div class="small">HMs funcionam se qualquer companheiro da equipe as souber (ensine no painel). Os bloqueios aparecem no minimapa.</div>';
 }
 const HMS = {
   cut: { mo: 'HM01', move: 'cut', nome: 'Cut', icon: '✂️', preco: 120, ch: 0, desc: 'Corta arvorezinhas que bloqueiam atalhos e baús ([E] perto delas).' },
   surf: { mo: 'HM02', move: 'surf', nome: 'Surf', icon: '🌊', preco: 300, ch: 3, desc: 'Atravesse águas fundas montado no companheiro. Surfando, [E] nos pontos escuros mergulha atrás de tesouros.' },
   smash: { mo: 'HM03', move: 'rock-smash', nome: 'Rock Smash', icon: '🪨', preco: 150, ch: 0, desc: 'Quebra rochas rachadas ([E]); às vezes há itens dentro.' },
-  fly: { mo: 'HM05', move: 'fly', nome: 'Fly', icon: '🪶', preco: 0, ch: 5, desc: 'Com um companheiro voador fora da Poké Ball que saiba Fly, [V] leva você a qualquer cidade já visitada.' },
+  fly: { mo: 'HM05', move: 'fly', nome: 'Fly', icon: '🪶', preco: 0, ch: 5, desc: 'Com um companheiro voador na equipe que saiba Fly, [V] leva você a qualquer cidade já visitada.' },
   flash: { mo: 'HM04', move: 'flash', nome: 'Flash', icon: '💡', preco: 200, ch: 2, desc: 'Ilumina masmorras escuras e a noite, e dissipa a névoa das áreas sombrias.' },
 };
 const HM_KEYS = Object.keys(HMS);
@@ -57,11 +58,16 @@ const HM_MOVES = Object.fromEntries(Object.entries(HMS).map(([k, h]) => [h.move,
 const activePet = P => (P && P.petIdx >= 0 ? P.pets[P.petIdx] || null : null);
 // Fly: qualquer Pokémon do tipo Voador aprende
 const canLearn = (pid, k) => !!(POKE[pid] && (k === 'fly' ? POKE[pid].types.includes('flying') : POKE[pid].hm && POKE[pid].hm.includes(k)));
-// qualquer companheiro fora da Pokébola que saiba a HM serve (desde que você tenha a HM desta região)
-function petKnows(P, k) {
-  if (!P || !P.hms.includes(k) || G.evo) return false;
-  return G.allies.some(a => a.pet && P.pets[a.slot] && (P.pets[a.slot].hms || []).includes(k));
+// quem usa a HM (desde que você tenha a HM desta região): um companheiro fora da Poké Ball que a saiba (o líder primeiro);
+// se nenhum deles souber, qualquer um da equipe que saiba (ele sai da Poké Ball só para usar)
+function hmPetIdx(P, k) {
+  if (!P || !P.hms.includes(k) || G.evo) return -1;
+  const knows = i => i >= 0 && P.pets[i] && (P.pets[i].hms || []).includes(k);
+  const out = [P.petIdx, ...(P.petAct || [])].find(knows);
+  return out !== undefined ? out : P.pets.findIndex((_, i) => knows(i));
 }
+const hmPet = (P, k) => P.pets[hmPetIdx(P, k)] || null;
+const petKnows = (P, k) => hmPetIdx(P, k) >= 0;
 const petIsFlyer = pid => !!(POKE[pid] && POKE[pid].types.includes('flying') && !POKE[pid].types.includes('water'));
 // 1 = pode entrar na água funda, 2 = pode subir cachoeira
 const swimFlags = P => (petKnows(P, 'surf') || ridingFlyer(P) ? 1 : 0);
@@ -85,7 +91,7 @@ function teachHM(i, k) {
   if (pt.hms.includes(k)) return;
   pt.hms.push(k);
   if (P.hmTeach === k) P.hmTeach = null;
-  G.toasts.push({ text: `${HMS[k].icon} ${pt.name} aprendeu ${HMS[k].nome}! Deixe ${pt.name} fora da Poké Ball para usar.`, color: '#93c5fd', t: 4 });
+  G.toasts.push({ text: `${HMS[k].icon} ${pt.name} aprendeu ${HMS[k].nome}! Vale mesmo com ${pt.name} na Poké Ball.`, color: '#93c5fd', t: 4 });
   sfx('lvl');
   saveGame();
 }
@@ -110,6 +116,7 @@ function updateHM(dt) {
   if (!P) return;
   P.flyCd = Math.max(0, (P.flyCd || 0) - dt);
   G.nearHM = nearHM(P);
+  updateHmAnim(dt);
   updateFog(dt);
   // [R] volta para a última cidade em que o jogador esteve
   if (!inDungeonArea(P.x)) { const t = townAt(P.x, P.y); if (t && P.lastTown !== t.i) { P.lastTown = t.i; G.dirty = true; } }
@@ -143,7 +150,7 @@ function openFly() {
   const P = G.P;
   if (inDungeonArea(P.x)) return G.toasts.push({ text: 'Não dá para voar dentro de uma masmorra.', color: '#fca5a5', t: 2 });
   if (!P.hms.includes('fly')) return G.toasts.push({ text: `Você ainda não tem a HM05 Fly. Ela é entregue em ${TOWNS[1] ? TOWNS[1].nome : 'outra cidade'} durante a história.`, color: '#fca5a5', t: 3.5 });
-  if (!petKnows(P, 'fly')) return G.toasts.push({ text: 'Para voar, deixe fora da Poké Ball um companheiro voador que saiba Fly (ensine no painel).', color: '#fca5a5', t: 3 });
+  if (!petKnows(P, 'fly')) return G.toasts.push({ text: 'Para voar, ensine Fly a um companheiro voador da equipe (no painel).', color: '#fca5a5', t: 3 });
   if (P.flyCd > 0) return G.toasts.push({ text: `Seu companheiro está cansado. Fly de novo em ${Math.ceil(P.flyCd)}s.`, color: '#fca5a5', t: 2 });
   G.npcOpen = 'fly'; G.npcRef = null;
   $('npc').classList.remove('hidden');
@@ -154,7 +161,7 @@ function renderFly(P) {
     const d0 = Math.round(Math.hypot(l.x - P.x, l.y - P.y) / 32);
     return `<div class="shoprow"><span>📍 ${l.nome} <i>${d0}m</i></span><button data-act="fly:${l.id}">Fly</button></div>`;
   }).join('');
-  const pt = P.pets.find((x, i) => P.petAct.includes(i) && (x.hms || []).includes('fly')) || activePet(P);
+  const pt = hmPet(P, 'fly');
   return `<div class="npc-head"><span>🪶 <b>Fly com ${esc(pt ? pt.name : '')}</b></span><button data-act="close" title="Fechar (Esc)">✕</button></div>
     ${rows}<div class="small">Toda cidade que você visita vira um destino. Novas cidades aparecem quando você passa perto delas.</div>`;
 }
@@ -162,7 +169,7 @@ function flyTo(P, id) {
   const l = LANDMARKS.find(x => x.id === id);
   if (!l || !P.fly.includes(id) || !petKnows(P, 'fly')) return;
   closeNPC();
-  const pt = P.pets.find((x, i) => P.petAct.includes(i) && (x.hms || []).includes('fly')) || activePet(P);
+  const pt = hmPet(P, 'fly');
   burst(P.x, P.y, '#e0f2fe', 30);
   P.x = l.x + rand(-20, 20); P.y = l.y + rand(14, 30);
   const tw = townAt(P.x, P.y); if (tw) P.lastTown = tw.i;
@@ -199,13 +206,14 @@ function hmHint(P, h) {
   if (petKnows(P, hmNeed(h.k))) return { cut: '[E] Cortar a árvore', smash: '[E] Quebrar a rocha', dive: '[E] Mergulhar' }[h.k];
   const what = { cut: 'Árvore cortável', smash: 'Rocha rachada', dive: 'Ponto de mergulho' }[h.k];
   if (!P.hms.includes(hmNeed(h.k))) { const g = Object.keys(HM_GYM).find(n => HM_GYM[n] === hmNeed(h.k)); return `${what}: você ganha ${H.nome} (${H.mo}) ao vencer o ${g}º ginásio de ${REGION.nome}`; }
-  return `${what}: precisa de um companheiro fora da Pokébola que saiba ${H.nome} (${H.mo})`;
+  return `${what}: precisa de um companheiro na equipe que saiba ${H.nome} (${H.mo})`;
 }
 const zoneOf = P => { const z = zoneAt(P.x, P.y); return z >= 1 ? z : 1; };
 function useHMTile(P, h) {
   if (h.k === 'chest') return openChest(P, h.i);
   if (!petKnows(P, hmNeed(h.k))) { G.toasts.push({ text: hmHint(P, h), color: '#fca5a5', t: 3 }); return; }
-  const pt = activePet(P);
+  if ((G.hmAnim || []).some(a => a.i === h.i)) return; // o golpe já está a caminho
+  const k = hmNeed(h.k), slot = hmPetIdx(P, k), pt = P.pets[slot];
   if (h.k === 'dive') {
     if (!isDeep(P.x, P.y)) { text(P.x, P.y - 40, 'Surfe até ficar em cima do ponto escuro', '#cbd5e1', 12); return; }
     G.usedDive.add(h.i);
@@ -216,11 +224,62 @@ function useHMTile(P, h) {
     sfx('pot');
     return;
   }
-  emitEvent({ t: 'cut', i: h.i });
-  text(P.x, P.y - 44, `${pt.name} usou ${HMS[hmNeed(h.k)].nome}!`, '#86efac', 13);
-  sfx('crit');
+  // o companheiro vai até o obstáculo e golpeia (todos da sala veem a animação); o obstáculo cai no golpe
+  emitEvent({ t: 'cut', i: h.i, pid: pt.pid, lvl: pt.lvl, sx: Math.round(P.x), sy: Math.round(P.y), out: P.petAct.includes(slot) ? 1 : 0, by: NET.myId, slot, k });
+  text(P.x, P.y - 44, P.petAct.includes(slot) ? `${pt.name} usou ${HMS[k].nome}!` : `⚪ ${pt.name} saiu da Poké Ball e usou ${HMS[k].nome}!`, '#86efac', 13);
   const r = Math.random();
   if (h.k === 'smash' ? r < 0.3 : r < 0.12) G.bags.push({ x: P.x + rand(-20, 20), y: P.y + 20, items: [r < 0.06 ? consItem('grande') : h.k === 'smash' && r < 0.15 ? stone(pick(TYPES)) : potion()], life: 60 });
+}
+/* ---------- Animação das HMs: o companheiro sai (da Poké Ball, se estava guardado), vai até a árvore ou rocha, golpeia e volta ---------- */
+const HM_ANIM_T = 1, HM_HIT_T = 0.42;
+function hmAnimStart(m) {
+  if (!POKE[m.pid]) { cutTile(m.i); return; }
+  ensurePoke(m.pid);
+  const [tx, ty] = tileXY(m.i), d = Math.hypot(tx - m.sx, ty - m.sy) || 1;
+  (G.hmAnim = G.hmAnim || []).push({ ...m, tx: tx - (tx - m.sx) / d * 24, ty: ty - (ty - m.sy) / d * 24, cx: tx, cy: ty, t: 0, hit: false, me: m.by === NET.myId });
+  if (!m.out) { burst(m.sx, m.sy, '#ef4444', 10); burst(m.sx, m.sy, '#f8fafc', 10); sfx('pick'); }
+}
+function updateHmAnim(dt) {
+  if (!G.hmAnim || !G.hmAnim.length) return;
+  for (const a of G.hmAnim) {
+    a.t += dt;
+    if (!a.hit && a.t >= HM_HIT_T) { a.hit = true; cutTile(a.i); sfx('crit'); }
+    if (a.t >= HM_ANIM_T && !a.out) { burst(a.sx, a.sy, '#ef4444', 8); burst(a.sx, a.sy, '#f8fafc', 8); }
+  }
+  G.hmAnim = G.hmAnim.filter(a => a.t < HM_ANIM_T);
+}
+// o companheiro que está na animação não aparece também andando atrás do herói
+const hmAnimHides = slot => !!(G.hmAnim && G.hmAnim.some(a => a.me && a.slot === slot));
+function drawHmAnim(ox, oy) {
+  for (const a of G.hmAnim || []) {
+    const t = a.t, ease = u => 1 - (1 - u) * (1 - u);
+    let x, y, sc = 1;
+    if (t < HM_HIT_T - 0.1) { const u = ease(t / (HM_HIT_T - 0.1)); x = a.sx + (a.tx - a.sx) * u; y = a.sy + (a.ty - a.sy) * u - Math.sin(u * Math.PI) * 14; }
+    else if (t < HM_HIT_T + 0.12) { const u = (t - HM_HIT_T + 0.1) / 0.22, l = Math.sin(u * Math.PI) * 12; x = a.tx + (a.cx - a.tx) / 24 * l; y = a.ty + (a.cy - a.ty) / 24 * l; } // investida
+    else { const u = ease((t - HM_HIT_T - 0.12) / (HM_ANIM_T - HM_HIT_T - 0.12)); x = a.tx + (a.sx - a.tx) * u; y = a.ty + (a.sy - a.ty) * u - Math.sin(u * Math.PI) * 10; }
+    if (!a.out) sc = Math.min(1, t / 0.12, (HM_ANIM_T - t) / 0.12); // sai e volta para a Poké Ball
+    const face = (t < HM_HIT_T + 0.12 ? a.cx - a.sx : a.sx - a.cx) >= 0 ? 1 : -1;
+    ctx.save();
+    ctx.translate(x + ox, y + oy); ctx.scale(Math.max(0.05, sc), Math.max(0.05, sc)); ctx.translate(-(x + ox), -(y + oy));
+    drawAlly(a.pid, x, y, ox, oy, false, G.time, face, true, false, a.lvl || 0);
+    ctx.restore();
+    // o golpe: cortes em X (Cut) ou impacto com rachaduras (Rock Smash)
+    const g = (t - HM_HIT_T) / 0.25;
+    if (g >= 0 && g < 1) {
+      const cx = a.cx + ox, cy = a.cy + oy;
+      ctx.save(); ctx.globalAlpha = 1 - g; ctx.lineCap = 'round';
+      if (a.k === 'cut') {
+        ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 4;
+        for (const s of [1, -1]) { ctx.beginPath(); ctx.moveTo(cx - 20 * s, cy - 20); ctx.quadraticCurveTo(cx + 4 * s, cy - 4, cx + 20 * s, cy + 20 * Math.min(1, g * 3)); ctx.stroke(); }
+      } else {
+        ctx.strokeStyle = '#fde68a'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx, cy, 10 + g * 30, 0, 7); ctx.stroke();
+        ctx.strokeStyle = '#78716c'; ctx.lineWidth = 2;
+        for (let r = 0; r < 6; r++) { const an = r * 1.05 + 0.3; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(an) * (8 + g * 22), cy + Math.sin(an) * (8 + g * 22)); ctx.stroke(); }
+      }
+      ctx.restore();
+    }
+  }
 }
 function cutTile(i) {
   const k = TT[i];

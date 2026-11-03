@@ -1156,9 +1156,11 @@ function updatePlayer(dt) {
   }
   const wasSurf = P.surfing;
   if (P.riding && (inDg || !activePet(P) || !G.allies.some(a => a.pet) || !canRide(activePet(P).pid) || G.evo)) P.riding = false;
-  P.surfing = !inDg && !P.riding && isDeep(P.x, P.y) && petKnows(P, 'surf');
+  // Surf: o herói sobe no companheiro da equipe que sabe Surf (mesmo que não seja o líder ou esteja na Poké Ball)
+  P.surfSlot = !inDg && !P.riding && isDeep(P.x, P.y) ? hmPetIdx(P, 'surf') : -1;
+  P.surfing = P.surfSlot >= 0;
   P.wading = !inDg && !P.surfing && !P.riding && isWater(P.x, P.y);
-  if (P.surfing && !wasSurf) text(P.x, P.y - 44, `🌊 ${activePet(P).name} usou Surf!`, '#93c5fd', 13);
+  if (P.surfing && !wasSurf) { const sp = P.pets[P.surfSlot]; if (!P.petAct.includes(P.surfSlot)) { burst(P.x, P.y, '#ef4444', 10); burst(P.x, P.y, '#f8fafc', 10); } text(P.x, P.y - 44, `🌊 ${sp.name} usou Surf!`, '#93c5fd', 13); }
   const mw = mouseWorld();
   P.aim = Math.atan2(mw.y - P.y, mw.x - P.x);
   P.face = Math.cos(P.aim) >= 0 ? 1 : -1;
@@ -1307,7 +1309,7 @@ function handleEvent(m, local) {
       if (!G.bags.some(b => b.id === m.id)) G.bags.push({ id: m.id, x: m.x, y: m.y, items: m.items, life: 180, shared: 1, wait: m.from === NET.myId, who: m.name });
       break;
     case 'bag': { const b = G.bags.find(x => x.id === m.id); if (b) b.items = m.items; break; }
-    case 'cut': cutTile(m.i); break;
+    case 'cut': if (m.pid) hmAnimStart(m); else cutTile(m.i); break;
     case 'pz': pzEvent(m); break;
     case 'buff': {
       const P = G.P;
@@ -1580,7 +1582,7 @@ function render() {
     else if (it.n) drawNPC(it.n, ox, oy);
     else if (it.a) {
       const a = it.a;
-      if (a.pet && a.slot === G.P.petIdx && (mountPid(G.P) || G.P.wildT > 0)) continue; // virou montaria (desenhada embaixo do jogador)
+      if (a.pet && (a.slot === carrySlot(G.P) || hmAnimHides(a.slot))) continue; // virou montaria (desenhada embaixo do jogador) ou está usando uma HM
       drawAlly(a.look || a.pid, a.x, a.y, ox, oy, a.ghost, a.t, a.face, a.moving, a.pet && G.evo && G.P && G.evo.pt === G.P.pets[a.slot], a.pet ? a.lvl : 0);
       grassOver(a.x, a.y + 10, a.x + ox, a.y + oy + 14, 26);
     } else if (it.ra) drawAlly(it.ra[0], it.ra[1], it.ra[2], ox, oy, it.ra[3], G.time, 1, false);
@@ -1630,6 +1632,7 @@ function render() {
     }
   }
 
+  drawHmAnim(ox, oy);
   drawThrows(ox, oy);
   for (const b of G.cb) drawShot(b, ox, oy);
   for (const b of G.pb) drawShot(b, ox, oy);
@@ -2065,7 +2068,7 @@ function updatePanel() {
       const lTxt = ev === undefined ? '' : ev ? (pt.lvl >= ev ? 'pronto para evoluir!' : `evolui no Nv ${ev}`) : sTxt ? '' : 'forma final';
       const evt = [lTxt, sTxt].filter(Boolean).join(' · ');
       const on = P.petAct.includes(i);
-      return `<div class="pet ${on ? 'on' : ''}" data-pet="${i}" title="${esc(pt.name)} (${TYPE_PT[pt.type]}) · ${evt}\nClique: ${on ? 'guardar' : 'chamar'}${i === P.petIdx ? ' · líder (HMs e montaria)' : ''} · Botão direito 2×: soltar">
+      return `<div class="pet ${on ? 'on' : ''}" data-pet="${i}" title="${esc(pt.name)} (${TYPE_PT[pt.type]}) · ${evt}\nClique: ${on ? 'guardar' : 'chamar'}${i === P.petIdx ? ' · líder (montaria)' : ''} · Botão direito 2×: soltar">
         <img src="${petIconUrl(pt.pid)}" alt=""><span>${esc(pt.name)} <b>Nv ${pt.lvl}</b></span>${typeBadge(pt.type)}
         <div class="pxp"><div style="width:${pt.lvl >= PET_MAX ? 100 : Math.min(100, pt.xp / petNeed(pt.lvl) * 100)}%"></div></div><i>${evt}</i>
         <div class="phm">${sReady ? `<button class="hmt pulse" data-stoneevo="${i}" title="Dar o cristal: ${pt.name} ${sTxt} (o cristal é consumido)">💎</button>` : ''}${HM_KEYS.map(k => (pt.hms || []).includes(k) ? `<span class="hmk" title="${HMS[k].nome}">${HMS[k].icon}</span>`

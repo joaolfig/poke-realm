@@ -228,7 +228,9 @@ function toggleRide() {
   text(P.x, P.y - 48, `Você montou em ${pt.name}!${rideFlies(pt.pid) ? ' (voando)' : ''}`, '#fde68a', 13);
   sfx('pot');
 }
-const mountPid = P => { const pt = activePet(P); return P && (P.riding || P.surfing) && pt ? pt.pid : 0; };
+// companheiro que está carregando o herói: no Surf é quem sabe Surf; montado (ou na Forma Selvagem), o líder
+const carrySlot = P => (!P ? -1 : P.surfing && !(P.wildT > 0) ? P.surfSlot : P.riding || P.wildT > 0 ? P.petIdx : -1);
+const mountPid = P => { const pt = P && P.pets[P.surfing ? P.surfSlot : P.riding ? P.petIdx : -1]; return pt ? pt.pid : 0; };
 // desenha a montaria embaixo do jogador; devolve quanto o jogador sobe
 function drawMount(pid, wx, wy, x, y, face, moving, t) {
   const p = POKE[pid];
@@ -334,7 +336,7 @@ function updateAllies(dt) {
     if (Math.hypot(a.x - P.x, a.y - P.y) > 400 || !walkable(a.x, a.y)) { a.x = P.x; a.y = P.y; }
     a.moving = Math.abs(a.x - ox) > 0.3;
     if (a.pet && a.pid === 132) dittoLook(a, dt);
-    if (a.pet && a.slot === P.petIdx && (P.riding || P.surfing || P.wildT > 0)) { a.x = P.x; a.y = P.y; return; } // está carregando o jogador (ou o Druida virou ele)
+    if (a.pet && a.slot === carrySlot(P)) { a.x = P.x; a.y = P.y; return; } // está carregando o jogador (ou o Druida virou ele)
     if (a.rageT > 0) a.rageT -= dt;
     const tr = a.pet && petTrait(a.pid);
     if (tr) traitTick(P, a, tr, dt);
