@@ -682,7 +682,6 @@ function onKill(m) {
   rollLoot(m); // saque: cada jogador perto rola o seu, mesmo sem ter acertado
   const xp = Math.max(1, Math.round(m.xp * xpShare * (1 + M(P, 'xp'))));
   gainXP(Math.round(xp * catchUp(P)));
-  petGainXP(xp * (isNight() ? 1.5 : 1));
   if (share <= 0) { G.dirty = true; return; }
   P.kills++;
   P.killsPot = (P.killsPot || 0) + 1;
@@ -705,9 +704,13 @@ function onKill(m) {
 /* ---------- Jogador ---------- */
 // recuperação: quem está abaixo do nível recomendado do próximo capítulo da história ganha +50% de XP nos abates
 const catchUp = P => { const s = P.story && !storyOver(P) && STORY[P.story.ch]; return s && s.lvl && P.lvl < s.lvl ? 1.5 : 1; };
+// parte do XP do jogador que vai para cada Pokémon fora da Poké Ball (medido: o primeiro companheiro fica
+// perto do nível do jogador e chega ao Nv 30 junto com o fim do jogo; um capturado tarde alcança em poucas zonas)
+const PET_XP = 0.8;
 function gainXP(n, raw) {
   const P = G.P;
   if (!raw && isNight()) n = Math.round(n * 1.5);
+  petGainXP(n * PET_XP); // os Pokémon fora da Poké Ball ganham uma parte de todo XP do jogador (abates, contratos, história), sem tirar nada dele
   if (P.lvl >= MAX_LVL) return;
   P.xp += n;
   text(P.x, P.y - 46, `+${n} XP`, '#a7f3d0', 12);
