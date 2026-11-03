@@ -165,7 +165,7 @@ function crystalEvolve(i) {
 
 function petGainXP(n) {
   const P = G.P, act = G.allies.filter(a => a.pet);
-  const k = (hasT(P, 'mentor') ? 1.5 : 1) * (act.length > 1 ? 0.75 : 1);
+  const k = hasT(P, 'mentor') ? 1.5 : 1; // cada Pokémon fora ganha o XP inteiro (não divide entre eles)
   for (const a of act) {
     const pt = P.pets[a.slot];
     if (!pt || pt.lvl >= PET_MAX) continue;
