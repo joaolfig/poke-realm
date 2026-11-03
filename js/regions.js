@@ -94,7 +94,7 @@ const REGIONS = {
         ['O último ginásio pertence ao Chefe Giovanni, o próprio chefe da Equipe Rocket. Derrote-o no ginásio dele.', 'Giovanni cai e entrega a chave do laboratório: "Eu não consigo mais controlar a criatura. Ninguém consegue."'],
       ],
       final: [`Descendo a Estrada da Vitória fica o <b>Laboratório Secreto da Equipe Rocket</b>. Lá dentro, <b>Mewtwo</b> despertou de vez. Acabe com isso.`,
-        `Mewtwo foi derrotado e se recolheu nas profundezas da caverna. A Equipe Rocket acabou, os Pokémon roubados voltaram para casa e Kanto tem um novo campeão.`],
+        `Mewtwo foi derrotado e partiu para viver longe dos humanos. A Equipe Rocket acabou, os Pokémon roubados voltaram para casa e Kanto tem um novo campeão.`],
     },
   },
 
@@ -106,7 +106,7 @@ const REGIONS = {
       pesquisa: [['Professor Elm', 'quero entender por que alguns Pokémon só existem em Johto']] } },
     interludes: [
       { ch: 3, npc: 'cura', kind: 'capball', n: 1, z: 2, titulo: 'As bolas do Kurt', fala: 'O velho Kurt mandou bolas novas e quer saber se elas aguentam Pokémon de verdade. Antes do próximo ginásio, capture um Pokémon da {Z2} com uma Great Ball ou uma Ultra Ball.', obj: 'Capture um Pokémon na {Z2} com Great Ball ou Ultra Ball' },
-      { ch: 7, npc: 'ferreiro', kind: 'forja', n: 4, titulo: 'Aço para dragões', fala: 'Os dragões da Mestra Clair quebram arma comum como se fosse graveto. Traga a sua para a minha bigorna e deixe ela pelo menos +4 antes de subir a montanha.', obj: 'Aprimore sua arma até +4 na Ferreira' },
+      { ch: 7, npc: 'ferreiro', kind: 'forja', n: 4, titulo: 'Aço para dragões', fala: 'Depois do gelo do Pryce vêm os dragões da Mestra Clair, e eles quebram arma comum como se fosse graveto. Traga a sua para a minha bigorna e deixe ela pelo menos +4 antes de seguir.', obj: 'Aprimore sua arma até +4 na Ferreira' },
     ],
     // Alfas da Lua: Pokémon noturnos de verdade (pela lore e pelos jogos)
     moon: [164, 198, 197, 229, 200, 215, 169, 168], // Noctowl, Murkrow, Umbreon, Houndoom, Misdreavus, Sneasel, Crobat, Ariados
@@ -147,11 +147,11 @@ const REGIONS = {
         ['Whitney e sua Miltank seguram as fazendas da região. Os capangas da Equipe Rocket querem os rebanhos para alimentar seus Pokémon.', 'Whitney conta que os capangas da Equipe Rocket usam uma rádio pirata para dar ordens. O sinal vem das ruínas a oeste.'],
         ['Morty, o vidente, fala com os espíritos das torres queimadas. Eles sabem onde estão as plumas.', 'Os espíritos sussurram: duas plumas já estão com os capangas da Equipe Rocket. Falta uma, escondida no farol.'],
         ['O Mestre Chuck treina no dojô da montanha. Os capangas da Equipe Rocket tentaram recrutar os lutadores dele à força.', 'Chuck expulsa os capangas da Equipe Rocket do dojô e descobre o nome do chefe deles: <b>o Executivo Archer</b>.'],
-        ['Jasmine cuida do farol, e a Ampharos do farol adoeceu. Sem a luz, os barcos da Equipe Rocket navegam sem ser vistos.', 'Com o farol aceso de novo, Jasmine vê os barcos da Equipe Rocket indo para as Ilhas Whirl.'],
+        ['Jasmine cuida do farol, e a Ampharos do farol adoeceu. Sem a luz, os barcos da Equipe Rocket navegam sem ser vistos.', 'Com o farol aceso de novo, Jasmine acha a terceira pluma escondida no alto da torre e a entrega a você. Lá do alto, ela vê os barcos da Equipe Rocket indo para as Ilhas Whirl.'],
         ['O Líder Pryce mora perto do lago gelado e sabe atravessar as correntezas do mar. Prove que aguenta o frio.', 'Pryce ensina o caminho pelas correntezas: "Siga os redemoinhos. Lugia dorme no centro."'],
-        ['A Mestra Clair protege o santuário dos dragões, e os capangas da Equipe Rocket querem roubar os ovos de lá.', 'Clair recupera a última pluma e entrega a você: "Só quem tem as três pode acalmar Lugia."'],
+        ['A Mestra Clair protege o santuário dos dragões, e os capangas da Equipe Rocket querem roubar os ovos de lá.', 'Clair toma dos capangas as duas plumas roubadas e entrega a você: "Agora você tem as três. Só quem tem as três pode acalmar Lugia."'],
       ],
-      final: [`O Executivo Archer usou as plumas e despertou <b>Lugia</b>, furioso, nas <b>Ilhas Whirl</b>. Enfrente-o e devolva a calma ao oceano.`,
+      final: [`Sem as plumas, o Executivo Archer acordou <b>Lugia</b> à força, e ele despertou furioso nas <b>Ilhas Whirl</b>. Leve as três plumas, enfrente-o e devolva a calma ao oceano.`,
         `Lugia se acalmou e voltou a dormir no fundo do mar. Os capangas da Equipe Rocket se dispersaram, e os sinos de Johto voltaram a tocar.`],
     },
   },
@@ -160,7 +160,7 @@ const REGIONS = {
     babies: [298, 360], // Azurill (rios do começo) e Wynaut
     side: { peso: { coleta: 2, especie: 1, explorar: 1 }, pessoas: {
       coleta: [['Pescador de Slateport', 'faço iscas com isso'], ['Devon S.A.', 'nossos laboratórios precisam de amostras']],
-      especie: [['Marinheiro Briney', 'eles não deixam meu barco sair do cais']],
+      especie: [['Marinheiro Briney', 'um bando deles tomou o caminho até o meu barco']],
       explorar: [['Mergulhadora de Mossdeep', 'quero saber o que existe além das correntes']] } },
     interludes: [
       { ch: 3, npc: 'dex', kind: 'explore', n: 25, titulo: 'O mapa de Hoenn', fala: 'Hoenn é mar, vulcão e floresta, e metade dos mapas está errada. Antes de seguir, explore pelo menos 25% da região para eu corrigir as rotas.', obj: 'Explore 25% de Hoenn (o mapa revela por onde você passa)' },
@@ -211,7 +211,7 @@ const REGIONS = {
         ['O Mestre Wallace protege a passagem submarina. Sem a confiança dele, ninguém entra na Seafloor Cavern.', 'Wallace abre a passagem: "Leve meu Milotic no coração. Kyogre está acordando."'],
       ],
       final: [`A Equipe Aqua usou o Orbe Azul. <b>Kyogre</b> despertou na <b>Seafloor Cavern</b> e as chuvas não param. Desça e acalme-o.`,
-        `Kyogre voltou a dormir, e o sol abriu de novo sobre Hoenn. A Equipe Aqua se desfez, e o Orbe Azul foi devolvido ao monte.`],
+        `Kyogre voltou a dormir, e o sol abriu de novo sobre Hoenn. A Equipe Aqua se desfez, e o Orbe Azul voltou para o fundo do vulcão.`],
     },
   },
 
@@ -220,7 +220,7 @@ const REGIONS = {
     side: { peso: { pesquisa: 2, explorar: 2, captura: 1 }, pessoas: {
       pesquisa: [['Assistente do Prof. Rowan', 'a evolução dos Pokémon de Sinnoh ainda é um mistério']],
       explorar: [['Alpinista do Monte Coronet', 'as trilhas mudam depois de cada nevasca']],
-      captura: [['Guarda das Ruínas', 'os Pokémon das ruínas guardam segredos antigos']] } },
+      captura: [['Guarda das Ruínas', 'quero saber se esses Pokémon confiam em treinadores como nas lendas antigas']] } },
     interludes: [
       { ch: 3, npc: 'dex', kind: 'dexn', n: 10, titulo: 'A pesquisa do Prof. Rowan', fala: 'O Professor Rowan estuda a evolução dos Pokémon de Sinnoh e precisa de exemplares. Registre pelo menos 10 espécies capturadas na Pokédex antes do próximo ginásio.', obj: 'Tenha 10 espécies capturadas na Pokédex de Sinnoh' },
       { ch: 7, npc: 'guilda', kind: 'alfa', n: 3, z: 4, titulo: 'Os líderes da nevasca', fala: 'Os bandos da {Z4} estão descendo para as cidades, puxados pelos Alfas. A Liga não abre o caminho enquanto eles estiverem soltos: derrote 3 Alfas lá.', obj: 'Derrote 3 Pokémon Alfa na {Z4} ou além' },
@@ -278,9 +278,9 @@ const REGIONS = {
       caca: [['Detetive Looker', 'esse Pokémon foi visto perto de um esconderijo da Equipe Plasma']],
       alfa: [['Treinadora do Metrô de Batalha', 'só os Alfas dão um treino de verdade']],
       evento: [['Repórter de Castelia', 'preciso de imagens no meio da confusão']],
-      pegar: [['Libertadora arrependida', 'quero cuidar de um Pokémon do jeito certo']] } },
+      pegar: [['Libertadora arrependida', 'quero ver um treinador cuidando de um desses do jeito certo']] } },
     interludes: [
-      { ch: 3, npc: 'guilda', kind: 'alfa', n: 2, z: 2, titulo: 'Força de verdade', fala: 'A Equipe Plasma diz que treinadores maltratam Pokémon. Mostre o contrário: enfrente os Alfas da {Z2} de igual para igual. Derrote 2 deles.', obj: 'Derrote 2 Pokémon Alfa na {Z2} ou além' },
+      { ch: 3, npc: 'guilda', kind: 'alfa', n: 2, z: 2, titulo: 'Parceiros de verdade', fala: 'A Equipe Plasma diz que treinadores só usam os Pokémon e que eles seriam mais felizes soltos. Mostre a parceria entre vocês: lute lado a lado com seus companheiros, cuidando deles, e vençam juntos 2 Alfas da {Z2}.', obj: 'Vença 2 Pokémon Alfa com seus companheiros na {Z2} ou além' },
       { ch: 7, npc: 'ferreiro', kind: 'forja', n: 4, titulo: 'Lâmina para o lendário', fala: 'Se o que dizem do Reshiram for verdade, você vai precisar de mais que coragem. Deixe sua arma pelo menos +4 na minha bigorna.', obj: 'Aprimore sua arma até +4 na Ferreira' },
     ],
     // Alfas da Lua: Pokémon noturnos de verdade (pela lore e pelos jogos)
@@ -317,7 +317,7 @@ const REGIONS = {
         A Professora Juniper pede que você enfrente os oito ginásios e descubra o que a Equipe Plasma esconde.`,
       caps: [
         ['Cilan, Chili e Cress servem batalhas junto com o almoço na Cidade de Striaton, ao sul da vila. Um membro da Equipe Plasma discursou lá ontem.', 'Os trigêmeos guardaram o panfleto da Equipe Plasma: "A verdade despertará o dragão branco."'],
-        ['A Curadora Lenora cuida do museu, onde fica uma pedra escura muito antiga. A Equipe Plasma quer roubá-la.', 'A pedra do museu foi trocada por uma falsa. A Equipe Plasma já levou a Pedra da Verdade.'],
+        ['A Curadora Lenora cuida do museu, onde fica uma pedra clara, quase branca, muito antiga. A Equipe Plasma quer roubá-la.', 'A pedra do museu foi trocada por uma falsa. A Equipe Plasma já levou a Pedra da Verdade.'],
         ['O artista Burgh pinta no meio da colmeia. Ele viu a Equipe Plasma escondendo algo na Pinwheel Forest.', 'Burgh desenha o rosto do líder da Equipe Plasma, um jovem chamado <b>N.</b>, que fala com os Pokémon.'],
         ['Elesa ilumina a cidade dos parques de diversão. A Equipe Plasma montou um palanque na frente do ginásio dela.', 'Elesa ouviu N. dizer que vai acordar o dragão "no castelo, quando tiver o apoio do povo".'],
         ['Clay controla as minas do deserto. A Equipe Plasma anda cavando atrás de uma passagem para o castelo.', 'Clay fecha as minas, mas confirma: o castelo da Equipe Plasma fica além do Caminho dos Gigantes.'],

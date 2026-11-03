@@ -150,7 +150,7 @@ let G = null, state = 'menu'; // menu | play | lost
 const K = {};
 const mouse = { x: 0, y: 0, down: false };
 // showMap: 0 = escondido, 1 = minimapa (com zoom, em volta do jogador), 2 = mapa da região inteira
-let autofire = false, showMap = 1;
+let showMap = 1; // sem tiro automático no PC e no controle (ajudas automáticas são só do celular)
 
 function newWorld() {
   G = {
@@ -1202,7 +1202,7 @@ function updatePlayer(dt) {
   P.shootCd -= dt;
   // a vila é zona de paz: ninguém ataca de dentro dela
   const safe = !inDg && inTown(P.x, P.y);
-  if ((mouse.down || autofire) && state === 'play' && !G.npcOpen && !safe) {
+  if (mouse.down && state === 'play' && !G.npcOpen && !safe) {
     while (P.shootCd <= 0) { playerShoot(); P.shootCd += 1 / fireRate(P); }
   } else {
     if (P.shootCd < 0) P.shootCd = 0;
@@ -1836,7 +1836,6 @@ function drawHUD(ox, oy) {
   drawPadReticle();
   if (typeof drawTouch === 'function') drawTouch();
   try { drawTargetCard(); } catch (e) { /* o cartão nunca pode travar o desenho do jogo */ }
-  if (autofire) { hy += 18; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fde047'; outlined('TIRO AUTOMÁTICO (T)', 12, hy); }
   if (P && catchUp(P) > 1 && !inDungeonArea(P.x)) { hy += 18; ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#86efac'; outlined(`⏫ Recuperação: +50% de XP até o Nv ${STORY[P.story.ch].lvl}`, 12, hy); }
   G.hudY = hy; G.hudYLast = hy; // a caixinha de avisos importantes fica logo abaixo destas linhas
 
@@ -2198,7 +2197,6 @@ window.addEventListener('keydown', ev => {
     else if (G.nearNPC) openNPC(G.nearNPC.id);
     else if (G.nearHM) useHMTile(P, G.nearHM);
   } else if (ev.code === 'Digit3') { const i = P.inv.findIndex(it => it && it.slot === 'pedra'); if (i >= 0) { useStone(i); G.dirty = true; } }
-  else if (ev.code === 'KeyT') autofire = !autofire;
   else if (ev.code === 'KeyM') { showMap = (showMap + 1) % 3; if (showMap === 2) G.toasts.push({ text: '🗺️ Mapa da região: só aparece o que você já explorou. [M] de novo esconde.', color: '#e5e7eb', t: 2.5 }); }
   else if (ev.code === 'KeyH') $('help').classList.toggle('hidden');
   else if (ev.code === 'KeyP') toggleDex();
