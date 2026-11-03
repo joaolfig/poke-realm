@@ -919,7 +919,9 @@ function updateZones(dt) {
       for (const e of enemiesNear(z.x, z.y, z.r)) { e.slowT = Math.max(e.slowT || 0, 1.2); abilHit(e, roll(2 + Math.floor(P.lvl / 5), 6) + A(P, z.k === 'raizes' ? 'POD' : 'VIG'), z.k === 'raizes' ? 'grass' : pType(P)); }
     } else if (z.k === 'armadilha') {
       if (!enemiesNear(z.x, z.y, 80).length && z.t > 0) continue;
-      for (const e of enemiesNear(z.x, z.y, z.r)) { e.markT = G.time + 6; abilHit(e, roll(6 + Math.floor(P.lvl / 3), 8) + A(P, 'POD'), pType(P), 3); }
+      const caught = enemiesNear(z.x, z.y, z.r);
+      if (caught.length) emitEvent({ t: 'mark', ids: caught.map(e => e.id), dur: 6 }); // a marca vale para todo o grupo
+      for (const e of caught) abilHit(e, roll(6 + Math.floor(P.lvl / 3), 8) + A(P, 'POD'), pType(P), 3);
       for (const a of G.allies) if (a.pet) { a.cd = 0; a.spT = Math.min(a.spT, 0.5); a.rageT = 4; }
       emitEvent({ t: 'fx', x: Math.round(z.x), y: Math.round(z.y), r: z.r, color: '#fbbf24' });
       sfx('boom');
@@ -958,7 +960,7 @@ function updateDash(dt) {
 }
 
 function dealDamage(e, dmg, slow) {
-  if (e.markT > G.time) dmg = Math.round(dmg * 1.25); // marcado pela armadilha do Mestre das Feras
+  if (e.markT > G.time) dmg = Math.round(dmg * 1.25); // marcado pela armadilha do Mestre das Feras: +25% para qualquer jogador
   e.flash = 0.1;
   e.mineT = G.time;
   if (isHost()) { if (slow) e.slowT = slow; applyHit(e, dmg); }
@@ -1331,6 +1333,7 @@ function handleEvent(m, local) {
       break;
     }
     case 'pvpinv': case 'pvpok': case 'pvpout': case 'pvpaoe': pvpEvent(m); break;
+    case 'mark': for (const id of m.ids || []) { const e = G.emap.get(id); if (e) e.markT = G.time + m.dur; } break;
     case 'decoy': G.decoys.push({ x: m.x, y: m.y, t: m.dur, cls: m.cls, ptype: m.ptype }); break;
     case 'tele': teleEvent(m); break;
     case 'moonch': moonChestEvent(m); break;
@@ -1723,6 +1726,14 @@ function drawEnemy(e, ox, oy) {
   if (img) drawMon(img, e.p, x + (e.st === 2 ? rand(-1, 1) : 0), y, e.w, e.h, e.face, asleep ? 0 : e.t, e.moving && !asleep, e.dg ? DG_BASE : e.x, e.y, e.fly, e.hp <= 0 ? 0.4 : 1);
   else { ctx.fillStyle = e.color; ctx.beginPath(); ctx.arc(x, y, e.r, 0, 7); ctx.fill(); }
   ctx.globalAlpha = 1;
+  if (e.markT > G.time) {
+    // marcado: mira dourada girando em volta (todos do grupo causam +25% de dano nele)
+    const rr = e.r + 8, a0 = G.time * 2;
+    ctx.save(); ctx.strokeStyle = 'rgba(251,191,36,.9)'; ctx.lineWidth = 2;
+    for (let k = 0; k < 4; k++) { const a = a0 + k * Math.PI / 2; ctx.beginPath(); ctx.arc(x, y, rr, a, a + 0.9); ctx.stroke(); }
+    ctx.font = '12px system-ui'; ctx.textAlign = 'center'; ctx.fillText('🎯', x + e.w / 2, y - e.h / 2);
+    ctx.restore();
+  }
   drawStatus(e, x, y);
   if (!e.boss && (e.hp < e.maxHp || e.alfa || e.rare)) {
     bar(x - 20, y - e.h / 2 - 12, 40, 4, e.hp / e.maxHp, e.rare ? '#67e8f9' : e.alfa ? '#facc15' : '#ef4444');

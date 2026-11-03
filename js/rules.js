@@ -92,7 +92,7 @@ const SUBCLASSES = {
   ],
   patrulheiro: [
     { id: 'feras', nome: 'Mestre das Feras', icon: '🐾', desc: 'Seus companheiros causam o dobro de dano.',
-      abil: { nome: 'Armadilha da Caçadora', cd: 5, desc: 'Armadilha: arma no cursor e explode quando um inimigo chega perto ((6 + nível/3)d8 + Poder numa área grande, deixa lentos) e agita seus companheiros. Quem é pego fica marcado por 6s e recebe +25% de dano seu e dos seus companheiros. Rearma uma vez depois de explodir.' } },
+      abil: { nome: 'Armadilha da Caçadora', cd: 5, desc: 'Armadilha: arma no cursor e explode quando um inimigo chega perto ((6 + nível/3)d8 + Poder numa área grande, deixa lentos) e agita seus companheiros. Quem é pego fica marcado 🎯 por 6s e recebe +25% de dano de todo o grupo (você, os outros jogadores e os companheiros). Rearma uma vez depois de explodir.' } },
     { id: 'arcano', nome: 'Atirador Arcano', icon: '✴️', desc: 'Flechas explodem ao acertar, causando metade do dano em volta.',
       abil: { nome: 'Aljava Arcana', cd: 5, desc: 'Aljava: dispara 3 flechas arcanas que atravessam até 2 inimigos em leque ((2 + nível/4)d8 + Poder) que podem paralisar.' } },
   ],
