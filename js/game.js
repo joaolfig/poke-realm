@@ -1055,7 +1055,7 @@ function enemyAttack(b) {
   if (P.race === 'draconato') eff *= 0.9; // escamas
   if (P.graceT > 0) eff *= 0.9; // Graça Salvadora
   let dmg = Math.max(1, Math.round((roll(b.dice[0] * (crit ? 2 : 1), b.dice[1]) + b.dice[2]) * eff));
-  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (!dmg) { text(P.x, P.y - 34, 'Escudo!', '#93c5fd', 12); return; } }
+  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (P.shield <= 0) shieldBreak(P); if (!dmg) { text(P.x, P.y - 34, 'Escudo!', '#93c5fd', 12); return; } }
   P.hp -= dmg; P.sinceHit = 0;
   if (b.stc && P.hp > 0 && PST_BY_TYPE[b.type] && Math.random() < PLAYER_ST_CH) playerStatus(P, stPick(PST_BY_TYPE[b.type]), b.type);
   G.shake = Math.min(8, G.shake + 2 + dmg * 0.3);
@@ -1170,6 +1170,8 @@ function updatePlayer(dt) {
   // Mago: Escudo Arcano (absorve até 20% da vida e se recarrega depois de 4 s sem levar dano)
   if (P.cls === 'mago') { const cap = maxHP(P) * 0.28; if (P.sinceHit > 4 && P.shield < cap) P.shield = Math.min(cap, (P.shield || 0) + cap * dt / 2); if (P.shield > 0) P.shieldT = Math.max(P.shieldT || 0, 0.5); }
   if ((P.shieldT = Math.max(0, (P.shieldT || 0) - dt)) <= 0) P.shield = 0;
+  // tamanho cheio do escudo (o anel em volta do herói mostra quanto ainda resta)
+  if (P.shield > 0) P.shieldPk = Math.max(P.shieldPk || 0, P.shield, P.cls === 'mago' ? maxHP(P) * 0.28 : 0); else P.shieldPk = 0;
   P.breathCd = Math.max(0, P.breathCd - dt);
   P.furia = Math.max(0, P.furia - dt);
   P.hasteT = Math.max(0, (P.hasteT || 0) - dt);
@@ -1606,7 +1608,16 @@ function render() {
     } else {
       const P = it.me, x = P.x + ox, y = P.y + oy;
       for (const g of G.trail || []) drawPlayerSprite(g.cls, g.x + ox, g.y + oy, g.face, 1, Math.max(0, g.t / 0.28) * 0.45, P.aim, null); // sem o anel do tipo nos fantasmas
-      if (P.shield > 0) { ctx.strokeStyle = 'rgba(147,197,253,.85)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.stroke(); }
+      if (P.shield > 0) {
+        const k = clamp(P.shield / (P.shieldPk || P.shield), 0, 1), low = k < 0.3 && Math.sin(G.time * 14) > 0;
+        ctx.strokeStyle = 'rgba(147,197,253,.22)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.stroke();
+        ctx.strokeStyle = low ? 'rgba(248,113,113,.95)' : 'rgba(147,197,253,.95)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(x, y, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k); ctx.stroke();
+      } else if (P.cls === 'mago' && P.sinceHit < 4) {
+        // sem escudo: um tracejado fraco enche até ele começar a voltar (4 s sem levar dano)
+        ctx.strokeStyle = 'rgba(147,197,253,.35)'; ctx.lineWidth = 2; ctx.setLineDash([3, 5]);
+        ctx.beginPath(); ctx.arc(x, y, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * P.sinceHit / 4); ctx.stroke(); ctx.setLineDash([]);
+      }
       if (P.graceT > 0) { ctx.strokeStyle = 'rgba(253,230,138,.95)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x, y - 24 + Math.sin(G.time * 4) * 1.5, 10, 3.5, 0, 0, 7); ctx.stroke(); }
       if (P.seloT > 0) { ctx.strokeStyle = 'rgba(253,230,138,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 30 + Math.sin(G.time * 8) * 2, 0, 7); ctx.stroke(); }
       if (P.furia > 0) { ctx.fillStyle = 'rgba(239,68,68,.25)'; ctx.beginPath(); ctx.arc(x, y, 24 + Math.sin(G.time * 15) * 3, 0, 7); ctx.fill(); }
@@ -2002,12 +2013,20 @@ function typeMatchHTML(t) {
   return `<div class="tmatch"><div class="tmg"><div class="tmh">⚔ Seus ataques ${typeBadge(t)} causam</div>${atk || '<div class="tmr"><i>dano normal em todos</i></div>'}</div>`
     + `<div class="tmg"><div class="tmh">🛡 Ataques em você causam</div>${def || '<div class="tmr"><i>dano normal de todos</i></div>'}</div></div>`;
 }
+// o escudo acabou de quebrar: estilhaços azuis e aviso
+function shieldBreak(P) {
+  P.shield = 0;
+  burst(P.x, P.y, '#93c5fd', 16);
+  text(P.x, P.y - 48, '🛡 Escudo quebrou!', '#93c5fd', 13);
+  sfx('hit');
+}
 function updatePanel() {
   const P = G.P;
   if (!P) return;
   const c = CLASSES[P.cls];
   const mh = maxHP(P), need = xpNeed(P.lvl);
-  $('b-hp').style.width = (P.hp / mh * 100) + '%'; $('t-hp').textContent = `PV ${Math.ceil(P.hp)} / ${mh}`;
+  $('b-hp').style.width = (P.hp / mh * 100) + '%'; $('t-hp').textContent = `PV ${Math.ceil(P.hp)} / ${mh}${P.shield > 0 ? ` · 🛡 ${Math.ceil(P.shield)}` : ''}`;
+  $('b-sh').style.width = (Math.min(1, (P.shield || 0) / mh) * 100) + '%';
   const S = P.pstT > 0 && PST[P.pst], chip = $('p-st');
   $('b-hp').style.background = S ? S.color : '';
   chip.classList.toggle('hidden', !S);
@@ -2699,7 +2718,7 @@ function teleDamage(o, P) {
   if (race(P).resist.includes(o.ty) || MA(P, 'resist').includes(o.ty) || (P.lin && LIN[P.lin].resist.includes(o.ty))) eff *= 0.5;
   eff *= linTaken(P, o.ty) * (P.seloT > 0 ? 0.75 : 1) * (P.graceT > 0 ? 0.9 : 1) * (P.race === 'draconato' ? 0.9 : 1);
   let dmg = Math.max(1, Math.round(maxHP(P) * o.pct * Math.min(eff, 1.5) * rand(0.9, 1.1)));
-  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; }
+  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (P.shield <= 0) shieldBreak(P); }
   if (dmg <= 0) return false;
   P.hp -= dmg; P.sinceHit = 0;
   text(P.x, P.y - 34, `-${dmg}`, '#f87171', 17); sfx('hit');

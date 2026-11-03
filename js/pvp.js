@@ -115,7 +115,7 @@ function pvpHitCheck(b) {
   if (V.size > 40) V.delete(V.keys().next().value);
   if (P.race === 'halfling' && Math.random() < 0.08) { text(P.x, P.y - 34, 'Esquiva!', '#93c5fd', 12); return true; }
   let dmg = Math.round(b.dmg * clamp(1 - (AC(P) - 12) * 0.03, 0.5, 1) * (P.race === 'draconato' ? 0.9 : 1));
-  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; }
+  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (P.shield <= 0) shieldBreak(P); }
   if (dmg > 0) {
     P.hp -= dmg; P.sinceHit = 0;
     G.shake = Math.min(6, G.shake + 2);

@@ -35,6 +35,7 @@
   .pcls { color: var(--dim); margin: 4px 0 10px; font-size: 14px; }
   .bar { position: relative; height: 18px; background: var(--well); border: 2px solid #000; box-shadow: 0 0 0 1px var(--line); margin: 5px 0; overflow: hidden; }
   .bar > div { height: 100%; transition: width .1s; box-shadow: inset 0 3px 0 rgba(255,255,255,.18), inset 0 -3px 0 rgba(0,0,0,.25); }
+  #b-sh { position: absolute; left: 0; top: 0; height: 5px; background: #93c5fd; box-shadow: none; width: 0; }
   .bar span { position: absolute; inset: 0; text-align: center; font: 600 12px/14px var(--px); letter-spacing: .04em; text-shadow: 1px 1px 0 #000; }
   .hp > div { background: #3f9f45; }
   .mp > div { background: #3d6fc4; }
@@ -394,7 +395,7 @@
     <div id="hud-top" class="hud"><div id="p-derived"></div></div>
     <div id="hud-bot" class="hud">
       <div id="p-st" class="stchip hidden"></div>
-      <div class="bar hp"><div id="b-hp"></div><span id="t-hp"></span></div>
+      <div class="bar hp"><div id="b-hp"></div><div id="b-sh"></div><span id="t-hp"></span></div>
       <div class="bar xp"><div id="b-xp"></div><span id="t-xp"></span></div>
       <div class="hotbar"><div id="p-abil"></div><div id="p-pots"></div></div>
     </div>
@@ -493,25 +494,25 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=280"></script>
-<script src="js/data.js?v=280"></script>
-<script src="js/rules.js?v=280"></script>
-<script src="js/items.js?v=280"></script>
-<script src="js/dungeon.js?v=280"></script>
-<script src="js/net.js?v=280"></script>
-<script src="js/map.js?v=280"></script>
-<script src="js/world.js?v=280"></script>
-<script src="js/story.js?v=280"></script>
-<script src="js/hm.js?v=280"></script>
-<script src="js/allies.js?v=280"></script>
-<script src="js/town.js?v=280"></script>
-<script src="js/geo.js?v=280"></script>
-<script src="js/regions.js?v=280"></script>
-<script src="js/audio.js?v=280"></script>
-<script src="js/pad.js?v=280"></script>
-<script src="js/pvp.js?v=280"></script>
-<script src="js/sigs.js?v=280"></script>
-<script src="js/game.js?v=280"></script>
-<script src="js/touch.js?v=280"></script>
+<script src="js/pokedex.js?v=281"></script>
+<script src="js/data.js?v=281"></script>
+<script src="js/rules.js?v=281"></script>
+<script src="js/items.js?v=281"></script>
+<script src="js/dungeon.js?v=281"></script>
+<script src="js/net.js?v=281"></script>
+<script src="js/map.js?v=281"></script>
+<script src="js/world.js?v=281"></script>
+<script src="js/story.js?v=281"></script>
+<script src="js/hm.js?v=281"></script>
+<script src="js/allies.js?v=281"></script>
+<script src="js/town.js?v=281"></script>
+<script src="js/geo.js?v=281"></script>
+<script src="js/regions.js?v=281"></script>
+<script src="js/audio.js?v=281"></script>
+<script src="js/pad.js?v=281"></script>
+<script src="js/pvp.js?v=281"></script>
+<script src="js/sigs.js?v=281"></script>
+<script src="js/game.js?v=281"></script>
+<script src="js/touch.js?v=281"></script>
 </body>
 </html>
