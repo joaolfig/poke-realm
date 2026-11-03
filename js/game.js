@@ -204,21 +204,22 @@ const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWo
 // mas nunca abaixo da duração do efeito + 1 s (nenhum buff fica ligado para sempre)
 // Guerreiro (e subclasses): pele de veterano, recebe até 35% menos dano conforme sobe de nível
 const guardK = P => (P.cls === 'guerreiro' ? (1 - 0.35 * clamp((P.lvl - 1) / 29, 0, 1)) * (hasS(P, 'paladino') ? 0.85 : 1) : 1);
-// Escudo Arcano do Mago: 20% da vida no Nv 1 até 35% no Nv 30
-const mageShieldK = P => 0.2 + 0.15 * clamp((P.lvl - 1) / 29, 0, 1);
+// Escudo Arcano do Mago: 20% da vida no Nv 1 até 45% no Nv 30; volta a carregar 4 s (Nv 1) a 2,5 s (Nv 30) depois do último golpe, mesmo absorvido
+const mageShieldK = P => 0.2 + 0.25 * clamp((P.lvl - 1) / 29, 0, 1);
+const mageShieldWait = P => 4 - 1.5 * clamp((P.lvl - 1) / 29, 0, 1);
 const ABIL_DUR = { guerreiro: 5, barbaro: 3, paladino: 6, ladino: 1.5, assassino: 4.4, trapaceiro: 3, vida: 6, guerra: 4, feras: 6, druida: 12, lua: 18, terra: 12 };
 const abilDur = P => ABIL_DUR[P.subclass || P.cls] || 0;
 // força de cada uso do especial: com a recarga mais curta do fim do jogo ele sai bem mais vezes, então cada uso fica
 // um pouco mais fraco (raiz da proporção entre a recarga atual e a base: 5 s -> 2 s = 63%), e o total ainda cresce
-const abilPow = P => clamp(Math.sqrt(abilCd(P) / curAbil(P).cd), 0.55, 1);
-function abilCd(P) {
+const abilPow = P => clamp(Math.sqrt(abilCd(P, true) / curAbil(P).cd), 0.55, 1); // Foco e recarga dos itens não enfraquecem o especial
+function abilCd(P, raw) {
   // Forma Selvagem (Druida, Lua e Terra): espera de 30 s depois que a forma acaba no Nv 1, caindo até 10 s no Nv 30
   if (P.cls === 'druida') {
     const gap = (30 - 20 * clamp((P.lvl - 1) / 29, 0, 1)) * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
     return wildDur(P) + Math.max(1, gap);
   }
   const t = clamp((P.lvl - 1) / 29, 0, 1), start = curAbil(P).cd * (abilDur(P) ? 1.2 : 1.6), end = Math.min(start, abilDur(P) + 2); // nunca cresce com o nível
-  const cd = (start + (end - start) * t) * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
+  const cd = (start + (end - start) * t) * (raw ? 1 : (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd')));
   return Math.max(abilDur(P) + 1, 1, cd);
 }
 const rangeMul = P => (P.race === 'elfo' ? 1.2 : 1) * (hasT(P, 'olho') ? 1.25 : 1) * (1 + M(P, 'range'));
@@ -738,7 +739,7 @@ function spawnPB(o) {
   const b = {
     ox: o.x, oy: o.y, x: o.x, y: o.y, dx: Math.cos(o.a), dy: Math.sin(o.a), a: o.a, spd: o.spd, t: 0, life: o.life,
     amp: o.amp || 0, ph: o.ph || 0, r: o.r, color: o.color, shape: o.shape, pierce: !!o.pierce || !!o.left, hit: o.pierce || o.left || o.skip ? new Set(o.skip ? [o.skip] : []) : null, ally: o.ally || null, sp: o.sp || 0, spell: o.spell || 0,
-    left: o.left || 0, rico: !!o.rico, pd: o.pd || 0, bomb: o.bomb || 0,
+    left: o.left || 0, rico: !!o.rico, pd: o.pd || 0, bomb: o.bomb || 0, dk: o.dk || 0,
   };
   G.pb.push(b);
   if (netActive()) NET.outS.push([Math.round(b.ox), Math.round(b.oy), +o.a.toFixed(3), b.spd, +b.life.toFixed(2), b.amp, +b.ph.toFixed(2), b.r, b.shape, b.color, b.pd]);
@@ -751,7 +752,7 @@ function shootBullet(a, o = {}) {
   spawnPB({
     a, spd: o.spd || w.speed, life: (o.life || w.life) * rangeMul(P), amp: w.wave ? 14 : 0, ph: o.ph || 0,
     r: o.r || w.size, color: o.color || (P.wildT > 0 || P.tempTypeT > 0 ? TYPE_COLORS[pType(P)] : w.color), shape: o.shape || w.shape, pierce: o.pierce || w.pierce || M(P, 'pierce') > 0, spell: o.spell, x: o.x !== undefined ? o.x : P.x, y: o.y !== undefined ? o.y : P.y,
-    left: o.left || (!(o.pierce || w.pierce) && hasT(P, 'perfurante') ? 2 : 0), rico: o.rico, skip: o.skip, bomb: o.bomb, pd: pvpShotDmg(P, o),
+    left: o.left || (!(o.pierce || w.pierce) && hasT(P, 'perfurante') ? 2 : 0), rico: o.rico, skip: o.skip, bomb: o.bomb, dk: o.dk, pd: Math.round(pvpShotDmg(P, o) * (o.dk || 1)),
   });
 }
 function addCosmetic(s, own) {
@@ -764,7 +765,7 @@ function playerShoot() {
   P.shotT = G.time;
   const ca = pst(P, 6) ? rand(-0.2, 0.2) : 0; // confuso: a mira treme
   for (let i = 0; i < w.shots; i++) shootBullet(P.aim + ca + (w.spread ? (i - (w.shots - 1) / 2) * w.spread : 0), { ph: i * Math.PI });
-  if (hasT(P, 'atirador')) { P.alt = -P.alt; shootBullet(P.aim + P.alt); }
+  if (hasT(P, 'atirador')) { P.alt = -P.alt; shootBullet(P.aim + P.alt, { dk: 0.25 }); } // projétil extra mais fraco (25%)
   if (Math.random() < 0.5) sfx('shoot');
 }
 
@@ -838,8 +839,8 @@ function useAbility() {
       let k = 1;
       for (let j = 0; j < 6 && cur; j++) {
         hit.add(cur.id); pts.push([cur.x, cur.y]);
-        if (cur.pvpFoe) { pvpBlast(cur.x, cur.y, 40, (roll(2 + Math.floor(lv / 3), 8) + Math.floor(pod / 2)) * k); break; }
-        abilHit(cur, (roll(2 + Math.floor(lv / 3), 8) + Math.floor(pod / 2)) * k, tp);
+        if (cur.pvpFoe) { pvpBlast(cur.x, cur.y, 40, (roll(1 + Math.floor(lv / 2), 8) + Math.floor(pod / 2)) * k); break; }
+        abilHit(cur, (roll(1 + Math.floor(lv / 2), 8) + Math.floor(pod / 2)) * k, tp);
         k *= 0.85;
         const from = cur;
         cur = enemiesNear(from.x, from.y, 220).filter(e => !hit.has(e.id)).sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y))[0];
@@ -900,7 +901,7 @@ function useAbility() {
       for (let i = 0; i < 3; i++) shootBullet(P.aim + (i - 1) * 0.06, { spd: 620, life: 0.85, r: 9, color: '#c084fc', shape: 'arrow', pierce: true, left: 2, spell: 4 }); // cada flecha atravessa até 2 inimigos
       sfx('crit'); break;
   }
-  if (hasT(P, 'barreira')) { P.shield = Math.round(maxHP(P) * 0.15); P.shieldT = 4; }
+  if (hasT(P, 'barreira')) { P.shield = Math.max(P.shield || 0, Math.round(maxHP(P) * 0.08)); P.shieldT = Math.max(P.shieldT || 0, 4); }
   if (hasT(P, 'eco') && Math.random() < 0.25) { P.abilCd = 0.3; text(P.x, P.y - 50, '🔁 Eco!', '#c4b5fd', 13); }
 }
 
@@ -978,13 +979,14 @@ function wildShotDmg(P, dmg) {
   const pt = P.pets[P.wildSlot];
   if (!pt || !POKE[pt.pid]) return dmg;
   const st = POKE[pt.pid].stats, tr = petTrait(pt.pid);
-  const f = clamp(Math.max(st.attack || 60, st['special-attack'] || 60) / 80, 0.7, 1.7);
+  // o ataque da espécie pesa só pela metade (antes um Pokémon forte deixava o Druida 25-33% mais forte que com um fraco)
+  const f = 0.95 + (clamp(Math.max(st.attack || 60, st['special-attack'] || 60) / 80, 0.7, 1.7) - 1) * 0.5;
   const shot = ((1 + Math.floor(pt.lvl / 8)) * 4.5 + Math.floor(pt.lvl / 2)) * f; // tiro médio do companheiro (como em petDmg)
   const nPets = G.allies.filter(x => x.pet).length;
   const mul = (1 + M(P, 'pet')) * ([1, 0.8, 0.7, 0.62][Math.max(0, nPets - 1)] || 0.62) * abilDmgMul(petAbility(pt.pid)) * hmDmgMul(pt.pid) * (tr ? tr.dmg : 1);
   const petDps = shot * mul / 0.9 * 1.15; // tiro a cada 0,9 s; o golpe especial em leque soma ~15% num alvo (medido)
   const wn = CLASSES[P.cls].wpn, ww = curWpn(P), hits = ww.shots || 1; // de perto todos os tiros do leque acertam
-  return Math.max(1, Math.round((dmg + petDps / wn.rate) * WILD_K * (hasS(P, 'lua') ? 1.2 : hasS(P, 'terra') ? 1.2 : 1) * wn.rate / (ww.rate * hits)));
+  return Math.max(1, Math.round((dmg + petDps / wn.rate) * WILD_K * (hasS(P, 'lua') ? 1.2 : hasS(P, 'terra') ? 1.3 : 1) * wn.rate / (ww.rate * hits)));
 }
 function playerHit(e, b) {
   if (b && b.ally) return allyHit(e, b.ally, b.sp);
@@ -1001,6 +1003,7 @@ function playerHit(e, b) {
       : sp === 3 || sp === 4 ? roll((2 + Math.floor(P.lvl / 4)) * (crit ? 2 : 1), 8) + A(P, 'POD')
       : roll(w.dice[0] * (crit ? 2 : 1), w.dice[1]) + A(P, 'POD') + w.bonus + M(P, 'dmg');
   if (sp) dmg *= abilPow(P);
+  if (b && b.dk) dmg *= b.dk;
   if (P.wildT > 0 && !sp) dmg = wildShotDmg(P, dmg);
   if (P.furia > 0) dmg += d(6);
   if (P.seloT > 0) dmg += roll(2, 6);
@@ -1041,10 +1044,8 @@ function playerHit(e, b) {
     }
     G.fx.push({ k: 'ring', x: e.x, y: e.y, r: 0, R: 70, life: 0.25, max: 0.25, color: '#fbbf24' });
   }
-  if (crit) {
-    sfx('crit');
-    if (hasT(P, 'vampirico')) P.hp = Math.min(maxHP(P), P.hp + Math.ceil(res.dmg * 0.3));
-  }
+  if (hasT(P, 'vampirico')) P.hp = Math.min(maxHP(P), P.hp + res.dmg * (crit ? 0.3 : 0.04));
+  if (crit) sfx('crit');
 }
 
 function enemyAttack(b) {
@@ -1068,7 +1069,7 @@ function enemyAttack(b) {
   if (P.race === 'draconato') eff *= 0.9; // escamas
   if (P.graceT > 0) eff *= 0.9; // Graça Salvadora
   let dmg = Math.max(1, Math.round((roll(b.dice[0] * (crit ? 2 : 1), b.dice[1]) + b.dice[2]) * eff));
-  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (P.shield <= 0) shieldBreak(P); if (!dmg) { text(P.x, P.y - 34, 'Escudo!', '#93c5fd', 12); return; } }
+  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; P.sinceHit = 0; if (P.shield <= 0) shieldBreak(P); if (!dmg) { text(P.x, P.y - 34, 'Escudo!', '#93c5fd', 12); return; } }
   P.hp -= dmg; P.sinceHit = 0;
   if (b.stc && P.hp > 0 && PST_BY_TYPE[b.type] && Math.random() < PLAYER_ST_CH) playerStatus(P, stPick(PST_BY_TYPE[b.type]), b.type);
   G.shake = Math.min(8, G.shake + 2 + dmg * 0.3);
@@ -1180,8 +1181,8 @@ function updatePlayer(dt) {
 
   P.abilCd = Math.max(0, P.abilCd - dt);
   P.dashCd = Math.max(0, (P.dashCd || 0) - dt); P.dodgeT = Math.max(0, (P.dodgeT || 0) - dt); P.seloT = Math.max(0, (P.seloT || 0) - dt);
-  // Mago: Escudo Arcano (absorve de 20% a 35% da vida, conforme o nível, e se recarrega depois de 4 s sem levar dano)
-  if (P.cls === 'mago') { const cap = maxHP(P) * mageShieldK(P); if (P.sinceHit > 4 && P.shield < cap) P.shield = Math.min(cap, (P.shield || 0) + cap * dt / 2); if (P.shield > 0) P.shieldT = Math.max(P.shieldT || 0, 0.5); }
+  // Mago: Escudo Arcano (absorve de 20% a 45% da vida e volta a carregar 4 s a 2,5 s sem levar dano, conforme o nível)
+  if (P.cls === 'mago') { const cap = maxHP(P) * mageShieldK(P); if (P.sinceHit > mageShieldWait(P) && P.shield < cap) P.shield = Math.min(cap, (P.shield || 0) + cap * dt / 2); if (P.shield > 0) P.shieldT = Math.max(P.shieldT || 0, 0.5); }
   if ((P.shieldT = Math.max(0, (P.shieldT || 0) - dt)) <= 0) P.shield = 0;
   // tamanho cheio do escudo (o anel em volta do herói mostra quanto ainda resta)
   if (P.shield > 0) P.shieldPk = Math.max(P.shieldPk || 0, P.shield, P.cls === 'mago' ? maxHP(P) * mageShieldK(P) : 0); else P.shieldPk = 0;
@@ -1414,7 +1415,7 @@ function update(dt) {
       if (G.P) playerHit(e, b);
       if (G.P && !b.ally && !b.rico && !b.spell && hasT(G.P, 'ricochete')) {
         const nx = G.enemies.filter(o => o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 260).sort((p, q) => Math.hypot(p.x - e.x, p.y - e.y) - Math.hypot(q.x - e.x, q.y - e.y))[0];
-        if (nx) shootBullet(Math.atan2(nx.y - e.y, nx.x - e.x), { x: e.x, y: e.y, life: 0.5, rico: true, skip: e.id });
+        if (nx) shootBullet(Math.atan2(nx.y - e.y, nx.x - e.x), { x: e.x, y: e.y, life: 0.5, rico: true, skip: e.id, dk: 0.3 }); // o ricochete causa 30%
       }
       if (!b.pierce || (b.left && --b.left <= 0)) { b.dead = true; break; }
     }
@@ -1628,10 +1629,10 @@ function render() {
         ctx.strokeStyle = 'rgba(147,197,253,.22)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.stroke();
         ctx.strokeStyle = low ? 'rgba(248,113,113,.95)' : 'rgba(147,197,253,.95)'; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.arc(x, y, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k); ctx.stroke();
-      } else if (P.cls === 'mago' && P.sinceHit < 4) {
+      } else if (P.cls === 'mago' && P.sinceHit < mageShieldWait(P)) {
         // sem escudo: um tracejado fraco enche até ele começar a voltar (4 s sem levar dano)
         ctx.strokeStyle = 'rgba(147,197,253,.35)'; ctx.lineWidth = 2; ctx.setLineDash([3, 5]);
-        ctx.beginPath(); ctx.arc(x, y, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * P.sinceHit / 4); ctx.stroke(); ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(x, y, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * P.sinceHit / mageShieldWait(P)); ctx.stroke(); ctx.setLineDash([]);
       }
       if (P.graceT > 0) { ctx.strokeStyle = 'rgba(253,230,138,.95)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x, y - 24 + Math.sin(G.time * 4) * 1.5, 10, 3.5, 0, 0, 7); ctx.stroke(); }
       if (P.seloT > 0) { ctx.strokeStyle = 'rgba(253,230,138,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 30 + Math.sin(G.time * 8) * 2, 0, 7); ctx.stroke(); }
@@ -2741,7 +2742,7 @@ function teleDamage(o, P) {
   if (race(P).resist.includes(o.ty) || MA(P, 'resist').includes(o.ty) || (P.lin && LIN[P.lin].resist.includes(o.ty))) eff *= 0.5;
   eff *= linTaken(P, o.ty) * guardK(P) * (P.seloT > 0 ? 0.6 : 1) * (P.graceT > 0 ? 0.9 : 1) * (P.race === 'draconato' ? 0.9 : 1);
   let dmg = Math.max(1, Math.round(maxHP(P) * o.pct * Math.min(eff, 1.5) * rand(0.9, 1.1)));
-  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (P.shield <= 0) shieldBreak(P); }
+  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; P.sinceHit = 0; if (P.shield <= 0) shieldBreak(P); }
   if (dmg <= 0) return false;
   P.hp -= dmg; P.sinceHit = 0;
   text(P.x, P.y - 34, `-${dmg}`, '#f87171', 17); sfx('hit');

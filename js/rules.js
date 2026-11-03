@@ -75,7 +75,7 @@ const SUBCLASSES = {
   mago: [
     { id: 'evocador', nome: 'Evocador', icon: '⚡', desc: '+5% de cadência de tiro.',
       abil: { nome: 'Bomba Arcana', cd: 5, desc: 'Feitiço: 20 projéteis explodem em círculo no cursor, cada um causando (1 + nível/6)d6 + Poder/2 do seu tipo (cada alvo leva no máximo 3). Ótimo contra grupos!' } },
-    { id: 'necromante', nome: 'Necromante', icon: '💀', desc: 'Pokémon derrotados podem voltar como espírito aliado por 20s (50%, máx. 3).',
+    { id: 'necromante', nome: 'Necromante', icon: '💀', desc: 'Pokémon derrotados podem voltar como espírito aliado por 20s (50%, máx. 4).',
       abil: { nome: 'Crânio Ceifador', cd: 4.5, desc: 'Crânio: explosão no cursor que causa (5 + nível/3)d10 + Poder/2 em área, cura você em 50% do dano causado e os aliados próximos na metade disso.' } },
   ],
   ladino: [
@@ -99,7 +99,7 @@ const SUBCLASSES = {
   druida: [
     { id: 'lua', nome: 'Círculo da Lua', icon: '🌙', desc: 'A Forma Selvagem fica bem maior, dura 18s, causa +20% de dano, dá +50% de PV (em vez de 30%) e cura 25% da vida ao transformar (os aliados próximos recebem 15% da sua vida máxima).',
       abil: { nome: 'Forma Selvagem Lunar', cd: 28, desc: 'Forma Selvagem: vira o seu companheiro líder por 18s, com +50% de PV, e se cura em 25% da vida ao transformar; o uivo cura os aliados próximos em 15% da sua vida máxima.' } },
-    { id: 'terra', nome: 'Círculo da Terra', icon: '🌱', desc: 'A Forma Selvagem fica um pouco maior e causa +20% de dano e, ao transformar, raízes espinhosas brotam em volta por 6s: curam você e os aliados, ferem e deixam lentos os inimigos.',
+    { id: 'terra', nome: 'Círculo da Terra', icon: '🌱', desc: 'A Forma Selvagem fica um pouco maior e causa +30% de dano e, ao transformar, raízes espinhosas brotam em volta por 6s: curam você e os aliados, ferem e deixam lentos os inimigos.',
       abil: { nome: 'Forma Selvagem da Terra', cd: 24, desc: 'Forma Selvagem: vira o seu companheiro líder por 12s (+30% de PV) e faz brotar raízes que curam (1 + nível/6)d6 + Vigor/2 por segundo e ferem os inimigos em (2 + nível/5)d6 + Poder.' } },
   ],
 };
@@ -128,14 +128,14 @@ const TALENTS = {
   equipe: { nome: 'Batalha em Equipe', icon: '🤝', max: 3, desc: '+1 companheiro fora da Pokébola ao mesmo tempo (até 4). Com mais companheiros, cada um bate um pouco menos.' },
   afinidade: { nome: 'Afinidade Elemental', icon: '💎', max: 3, desc: 'Cristais de tipo duram +15s (base 30s).' },
   esquiva: { nome: 'Rolamento', icon: '💨', desc: '[Shift] avança rápido na direção em que você anda e fica intocável por um instante (recarga 3s).' },
-  ricochete: { nome: 'Ricochete', icon: '↩', desc: 'Seus tiros que acertam quicam uma vez para o inimigo mais próximo.' },
+  ricochete: { nome: 'Ricochete', icon: '↩', desc: 'Seus tiros que acertam quicam uma vez para o inimigo mais próximo, com 30% do dano.' },
   perfurante: { nome: 'Perfuração', icon: '📌', desc: 'Seus tiros atravessam um inimigo a mais.' },
-  atirador: { nome: 'Atirador Certeiro', icon: '🎯', desc: '+1 projétil em cada ataque.' },
+  atirador: { nome: 'Atirador Certeiro', icon: '🎯', desc: '+1 projétil em cada ataque, com 25% do dano.' },
   eco: { nome: 'Eco Arcano', icon: '🔁', desc: '25% de chance de o especial não gastar a recarga.' },
-  barreira: { nome: 'Barreira', icon: '🔰', desc: 'Usar o especial cria um escudo que absorve 15% da sua vida máxima por 4s.' },
+  barreira: { nome: 'Barreira', icon: '🔰', desc: 'Usar o especial cria um escudo que absorve 8% da sua vida máxima por 4s.' },
   foco: { nome: 'Foco', icon: '🔮', max: 2, desc: 'O especial recarrega 15% mais rápido.' },
   mentor: { nome: 'Mentor', icon: '📘', desc: 'Companheiros ganham 50% mais XP e usam o golpe especial 30% mais vezes.' },
-  vampirico: { nome: 'Toque Vampírico', icon: '🩸', desc: 'Críticos curam 30% do dano causado.' },
+  vampirico: { nome: 'Toque Vampírico', icon: '🩸', desc: 'Seus golpes curam 4% do dano causado (críticos, 30%).' },
   adepto: { nome: 'Adepto Elemental', icon: '🌈', desc: 'Golpes super efetivos causam +50% de dano.' },
   domador: { nome: 'Domador', icon: '⚪', desc: '+4 nas rolagens de captura e +1 Poké Ball a cada 15 abates.' },
   alquimista: { nome: 'Alquimista', icon: '⚗️', desc: 'Poções 50% mais fortes e +1 Poção de Cura a cada 10 abates.' },

@@ -333,7 +333,7 @@ function syncPet() {
 
 function addSpirit(pid) {
   const P = G.P;
-  if (!POKE[pid] || G.allies.filter(a => a.ghost).length >= 3) return;
+  if (!POKE[pid] || G.allies.filter(a => a.ghost).length >= 4) return;
   const p = POKE[pid];
   G.allies.push({ ghost: true, pid, type: mainType(p), x: P.x, y: P.y, ttl: 20, cd: 0.5, t: 0, face: 1 });
   text(P.x, P.y - 50, `💀 ${p.name} se ergue como espírito!`, '#c4b5fd', 13);
@@ -438,7 +438,7 @@ function dittoLook(a, dt) {
 
 function petDmg(a) {
   const P = G.P;
-  if (a.ghost) return Math.ceil(roll(1, 8) + Math.floor(P.lvl / 2));
+  if (a.ghost) return Math.ceil((roll(1, 8) + Math.floor(P.lvl / 2)) * 1.3);
   const p = POKE[a.pid], st = p ? p.stats : {};
   const f = clamp(Math.max(st.attack || 60, st['special-attack'] || 60) / 80, 0.7, 1.7);
   return Math.round((roll(1 + Math.floor(a.lvl / 8), 8) + Math.floor(a.lvl / 2)) * f);

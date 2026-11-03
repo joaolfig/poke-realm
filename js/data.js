@@ -17,9 +17,9 @@ const CLASSES = {
   mago: {
     nome: 'Mago', icon: '🔮', hd: 7, ac: 11, crit: 20, dieAdj: 0, attrs: { POD: 4, AGI: 2, VIG: 1 },
     spr: { h: '#312e81', b: '#4338ca', d: '#1e1b4b' },
-    desc: 'Frágil, mas com longo alcance e raios que saltam entre os inimigos. Escudo Arcano: absorve de 20% (Nv 1) a 35% (Nv 30) da vida e se recarrega depois de 4 s sem levar dano.',
+    desc: 'Frágil, mas com longo alcance e raios que saltam entre os inimigos. Escudo Arcano: absorve de 20% (Nv 1) a 45% (Nv 30) da vida e volta a carregar depois de 4 s (Nv 1) a 2,5 s (Nv 30) sem levar dano.',
     wpn: { shots: 2, speed: 420, life: 1.15, size: 6, rate: 2.2, wave: true, shape: 'orb', color: '#c4b5fd' },
-    abil: { nome: 'Cetro Relampejante', cd: 3, desc: 'Cetro: um raio atinge o inimigo mais perto do cursor e salta para até 5 outros ((2 + nível/3)d8 + Poder/2, perde 15% por salto).' },
+    abil: { nome: 'Cetro Relampejante', cd: 3, desc: 'Cetro: um raio atinge o inimigo mais perto do cursor e salta para até 5 outros ((1 + nível/2)d8 + Poder/2, perde 15% por salto).' },
     weapons: ['Cajado de Aprendiz', 'Cajado de Carvalho', 'Cajado Arcano', 'Cajado das Tempestades', 'Cajado Astral', 'Cajado do Arquimago', 'Cajado do Vazio'], wicon: '🪄',
   },
   ladino: {
@@ -50,7 +50,7 @@ const CLASSES = {
     nome: 'Druida', icon: '🌿', hd: 8, ac: 13, crit: 20, dieAdj: 0, attrs: { POD: 3, AGI: 2, VIG: 2 },
     spr: { h: '#4d7c0f', b: '#78350f', d: '#3f6212' },
     desc: 'Guardião da natureza. Atira espinhos e, na Forma Selvagem, vira o seu companheiro líder.',
-    wpn: { shots: 1, speed: 440, life: 0.9, size: 6, rate: 3.0, shape: 'thorn', color: '#86efac' },
+    wpn: { shots: 1, speed: 440, life: 0.9, size: 6, rate: 3.1, shape: 'thorn', color: '#86efac' },
     abil: { nome: 'Forma Selvagem', cd: 24, desc: 'Forma Selvagem: vira o seu companheiro líder por 12s. Fica com o visual e o tipo dele, ganha +30% de PV e ataca com o golpe do tipo dele, causando os mesmos status que ele (o companheiro luta através de você e continua ganhando XP).' },
     weapons: ['Galho Retorcido', 'Cajado de Raiz', 'Cajado de Espinheiro', 'Cajado do Bosque', 'Cajado da Lua Cheia', 'Cajado do Carvalho Ancião', 'Cajado da Mãe Terra'], wicon: '🌿',
   },

@@ -83,8 +83,14 @@ function pvpLeave(lost, by) {
 // Só vale na arena (nada disso muda o dano contra Pokémon).
 // PVP_K: fração do dano normal que chega no rival (baixa, para as lutas durarem e dar tempo de desviar).
 // PVP_CLS: ajuste do tiro básico por classe (medido no Nv 30): quem tem pouco alcance bate mais; o Clérigo bate menos porque se cura.
+// Recalculado depois do balanceamento das classes (armas, vida e defesas novas) para manter o mesmo tempo de luta de antes:
+// o Guerreiro aguenta bem mais (vida e Veterano), então bate menos; Mago e Clérigo ganharam cadência e dano na arma.
 const PVP_K = 0.45;
-const PVP_CLS = { guerreiro: 1.25, mago: 0.88, ladino: 1.06, clerigo: 0.85, patrulheiro: 1.04, druida: 1.0 };
+const PVP_CLS = { guerreiro: 0.88, mago: 0.66, ladino: 1.12, clerigo: 0.44, patrulheiro: 0.94, druida: 0.83 };
+// defesas da classe também valem na arena (Veterano, Selo, fúria do Bárbaro), mas somadas nunca passam de -50%
+const pvpTaken = P => clamp(guardK(P) * (P.seloT > 0 ? 0.6 : 1) * (P.furia > 0 && hasS(P, 'barbaro') ? 0.5 : 1), 0.5, 1);
+// esquiva: Trapaceiro e encantamentos de esquiva (o Halfling já tem a dele)
+const pvpDodge = P => Math.random() < M(P, 'dodge') + (hasS(P, 'trapaceiro') ? 0.1 : 0);
 // de cada rajada (projéteis que saem juntos do mesmo ponto: leque, Bomba Arcana, flechas) no máximo PVP_VOLLEY acertam
 const PVP_VOLLEY = 3;
 // rivais da arena como alvos dos especiais de área (raio do Evocador, explosão do Necromante)
@@ -113,9 +119,9 @@ function pvpHitCheck(b) {
   if ((V.get(vk) || 0) >= PVP_VOLLEY) return false;
   V.set(vk, (V.get(vk) || 0) + 1);
   if (V.size > 40) V.delete(V.keys().next().value);
-  if (P.race === 'halfling' && Math.random() < 0.08) { text(P.x, P.y - 34, 'Esquiva!', '#93c5fd', 12); return true; }
-  let dmg = Math.round(b.dmg * clamp(1 - (AC(P) - 12) * 0.03, 0.5, 1) * (P.race === 'draconato' ? 0.9 : 1));
-  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (P.shield <= 0) shieldBreak(P); }
+  if ((P.race === 'halfling' && Math.random() < 0.08) || pvpDodge(P)) { text(P.x, P.y - 34, 'Esquiva!', '#93c5fd', 12); return true; }
+  let dmg = Math.round(b.dmg * clamp(1 - (AC(P) - 12) * 0.03, 0.5, 1) * (P.race === 'draconato' ? 0.9 : 1) * pvpTaken(P));
+  if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; P.sinceHit = 0; if (P.shield <= 0) shieldBreak(P); }
   if (dmg > 0) {
     P.hp -= dmg; P.sinceHit = 0;
     G.shake = Math.min(6, G.shake + 2);
@@ -135,7 +141,7 @@ function pvpAoeTick(dt) {
     if ((a.tick -= dt) > 0) continue;
     a.tick = 0.5;
     if (!P || !P.pvp || P.pvp.t > 0 || P.dodgeT > 0 || Math.hypot(P.x - a.x, P.y - a.y) > a.r) continue;
-    const dmg = Math.round(a.dmg * clamp(1 - (AC(P) - 12) * 0.03, 0.5, 1));
+    const dmg = Math.round(a.dmg * clamp(1 - (AC(P) - 12) * 0.03, 0.5, 1) * pvpTaken(P));
     P.hp -= dmg; P.sinceHit = 0;
     text(P.x, P.y - 34, `-${dmg} ☠`, '#a3e635', 13);
     if (a.once) a.dur = 0; // armadilha/explosão: acerta uma vez só
