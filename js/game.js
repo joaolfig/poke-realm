@@ -817,13 +817,13 @@ function useAbility() {
       emitEvent({ t: 'buff', k: 'selo', x: Math.round(P.x), y: Math.round(P.y), dur: 6, name: P.name });
       emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.round((roll(2, 8) + lv) * abilPow(P)), name: P.name });
       fxAt(P.x, P.y, 200, '#fde68a'); sfx('lvl'); break;
-    case 'mago': { // Feitiço: bomba de projéteis no cursor
+    case 'evocador': { // Bomba Arcana (Evocador): bomba de projéteis no cursor
       const t = aimPoint(P, 380);
       const bomb = G.bombId = (G.bombId || 0) + 1;
       for (let i = 0; i < 20; i++) shootBullet(i * Math.PI / 10, { x: t.x, y: t.y, spd: 330, life: 0.55, r: 6, color: TYPE_COLORS[tp], shape: 'orb', spell: 1, bomb });
       fxAt(t.x, t.y, 50, TYPE_COLORS[tp]); sfx('boom'); break;
     }
-    case 'evocador': { // Cetro Relampejante (Feiticeiro): raio em cadeia
+    case 'mago': { // Cetro Relampejante: raio em cadeia
       const t = aimPoint(P, 420);
       let cur = (P.pvp ? pvpFoesNear(t.x, t.y, 160) : []).concat(enemiesNear(t.x, t.y, 160)).sort((a, b) => Math.hypot(a.x - t.x, a.y - t.y) - Math.hypot(b.x - t.x, b.y - t.y))[0];
       if (!cur) { text(P.x, P.y - 40, 'Nenhum alvo perto do cursor', '#cbd5e1', 12); P.abilCd = 0.4; return; }

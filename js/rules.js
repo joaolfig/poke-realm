@@ -74,7 +74,7 @@ const SUBCLASSES = {
   ],
   mago: [
     { id: 'evocador', nome: 'Evocador', icon: '⚡', desc: '+15% de cadência de tiro.',
-      abil: { nome: 'Cetro Relampejante', cd: 3, desc: 'Cetro: um raio atinge o inimigo mais perto do cursor e salta para até 5 outros ((2 + nível/5)d8 + Poder/2, perde 15% por salto).' } },
+      abil: { nome: 'Bomba Arcana', cd: 5, desc: 'Feitiço: 20 projéteis explodem em círculo no cursor, cada um causando (1 + nível/6)d6 + Poder/2 do seu tipo (cada alvo leva no máximo 6). Ótimo contra grupos!' } },
     { id: 'necromante', nome: 'Necromante', icon: '💀', desc: 'Pokémon derrotados podem voltar como espírito aliado por 15s (30%, máx. 3).',
       abil: { nome: 'Crânio Ceifador', cd: 4.5, desc: 'Crânio: explosão no cursor que causa (1 + nível/5)d10 + Poder/2 em área e cura você em 20% do dano causado.' } },
   ],
