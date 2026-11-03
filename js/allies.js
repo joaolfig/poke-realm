@@ -312,7 +312,7 @@ function addSpirit(pid) {
   const P = G.P;
   if (!POKE[pid] || G.allies.filter(a => a.ghost).length >= 3) return;
   const p = POKE[pid];
-  G.allies.push({ ghost: true, pid, type: mainType(p), x: P.x, y: P.y, ttl: 15, cd: 0.5, t: 0, face: 1 });
+  G.allies.push({ ghost: true, pid, type: mainType(p), x: P.x, y: P.y, ttl: 20, cd: 0.5, t: 0, face: 1 });
   text(P.x, P.y - 50, `💀 ${p.name} se ergue como espírito!`, '#c4b5fd', 13);
 }
 
@@ -415,7 +415,7 @@ function dittoLook(a, dt) {
 
 function petDmg(a) {
   const P = G.P;
-  if (a.ghost) return Math.ceil((roll(1, 8) + Math.floor(P.lvl / 2)) * 0.7);
+  if (a.ghost) return Math.ceil(roll(1, 8) + Math.floor(P.lvl / 2));
   const p = POKE[a.pid], st = p ? p.stats : {};
   const f = clamp(Math.max(st.attack || 60, st['special-attack'] || 60) / 80, 0.7, 1.7);
   return Math.round((roll(1 + Math.floor(a.lvl / 8), 8) + Math.floor(a.lvl / 2)) * f);
@@ -425,7 +425,7 @@ function allyHit(e, a, sp) {
   // com vários companheiros fora, cada um bate menos (4 juntos ≈ 2,5× um sozinho)
   const nPets = G.allies.filter(x => x.pet).length;
   let dmg = petDmg(a) * (1 + M(P, 'pet')) * (sp ? 1.5 : 1) * (a.ghost ? 1 : [1, 0.8, 0.7, 0.62][Math.max(0, nPets - 1)] || 0.62);
-  if (P.subclass === 'feras') dmg *= 1.75;
+  if (P.subclass === 'feras') dmg *= 2;
   if (P.ferasT > 0) dmg *= 1 + P.ferasK; // Bênção das Feras (Clérigo)
   const ab = !a.ghost && petAbility(a.pid), tr = !a.ghost && petTrait(a.pid);
   dmg *= abilDmgMul(ab) * hmDmgMul(a.pid) * (tr ? tr.dmg : 1);

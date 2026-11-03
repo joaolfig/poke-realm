@@ -193,16 +193,20 @@ const maxHP = P => {
   return Math.round(h * (1 + M(P, 'hp')));
 };
 const AC = P => CLASSES[P.cls].ac + Math.floor(A(P, 'AGI') / 2) + (P.equip.armadura ? P.equip.armadura.ac : 0)
-  + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') || hasS(P, 'guerra') ? 2 : 0) + M(P, 'ac');
+  + (P.race === 'halfling' ? 1 : 0) + (hasT(P, 'defensor') ? 2 : 0) + (hasS(P, 'paladino') ? 2 : hasS(P, 'guerra') ? 1 : 0) + M(P, 'ac');
 const toHit = P => 2 + Math.floor(P.lvl / 3) + Math.floor(A(P, 'POD') / 2) + P.equip.arma.bonus + M(P, 'hit');
 const critMin = P => Math.max(15, CLASSES[P.cls].crit - (P.race === 'elfo' ? 2 : 0) - (hasT(P, 'critico') ? 1 : 0) - (hasS(P, 'assassino') ? 1 : 0) - (P.lin === 'lobisomem' ? 1 : 0) - M(P, 'crit')); // lobisomem: instinto
 const outOfCombat = P => P.sinceHit > 4 && G.time - (P.shotT === undefined ? -99 : P.shotT) > 4 && !P.pvp;
 const moveSpeed = P => (160 + A(P, 'AGI') * 8) * (outOfCombat(P) ? 1.3 : 1) * (pst(P, 2) ? 0.85 : 1) * wxSlow(P) * (P.race === 'halfling' ? 1.1 : 1) * (P.invis > 0 ? 1.3 : 1) * (hasT(P, 'mobilidade') ? 1.2 : 1) * (P.furia > 0 ? 1.25 : 1) * (P.hasteT > 0 ? 1.3 : 1) * (P.lin === 'lobisomem' ? 1.05 : 1) * (isBat(P) ? 1.3 : 1) * (1 + M(P, 'speed'));
-const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWolf(P) ? 1.35 : 1) * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.15 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
+const fireRate = P => curWpn(P).rate * (P.ritmoT > 0 ? 1 + P.ritmoK : 1) * (isWolf(P) ? 1.35 : 1) * (pst(P, 2) ? 0.7 : 1) * (1 + 0.05 * A(P, 'AGI')) * (hasS(P, 'evocador') ? 1.05 : 1) * (P.furia > 0 ? 1.5 : 1) * (hasT(P, 'maos') ? 1.2 : 1) * (1 + M(P, 'rate'));
 // recarga do especial: no Nv 1 é 1,6x a recarga base (1,2x nos que têm efeito com duração); cai aos poucos até, no Nv 30, voltar 2 s depois que o efeito
 // acaba (no fim do jogo dá para usar o especial o tempo todo). O talento Foco e os itens "do Foco" reduzem mais,
 // mas nunca abaixo da duração do efeito + 1 s (nenhum buff fica ligado para sempre)
-const ABIL_DUR = { guerreiro: 5, barbaro: 3, paladino: 6, ladino: 3, assassino: 4.4, trapaceiro: 3, vida: 6, guerra: 5, feras: 6, druida: 12, lua: 18, terra: 12 };
+// Guerreiro (e subclasses): pele de veterano, recebe até 35% menos dano conforme sobe de nível
+const guardK = P => (P.cls === 'guerreiro' ? (1 - 0.35 * clamp((P.lvl - 1) / 29, 0, 1)) * (hasS(P, 'paladino') ? 0.85 : 1) : 1);
+// Escudo Arcano do Mago: 20% da vida no Nv 1 até 35% no Nv 30
+const mageShieldK = P => 0.2 + 0.15 * clamp((P.lvl - 1) / 29, 0, 1);
+const ABIL_DUR = { guerreiro: 5, barbaro: 3, paladino: 6, ladino: 1.5, assassino: 4.4, trapaceiro: 3, vida: 6, guerra: 4, feras: 6, druida: 12, lua: 18, terra: 12 };
 const abilDur = P => ABIL_DUR[P.subclass || P.cls] || 0;
 // força de cada uso do especial: com a recarga mais curta do fim do jogo ele sai bem mais vezes, então cada uso fica
 // um pouco mais fraco (raiz da proporção entre a recarga atual e a base: 5 s -> 2 s = 63%), e o total ainda cresce
@@ -687,7 +691,7 @@ function onKill(m) {
   const gold = Math.max(1, Math.round(m.zone * randi(1, 3) * ([1, 4, 25, 12, 6][m.kind] || 1) * (hasT(P, 'tesouro') ? 1.5 : 1) * (1 + M(P, 'gold')) * share));
   P.gold += gold;
   text(m.x + 12, m.y - 10, `+${gold}🪙`, '#fde047', 11);
-  if (mine && hasS(P, 'necromante') && Math.random() < 0.3 && !m.kind) addSpirit(m.pid);
+  if (mine && hasS(P, 'necromante') && Math.random() < 0.5 && !m.kind) addSpirit(m.pid);
   const p = POKE[m.pid];
   questProgress('tipo', { types: p ? p.types : [m.type] });
   questProgress('coleta', { types: p ? p.types : [m.type] });
@@ -738,7 +742,7 @@ function spawnPB(o) {
   return b;
 }
 // Bomba Arcana: quantos dos 20 projéteis podem acertar o mesmo alvo
-const BOMB_CAP = 4;
+const BOMB_CAP = 3;
 function shootBullet(a, o = {}) {
   const P = G.P, w = curWpn(P);
   spawnPB({
@@ -815,7 +819,7 @@ function useAbility() {
     }
     case 'paladino': // Selo Sagrado (Paladino): dano extra e proteção para o grupo
       emitEvent({ t: 'buff', k: 'selo', x: Math.round(P.x), y: Math.round(P.y), dur: 6, name: P.name });
-      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.round((roll(2, 8) + lv) * abilPow(P)), name: P.name });
+      emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.round((roll(2 + Math.floor(lv / 4), 8) + lv) * abilPow(P)), name: P.name });
       fxAt(P.x, P.y, 200, '#fde68a'); sfx('lvl'); break;
     case 'evocador': { // Bomba Arcana (Evocador): bomba de projéteis no cursor
       const t = aimPoint(P, 380);
@@ -831,8 +835,8 @@ function useAbility() {
       let k = 1;
       for (let j = 0; j < 6 && cur; j++) {
         hit.add(cur.id); pts.push([cur.x, cur.y]);
-        if (cur.pvpFoe) { pvpBlast(cur.x, cur.y, 40, (roll(2 + Math.floor(lv / 5), 8) + Math.floor(pod / 2)) * k); break; }
-        abilHit(cur, (roll(2 + Math.floor(lv / 5), 8) + Math.floor(pod / 2)) * k, tp);
+        if (cur.pvpFoe) { pvpBlast(cur.x, cur.y, 40, (roll(2 + Math.floor(lv / 3), 8) + Math.floor(pod / 2)) * k); break; }
+        abilHit(cur, (roll(2 + Math.floor(lv / 3), 8) + Math.floor(pod / 2)) * k, tp);
         k *= 0.85;
         const from = cur;
         cur = enemiesNear(from.x, from.y, 220).filter(e => !hit.has(e.id)).sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y))[0];
@@ -843,22 +847,23 @@ function useAbility() {
     case 'necromante': { // Crânio Ceifador (Necromante): explosão que drena vida
       const t = aimPoint(P, 360);
       let tot = 0;
-      for (const e of enemiesNear(t.x, t.y, 110)) tot += abilHit(e, roll(2 + Math.floor(lv / 4), 10) + Math.floor(pod / 2), tp);
+      for (const e of enemiesNear(t.x, t.y, 130)) tot += abilHit(e, roll(5 + Math.floor(lv / 3), 10) + Math.floor(pod / 2), tp);
       if (P.pvp && pvpFoesNear(t.x, t.y, 110).length) { const dm = roll(1 + Math.floor(lv / 5), 10) + Math.floor(pod / 2); pvpBlast(t.x, t.y, 110, dm); tot += Math.round(dm * PVP_K); }
-      if (tot) { const h = Math.ceil(tot * 0.2); P.hp = Math.min(maxHP(P), P.hp + h); text(P.x, P.y - 34, `+${h}`, '#86efac', 14); }
-      fxAt(t.x, t.y, 110, '#a78bfa'); sfx('boom'); break;
+      if (tot) { const h = Math.ceil(tot * 0.5); P.hp = Math.min(maxHP(P), P.hp + h); text(P.x, P.y - 34, `+${h}`, '#86efac', 14); }
+      fxAt(t.x, t.y, 130, '#a78bfa'); sfx('boom'); break;
     }
     case 'ladino': // Manto: invisibilidade
-      P.invis = 3; P.nextCrit = true; burst(P.x, P.y, '#6b7280', 20); break;
+      P.invis = 1.5; P.nextCrit = true; burst(P.x, P.y, '#6b7280', 20); break;
     case 'assassino': { // Frasco de Veneno (Assassino): nuvem que corrói
       const t = aimPoint(P, 330);
-      G.zones.push({ k: 'veneno', x: t.x, y: t.y, r: 100, t: 4.4, wait: 0.4, every: 0.7, tick: 0 });
+      P.invis = Math.max(P.invis || 0, 1);
+      G.zones.push({ k: 'veneno', x: t.x, y: t.y, r: 120, t: 4.4, wait: 0.4, every: 0.5, tick: 0 });
       if (P.pvp) emitEvent({ t: 'pvpaoe', x: Math.round(t.x), y: Math.round(t.y), r: 100, dur: 4, wait: 0.4, dmg: Math.max(1, Math.round((roll(1 + Math.floor(lv / 6), 6)) * PVP_K)), name: P.name });
-      fxAt(t.x, t.y, 100, '#a3e635'); sfx('pot'); break;
+      fxAt(t.x, t.y, 120, '#a3e635'); sfx('pot'); break;
     }
     case 'trapaceiro': { // Prisma Ilusório (Trapaceiro): teleporte + ilusão que atrai os inimigos
       const t = aimPoint(P, 280);
-      emitEvent({ t: 'decoy', x: Math.round(P.x), y: Math.round(P.y), dur: 3, cls: P.cls, ptype: pType(P) });
+      emitEvent({ t: 'decoy', x: Math.round(P.x), y: Math.round(P.y), dur: 2.5, cls: P.cls, ptype: pType(P) });
       burst(P.x, P.y, '#c084fc', 16);
       if (walkableR(t.x, t.y, 10) && !solidR(t.x, t.y, 10)) { P.x = t.x; P.y = t.y; }
       P.invis = 1.5; P.nextCrit = true; burst(P.x, P.y, '#c084fc', 20); sfx('pot'); break;
@@ -871,9 +876,9 @@ function useAbility() {
       G.zones.push({ k: 'santuario', x: P.x, y: P.y, r: 150, t: 6, wait: 0, every: 1, tick: 0 });
       fxAt(P.x, P.y, 150, '#fde68a'); sfx('pot'); break;
     case 'guerra': // Hino de Batalha (Bardo): fúria para o grupo e paralisia em volta
-      emitEvent({ t: 'buff', k: 'furia', x: Math.round(P.x), y: Math.round(P.y), dur: 5, name: P.name });
+      emitEvent({ t: 'buff', k: 'furia', x: Math.round(P.x), y: Math.round(P.y), dur: 4, name: P.name });
       emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.round((d(8) + Math.floor(lv / 2)) * clericChoir(P) * abilPow(P)), name: P.name, quiet: 1, bl: blessOf(P), r: 260 });
-      for (const e of enemiesNear(P.x, P.y, 170)) if (!e.boss || Math.random() < 0.5) inflict(e, 2);
+      for (const e of enemiesNear(P.x, P.y, 170)) if (Math.random() < (e.boss ? 0.25 : 0.5)) inflict(e, 2);
       fxAt(P.x, P.y, 170, '#f97316'); sfx('boom'); break;
     case 'patrulheiro': // Aljava: flechada pesada que perfura e deixa lento
       shootBullet(P.aim, { spd: 600, life: 0.9, r: 12, color: '#fde047', shape: 'arrow', pierce: true, spell: 2 });
@@ -881,7 +886,7 @@ function useAbility() {
       sfx('crit'); break;
     case 'feras': { // Armadilha da Caçadora (Caçadora)
       const t = aimPoint(P, 300);
-      G.zones.push({ k: 'armadilha', x: t.x, y: t.y, r: 120, t: 6, wait: 0.5, every: 0.1, tick: 0 });
+      G.zones.push({ k: 'armadilha', x: t.x, y: t.y, r: 160, t: 6, wait: 0.5, every: 0.1, tick: 0 });
       if (P.pvp) emitEvent({ t: 'pvpaoe', x: Math.round(t.x), y: Math.round(t.y), r: 90, dur: 6, wait: 0.5, once: 1, dmg: Math.max(1, Math.round((roll(2 + Math.floor(lv / 4), 8) + pod) * PVP_K)), name: P.name });
       sfx('pick'); break;
     }
@@ -907,17 +912,18 @@ function updateZones(dt) {
     z.tick = z.every;
     if (!P) continue;
     if (z.k === 'veneno') {
-      for (const e of enemiesNear(z.x, z.y, z.r)) abilHit(e, roll(1 + Math.floor(P.lvl / 6), 6), 'poison');
+      for (const e of enemiesNear(z.x, z.y, z.r)) abilHit(e, roll(2 + Math.floor(P.lvl / 5), 6), 'poison');
     } else if (z.k === 'santuario' || z.k === 'raizes') {
       emitEvent({ t: 'heal', x: Math.round(z.x), y: Math.round(z.y), amt: Math.round((roll(1 + Math.floor(P.lvl / 6), 6) + Math.floor(A(P, 'VIG') / 2)) * (z.k === 'raizes' ? 1 : 1.5)), name: P.name, quiet: 1, r: z.r, bl: z.k === 'santuario' ? blessOf(P) : null });
-      for (const e of enemiesNear(z.x, z.y, z.r)) e.slowT = Math.max(e.slowT || 0, 1.2);
+      // a luz do santuário e os espinhos das raízes também ferem quem está dentro
+      for (const e of enemiesNear(z.x, z.y, z.r)) { e.slowT = Math.max(e.slowT || 0, 1.2); abilHit(e, roll(2 + Math.floor(P.lvl / 5), 6) + A(P, z.k === 'raizes' ? 'POD' : 'VIG'), z.k === 'raizes' ? 'grass' : pType(P)); }
     } else if (z.k === 'armadilha') {
-      if (!enemiesNear(z.x, z.y, 60).length && z.t > 0) continue;
-      for (const e of enemiesNear(z.x, z.y, z.r)) abilHit(e, roll(2 + Math.floor(P.lvl / 4), 8) + A(P, 'POD'), pType(P), 3);
+      if (!enemiesNear(z.x, z.y, 80).length && z.t > 0) continue;
+      for (const e of enemiesNear(z.x, z.y, z.r)) { e.markT = G.time + 6; abilHit(e, roll(6 + Math.floor(P.lvl / 3), 8) + A(P, 'POD'), pType(P), 3); }
       for (const a of G.allies) if (a.pet) { a.cd = 0; a.spT = Math.min(a.spT, 0.5); a.rageT = 4; }
       emitEvent({ t: 'fx', x: Math.round(z.x), y: Math.round(z.y), r: z.r, color: '#fbbf24' });
       sfx('boom');
-      z.t = 0;
+      if (!z.rearmed) { z.rearmed = true; z.wait = 1; } else z.t = 0; // rearma uma vez
     }
   }
   G.zones = G.zones.filter(z => z.t > 0);
@@ -952,6 +958,7 @@ function updateDash(dt) {
 }
 
 function dealDamage(e, dmg, slow) {
+  if (e.markT > G.time) dmg = Math.round(dmg * 1.25); // marcado pela armadilha do Mestre das Feras
   e.flash = 0.1;
   e.mineT = G.time;
   if (isHost()) { if (slow) e.slowT = slow; applyHit(e, dmg); }
@@ -961,7 +968,7 @@ function dealDamage(e, dmg, slow) {
 // Forma Selvagem: o Druida transformado causa (o dano normal dele + o do companheiro em que virou) × WILD_K, repartido
 // pelos tiros da forma. Transformado, o companheiro líder não bate; assim a forma sempre rende um pouco mais que o grupo
 // rendia antes, acompanha a força do companheiro escolhido e não depende da cadência de cada estilo de tiro.
-const WILD_K = 1.4;
+const WILD_K = 1.35;
 function wildShotDmg(P, dmg) {
   const pt = P.pets[P.wildSlot];
   if (!pt || !POKE[pt.pid]) return dmg;
@@ -972,7 +979,7 @@ function wildShotDmg(P, dmg) {
   const mul = (1 + M(P, 'pet')) * ([1, 0.8, 0.7, 0.62][Math.max(0, nPets - 1)] || 0.62) * abilDmgMul(petAbility(pt.pid)) * hmDmgMul(pt.pid) * (tr ? tr.dmg : 1);
   const petDps = shot * mul / 0.9 * 1.15; // tiro a cada 0,9 s; o golpe especial em leque soma ~15% num alvo (medido)
   const wn = CLASSES[P.cls].wpn, ww = curWpn(P), hits = ww.shots || 1; // de perto todos os tiros do leque acertam
-  return Math.max(1, Math.round((dmg + petDps / wn.rate) * WILD_K * wn.rate / (ww.rate * hits)));
+  return Math.max(1, Math.round((dmg + petDps / wn.rate) * WILD_K * (hasS(P, 'lua') ? 1.2 : hasS(P, 'terra') ? 1.2 : 1) * wn.rate / (ww.rate * hits)));
 }
 function playerHit(e, b) {
   if (b && b.ally) return allyHit(e, b.ally, b.sp);
@@ -995,10 +1002,9 @@ function playerHit(e, b) {
   dmg = Math.round(dmg * infernal(P) * (pst(P, 3) ? 0.8 : 1));
   { const w = weatherAt(P.x, P.y); if (w) dmg = Math.round(dmg * (1 + M(P, 'wx' + w.k))); } // encantamento de clima
   if (P.tempTypeT > 0) dmg += d(4);
-  if (hasS(P, 'guerra') || hasS(P, 'paladino')) dmg += d(6);
-  if (hasS(P, 'trapaceiro')) dmg = Math.round(dmg * 1.15);
-  if (crit && P.cls === 'ladino') dmg += roll(Math.ceil(P.lvl / 4), 6);
-  if (crit && hasS(P, 'assassino')) dmg = Math.round(dmg * 1.3);
+  if (hasS(P, 'paladino')) dmg += roll(2, 6);
+  if (crit && P.cls === 'ladino') dmg += roll(Math.ceil(P.lvl / 10), 6);
+  if (crit && hasS(P, 'assassino')) dmg = Math.round(dmg * 1.6);
   if (crit && P.race === 'elfo') dmg = Math.round(dmg * 1.5); // precisão élfica
   dmg = Math.max(1, dmg);
   if (!hit) dmg = Math.max(1, Math.floor(dmg / 2));
@@ -1052,7 +1058,8 @@ function enemyAttack(b) {
   if (eff > 1 && tRank(P, 'couraca')) eff *= tRank(P, 'couraca') >= 2 ? 0.65 : 0.8; // Couraça Elemental
   if (graze) eff *= 0.34;
   if (P.furia > 0 && hasS(P, 'barbaro')) eff *= 0.5;
-  if (P.seloT > 0) eff *= 0.75;
+  eff *= guardK(P);
+  if (P.seloT > 0) eff *= 0.6;
   if (P.race === 'draconato') eff *= 0.9; // escamas
   if (P.graceT > 0) eff *= 0.9; // Graça Salvadora
   let dmg = Math.max(1, Math.round((roll(b.dice[0] * (crit ? 2 : 1), b.dice[1]) + b.dice[2]) * eff));
@@ -1168,11 +1175,11 @@ function updatePlayer(dt) {
 
   P.abilCd = Math.max(0, P.abilCd - dt);
   P.dashCd = Math.max(0, (P.dashCd || 0) - dt); P.dodgeT = Math.max(0, (P.dodgeT || 0) - dt); P.seloT = Math.max(0, (P.seloT || 0) - dt);
-  // Mago: Escudo Arcano (absorve até 20% da vida e se recarrega depois de 4 s sem levar dano)
-  if (P.cls === 'mago') { const cap = maxHP(P) * 0.28; if (P.sinceHit > 4 && P.shield < cap) P.shield = Math.min(cap, (P.shield || 0) + cap * dt / 2); if (P.shield > 0) P.shieldT = Math.max(P.shieldT || 0, 0.5); }
+  // Mago: Escudo Arcano (absorve de 20% a 35% da vida, conforme o nível, e se recarrega depois de 4 s sem levar dano)
+  if (P.cls === 'mago') { const cap = maxHP(P) * mageShieldK(P); if (P.sinceHit > 4 && P.shield < cap) P.shield = Math.min(cap, (P.shield || 0) + cap * dt / 2); if (P.shield > 0) P.shieldT = Math.max(P.shieldT || 0, 0.5); }
   if ((P.shieldT = Math.max(0, (P.shieldT || 0) - dt)) <= 0) P.shield = 0;
   // tamanho cheio do escudo (o anel em volta do herói mostra quanto ainda resta)
-  if (P.shield > 0) P.shieldPk = Math.max(P.shieldPk || 0, P.shield, P.cls === 'mago' ? maxHP(P) * 0.28 : 0); else P.shieldPk = 0;
+  if (P.shield > 0) P.shieldPk = Math.max(P.shieldPk || 0, P.shield, P.cls === 'mago' ? maxHP(P) * mageShieldK(P) : 0); else P.shieldPk = 0;
   P.breathCd = Math.max(0, P.breathCd - dt);
   P.furia = Math.max(0, P.furia - dt);
   P.hasteT = Math.max(0, (P.hasteT || 0) - dt);
@@ -2717,7 +2724,7 @@ function teleDamage(o, P) {
   let eff = typeEff(o.ty, [pType(P)]);
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return false; }
   if (race(P).resist.includes(o.ty) || MA(P, 'resist').includes(o.ty) || (P.lin && LIN[P.lin].resist.includes(o.ty))) eff *= 0.5;
-  eff *= linTaken(P, o.ty) * (P.seloT > 0 ? 0.75 : 1) * (P.graceT > 0 ? 0.9 : 1) * (P.race === 'draconato' ? 0.9 : 1);
+  eff *= linTaken(P, o.ty) * guardK(P) * (P.seloT > 0 ? 0.6 : 1) * (P.graceT > 0 ? 0.9 : 1) * (P.race === 'draconato' ? 0.9 : 1);
   let dmg = Math.max(1, Math.round(maxHP(P) * o.pct * Math.min(eff, 1.5) * rand(0.9, 1.1)));
   if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; if (P.shield <= 0) shieldBreak(P); }
   if (dmg <= 0) return false;
