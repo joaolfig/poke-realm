@@ -54,6 +54,29 @@ const petTrait = pid => TRAIT_BY_ID[pid] || null;
 // força do traço pelo nível do companheiro: 40% no Nv 1, ~70% no 15, 100% no 30 (fraco no começo, cheio no fim;
 // um Pokémon capturado tarde e de nível baixo não dá o efeito todo de cara)
 const traitK = lvl => 0.4 + 0.6 * clamp(((lvl || 1) - 1) / 29, 0, 1);
+// texto do traço com os números do nível atual do companheiro e quanto chega no Nv 30
+// (antes aparecia "48% da força", que ninguém entendia)
+const pctTxt = v => `${String(Math.round(v * 1000) / 10).replace('.', ',')}%`;
+// v(base, k): o valor no nível de agora e, se ainda não estiver no máximo, quanto chega no Nv 30
+const tv = (base, k, f = pctTxt) => (k < 1 ? `${f(base * k)} (${f(base)} no Nv 30)` : f(base));
+const mTxt = v => `${String(Math.round(v / 32 * 10) / 10).replace('.', ',')} m`;
+const TRAIT_TXT = {
+  cura: k => `a cada 10 s cura ${tv(0.05, k)} da sua vida`,
+  curinha: k => `a cada 12 s cura ${tv(0.02, k)} da sua vida`,
+  escudo: k => `a cada 18 s te dá um escudo de ${tv(0.04, k)} da vida, acumulando até o dobro`,
+  drenar: k => `${tv(0.015, k)} do dano que ele causa vira vida para você`,
+  rugido: k => `o golpe especial apaga as balas inimigas a até ${tv(100, k, mTxt)} dele`,
+  atirador: k => `alcance ${tv(0.4, k)} maior e tiros mais rápidos`,
+  moedas: k => `como líder: +${tv(0.15, k)} de ouro`,
+  coleta: k => `como líder: +${tv(0.02, k)} de chance de cair item dos inimigos`,
+  aura: k => `como líder: você atira ${tv(0.04, k)} mais rápido`,
+  sorte: k => `como líder: ${tv(0.02, k)} de chance de esquivar`,
+  barriga: k => `como líder: +${tv(0.05, k)} de vida máxima`,
+  veloz: k => `como líder: você anda ${tv(0.04, k)} mais rápido`,
+  adapt: k => `como líder: +${tv(0.05, k)} de XP`,
+};
+// Várias Cabeças, Explosivo e Guarda-Costas não mudam com o nível
+const traitText = (tr, lvl) => (TRAIT_TXT[tr.k] ? TRAIT_TXT[tr.k](traitK(lvl)) : tr.desc);
 const HEADS = { 84: 2, 85: 3, 634: 2, 635: 3, 51: 3, 103: 3, 599: 2, 600: 2, 601: 3, 415: 3 }; // quantas cabeças (ou engrenagens) atiram
 // bônus do companheiro líder (entra em M(), junto dos equipamentos); só vale com ele fora da Pokébola
 function leaderMods(P) {
