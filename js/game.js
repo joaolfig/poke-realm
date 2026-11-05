@@ -1008,7 +1008,8 @@ function wildShotDmg(P, dmg) {
   const mul = (1 + M(P, 'pet')) * ([1, 0.8, 0.7, 0.62][Math.max(0, nPets - 1)] || 0.62) * abilDmgMul(petAbility(pt.pid)) * hmDmgMul(pt.pid) * (tr ? tr.dmg : 1);
   const petDps = shot * mul / 0.9 * 1.15; // tiro a cada 0,9 s; o golpe especial em leque soma ~15% num alvo (medido)
   const wn = CLASSES[P.cls].wpn, ww = curWpn(P), hits = ww.shots || 1; // de perto todos os tiros do leque acertam
-  return Math.max(1, Math.round((dmg + petDps / wn.rate) * WILD_K * (hasS(P, 'lua') ? 1.2 : hasS(P, 'terra') ? 1.3 : 1) * wn.rate / (ww.rate * hits)));
+  const mega = P.megaT > 0 ? DRUID_MEGA_K : 1; // Druida megaevoluído na Forma Selvagem
+  return Math.max(1, Math.round((dmg + petDps / wn.rate) * WILD_K * mega * (hasS(P, 'lua') ? 1.2 : hasS(P, 'terra') ? 1.3 : 1) * wn.rate / (ww.rate * hits)));
 }
 function playerHit(e, b) {
   if (b && b.ally) return allyHit(e, b.ally, b.sp);
@@ -1672,7 +1673,7 @@ function render() {
       if (P.pstT > 0) drawStatusAura(P.pst, x, y);
       if (tint) ctx.filter = tint;
       const lin = P.lin && (P.lform || P.wildT <= 0 || !P.wildT) && drawLinHero(P, x, y - lift, P.invis > 0 ? 0.4 : 1);
-      if (!lin && !(P.wildT > 0 && drawWildForm(P.wildPid, P.x, P.y, x, y, P.face, P.moving, P.invis > 0 ? 0.4 : 1, pType(P), wildSizeK(P)))) drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
+      if (!lin && !(P.wildT > 0 && drawWildForm(wildLook(P), P.x, P.y, x, y, P.face, P.moving, P.invis > 0 ? 0.4 : 1, pType(P), wildSizeK(P)))) drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
       ctx.filter = 'none';
       if (pst(P, 2) && P.pstShock) drawShock(x, y - lift - 4, 30, 40);
       if (!mpid) grassOver(P.x, P.y + 14, x, y + 18, 28);

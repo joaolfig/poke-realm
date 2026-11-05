@@ -22,7 +22,9 @@ const MEGA = { 3: 10033, 6: 10034, 9: 10036, 15: 10090, 18: 10073, 65: 10037, 80
   319: 10070, 323: 10087, 334: 10067, 354: 10056, 359: 10057, 362: 10074, 373: 10089, 376: 10076, 380: 10062, 381: 10063, 384: 10079, 428: 10088, 445: 10058, 448: 10059,
   460: 10060, 475: 10068, 531: 10069, 719: 10075 };
 const MEGA_REGIONS = ['kanto', 'hoenn', 'kalos'], DYNA_REGIONS = ['galar'];
-const MEGA_T = 25, MEGA_CD = 90, MEGA_K = 1.6, DYNA_T = 18, DYNA_CD = 120, DYNA_K = 1.4;
+const MEGA_T = 25, MEGA_CD = 90, MEGA_K = 1.6, DRUID_MEGA_K = 1.35, DYNA_T = 18, DYNA_CD = 120, DYNA_K = 1.4;
+// Druida: na Forma Selvagem, a Mega é dele (vira a forma Mega do companheiro em que se transformou)
+const wildLook = P => (P.wildT > 0 && P.megaT > 0 && MEGA[P.wildPid] ? MEGA[P.wildPid] : P.wildPid);
 // terminou os 8 ginásios desta região
 const gyms8 = P => !!(P && P.story && (P.story.ch > 8 || (P.story.ch === 8 && P.story.done)));
 const leaderAlly = P => G.allies.find(a => a.pet && a.slot === P.petIdx);
@@ -101,7 +103,7 @@ function useBoost(P) {
   if (mega) {
     P.megaT = MEGA_T; P.boostCd = MEGA_CD; ensurePoke(MEGA[pt.pid]);
     emitEvent({ t: 'fx', x: Math.round(a.x), y: Math.round(a.y), r: 120, color: '#c4b5fd' });
-    G.toasts.push({ text: `💎 ${pt.name} megaevoluiu! (+60% de dano por ${MEGA_T}s)`, color: '#c4b5fd', t: 3, big: 1 });
+    G.toasts.push({ text: P.wildT > 0 ? `💎 Sua Forma Selvagem megaevoluiu em Mega ${pt.name}! (+35% de dano enquanto durar)` : `💎 ${pt.name} megaevoluiu! (+60% de dano por ${MEGA_T}s)`, color: '#c4b5fd', t: 3, big: 1 });
   } else if (P.dynaBand) {
     P.dynaT = DYNA_T; P.boostCd = DYNA_CD;
     emitEvent({ t: 'fx', x: Math.round(a.x), y: Math.round(a.y), r: 160, color: '#ef4444' });
