@@ -16,10 +16,17 @@ const SAVE_KEY = 'pkr_save_v2', CACHE_KEY = 'pkr_poke_v3';
 const POKE = {};
 const coreIds = () => regionIds(REGION);
 
+// Gerações VIII e IX: Cut, Rock Smash e Flash não existem nos jogos novos (a PokeAPI não lista), então esses Pokémon
+// aprendem pelo tipo; sem isso ninguém de Galar e Paldea aprenderia as HMs e a história travaria
+const HM_BY_TYPE = { cut: ['grass', 'bug', 'steel', 'dark', 'dragon', 'normal'], smash: ['fighting', 'rock', 'ground', 'steel'], flash: ['electric', 'psychic', 'fairy', 'fire'], surf: ['water'] };
+function hmFix(p) {
+  if (p.id >= 810) { const hm = new Set(p.hm || []); for (const [k, ts] of Object.entries(HM_BY_TYPE)) if (p.types.some(t => ts.includes(t))) hm.add(k); p.hm = [...hm]; }
+  return p;
+}
 async function fetchPoke(id, cache) {
   // o cache guarda só os dados; imagens são recriadas a cada sessão
   const clean = o => { const c = { ...o }; for (const k of ['img', 'imgW', 'imgA', 'imgG', 'url']) delete c[k]; return c; };
-  if (cache[id]) return clean(cache[id]);
+  if (cache[id]) return hmFix(clean(cache[id]));
   const r = await fetch(API + id);
   if (!r.ok) throw new Error('HTTP ' + r.status);
   const j = await r.json();
@@ -35,7 +42,7 @@ async function fetchPoke(id, cache) {
     hm: [...new Set(j.moves.map(m => HM_MOVES[m.move.name]).filter(Boolean))], // HMs que aprenderia nos jogos
   };
   cache[id] = clean(p);
-  return p;
+  return hmFix(p);
 }
 
 function trimImage(im) {
@@ -2615,9 +2622,9 @@ const LIN = {
   vampiro: { nome: 'Vampiro', icon: '🧛', resist: ['poison', 'dark'], fraco: ['fire'] },
   lobisomem: { nome: 'Lobisomem', icon: '🐺', resist: [], fraco: ['fire', 'fairy'] },
 };
-const WOLF_PID = { kanto: 571, johto: 571, hoenn: 262, sinnoh: 405, unova: 571 }; // Zoroark em Kanto, Johto e Unova
-// morcego do vampiro: Zubat, Golbat e Crobat pelo nível (em Unova, Woobat e Swoobat)
-const batPid = P => (REGION_ID === 'unova' ? (P.lvl < 16 ? 527 : 528) : P.lvl < 10 ? 41 : P.lvl < 22 ? 42 : 169);
+const WOLF_PID = { kanto: 571, johto: 571, hoenn: 262, sinnoh: 405, unova: 571, kalos: 262, galar: 836, paldea: 745 }; // Zoroark em Kanto, Johto e Unova; Boltund em Galar; Lycanroc em Paldea
+// morcego do vampiro: Zubat, Golbat e Crobat pelo nível (em Unova e Galar, Woobat e Swoobat; em Kalos e Paldea, Noibat e Noivern)
+const batPid = P => (REGION_ID === 'unova' || REGION_ID === 'galar' ? (P.lvl < 16 ? 527 : 528) : REGION_ID === 'kalos' || REGION_ID === 'paldea' ? (P.lvl < 18 ? 714 : 715) : P.lvl < 10 ? 41 : P.lvl < 22 ? 42 : 169);
 const wolfPid = () => WOLF_PID[REGION_ID] || 59;
 const isBat = P => !!(P.lform && P.lform.kind === 'bat');
 const isWolf = P => !!(P.lform && P.lform.kind === 'wolf');

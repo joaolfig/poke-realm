@@ -329,6 +329,179 @@ const REGIONS = {
         `Reshiram reconheceu seus ideais e se recolheu. N. libertou os próprios Pokémon e partiu, pensativo. A Equipe Plasma se desfez, e Unova está em paz.`],
     },
   },
+  kalos: {
+    babies: [298, 172, 173], // Azurill (Rota 3), Pichu e Cleffa
+    side: { peso: { pesquisa: 1, captura: 1, bolaboa: 1 }, pessoas: {
+      pesquisa: [['Assistente do Prof. Sycamore', 'estudo a Megaevolução e preciso de dados de campo']],
+      pegar: [['Fotógrafa de Lumiose', 'quero uma foto de um desses ao lado de um treinador']],
+      caca: [['Agente Looker', 'esse Pokémon foi visto perto de um esconderijo da Equipe Flare']] } },
+    interludes: [
+      { ch: 3, npc: 'dex', kind: 'dexn', n: 9, titulo: 'O álbum do Prof. Sycamore', fala: 'O Professor Sycamore estuda como os Pokémon de Kalos mudam com a Megaevolução e precisa de exemplares. Registre pelo menos 9 espécies capturadas na Pokédex antes do próximo ginásio.', obj: 'Tenha 9 espécies capturadas na Pokédex de Kalos' },
+      { ch: 7, npc: 'ferreiro', kind: 'forja', n: 4, titulo: 'Aço contra o frio', fala: 'Os Pokémon das montanhas geladas trincam arma comum como vidro. Traga a sua para a minha bigorna e deixe ela pelo menos +4 antes de seguir.', obj: 'Aprimore sua arma até +4 na Ferreira' },
+    ],
+    // Alfas da Lua: Pokémon noturnos de verdade (pela lore e pelos jogos)
+    moon: [711, 709, 715, 687, 94, 229], // Gourgeist, Trevenant, Noivern, Malamar, Gengar, Houndoom
+    nome: 'Kalos', sub: 'Geração VI · beleza e Megaevolução', vila: 'Cidade de Vaniville',
+    guia: { nome: 'Professor Sycamore', spr: { h: '#1f2937', b: '#f8fafc', d: '#1e3a8a' } },
+    artesao: 'Artesã de Lumiose',
+    zonas: [['Campos de Santalune', 'campo'], ['Costa e Bosques do Oeste', 'floresta'], ['Avenidas de Lumiose e Laverre', 'campo'], ['Montanhas Geladas do Leste', 'neve'], ['Estrada da Vitória', 'montanha']],
+    pools: {
+      1: [661, 659, 664, 16, 263, 13, 10, 25, 511, 513, 515, 399, 669, 280],
+      2: [665, 672, 667, 674, 677, 580, 406, 415, 165, 187, 83, 84, 676, 679, 352],
+      3: [688, 690, 692, 694, 557, 299, 95, 66, 701, 529, 527, 686, 551, 328, 449, 619],
+      4: [707, 708, 710, 712, 459, 615, 220, 613, 714, 704, 670, 215, 124, 164],
+      5: [706, 715, 533, 75, 621, 634, 247, 681, 697, 699, 693, 691, 675, 632],
+    },
+    water: {
+      1: [129, 118, 60, 183, 283, 278], 2: [341, 72, 370, 318, 580, 222], 3: [690, 692, 688, 320, 223, 366],
+      4: [87, 131, 320, 90, 594, 171], 5: [130, 131, 691, 693, 226, 369],
+    },
+    night: [92, 93, 708, 710, 714, 41, 355, 198], rare: [133, 703, 443, 447, 704, 123, 142, 131], migra: [661, 662, 16], lendas: [716, 718, 144, 145, 146, 150],
+    vilao: 'Equipe Flare', grunts: [228, 229, 453, 454, 559, 560, 41, 42, 262, 510],
+    gyms: [
+      { type: 'bug', nome: 'Ginásio do Ateliê', lider: 'Fotógrafa Viola', boss: 666, pool: [10, 11, 12, 13, 14, 15, 664, 665, 666, 283, 284, 412, 413] },
+      { type: 'rock', nome: 'Ginásio da Escalada', lider: 'Alpinista Grant', boss: 696, pool: [95, 299, 557, 558, 688, 689, 696, 698, 74, 524] },
+      { type: 'fighting', nome: 'Ginásio da Torre do Domínio', lider: 'Líder Korrina', boss: 448, pool: [66, 67, 619, 620, 701, 538, 539, 56, 447, 236] },
+      { type: 'grass', nome: 'Ginásio do Jardim Suspenso', lider: 'Jardineiro Ramos', boss: 673, pool: [672, 673, 187, 188, 189, 406, 315, 70, 1, 2, 43] },
+      { type: 'electric', nome: 'Ginásio da Torre Prisma', lider: 'Inventor Clemont', boss: 695, pool: [694, 695, 25, 26, 81, 82, 587, 309, 310, 125] },
+      { type: 'fairy', nome: 'Ginásio do Ateliê de Moda', lider: 'Estilista Valerie', boss: 700, pool: [669, 670, 671, 682, 683, 684, 685, 35, 36, 280, 281] },
+      { type: 'psychic', nome: 'Ginásio do Relógio de Sol', lider: 'Vidente Olympia', boss: 678, pool: [677, 678, 686, 687, 79, 80, 96, 97, 122, 280, 281] },
+      { type: 'ice', nome: 'Ginásio da Neve Eterna', lider: 'Líder Wulfric', boss: 713, pool: [712, 713, 459, 460, 613, 614, 615, 220, 221, 87, 124] },
+    ],
+    final: { nome: 'Laboratório da Equipe Flare', lider: 'Yveltal', boss: 717, type: 'dark' },
+    historia: {
+      prologo: `A <b>Equipe Flare</b> promete um mundo bonito, mas só para quem pode pagar. Por trás dos ternos vermelhos, ela procura uma arma de três mil anos escondida sob Kalos.
+        O Professor Sycamore pede que você enfrente os oito ginásios: cada líder sabe um pedaço dessa história.`,
+      caps: [
+        ['A fotógrafa Viola registra Pokémon nos campos de Santalune, {d:v>g1} da vila. Ela viu homens de terno vermelho rondando por lá.', 'Viola mostra uma foto: agentes da Equipe Flare carregando pedras que brilham no escuro.'],
+        ['Grant escala os penhascos de Cyllage. A Equipe Flare anda escavando fósseis na costa dele.', 'Grant achou anotações perdidas: a Equipe Flare procura Pedras-Chave e Megapedras.'],
+        ['Korrina guarda a Torre do Domínio, onde se ensina o segredo da Megaevolução. A Equipe Flare quer roubar esse segredo.', 'Korrina descobre quem manda na Equipe Flare: um empresário famoso chamado <b>Lysandre</b>.'],
+        ['O velho Ramos cuida do jardim de Coumarine. A Equipe Flare quer a energia da usina que fica perto dali.', 'Ramos conta que a Equipe Flare roubou energia da usina para religar uma "arma de três mil anos".'],
+        ['Clemont, o inventor, guarda a Torre Prisma no centro de Lumiose. As luzes da cidade estão piscando sem parar.', 'Clemont rastreia a energia roubada: ela segue para a Vila de Geosenge, onde a arma está enterrada.'],
+        ['Valerie, estilista e treinadora de fadas, conhece a lenda do rei que construiu a arma.', 'Valerie conta a lenda: um rei usou a arma para trazer seu Pokémon de volta à vida, acabou com uma guerra... e quase com o mundo.'],
+        ['Olympia lê o futuro no relógio de sol de Anistar. Ela viu Kalos coberta de cinzas.', 'Olympia avisa: "A Equipe Flare vai acordar o Pokémon da destruição. Falta muito pouco."'],
+        ['Wulfric guarda a passagem gelada de Snowbelle, a última antes da Estrada da Vitória.', 'Wulfric aponta para o horizonte: "A arma está saindo do chão em Geosenge. Vá agora."'],
+      ],
+      final: [`Lysandre ligou a arma ancestral e despertou <b>Yveltal</b> sob Geosenge. Desça ao <b>Laboratório da Equipe Flare</b> e impeça a destruição.`,
+        `Yveltal se fechou num casulo e voltou a dormir. A arma ruiu, a Equipe Flare acabou, e Kalos tem um novo campeão.`],
+    },
+  },
+
+  galar: {
+    babies: [848, 172, 173, 175], // Toxel, Pichu, Cleffa e Togepi
+    side: { peso: { captura: 1, alfa: 1, evento: 1 }, pessoas: {
+      alfa: [['Treinador da Liga', 'os Pokémon da Área Selvagem estão gigantes e bravos']],
+      evento: [['Repórter do Estádio', 'preciso de imagens no meio da confusão']],
+      captura: [['Professora Sonia', 'quero estudar como esses Pokémon reagem à energia Dynamax']] } },
+    interludes: [
+      { ch: 3, npc: 'cura', kind: 'capball', n: 1, z: 2, titulo: 'A prova da Copa', fala: 'Os desafiantes da Copa dos Ginásios mostram que sabem lidar com os Pokémon da {Z2}. Antes do próximo estádio, capture um deles com uma Great Ball ou uma Ultra Ball.', obj: 'Capture um Pokémon na {Z2} com Great Ball ou Ultra Ball' },
+      { ch: 7, npc: 'guilda', kind: 'alfa', n: 3, z: 4, titulo: 'A energia descontrolada', fala: 'A energia que vaza das minas deixou os Alfas da {Z4} enormes e agressivos, e eles estão descendo para as cidades. Derrote 3 deles lá antes de seguir.', obj: 'Derrote 3 Pokémon Alfa na {Z4} ou além' },
+    ],
+    // Alfas da Lua: Pokémon noturnos de verdade (pela lore e pelos jogos)
+    moon: [855, 861, 828, 609, 778, 94], // Polteageist, Grimmsnarl, Thievul, Chandelure, Mimikyu, Gengar
+    nome: 'Galar', sub: 'Geração VIII · estádios e Dynamax', vila: 'Cidade de Postwick',
+    guia: { nome: 'Professora Magnolia', spr: { h: '#e5e7eb', b: '#7c3aed', d: '#4c1d95' } },
+    artesao: 'Ferreiro de Motostoke',
+    zonas: [['Campos de Postwick', 'campo'], ['Área Selvagem', 'floresta'], ['Florestas Brilhantes do Oeste', 'sombrio'], ['Litoral de Spikemuth', 'pantano'], ['Estrada Nevada de Wyndon', 'neve']],
+    pools: {
+      1: [819, 821, 824, 831, 827, 829, 833, 835, 163, 509, 263, 10, 659, 273, 270],
+      2: [837, 850, 309, 37, 58, 674, 66, 524, 557, 527, 50, 95, 840, 843, 868],
+      3: [852, 854, 856, 859, 755, 328, 449, 844, 610, 302, 303, 632, 631, 607],
+      4: [872, 878, 875, 874, 876, 877, 361, 582, 613, 215, 848, 870, 871, 866],
+      5: [884, 823, 861, 858, 879, 873, 849, 842, 841, 851, 839, 867, 863],
+    },
+    water: {
+      1: [129, 833, 118, 341, 846], 2: [846, 834, 72, 120, 226, 592], 3: [847, 592, 120, 456, 223, 318],
+      4: [131, 320, 87, 594, 746, 90], 5: [130, 321, 882, 883, 121, 131],
+    },
+    night: [854, 859, 710, 607, 163, 302, 828, 92], rare: [133, 885, 848, 874, 875, 877, 880, 610], migra: [821, 822, 163], lendas: [888, 889, 894, 895, 896, 897],
+    vilao: 'Macro Cosmos', grunts: [827, 828, 263, 559, 509, 599, 600, 863, 879, 589],
+    gyms: [
+      { type: 'grass', nome: 'Estádio de Turffield', lider: 'Fazendeiro Milo', boss: 830, pool: [829, 830, 831, 832, 270, 271, 273, 274, 406, 315, 840] },
+      { type: 'water', nome: 'Estádio de Hulbury', lider: 'Modelo Nessa', boss: 834, pool: [833, 834, 846, 847, 118, 119, 341, 342, 72, 73] },
+      { type: 'fire', nome: 'Estádio de Motostoke', lider: 'Veterano Kabu', boss: 851, pool: [850, 851, 37, 38, 58, 59, 554, 555, 631, 837, 838] },
+      { type: 'fighting', nome: 'Estádio de Stow-on-Side', lider: 'Lutadora Bea', boss: 68, pool: [66, 67, 68, 852, 853, 870, 236, 106, 107, 538, 539, 619] },
+      { type: 'fairy', nome: 'Estádio de Ballonlea', lider: 'Veterana Opal', boss: 869, pool: [868, 869, 856, 857, 858, 859, 860, 35, 36, 303, 280] },
+      { type: 'rock', nome: 'Estádio de Circhester', lider: 'Líder Gordie', boss: 839, pool: [837, 838, 839, 524, 525, 526, 95, 213, 874, 688, 689] },
+      { type: 'dark', nome: 'Estádio de Spikemuth', lider: 'Cantor Piers', boss: 862, pool: [263, 264, 862, 827, 828, 509, 510, 559, 560, 215, 861] },
+      { type: 'dragon', nome: 'Estádio de Hammerlocke', lider: 'Líder Raihan', boss: 884, pool: [840, 841, 842, 843, 844, 610, 611, 612, 885, 886, 330] },
+    ],
+    final: { nome: 'Torre Rose', lider: 'Eternatus', boss: 890, type: 'poison' },
+    historia: {
+      prologo: `Em Galar, as batalhas de ginásio são shows de estádio lotado. Mas o presidente da <b>Macro Cosmos</b>, Rose, quer resolver a falta de energia do futuro custe o que custar, e anda mexendo com algo que dormia sob a terra.
+        A Professora Magnolia pede que você vença os oito estádios da Copa e descubra o que a Macro Cosmos esconde.`,
+      caps: [
+        ['Milo, o fazendeiro de Turffield, abre a Copa no estádio {d:v>g1} da vila. A Macro Cosmos anda medindo a energia dos campos dele.', 'Milo conta que os Pokémon da fazenda ficaram agitados: uma luz vermelha sobe do chão à noite.'],
+        ['Nessa, a modelo de Hulbury, treina Pokémon de Água no porto. Barcos da Macro Cosmos carregam cristais estranhos por lá.', 'Nessa mostra um cristal vermelho: "Eles estão juntando isso aos montes. Para quê?"'],
+        ['Kabu, o veterano do fogo, guarda o estádio de Motostoke. As máquinas da Macro Cosmos esquentam a cidade inteira.', 'Kabu ouviu que o presidente Rose tem um plano chamado "Escuridão Eterna".'],
+        ['Bea treina lutadores em Stow-on-Side. Gente da Macro Cosmos rachou um mural antigo da cidade.', 'Atrás do mural, Bea encontra a história de dois heróis e de um "céu negro" que quase acabou com Galar.'],
+        ['A veterana Opal, das fadas, vive na floresta brilhante de Ballonlea. Ela testa quem vai sucedê-la.', 'Opal avisa: "O céu negro dos murais vai voltar. E quem o chama tem muito dinheiro."'],
+        ['Gordie, das rochas, comanda o estádio gelado de Circhester. Os mineiros da Macro Cosmos cavam fundo demais por lá.', 'Gordie mostra um mapa das minas: todas as escavações levam para baixo de Hammerlocke.'],
+        ['Piers, o cantor de Spikemuth, recusou o dinheiro da Macro Cosmos. Seus fãs barulhentos bloqueiam a cidade.', 'Piers deixa você passar: "Rose já abriu a porta. Corre para a Torre."'],
+        ['Raihan, o rival do campeão, guarda o último estádio em Hammerlocke, em cima da usina de energia.', 'Raihan sente o chão tremer: "Isso não é Dynamax. É outra coisa acordando."'],
+      ],
+      final: [`Rose despertou <b>Eternatus</b> no alto da <b>Torre Rose</b>, e o céu de Galar ficou vermelho. Suba e acabe com a Escuridão Eterna.`,
+        `Eternatus foi contido e dormiu de novo. A Macro Cosmos parou, o céu clareou, e Galar tem um novo campeão.`],
+    },
+  },
+
+  paldea: {
+    babies: [172, 174, 298, 440], // Pichu, Igglybuff, Azurill e Happiny
+    side: { peso: { explorar: 2, pesquisa: 1, pegar: 1 }, pessoas: {
+      explorar: [['Aluna da Academia', 'meu "tesouro" é conhecer cada canto de Paldea']],
+      pesquisa: [['Professora da Academia', 'preciso de dados de campo para a aula de biologia']],
+      pegar: [['Chef de Cascarrafa', 'quero ver um desses de perto, ao lado de um treinador']] } },
+    interludes: [
+      { ch: 3, npc: 'dex', kind: 'explore', n: 25, titulo: 'O tesouro do mapa', fala: 'Na Academia, cada aluno sai em busca do próprio tesouro. O seu pode começar pelo mapa: explore pelo menos 25% de Paldea antes do próximo ginásio.', obj: 'Explore 25% de Paldea (o mapa revela por onde você passa)' },
+      { ch: 7, npc: 'cura', kind: 'capball', n: 1, z: 4, titulo: 'A prova do treinador', fala: 'Os últimos líderes querem ver se você sabe lidar com os Pokémon da {Z4}. Traga a prova: capture um deles com uma Great Ball ou uma Ultra Ball.', obj: 'Capture um Pokémon na {Z4} com Great Ball ou Ultra Ball' },
+    ],
+    // Alfas da Lua: Pokémon noturnos de verdade (pela lore e pelos jogos)
+    moon: [972, 979, 429, 430, 94, 571], // Houndstone, Annihilape, Mismagius, Honchkrow, Gengar, Zoroark
+    nome: 'Paldea', sub: 'Geração IX · aventura e a Grande Cratera', vila: 'Vila de Cabo Poco',
+    guia: { nome: 'Diretor Clavell', spr: { h: '#6b7280', b: '#f1f5f9', d: '#334155' } },
+    artesao: 'Artesã de Mesagoza',
+    zonas: [['Campos do Sul', 'campo'], ['Planícies do Leste', 'floresta'], ['Deserto de Asado', 'deserto'], ['Picos Gelados do Norte', 'neve'], ['Grande Cratera', 'sombrio']],
+    pools: {
+      1: [915, 917, 919, 921, 661, 187, 194, 819, 928, 664, 427, 191, 396, 403, 280],
+      2: [924, 926, 931, 932, 940, 942, 946, 948, 951, 953, 955, 957, 179, 833],
+      3: [843, 449, 551, 962, 968, 969, 950, 443, 322, 324, 331, 228, 757, 206],
+      4: [974, 996, 459, 215, 220, 361, 615, 712, 971, 353, 574, 585, 225],
+      5: [970, 625, 966, 959, 979, 980, 981, 982, 972, 973, 936, 937, 983],
+    },
+    water: {
+      1: [129, 194, 60, 118, 963, 183], 2: [960, 963, 72, 341, 846, 418], 3: [961, 976, 90, 226, 592, 170],
+      4: [977, 964, 73, 171, 91], 5: [130, 977, 964, 976, 961],
+    },
+    night: [971, 353, 92, 198, 570, 999, 215, 302], rare: [133, 999, 996, 147, 443, 371, 978, 984], migra: [940, 941, 661], lendas: [1001, 1002, 1003, 1004, 1008],
+    vilao: 'Equipe Star', grunts: [944, 945, 965, 966, 434, 435, 198, 453, 551, 552],
+    gyms: [
+      { type: 'bug', nome: 'Ginásio da Confeitaria', lider: 'Confeiteira Katy', boss: 920, pool: [917, 918, 919, 920, 10, 11, 12, 664, 665, 412, 413] },
+      { type: 'grass', nome: 'Ginásio das Esculturas', lider: 'Artista Brassius', boss: 930, pool: [928, 929, 930, 946, 947, 948, 949, 187, 188, 189, 191, 192] },
+      { type: 'electric', nome: 'Ginásio da Transmissão', lider: 'Streamer Iono', boss: 939, pool: [921, 922, 923, 938, 939, 940, 941, 179, 180, 181, 403, 404] },
+      { type: 'water', nome: 'Ginásio do Mercado', lider: 'Chef Kofu', boss: 976, pool: [960, 961, 963, 964, 976, 977, 118, 119, 60, 61, 194] },
+      { type: 'normal', nome: 'Ginásio do Escritório', lider: 'Funcionário Larry', boss: 982, pool: [915, 916, 924, 925, 926, 931, 206, 982, 427, 428, 396, 397] },
+      { type: 'ghost', nome: 'Ginásio do Palco Gelado', lider: 'Rapper Ryme', boss: 972, pool: [971, 972, 353, 354, 92, 93, 429, 200, 999] },
+      { type: 'psychic', nome: 'Ginásio do Estúdio', lider: 'Maquiadora Tulip', boss: 956, pool: [955, 956, 280, 281, 282, 574, 575, 576, 203, 981, 79, 80] },
+      { type: 'ice', nome: 'Ginásio da Pista de Neve', lider: 'Snowboarder Grusha', boss: 975, pool: [974, 975, 996, 997, 998, 459, 460, 361, 362, 215, 712, 713] },
+    ],
+    final: { nome: 'Área Zero', lider: 'Koraidon', boss: 1007, type: 'dragon' },
+    historia: {
+      prologo: `Em Paldea, cada aluno da Academia de Mesagoza sai pelo mundo atrás do seu "tesouro". Mas Pokémon estranhos, de outras épocas, começaram a sair da <b>Grande Cratera</b>, e a <b>Equipe Star</b> parece saber mais do que diz.
+        O Diretor Clavell pede que você vença os oito ginásios e descubra o que está acontecendo na cratera.`,
+      caps: [
+        ['Katy faz doces e treina Pokémon Inseto em Cortondo, {d:v>g1} da vila. Membros da Equipe Star andam assustando os alunos na estrada.', 'Katy ouviu que a Equipe Star tem bases espalhadas por Paldea, e que alguns alunos largaram a escola com medo.'],
+        ['Brassius, o artista de Artazon, faz esculturas de Pokémon Planta. Uma delas foi derrubada por um Pokémon que ninguém conhece.', 'Brassius desenha o Pokémon misterioso: parece um Pokémon de milhões de anos atrás.'],
+        ['Iono transmite batalhas ao vivo de Levincia. Na live dela, alguém filmou luzes saindo da Grande Cratera.', 'Iono mostra o vídeo: Pokémon com formas antigas e outros com formas de robô, todos vindos da cratera.'],
+        ['Kofu, o chef de Cascarrafa, compra peixe no porto. Os pescadores dizem que o rio ficou estranho.', 'Kofu descobre que a Equipe Star foi criada por alunos que se protegiam de valentões. Não são vilões: estão fugindo de algo.'],
+        ['Larry, um funcionário sempre cansado, comanda o ginásio de Medali. Ele lê os relatórios da Liga sobre a cratera.', 'Larry deixa escapar: "Tem um laboratório lá embaixo. A professora que trabalhava nele nunca voltou."'],
+        ['Ryme rima e batalha no frio de Montenevera. A cidade sente tremores vindos do chão.', 'Ryme rima um aviso: "Quem desce para a cratera não volta igual."'],
+        ['Tulip, maquiadora e treinadora, guarda Alfornada. A Equipe Star se desfez e entregou a ela tudo o que sabia.', 'Tulip passa a última pista: a entrada da Área Zero fica bem no fundo da cratera.'],
+        ['Grusha, o snowboarder, guarda o Monte Glaseado, de onde se vê a cratera inteira.', 'Grusha abre o caminho: "O Pokémon do laboratório escapou e está furioso. Vai precisar de coragem."'],
+      ],
+      final: [`No fundo da <b>Área Zero</b>, a máquina do tempo da professora trouxe <b>Koraidon</b> furioso do passado. Desça e devolva a calma à cratera.`,
+        `A máquina do tempo foi desligada, Koraidon se acalmou, e a Equipe Star voltou para a escola. Paldea tem um novo campeão.`],
+    },
+  },
 };
 const REGION_IDS = Object.keys(REGIONS);
 
@@ -355,7 +528,7 @@ const rotGeo = g => {
 // pares de ginásios que podem trocar de lugar: o validador conferiu que o ginásio de antes alcança o lugar do
 // de depois com as HMs que o jogador tem naquele capítulo; ficam de fora trocas que mudariam a história
 // (a batalha final, a Flannery longe do vulcão) e as que envolvem a 2ª cidade
-const LAYOUT_SWAPS = { kanto: [[2, 3]], johto: [[2, 3]], hoenn: [[2, 3], [6, 7]], sinnoh: [[2, 3], [4, 5]], unova: [[2, 3]] };
+const LAYOUT_SWAPS = { kanto: [[2, 3]], johto: [[2, 3]], hoenn: [[2, 3], [6, 7]], sinnoh: [[2, 3], [4, 5]], unova: [[2, 3]], kalos: [[2, 3]], galar: [[2, 3]], paldea: [[2, 3]] };
 // troca os ginásios a e b (1-8) de lugar, levando junto a cidade de cada um (o nome segue o líder, como nas falas)
 function swapGyms(g, a, b) {
   const gyms = g.gyms.map(p => [...p]), marks = g.marks.map(m => [...m]);
@@ -380,7 +553,8 @@ function moveVila(g, p) {
 }
 // lugares aprovados para a vila (zona 1, perto de uma rota, longe de cidades e ginásios; o validador conferiu
 // que o 1º ginásio continua a pé e que nenhuma zona abre antes da HM dela)
-const LAYOUT_VILAS = { kanto: [[15, 5], [16, 12], [13, 6]], johto: [[11, 17]], hoenn: [[4, 9]], sinnoh: [[19, 13], [19, 21], [17, 14]], unova: [[5, 4]] };
+const LAYOUT_VILAS = { kanto: [[15, 5], [16, 12], [13, 6]], johto: [[11, 17]], hoenn: [[4, 9]], sinnoh: [[19, 13], [19, 21], [17, 14]], unova: [[5, 4]],
+  kalos: [[6, 14]], galar: [[4, 19], [7, 19], [4, 21]], paldea: [[5, 17], [11, 17]] };
 // versões aprovadas pelo validador (alcance de cada zona e ginásio com as HMs de cada capítulo); as outras ficam fora do sorteio
 const LAYOUT_T = { kanto: [0, 1, 3, 5, 6, 7] };
 function layoutGeo(id, seed, forceT) {
