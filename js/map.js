@@ -126,7 +126,7 @@ function pathDist(x, y) {
 let TT = null, TZ = null, TV = null, WET = null, MINIMAP = null, BORDERW = null;
 // MINIMAP: 1 pixel = MAP_S px do mundo. Névoa: células de FOG_S px; KNOWN = mapa só com o que já foi visto
 const MAP_S = 64, FOG_S = 128, FOG_R = 720;
-let FOG = null, FOGW = 0, FOGH = 0, KNOWN = null, fogT = 0, FOGLAND = null;
+let FOG = null, FOGW = 0, FOGH = 0, KNOWN = null, fogT = 0, FOGLAND = null, FOGB = null;
 const ZPTS = { 1: [], 2: [], 3: [], 4: [], 5: [] };
 const tIdx = (ix, iy) => (ix < 0 || iy < 0 || ix >= NX || iy >= NY ? -1 : iy * NX + ix);
 function tileIdx(x, y) { return tIdx(Math.floor(x / TILE) + OX, Math.floor(y / TILE) + OY); }
@@ -904,7 +904,7 @@ function initFog(P) {
   FOGW = Math.ceil((WX1 - WX0) / FOG_S); FOGH = Math.ceil((WY1 - WY0) / FOG_S);
   FOG = new Uint8Array(FOGW * FOGH);
   // células de terra (o mar e a arena não contam para a % explorada)
-  FOGLAND = new Uint8Array(FOGW * FOGH); G.landTotal = 0; G.landSeen = 0;
+  FOGLAND = new Uint8Array(FOGW * FOGH); G.landTotal = 0; G.landSeen = 0; FOGB = null;
   for (let j = 0; j < FOGH; j++) for (let i = 0; i < FOGW; i++) { const x = WX0 + (i + 0.5) * FOG_S, y = WY0 + (j + 0.5) * FOG_S, z = zoneAt(x, y), k = tileKind(x, y); if (z >= 0 && z <= 5 && k !== TK.SEA) { FOGLAND[j * FOGW + i] = 1; G.landTotal++; } }
   KNOWN = document.createElement('canvas');
   KNOWN.width = MINIMAP.width; KNOWN.height = MINIMAP.height;
@@ -926,6 +926,9 @@ function initFog(P) {
 function revealCell(i) {
   if (FOG[i]) return false;
   FOG[i] = 1;
+  const ci = i % FOGW, cj = (i / FOGW) | 0;
+  if (!FOGB) FOGB = { i0: ci, i1: ci, j0: cj, j1: cj };
+  else { FOGB.i0 = Math.min(FOGB.i0, ci); FOGB.i1 = Math.max(FOGB.i1, ci); FOGB.j0 = Math.min(FOGB.j0, cj); FOGB.j1 = Math.max(FOGB.j1, cj); }
   if (FOGLAND && FOGLAND[i]) G.landSeen = (G.landSeen || 0) + 1;
   const r = FOG_S / MAP_S, x = (i % FOGW) * r, y = Math.floor(i / FOGW) * r;
   KNOWN.getContext('2d').drawImage(MINIMAP, x, y, r, r, x, y, r, r);

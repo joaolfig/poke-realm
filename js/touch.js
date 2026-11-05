@@ -272,7 +272,7 @@ function tButtons(P) {
   if (near && act.firstChild.nodeValue !== near) act.firstChild.nodeValue = near;
   $('t-dash').classList.toggle('hidden', !hasT(P, 'esquiva'));
   const cd = (el, f) => el.style.setProperty('--cd', Math.round(clamp(f, 0, 1) * 360) + 'deg');
-  cd($('t-abil'), P.abilCd / Math.max(0.1, abilCd(P)));
+  cd($('t-abil'), P.wildT > 0 && P.cls === 'druida' ? (P.wildSigCd || 0) / WSIG_CD : P.abilCd / Math.max(0.1, abilCd(P)));
   cd($('t-dash'), (P.dashCd || 0) / 3);
   $('t-pot').lastChild.textContent = P.pots.hp;
   // ☰ ganha um selo quando há algo para resolver no painel; ⬆ aparece quando há equipamento melhor na mochila

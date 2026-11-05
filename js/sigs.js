@@ -2,7 +2,7 @@
 /* ============ Golpes de assinatura temáticos ============
  * Cada chefe importante (líderes de ginásio, chefes de masmorra, lendários e chefes finais) tem golpes tirados do
  * moveset dele: Charizard solta Labareda, Blastoise Hidro Bomba, Pidgeotto e Tornadus soltam tornados, a Miltank rola...
- * Os outros chefes usam 3 golpes do próprio tipo.
+ * Vale para todas as regiões, de Kanto a Paldea. Os outros chefes usam 3 golpes do próprio tipo.
  * Formatos: círculo (c), faixa (l) e golpe que anda (m: tornado, redemoinho, pedra rolando, orbe), que depois do aviso
  * percorre um caminho e acerta quem tocar (uma vez). Tudo sempre avisado no chão antes de acertar.
  * fx = estilo visual quando o golpe estoura (chamas, jato d'água, raio do céu, pedras, folhas...).
@@ -114,6 +114,20 @@ const SIG_MOVES = {
   luamagica: { nome: '🌙 Lua Mágica', fx: 'fairy', f: (e, t) => Array.from({ length: 6 }, (_, i) => tC(t.x + Math.cos(i * 1.047) * 150, t.y + Math.sin(i * 1.047) * 150, 62, 1.2)) },
   vozencantada: { nome: '🎶 Voz Encantada', fx: 'fairy', f: e => [tC(e.x, e.y, 200, 1.25)] },
   brilho: { nome: '✨ Brilho Deslumbrante', fx: 'fairy', f: (e, t) => sRain(t, 8, 220, 60, 1.0, 0.35) },
+  // ---------- golpes das regiões novas (Kalos, Galar, Paldea) e dos lendários ----------
+  avalanche: { nome: '🧊 Avalanche', fx: 'ice', f: (e, t, a) => [-2, -1, 0, 1, 2].map(i => tM(e.x - Math.sin(a) * i * 58, e.y + Math.cos(a) * i * 58, a, 210, 3, 34, 1.15)) },
+  giragelo: { nome: '⛸ Pirueta de Gelo', fx: 'ice', f: (e, t, a) => [-0.5, 0, 0.5].map((k, i) => tM(e.x, e.y, a + k, 260, 2.6, 34, 1.0 + i * 0.3, 55, i * 2)) },
+  geomancia: { nome: '🌈 Geomancia', fx: 'fairy', f: e => [...sRing(e.x, e.y, 160, 8, 55, 1.1), ...sRing(e.x, e.y, 300, 12, 55, 1.6), ...sRing(e.x, e.y, 440, 16, 55, 2.1)] },
+  asamorte: { nome: '🦅 Asa da Morte', fx: 'shadow', f: (e, t, a) => [...sFan(e, a, [-0.5, -0.25, 0, 0.25, 0.5], 700, 60, 1.15), tC(t.x, t.y, 100, 1.9)] },
+  eternabeam: { nome: '☠ Raio Eterno', fx: 'dragon', f: (e, t, a) => [tL(e.x, e.y, a, 900, 150, 1.6), ...sRing(e.x, e.y, 260, 10, 55, 2.3)] },
+  colisao: { nome: '🦖 Curso de Colisão', fx: 'dust', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 600, 110, 1.0), tC(t.x, t.y, 150, 1.7)] },
+  derrapagem: { nome: '⚡ Derrapagem Elétrica', fx: 'spark', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 600, 105, 1.0), ...sX(t, a, 520, 55, 1.7)] },
+  homenagem: { nome: '👻 Última Homenagem', fx: 'ghostfire', f: (e, t) => sRain(t, 9, 250, 52, 1.0, 0.35) },
+  julgamento: { nome: '✨ Julgamento', fx: 'meteor', f: (e, t) => Array.from({ length: 10 }, (_, i) => tC(...near2(t, 300), 70, 1.1 + (i % 4) * 0.25)) },
+  raiocruzado: { nome: '⚡ Raio Cruzado', fx: 'bolt', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 580, 100, 0.95), ...[1.2, 1.6, 2.0].map(d => tC(...near2(t, 90), 65, d))] },
+  espadagigante: { nome: '🗡 Espada Gigante', fx: 'steel', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 620, 120, 1.0), ...sFan(t, a, [-1.2, 1.2], 300, 50, 1.6)] },
+  escudogigante: { nome: '🛡 Escudo Gigante', fx: 'steel', f: (e, t, a) => [tC(e.x, e.y, 200, 1.2), ...sPar(e, a, [-120, 0, 120], 640, 60, 1.7)] },
+  terablast: { nome: '💎 Explosão Tera', fx: 'star', f: (e, t, a) => [tL(e.x, e.y, a, 840, 110, 1.3), ...sRing(t.x, t.y, 150, 8, 50, 1.9)] },
 };
 
 // golpes de cada chefe, tirados do moveset dele
@@ -152,7 +166,30 @@ const SIG_SPECIES = {
   638: ['espadasanta', 'canhaoflash', 'caudaferro'], 639: ['espadasanta', 'pedraafiada', 'terremoto'], 640: ['espadasanta', 'laminafolha', 'folhas'],
   641: ['furacao', 'rajada', 'ataqueaereo'], 642: ['trovao', 'bolaeletrica', 'raio'], 645: ['precipicio', 'terremoto', 'pedraafiada'],
   383: ['precipicio', 'erupcao', 'terremoto'], 384: ['cometa', 'furacao', 'garradragao'], 250: ['labareda', 'anelfogo', 'furacao'],
-  487: ['sombra', 'pesadelo', 'bolasombria'], 484: ['hidrobomba', 'furia', 'redemoinho'],
+  487: ['sombra', 'pesadelo', 'bolasombria'], 484: ['hidrobomba', 'furia', 'redemoinho'], 644: ['raiocruzado', 'trovao', 'cometa'],
+  151: ['psiquico', 'futuro', 'esferaaura'], 251: ['laminafolha', 'futuro', 'petalas'], 385: ['futuro', 'chuvaaco', 'psiquico'], 386: ['psicoonda', 'hiperraio', 'psicorte'],
+  490: ['surf', 'chuva', 'redemoinho'], 491: ['pesadelo', 'pulsosombrio', 'emboscada'], 492: ['raiosolar', 'petalas', 'laminafolha'], 493: ['julgamento', 'hiperraio', 'cometa'],
+  494: ['investidafogo', 'labareda', 'psiquico'], 646: ['nevasca', 'presagelo', 'cometa'], 647: ['espadasanta', 'hidrobomba', 'aquacauda'],
+  648: ['vozencantada', 'psiquico', 'chutegiratorio'], 649: ['canhaoflash', 'xtesoura', 'raio'],
+  // Kalos e Xerneas / Yveltal
+  666: ['furacao', 'enxame', 'rajada'], 696: ['cabecada', 'garradragao', 'pedraafiada'], 673: ['laminafolha', 'investida', 'terremoto'],
+  695: ['raio', 'descarga', 'bolaeletrica'], 700: ['luamagica', 'vozencantada', 'brilho'], 678: ['psiquico', 'psicoonda', 'futuro'],
+  713: ['avalanche', 'presagelo', 'cabecada'], 716: ['geomancia', 'luamagica', 'brilho'], 717: ['asamorte', 'furacao', 'pulsosombrio'],
+  718: ['precipicio', 'terremoto', 'cometa'], 719: ['pedraafiada', 'brilho', 'tumba'], 720: ['psicoonda', 'futuro', 'pulsosombrio'], 721: ['hidrobomba', 'erupcao', 'labareda'],
+  // Galar e Eternatus
+  830: ['petalas', 'rajada', 'folhas'], 834: ['rolagem', 'hidrobomba', 'pedraafiada'], 851: ['anelfogo', 'lancachamas', 'rodafogo'],
+  68: ['socodinamico', 'ondachoque', 'chutegiratorio'], 869: ['luamagica', 'brilho', 'vozencantada'], 839: ['tumba', 'erupcao', 'deslizamento'],
+  862: ['golpebaixo', 'emboscada', 'investida'], 884: ['canhaoflash', 'cometa', 'caudaferro'], 890: ['eternabeam', 'cometa', 'bombalodo'],
+  888: ['espadagigante', 'espadasanta', 'luamagica'], 889: ['escudogigante', 'cabecada', 'esferaaura'], 892: ['golpebaixo', 'socodinamico', 'ondachoque'],
+  893: ['laminafolha', 'raizes', 'golpebaixo'], 894: ['descarga', 'rede', 'investidaeletrica'], 895: ['cometa', 'furia', 'pulsodragao'],
+  896: ['presagelo', 'nevasca', 'pisotear'], 897: ['bolasombria', 'pesadelo', 'sombra'], 898: ['psicoonda', 'futuro', 'raiosolar'],
+  // Paldea e Koraidon / Miraidon
+  920: ['picada', 'xtesoura', 'golpebaixo'], 930: ['raiosolar', 'petalas', 'raizes'], 939: ['descarga', 'canhaozap', 'trovao'],
+  976: ['jato', 'psicorte', 'aquacauda'], 982: ['hiperraio', 'broca', 'pisotear'], 972: ['homenagem', 'bolasombria', 'sombra'],
+  956: ['psicoonda', 'psiquico', 'futuro'], 975: ['giragelo', 'presagelo', 'pisotear'], 1007: ['colisao', 'garradragao', 'labareda'], 1008: ['derrapagem', 'pulsodragao', 'trovao'],
+  1001: ['folhas', 'raizes', 'pulsosombrio'], 1002: ['presagelo', 'granizo', 'golpebaixo'], 1003: ['terremoto', 'fissura', 'pulsosombrio'], 1004: ['lancachamas', 'anelfogo', 'pulsosombrio'],
+  1014: ['socodinamico', 'bombalodo', 'ondachoque'], 1015: ['psicoonda', 'bombalodo', 'futuro'], 1016: ['ataqueaereo', 'bombalodo', 'luamagica'],
+  1017: ['laminafolha', 'investida', 'raizes'], 1024: ['terablast', 'tumba', 'psicoonda'], 1025: ['bombalodo', 'ondatoxica', 'bolasombria'],
 };
 // quem não tem golpes próprios usa os do tipo
 const SIG_TYPE = {

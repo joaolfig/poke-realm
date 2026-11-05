@@ -878,6 +878,7 @@ const enemiesNear = (x, y, r) => G.enemies.filter(e => e.hp > 0 && !e.dead && Ma
 
 function useAbility() {
   const P = G.P;
+  if (P.wildT > 0 && P.cls === 'druida') { wildSig(P); return; }
   if (P.abilCd > 0) return;
   if (isWolf(P)) { text(P.x, P.y - 40, '🐺 Na fúria não dá para usar o especial', '#fca5a5', 12); return; }
   if (P.lform && CLASSES[P.cls] === CLASSES.druida) { text(P.x, P.y - 40, 'Você já está transformado', '#fca5a5', 12); return; }
@@ -1060,7 +1061,7 @@ function wildShotDmg(P, dmg) {
   const petDps = shot * mul / 0.9 * 1.15; // tiro a cada 0,9 s; o golpe especial em leque soma ~15% num alvo (medido)
   const wn = CLASSES[P.cls].wpn, ww = curWpn(P), hits = ww.shots || 1; // de perto todos os tiros do leque acertam
   const mega = (P.megaT > 0 ? DRUID_MEGA_K : 1) * (P.dynaT > 0 ? DRUID_DYNA_K : 1); // Druida megaevoluído ou em Dynamax na Forma Selvagem
-  return Math.max(1, Math.round((dmg + petDps / wn.rate) * WILD_K * mega * (hasS(P, 'lua') ? 1.2 : hasS(P, 'terra') ? 1.3 : 1) * wn.rate / (ww.rate * hits)));
+  return Math.max(1, Math.round((dmg + petDps / wn.rate) * WILD_K * mega * (hasS(P, 'lua') ? 1.15 : hasS(P, 'terra') ? 1.3 : 1) * wn.rate / (ww.rate * hits)));
 }
 function playerHit(e, b) {
   if (b && b.ally) return allyHit(e, b.ally, b.sp);
@@ -1415,6 +1416,7 @@ function handleEvent(m, local) {
     case 'mark': for (const id of m.ids || []) { const e = G.emap.get(id); if (e) e.markT = G.time + m.dur; } break;
     case 'decoy': G.decoys.push({ x: m.x, y: m.y, t: m.dur, cls: m.cls, ptype: m.ptype }); break;
     case 'tele': teleEvent(m); break;
+    case 'atele': teleEvent(m, true); break;
     case 'moonch': moonChestEvent(m); break;
     case 'gq': groupQEvent(m, local); break;
     case 'cap2': { const P = G.P; if (!local && P && Math.hypot(P.x - m.x, P.y - m.y) < DUO_R && duoNear(P)) questProgress('duoCaptura', { types: m.types }); break; }
@@ -2014,14 +2016,19 @@ function drawHUD(ox, oy) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
       if (showMap === 2) {
-        // mapa da região inteira (com névoa no que ainda não foi explorado)
+        // mapa da região: mostra só a área já explorada (com folga), num quadro do tamanho da tela,
+        // para o contorno e o tamanho da região não entregarem onde o jogador está
         big = true;
-        const sc = Math.min((W - 80) / (WX1 - WX0), (H - 140) / (WY1 - WY0));
-        mw = Math.round((WX1 - WX0) * sc); mh = Math.round((WY1 - WY0) * sc);
-        mx = Math.round((W - mw) / 2); my = Math.round((H - mh) / 2) + 20;
+        mw = W - 80; mh = H - 140; mx = 40; my = 90;
+        const b = FOGB || { i0: 0, i1: 0, j0: 0, j1: 0 };
+        const bx0 = WX0 + b.i0 * FOG_S, bx1 = WX0 + (b.i1 + 1) * FOG_S, by0 = WY0 + b.j0 * FOG_S, by1 = WY0 + (b.j1 + 1) * FOG_S;
+        const vw = Math.max(bx1 - bx0 + 3000, 9000), vh = Math.max(by1 - by0 + 3000, 9000);
+        const sc = Math.min(mw / vw, mh / vh), cx = (bx0 + bx1) / 2, cy = (by0 + by1) / 2;
         ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(0, 0, W, H);
-        ctx.drawImage(KNOWN, mx, my, mw, mh);
-        toM = (x, y) => [mx + (x - WX0) * sc, my + (y - WY0) * sc];
+        ctx.fillStyle = '#0b1020'; ctx.fillRect(mx, my, mw, mh);
+        ctx.beginPath(); ctx.rect(mx, my, mw, mh); ctx.clip();
+        ctx.drawImage(KNOWN, mx + mw / 2 + (WX0 - cx) * sc, my + mh / 2 + (WY0 - cy) * sc, KNOWN.width * MAP_S * sc, KNOWN.height * MAP_S * sc);
+        toM = (x, y) => [mx + mw / 2 + (x - cx) * sc, my + mh / 2 + (y - cy) * sc];
       } else {
         // minimapa com zoom: só os arredores do jogador
         const sc = mw / 4200;
@@ -2040,7 +2047,7 @@ function drawHUD(ox, oy) {
       const inBox = (a, b) => a >= mx && b >= my && a <= mx + mw && b <= my + mh;
       const edge = ([a, b]) => [clamp(a, mx + 7, mx + mw - 7), clamp(b, my + 7, my + mh - 7)];
       const _toM = toM;
-      if (!dg && !big) toM = (x, y) => { const p = _toM(x, y); return inBox(p[0], p[1]) ? p : [-999, -999]; };
+      if (!dg) toM = (x, y) => { const p = _toM(x, y); return inBox(p[0], p[1]) ? p : [-999, -999]; };
       if (big) {
         // nomes das cidades já visitadas
         ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000';
@@ -2071,9 +2078,9 @@ function drawHUD(ox, oy) {
         ctx.globalAlpha = 1;
       }
       const qt = !dg && questTarget(P);
-      if (qt) { const [a, b] = dg || big ? toM(qt.x, qt.y) : edge(_toM(qt.x, qt.y)); ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; outlined('🎯', a, b + 4); }
+      if (qt) { const [a, b] = dg ? toM(qt.x, qt.y) : edge(_toM(qt.x, qt.y)); ctx.font = 'bold 12px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; outlined('🎯', a, b + 4); }
       const stt = !dg && storyTarget(P);
-      if (stt) { const [a, b] = dg || big ? toM(stt.x, stt.y) : edge(_toM(stt.x, stt.y)); ctx.font = 'bold 14px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fde047'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; outlined('★', a, b + 5); }
+      if (stt) { const [a, b] = dg ? toM(stt.x, stt.y) : edge(_toM(stt.x, stt.y)); ctx.font = 'bold 14px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fde047'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3; outlined('★', a, b + 5); }
       for (const p of G.portals) if (same(p.x)) { const [a, b] = toM(p.x, p.y); ctx.fillStyle = p.exit ? '#facc15' : THEMES[p.theme].accent; ctx.beginPath(); ctx.arc(a, b, 4, 0, 7); ctx.fill(); }
       for (const r of G.remotes.values()) if (!r.dead && r.tx !== undefined && same(r.x) && !(r.invis && P && P.pvp)) { const [a, b] = toM(r.x, r.y); ctx.fillStyle = '#38bdf8'; ctx.fillRect(a - 2, b - 2, 5, 5); }
       for (const e of G.enemies) if (e.boss && same(e.x)) { const [a, b] = toM(e.x, e.y); ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(a, b, 5, 0, 7); ctx.fill(); }
@@ -2139,8 +2146,9 @@ function updatePanel() {
     <div class="st" title="Bônus de acerto (d20 + isto contra a CA do inimigo)"><span>Acerto</span><b>+${toHit(P)}</b></div>
     <div class="st" title="Ouro"><span>Ouro</span><b style="color:var(--gold)">${P.gold}</b></div><div class="st" title="Insígnias conquistadas em todas as regiões"><span>Insígnias</span><b>${totalBadges(P)}</b></div><div class="st" title="Pokémon lendários derrotados"><span>Lendários</span><b>${(P.legendIds || []).length}</b></div>
     <div class="ptype" title="Seu tipo define o que é super efetivo nos seus ataques e quais ataques te acertam forte">Tipo: ${typeBadge(pType(P))}${P.tempTypeT > 0 ? ` <span class="small">cristal ${Math.ceil(P.tempTypeT)}s (natural: ${TYPE_PT[P.ptype]})</span>` : ''}</div>`;
-  const ab = curAbil(P), cd = abilCd(P);
-  $('p-abil').innerHTML = `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>
+  const ab = curAbil(P), cd = abilCd(P), ws = P.wildT > 0 && P.cls === 'druida';
+  const abH = ws ? `<div class="abil ${P.wildSigCd > 0 ? 'off' : ''}" title="Golpe do Pokémon em que você se transformou"><i class="cd" style="width:${P.wildSigCd > 0 ? Math.min(100, P.wildSigCd / WSIG_CD * 100) : 0}%"></i><b>[Espaço] ${wildSigNext(P).nome}</b> <span>${P.wildSigCd > 0 ? P.wildSigCd.toFixed(1) + 's' : 'pronto'}</span></div>` : `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>`;
+  $('p-abil').innerHTML = `${abH}
     ${blessPhase(P) ? `<div class="small" title="${blessOf(P) ? BLESS[blessOf(P)].desc : 'Escolha uma bênção no templo da 2ª cidade'}">✝ Bênção: ${blessOf(P) ? `${BLESS[blessOf(P)].icon} ${BLESS[blessOf(P)].nome}` : `nenhuma (escolha no templo de ${esc(TOWNS[1] ? townName(TOWNS[1]) : 'a 2ª cidade')})`}</div>` : ''}
     ${blessBuffs(P)}${boostLine(P)}${linBuffs(P)}<div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Fly: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
   padFixDom($('p-abil'));
@@ -2810,10 +2818,12 @@ function bossDash(e, dt) {
   if ((d.t -= dt) <= 0) e.dash = null;
 }
 // todos: avisos no chão
-function teleEvent(m) {
+function teleEvent(m, ally) {
   G.teles = G.teles || [];
-  for (const o of m.l) G.teles.push({ ...o, t: o.d, max: o.d, ty: m.ty, pct: m.pct, src: m.src, st: m.st, sid: m.sid });
+  const mine = ally && m.from === NET.myId;
+  for (const o of m.l) G.teles.push({ ...o, t: o.d, max: o.d, ty: m.ty, pct: m.pct, src: m.src, st: m.st, sid: m.sid, ally, mine });
   const P = G.P;
+  if (ally) { if (P && Math.hypot(P.x - m.bx, P.y - m.by) < 900) text(m.bx, m.by - 60, m.nm, '#86efac', 15); return; }
   if (P && Math.hypot(P.x - m.bx, P.y - m.by) < 900) { text(m.bx, m.by - 70, m.nm, '#fca5a5', 18); sfx('boss'); }
 }
 function teleHits(o, x, y) {
@@ -2850,15 +2860,17 @@ function updateTeles(dt) {
       o.act = (o.act || 0) + dt;
       const q = sigMovePos(o);
       sigTrail(o, q);
-      if (P && !o.hit && P.dodgeT <= 0 && !P.pvp && Math.hypot(P.x - q.x, P.y - q.y) < o.r + 12) { o.hit = true; if (teleDamage(o, P)) P = null; }
+      if (o.mine) { for (const e of enemiesNear(q.x, q.y, o.r)) wildSigHit(o, e); }
+      else if (P && !o.ally && !o.hit && P.dodgeT <= 0 && !P.pvp && Math.hypot(P.x - q.x, P.y - q.y) < o.r + 12) { o.hit = true; if (teleDamage(o, P)) P = null; }
       if (o.act >= o.dur) { o.dead = true; sigBurst(o, q.x, q.y); }
       continue;
     }
     o.dead = true;
     sigBurst(o, mx, my);
     G.fx.push(o.s === 'c' ? { k: 'ring', x: o.x, y: o.y, r: 0, R: o.r, life: 0.35, max: 0.35, color: TYPE_COLORS[o.ty] || '#fca5a5', fill: true } : { k: 'ring', x: mx, y: my, r: 0, R: o.w, life: 0.3, max: 0.3, color: TYPE_COLORS[o.ty] || '#fca5a5' });
-    if (P && Math.hypot(P.x - mx, P.y - my) < 700) G.shake = Math.min(9, G.shake + (o.fx === 'quake' ? 5 : 3));
-    if (!P || P.dodgeT > 0 || P.pvp || !teleHits(o, P.x, P.y)) continue;
+    if (P && Math.hypot(P.x - mx, P.y - my) < 700) G.shake = Math.min(9, G.shake + (o.ally ? 1 : o.fx === 'quake' ? 5 : 3));
+    if (o.mine) { for (const e of G.enemies) if (e.hp > 0 && !e.dead && teleHits(o, e.x, e.y)) wildSigHit(o, e); continue; }
+    if (o.ally || !P || P.dodgeT > 0 || P.pvp || !teleHits(o, P.x, P.y)) continue;
     if (teleDamage(o, P)) P = null; // os outros avisos do mesmo quadro não matam de novo
   }
   if (G.teles) G.teles = G.teles.filter(o => !o.dead);
@@ -2866,14 +2878,15 @@ function updateTeles(dt) {
 function drawTeles(ox, oy) {
   for (const o of G.teles || []) {
     const k = 1 - o.t / o.max, col = TYPE_COLORS[o.ty] || '#ef4444';
+    const f0 = o.ally ? 'rgba(34,197,94,.12)' : 'rgba(220,38,38,.16)', f1 = o.ally ? 'rgba(74,222,128,.3)' : null;
     if (o.s === 'm') {
       if (o.t > 0) {
         // aviso: o caminho que ele vai fazer, e a bolinha enchendo no começo
         ctx.save(); ctx.globalAlpha = 0.75; ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([8, 6]); ctx.beginPath();
         for (let s0 = 0; s0 <= 12; s0++) { const q = sigMovePos({ ...o, act: o.dur * s0 / 12 }); if (s0) ctx.lineTo(q.x + ox, q.y + oy); else ctx.moveTo(q.x + ox, q.y + oy); }
         ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle = 'rgba(220,38,38,.18)'; ctx.beginPath(); ctx.arc(o.x + ox, o.y + oy, o.r, 0, 7); ctx.fill();
-        ctx.fillStyle = 'rgba(239,68,68,.4)'; ctx.beginPath(); ctx.arc(o.x + ox, o.y + oy, o.r * k, 0, 7); ctx.fill();
+        ctx.fillStyle = f0; ctx.beginPath(); ctx.arc(o.x + ox, o.y + oy, o.r, 0, 7); ctx.fill();
+        ctx.fillStyle = f1 || 'rgba(239,68,68,.4)'; ctx.beginPath(); ctx.arc(o.x + ox, o.y + oy, o.r * k, 0, 7); ctx.fill();
         ctx.restore();
       } else { const q = sigMovePos(o); sigDrawMover(o, q.x + ox, q.y + oy); }
       continue;
@@ -2882,13 +2895,13 @@ function drawTeles(ox, oy) {
     ctx.globalAlpha = 0.85;
     if (o.s === 'c') {
       const x = o.x + ox, y = o.y + oy;
-      ctx.fillStyle = 'rgba(220,38,38,.16)'; ctx.beginPath(); ctx.arc(x, y, o.r, 0, 7); ctx.fill();
-      ctx.fillStyle = 'rgba(239,68,68,.35)'; ctx.beginPath(); ctx.arc(x, y, o.r * k, 0, 7); ctx.fill();
+      ctx.fillStyle = f0; ctx.beginPath(); ctx.arc(x, y, o.r, 0, 7); ctx.fill();
+      ctx.fillStyle = f1 || 'rgba(239,68,68,.35)'; ctx.beginPath(); ctx.arc(x, y, o.r * k, 0, 7); ctx.fill();
       ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.arc(x, y, o.r, 0, 7); ctx.stroke();
     } else {
       ctx.translate(o.x + ox, o.y + oy); ctx.rotate(o.a);
-      ctx.fillStyle = 'rgba(220,38,38,.16)'; ctx.fillRect(0, -o.w / 2, o.len, o.w);
-      ctx.fillStyle = 'rgba(239,68,68,.35)'; ctx.fillRect(0, -o.w / 2, o.len * k, o.w);
+      ctx.fillStyle = f0; ctx.fillRect(0, -o.w / 2, o.len, o.w);
+      ctx.fillStyle = f1 || 'rgba(239,68,68,.35)'; ctx.fillRect(0, -o.w / 2, o.len * k, o.w);
       ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.strokeRect(0, -o.w / 2, o.len, o.w);
     }
     ctx.restore();
