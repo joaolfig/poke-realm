@@ -96,7 +96,20 @@ function shrinkImage(im, k) {
   x.drawImage(im, 0, 0, c.width, c.height);
   return c;
 }
+// ícones das Gerações VIII e IX (nº 808 a 1025): a PokeAPI só tem ícones até a Geração VII, e a imagem grande reduzida
+// ficava ruim de enxergar; estes vêm da folha de ícones do Pokémon Showdown, recortados e guardados no próprio jogo
+const ICONS89 = { wait: null };
+const icons89 = () => ICONS89.wait || (ICONS89.wait = new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = 'img/icones-g8-g9.png?v=1'; }));
 function loadImg(p) {
+  if (p.id >= 808 && p.id <= 1025) return icons89().then(sh => {
+    if (!sh) return loadImgUrls(p);
+    const k = p.id - 808, c = document.createElement('canvas'); c.width = 40; c.height = 30;
+    c.getContext('2d').drawImage(sh, (k % 12) * 40, Math.floor(k / 12) * 30, 40, 30, 0, 0, 40, 30);
+    p.img = trimImage(c);
+  });
+  return loadImgUrls(p);
+}
+function loadImgUrls(p) {
   return new Promise(res => {
     const urls = [...new Set([p.icon, ICON_URL(p.id), p.front].filter(Boolean))];
     const next = () => {

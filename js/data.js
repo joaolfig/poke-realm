@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 /* ============ Dados fixos do jogo ============ */
 const API = 'https://pokeapi.co/api/v2/pokemon/';
-const ICON_URL = id => (id > 807 ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-vii/icons/${id}.png`);
+const ICON_URL = id => (id > 807 && id < 10000 ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-vii/icons/${id}.png`);
 const TILE = 32, VILA_R = 300;
 
 const CLASSES = {

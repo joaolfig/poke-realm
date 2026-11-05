@@ -902,7 +902,7 @@ function dexClaim(P, pc) {
   G.toasts.push({ text: `🎁 Pokédex ${pc}%: ${regTitle(g.txt)}`, color: '#fde047', t: 5, big: 1 });
   sfx('lvl'); saveGame();
 }
-const dexIcon = pid => (pid > 807 ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pid}.png` : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-vii/icons/${pid}.png`);
+const dexIcon = pid => (pid > 807 && pid < 10000 ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pid}.png` : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-vii/icons/${pid}.png`);
 const dexName = pid => (POKE[pid] || (typeof POKEDEX_PRELOAD !== 'undefined' && POKEDEX_PRELOAD[pid]) || {}).name || '???';
 function renderDex() {
   const P = G.P, d = dexOf(P), box = $('dex');
