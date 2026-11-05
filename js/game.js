@@ -64,9 +64,31 @@ function trimImage(im) {
   } catch (e) { return im; }
 }
 
-// a imagem grande (sem ícone: Pokémon a partir do nº 808) tem ~2,5x o tamanho do ícone; reduz para 40% para ficar
-// do tamanho dos outros (medido em Pikachu, Charizard, Snorlax, Lucario, Frogadier e Sylveon)
-const FRONT_K = 0.4;
+// a imagem grande (sem ícone: Pokémon a partir do nº 808) tem ~2,5x o tamanho do ícone. Reduzir pulando pixels
+// deixava o desenho picotado; agora cada bloco 2x2 vira a cor que mais aparece nele (mantém contorno e cores, como
+// pixel art) e depois 80%, para ficar do tamanho dos outros (medido em Pikachu, Charizard, Snorlax, Lucario, Frogadier e Sylveon)
+const FRONT_K = 0.8;
+function halfPixelArt(im) {
+  const w = im.width, h = im.height, W = Math.ceil(w / 2), H = Math.ceil(h / 2);
+  const s = document.createElement('canvas'); s.width = w; s.height = h; s.getContext('2d').drawImage(im, 0, 0);
+  const src = s.getContext('2d').getImageData(0, 0, w, h).data, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'), out = x.createImageData(W, H), o = out.data;
+  for (let y = 0; y < H; y++) for (let i = 0; i < W; i++) {
+    const cnt = new Map();
+    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+      const sx = i * 2 + dx, sy = y * 2 + dy; if (sx >= w || sy >= h) continue;
+      const k = (sy * w + sx) * 4; if (src[k + 3] < 128) continue;
+      const key = (src[k] << 16) | (src[k + 1] << 8) | src[k + 2]; cnt.set(key, (cnt.get(key) || 0) + 1);
+    }
+    let best = -1, bn = 0, bl = 1e9;
+    for (const [key, n] of cnt) { const l = (key >> 16) + ((key >> 8) & 255) + (key & 255); if (n > bn || (n === bn && l < bl)) { best = key; bn = n; bl = l; } }
+    let tot = 0; for (const n of cnt.values()) tot += n;
+    if (tot < 2) continue; // bloco quase vazio fica transparente
+    const k = (y * W + i) * 4; o[k] = best >> 16; o[k + 1] = (best >> 8) & 255; o[k + 2] = best & 255; o[k + 3] = 255;
+  }
+  x.putImageData(out, 0, 0);
+  return c;
+}
 function shrinkImage(im, k) {
   const c = document.createElement('canvas');
   c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k));
@@ -81,7 +103,7 @@ function loadImg(p) {
       if (!urls.length) return res();
       const im = new Image(), url = urls.shift();
       im.crossOrigin = 'anonymous';
-      im.onload = () => { const t = trimImage(im); p.img = url === p.front ? shrinkImage(t, FRONT_K) : t; res(); };
+      im.onload = () => { const t = trimImage(im); p.img = url === p.front ? shrinkImage(halfPixelArt(t), FRONT_K) : t; res(); };
       im.onerror = next;
       im.src = url;
     };
