@@ -376,9 +376,9 @@ function tileImg(kind, z, v) {
         break;
       }
       case TK.PATH: case TK.PLAZA: {
-        const col = kind === TK.PLAZA ? '#d6cdb8' : PATHC[zz];
+        const col = kind === TK.PLAZA ? townStyle().plaza : PATHC[zz], jn = shade(col, 0.86);
         px(col, 0, 0, 32, 32);
-        if (kind === TK.PLAZA) { px('#bdb29b', 0, 0, 32, 1); px('#bdb29b', 0, 16, 32, 1); px('#bdb29b', (v % 2) * 16, 0, 1, 16); px('#bdb29b', 8 + (v % 2) * 8, 16, 1, 16); }
+        if (kind === TK.PLAZA) { px(jn, 0, 0, 32, 1); px(jn, 0, 16, 32, 1); px(jn, (v % 2) * 16, 0, 1, 16); px(jn, 8 + (v % 2) * 8, 16, 1, 16); }
         else for (let k = 0; k < 4; k++) px(shade(col, 0.85), Math.floor(R(k) * 28) + 2, Math.floor(R(k + 9) * 28) + 2, 2, 2);
         break;
       }
@@ -536,7 +536,7 @@ function groundCol(k, z, wx, wy, hx, hy) {
   else if (k === TK.PATH || k === TK.GATE || (ZONES[zz].swamp && WETK.has(k))) { col = rgbOf(PATHC[zz]); f = 0.95 + vnoise(wx / 70, wy / 70) * 0.08 - (fine < 0.07 ? 0.08 : 0); }
   else if (k === TK.SAND || WETK.has(k)) { col = rgbOf('#eadb9f'); f = 0.96 + vnoise(wx / 60, wy / 60) * 0.06 - (fine < 0.05 ? 0.07 : 0); }
   else if (k === TK.SNOW) { col = rgbOf('#eef3f8'); f = 0.97 + vnoise(wx / 60, wy / 60) * 0.04 - (fine < 0.04 ? 0.05 : 0); }
-  else if (k === TK.PLAZA) col = rgbOf('#d6cdb8');
+  else if (k === TK.PLAZA) col = rgbOf(townStyle().plaza);
   else if (k === TK.CLIFF || k === TK.WATERFALL) col = rgbOf(ZONES[zz].cliff);
   else {
     // grama: manchas grandes claras/escuras + pontinhos de capim
