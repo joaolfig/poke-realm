@@ -613,8 +613,52 @@ const BASE_DARK = [...DARK_THEMES];
 const replaceArr = (a, b) => { a.length = 0; a.push(...b); };
 const replaceObj = (o, b) => { for (const k of Object.keys(o)) delete o[k]; Object.assign(o, b); };
 
+/* ---------- Chefe final variável ----------
+ * Nas regiões em que o jogo tinha dois lendários principais, cada partida sorteia qual deles é o chefe final
+ * (pela semente do mapa; o mapa original, semente 0, fica com o da história de sempre). O outro vira lendário solto
+ * depois da história. As falas trocam o que muda (lendário, vilão, objetos e lugares).
+ */
+const STORY_ALT = {
+  johto: { final: { nome: 'Torre do Sino', lider: 'Ho-Oh', boss: 250, type: 'fire' }, lenda: [250, 249], swap: [
+    ['uma pena prateada caída', 'uma pena com as cores do arco-íris caída'], ['chamaremos Lugia e controlaremos o mar', 'chamaremos Ho-Oh e controlaremos o céu'],
+    ['"Siga os redemoinhos. Lugia dorme no centro."', '"A torre antiga fica nas ilhas. Ho-Oh pousa no topo dela."'],
+    ['acordou <b>Lugia</b> à força, e ele despertou furioso nas <b>Ilhas Whirl</b>', 'acordou <b>Ho-Oh</b> à força, e ele pousou furioso na <b>Torre do Sino</b>'],
+    ['devolva a calma ao oceano', 'devolva a calma ao céu'], ['Lugia se acalmou e voltou a dormir no fundo do mar', 'Ho-Oh se acalmou e voou para longe, deixando um arco-íris'],
+    ['Lugia', 'Ho-Oh']] },
+  hoenn: { final: { nome: 'Caverna da Origem', lider: 'Groudon', boss: 383, type: 'ground' }, lenda: [383, 382], vilao: 'Equipe Magma', grunts: [261, 262, 322, 323, 41, 42, 218, 219, 109, 324], swap: [
+    ['quer expandir os oceanos e afogar a terra firme', 'quer expandir os continentes e secar os mares'], ['uma pedra azul, brilhante', 'uma pedra vermelha, brilhante'],
+    ['A Equipe Aqua quer esfriar o vulcão com água do mar.', 'A Equipe Magma quer aquecer o vulcão até ele acordar.'], ['O orbe precisa de uma tempestade para funcionar.', 'O orbe precisa de uma seca para funcionar.'],
+    ['a tempestade artificial', 'a seca artificial'], ['vê o redemoinho se formando sobre a Seafloor Cavern', 'vê o mar secando em volta da Caverna da Origem'],
+    ['na próxima maré cheia', 'no próximo sol a pino'], ['e as chuvas não param', 'e o sol não para de queimar'], ['e o sol abriu de novo sobre Hoenn', 'e a chuva voltou a cair sobre Hoenn'],
+    ['a base da Equipe Aqua no mar', 'a base da Equipe Magma no vulcão'], ['Orbe Azul', 'Orbe Vermelho'], ['Seafloor Cavern', 'Caverna da Origem'], ['Equipe Aqua', 'Equipe Magma'], ['Kyogre', 'Groudon']] },
+  sinnoh: { final: { nome: 'Spear Pillar', lider: 'Palkia', boss: 484, type: 'water' }, lenda: [484, 483], swap: [
+    ['quer recomeçar o tempo do zero', 'quer rasgar o espaço e recomeçar o mundo do zero'], ['onde o tempo "pode ser reescrito"', 'onde o espaço "pode ser rasgado"'],
+    ['parar o tempo de acabar', 'impedir o mundo de se rasgar'], ['e o próprio tempo começou a rachar', 'e o próprio espaço começou a se rasgar'],
+    ['Dialga se acalmou e o tempo voltou a correr normalmente', 'Palkia se acalmou e o espaço voltou ao lugar'], ['Dialga', 'Palkia']] },
+  unova: { final: { nome: 'Castelo de N', lider: 'Zekrom', boss: 644, type: 'electric' }, lenda: [644, 643], swap: [
+    ['"A verdade despertará o dragão branco."', '"Os ideais despertarão o dragão negro."'], ['uma pedra clara, quase branca, muito antiga', 'uma pedra escura, quase negra, muito antiga'],
+    ['a Pedra da Verdade', 'a Pedra dos Ideais'], ['"Ela vai te proteger do fogo branco."', '"Ela vai te proteger do raio negro."'],
+    ['também é uma verdade', 'também é um ideal'], ['Reshiram reconheceu seus ideais', 'Zekrom reconheceu sua verdade'], ['Reshiram', 'Zekrom']] },
+  kalos: { final: { nome: 'Laboratório da Equipe Flare', lider: 'Xerneas', boss: 716, type: 'fairy' }, lenda: [716, 717], swap: [
+    ['acordar o Pokémon da destruição', 'acordar o Pokémon da vida e usar a força dele na arma'],
+    ['ligou a arma ancestral e despertou <b>Yveltal</b> sob Geosenge', 'ligou a arma ancestral com a força de <b>Xerneas</b>, que despertou descontrolado sob Geosenge'],
+    ['e impeça a destruição', 'e acalme-o antes que a arma dispare'], ['Yveltal se fechou num casulo e voltou a dormir', 'Xerneas virou uma árvore e voltou a dormir']] },
+  paldea: { final: { nome: 'Área Zero', lider: 'Miraidon', boss: 1008, type: 'electric' }, lenda: [1008, 1007], swap: [
+    ['parece um Pokémon de milhões de anos atrás', 'parece um Pokémon vindo do futuro'], ['trouxe <b>Koraidon</b> furioso do passado', 'trouxe <b>Miraidon</b> furioso do futuro'],
+    ['Koraidon', 'Miraidon']] },
+};
+function regionVariant(id, seed) {
+  const R = REGIONS[id], A = STORY_ALT[id];
+  if (!R || !A || !seed || rng32(seed ^ 0x2545f491)() >= 0.5) return R;
+  const sw = s => A.swap.reduce((t, [a, b]) => t.split(a).join(b), s), H = R.historia;
+  return {
+    ...R, final: A.final, vilao: A.vilao || R.vilao, grunts: A.grunts || R.grunts, lendas: R.lendas.map(x => (x === A.lenda[0] ? A.lenda[1] : x)),
+    historia: { prologo: sw(H.prologo), caps: H.caps.map(c => c.map(sw)), final: H.final.map(sw) },
+    interludes: (R.interludes || []).map(i => ({ ...i, fala: sw(i.fala) })),
+  };
+}
 function setRegion(id) {
-  const R = REGIONS[id] || REGIONS.kanto;
+  const R = regionVariant(REGIONS[id] ? id : 'kanto', LAYOUT.seed) || REGIONS.kanto;
   REGION_ID = REGIONS[id] ? id : 'kanto'; REGION = R;
   // zonas e Pokémon
   replaceArr(ZONES, [{ nome: R.vila, bio: 'vila', ...BIOMES.vila, lvl: 1 }, ...R.zonas.map(([nome, bio], i) => ({ nome, bio, ...BIOMES[bio], lvl: ZONE_LVL[i + 1], lvlMax: ZONE_LVL_MAX[i + 1] })),
