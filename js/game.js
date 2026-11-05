@@ -100,7 +100,23 @@ function shrinkImage(im, k) {
 // ficava ruim de enxergar; estes vêm da folha de ícones do Pokémon Showdown, recortados e guardados no próprio jogo
 const ICONS89 = { wait: null };
 const icons89 = () => ICONS89.wait || (ICONS89.wait = new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = 'img/icones-g8-g9.png?v=1'; }));
+// teste de visual: ?sprites=novos (nº 808+) ou ?sprites=todos usam as imagens detalhadas do Showdown (estilo Black/White),
+// reduzidas pela cor que mais aparece em cada bloco 2x2 e a 75% (ficam ~25% maiores que os ícones)
+const SPR_MODE = (new URLSearchParams(location.search).get('sprites') || '').toLowerCase();
+const SHOWDOWN = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${id}.gif`;
+function loadDetailed(p) {
+  return new Promise(res => {
+    const im = new Image(); im.crossOrigin = 'anonymous';
+    im.onload = () => { try { p.img = shrinkImage(halfPixelArt(trimImage(im)), 0.75); } catch (e) { p.img = im; } res(true); };
+    im.onerror = () => res(false);
+    im.src = SHOWDOWN(p.id);
+  });
+}
 function loadImg(p) {
+  if (SPR_MODE === 'todos' || (SPR_MODE === 'novos' && p.id >= 808)) return loadDetailed(p).then(ok => (ok ? null : loadImgIcon(p)));
+  return loadImgIcon(p);
+}
+function loadImgIcon(p) {
   if (p.id >= 808 && p.id <= 1025) return icons89().then(sh => {
     if (!sh) return loadImgUrls(p);
     const k = p.id - 808, c = document.createElement('canvas'); c.width = 40; c.height = 30;
