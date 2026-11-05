@@ -274,7 +274,7 @@ function startWeapon(cls) {
 
 function createPlayer(name, h) {
   const P = {
-    name, cls: h.cls, race: h.race, ptype: h.type, subclass: null, lvl: 1, xp: 0, legends: 0, kills: 0, gold: 20,
+    name, cls: h.cls, race: h.race, ptype: h.type, subclass: null, lvl: 1, xp: 0, legends: 0, legendIds: [], kills: 0, gold: 20,
     attrs: { ...h.attrs }, points: h.points || 0, attrV2: 1, talents: [], talentOffer: null, talentPending: 0, killsPot: 0,
     equip: { arma: startWeapon(h.cls), armadura: { slot: 'armadura', tier: 0, name: 'Roupas de Viagem', ac: 0, mods: {} }, anel: null, amuleto: null },
     inv: Array(8).fill(null), pots: { hp: 3 }, balls: 3, bag: { grande: 0, ultra: 0, doce: 0, abra: 0 }, ballSel: 'poke', story: { ch: 0, done: false },
@@ -286,7 +286,7 @@ function createPlayer(name, h) {
   return P;
 }
 
-const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
+const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'legendIds', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
   'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'wseed', 'layout', 'expR', 'bless', 'lin', 'tq', 'moon', 'abraCd', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quests', 'qOffers', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
@@ -696,7 +696,11 @@ function onKill(m) {
   if (m.st === 60) moonAlfaLoot(m);
   storyKill(m);
   { const tdg = inDungeonArea(m.x) && dungeonAt(m.x); if (m.kind === 3 && tdg && tdg.floor && tdg.floor % 5 === 0) towerCheckpoint(P, tdg.floor); }
-  if (m.kind === 2) { P.legends = (P.legends || 0) + 1; dexCatch(P, m.pid); } // lendário: conta para todos que estavam perto (e entra na Pokédex)
+  if (m.kind === 2) { // lendário: conta para todos que estavam perto (e entra na Pokédex); só conta espécies diferentes
+    P.legendIds = P.legendIds || [];
+    if (!P.legendIds.includes(m.pid)) { P.legendIds.push(m.pid); G.toasts.push({ text: `★ Lendário novo derrotado: ${m.name} (${P.legendIds.length} diferentes)`, color: '#fca5a5', t: 4 }); }
+    P.legends = P.legendIds.length; dexCatch(P, m.pid);
+  }
   rollLoot(m); // saque: cada jogador perto rola o seu, mesmo sem ter acertado
   const xp = Math.max(1, Math.round(m.xp * xpShare * (1 + M(P, 'xp'))));
   gainXP(Math.round(xp * catchUp(P)));
@@ -1136,7 +1140,7 @@ function playerDie(src) {
   try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignora */ }
   emitEvent({ t: 'chat', sys: 1, text: `☠ ${P.name} (${heroLabel(P)} Nv ${P.lvl}) foi derrotado por ${src}.` });
   $('death-info').innerHTML = `<p><b>${esc(P.name)}</b>, ${heroLabel(P)} de nível ${P.lvl}, foi derrotado por <b>${esc(src)}</b>.</p>
-    <div class="dstats"><div><span>Nível</span><b>${P.lvl}</b></div><div><span>Insígnias</span><b>${totalBadges(P)}</b></div><div><span>Lendários derrotados</span><b>${P.legends || 0}</b></div></div>`;
+    <div class="dstats"><div><span>Nível</span><b>${P.lvl}</b></div><div><span>Insígnias</span><b>${totalBadges(P)}</b></div><div><span>Lendários derrotados</span><b>${(P.legendIds || []).length}</b></div></div>`;
   G.P = null;
   G.allies = [];
   if (G.npcOpen) closeNPC();
@@ -2075,7 +2079,7 @@ function updatePanel() {
   $('b-xp').style.width = (P.lvl >= MAX_LVL ? 100 : P.xp / need * 100) + '%'; $('t-xp').textContent = P.lvl >= MAX_LVL ? `Nv ${P.lvl} · NÍVEL MÁXIMO` : `Nv ${P.lvl} · XP ${P.xp} / ${need}`;
   $('p-derived').innerHTML = `<div class="st" title="Classe de Armadura: o d20 inimigo + bônus precisa igualar ou superar"><span>CA</span><b>${AC(P)}</b></div>
     <div class="st" title="Bônus de acerto (d20 + isto contra a CA do inimigo)"><span>Acerto</span><b>+${toHit(P)}</b></div>
-    <div class="st" title="Ouro"><span>Ouro</span><b style="color:var(--gold)">${P.gold}</b></div><div class="st" title="Insígnias conquistadas em todas as regiões"><span>Insígnias</span><b>${totalBadges(P)}</b></div><div class="st" title="Pokémon lendários derrotados"><span>Lendários</span><b>${P.legends || 0}</b></div>
+    <div class="st" title="Ouro"><span>Ouro</span><b style="color:var(--gold)">${P.gold}</b></div><div class="st" title="Insígnias conquistadas em todas as regiões"><span>Insígnias</span><b>${totalBadges(P)}</b></div><div class="st" title="Pokémon lendários derrotados"><span>Lendários</span><b>${(P.legendIds || []).length}</b></div>
     <div class="ptype" title="Seu tipo define o que é super efetivo nos seus ataques e quais ataques te acertam forte">Tipo: ${typeBadge(pType(P))}${P.tempTypeT > 0 ? ` <span class="small">cristal ${Math.ceil(P.tempTypeT)}s (natural: ${TYPE_PT[P.ptype]})</span>` : ''}</div>`;
   const ab = curAbil(P), cd = abilCd(P);
   $('p-abil').innerHTML = `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>
