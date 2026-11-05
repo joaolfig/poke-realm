@@ -365,6 +365,22 @@ function swapGyms(g, a, b) {
   if (ma >= 0 && mb >= 0) { const [xa, ya] = [marks[ma][1], marks[ma][2]]; marks[ma][1] = marks[mb][1]; marks[ma][2] = marks[mb][2]; marks[mb][1] = xa; marks[mb][2] = ya; }
   return { ...g, gyms, marks };
 }
+// Etapa A: a vila muda para outro ponto da zona 1 (os 4 quadradinhos "V" vão junto) e uma estrada curta a liga à rota
+// mais próxima; o lugar antigo vira uma encruzilhada (ponto de voo)
+function moveVila(g, p) {
+  const macro = g.macro.map(r => r.replace(/V/g, '1').split(''));
+  for (const [dx, dy] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) macro[p[1] + dy][p[0] + dx] = 'V';
+  let best = null, bd = 1e9;
+  for (const r of g.routes) for (let i = 0; i < r.length - 1; i++) {
+    const [ax, ay] = r[i], [bx, by] = r[i + 1], l = (bx - ax) ** 2 + (by - ay) ** 2, t = l ? clamp(((p[0] - ax) * (bx - ax) + (p[1] - ay) * (by - ay)) / l, 0, 1) : 0;
+    const q = [ax + (bx - ax) * t, ay + (by - ay) * t], d = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    if (d < bd) { bd = d; best = q; }
+  }
+  return { ...g, macro: macro.map(r => r.join('')), vila: [...p], routes: [...g.routes, [[...p], best]], marks: [...g.marks, ['Encruzilhada', g.vila[0], g.vila[1] + 0.12]] };
+}
+// lugares aprovados para a vila (zona 1, perto de uma rota, longe de cidades e ginásios; o validador conferiu
+// que o 1º ginásio continua a pé e que nenhuma zona abre antes da HM dela)
+const LAYOUT_VILAS = { kanto: [[15, 5], [16, 12], [13, 6]], johto: [[11, 17]], hoenn: [[4, 9]], sinnoh: [[19, 13], [19, 21], [17, 14]], unova: [[5, 4]] };
 // versões aprovadas pelo validador (alcance de cada zona e ginásio com as HMs de cada capítulo); as outras ficam fora do sorteio
 const LAYOUT_T = { kanto: [0, 1, 3, 5, 6, 7] };
 function layoutGeo(id, seed, forceT) {
@@ -373,7 +389,11 @@ function layoutGeo(id, seed, forceT) {
   const Rn = rng32(seed ^ 0x5bd1e995), okT = LAYOUT_T[id] || [0, 1, 2, 3, 4, 5, 6, 7];
   const t = forceT !== undefined ? forceT : okT[Math.floor(Rn() * okT.length)];
   // Etapa B: ginásios vizinhos trocam de lugar (cada par com 50%); a ordem da história e das HMs não muda
-  if (forceT === undefined) for (const [a, b] of LAYOUT_SWAPS[id] || []) if (Rn() < 0.5) g = swapGyms(g, a, b);
+  const sw = forceT === undefined ? (LAYOUT_SWAPS[id] || []).filter(() => Rn() < 0.5) : [];
+  // Etapa A (só sementes novas, acima de 1e9: quem ganhou mapa antes não vê a vila mudar): vila no lugar original ou num dos aprovados
+  const vs = LAYOUT_VILAS[id] || [], vi = forceT === undefined && seed > 1e9 ? Math.floor(Rn() * (vs.length + 1)) : 0;
+  if (vi) g = moveVila(g, vs[vi - 1]);
+  for (const [a, b] of sw) g = swapGyms(g, a, b);
   if (t & 4) g = flipGeo(g);
   for (let k = 0; k < (t & 3); k++) g = rotGeo(g);
   return g;
@@ -399,7 +419,7 @@ function pickLayout(saved, rid) {
     if (saved.layout && saved.layout[rid] !== undefined) return saved.layout[rid];
     if (saved.stories && saved.stories[rid]) return 0;
   }
-  return randi(1, 1e9);
+  return randi(1e9 + 1, 2e9); // acima de 1e9: inclui a vila em lugar sorteado
 }
 let REGION_ID = 'kanto', REGION = REGIONS.kanto;
 
