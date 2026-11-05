@@ -352,6 +352,19 @@ const rotGeo = g => {
   for (let c = 0; c < W; c++) { let s = ''; for (let r = H - 1; r >= 0; r--) s += g.macro[r][c]; m.push(s); }
   return mapGeo(g, ([x, y]) => [H - y, x], m);
 };
+// pares de ginásios que podem trocar de lugar: o validador conferiu que o ginásio de antes alcança o lugar do
+// de depois com as HMs que o jogador tem naquele capítulo; ficam de fora trocas que mudariam a história
+// (a batalha final, a Flannery longe do vulcão) e as que envolvem a 2ª cidade
+const LAYOUT_SWAPS = { kanto: [[2, 3]], johto: [[2, 3]], hoenn: [[2, 3], [6, 7]], sinnoh: [[2, 3], [4, 5]], unova: [[2, 3]] };
+// troca os ginásios a e b (1-8) de lugar, levando junto a cidade de cada um (o nome segue o líder, como nas falas)
+function swapGyms(g, a, b) {
+  const gyms = g.gyms.map(p => [...p]), marks = g.marks.map(m => [...m]);
+  const markOf = p => { let k = -1, bd = 1.0; marks.forEach((m, i) => { const d = Math.hypot(m[1] - p[0], m[2] - p[1]); if (d < bd) { bd = d; k = i; } }); return k; };
+  const ma = markOf(gyms[a - 1]), mb = markOf(gyms[b - 1]);
+  [gyms[a - 1], gyms[b - 1]] = [gyms[b - 1], gyms[a - 1]];
+  if (ma >= 0 && mb >= 0) { const [xa, ya] = [marks[ma][1], marks[ma][2]]; marks[ma][1] = marks[mb][1]; marks[ma][2] = marks[mb][2]; marks[mb][1] = xa; marks[mb][2] = ya; }
+  return { ...g, gyms, marks };
+}
 // versões aprovadas pelo validador (alcance de cada zona e ginásio com as HMs de cada capítulo); as outras ficam fora do sorteio
 const LAYOUT_T = { kanto: [0, 1, 3, 5, 6, 7] };
 function layoutGeo(id, seed, forceT) {
@@ -359,6 +372,8 @@ function layoutGeo(id, seed, forceT) {
   if (!seed && forceT === undefined) return g;
   const Rn = rng32(seed ^ 0x5bd1e995), okT = LAYOUT_T[id] || [0, 1, 2, 3, 4, 5, 6, 7];
   const t = forceT !== undefined ? forceT : okT[Math.floor(Rn() * okT.length)];
+  // Etapa B: ginásios vizinhos trocam de lugar (cada par com 50%); a ordem da história e das HMs não muda
+  if (forceT === undefined) for (const [a, b] of LAYOUT_SWAPS[id] || []) if (Rn() < 0.5) g = swapGyms(g, a, b);
   if (t & 4) g = flipGeo(g);
   for (let k = 0; k < (t & 3); k++) g = rotGeo(g);
   return g;
