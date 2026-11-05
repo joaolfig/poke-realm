@@ -272,8 +272,8 @@ function drawMount(pid, wx, wy, x, y, face, moving, t) {
 /* ---------- Forma Selvagem (Druida): vira o companheiro líder ---------- */
 const wildDur = P => (hasS(P, 'lua') ? 18 : 12);
 // tamanho da forma: 0 = Druida, 1 = Círculo da Terra (um pouco maior), 2 = Círculo da Lua (ainda maior)
-const wildSizeK = P => (hasS(P, 'lua') ? 2 : hasS(P, 'terra') ? 1 : 0);
-const WILD_SIZE = [1, 1.15, 1.3];
+const wildSizeK = P => (P.dynaT > 0 ? 3 : hasS(P, 'lua') ? 2 : hasS(P, 'terra') ? 1 : 0); // 3: Dynamax (gigante)
+const WILD_SIZE = [1, 1.15, 1.3, 2.1];
 function wildShape(P) {
   const pt = activePet(P);
   if (!pt || !POKE[pt.pid] || !G.allies.some(a => a.pet && a.slot === P.petIdx)) {

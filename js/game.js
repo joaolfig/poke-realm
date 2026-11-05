@@ -1008,7 +1008,7 @@ function wildShotDmg(P, dmg) {
   const mul = (1 + M(P, 'pet')) * ([1, 0.8, 0.7, 0.62][Math.max(0, nPets - 1)] || 0.62) * abilDmgMul(petAbility(pt.pid)) * hmDmgMul(pt.pid) * (tr ? tr.dmg : 1);
   const petDps = shot * mul / 0.9 * 1.15; // tiro a cada 0,9 s; o golpe especial em leque soma ~15% num alvo (medido)
   const wn = CLASSES[P.cls].wpn, ww = curWpn(P), hits = ww.shots || 1; // de perto todos os tiros do leque acertam
-  const mega = P.megaT > 0 ? DRUID_MEGA_K : 1; // Druida megaevoluído na Forma Selvagem
+  const mega = (P.megaT > 0 ? DRUID_MEGA_K : 1) * (P.dynaT > 0 ? DRUID_DYNA_K : 1); // Druida megaevoluído ou em Dynamax na Forma Selvagem
   return Math.max(1, Math.round((dmg + petDps / wn.rate) * WILD_K * mega * (hasS(P, 'lua') ? 1.2 : hasS(P, 'terra') ? 1.3 : 1) * wn.rate / (ww.rate * hits)));
 }
 function playerHit(e, b) {
@@ -1436,6 +1436,8 @@ function update(dt) {
       if (b.hit) { if (b.hit.has(e.id)) continue; b.hit.add(e.id); }
       if (b.bomb) { if (e.bombId !== b.bomb) { e.bombId = b.bomb; e.bombC = 0; } if (e.bombC >= BOMB_CAP) continue; e.bombC++; }
       if (G.P) playerHit(e, b);
+      // Druida em Dynamax na Forma Selvagem: cada tiro explode e acerta quem está em volta (40% do dano)
+      if (G.P && G.P.dynaT > 0 && G.P.wildT > 0 && !b.ally && !b.spell && !b.maxB) { for (const o of G.enemies) if (o !== e && o.hp > 0 && !o.dead && Math.hypot(o.x - e.x, o.y - e.y) < 80 + (o.r || 12)) playerHit(o, { ...b, dk: 0.4, maxB: 1 }); G.fx.push({ k: 'ring', x: e.x, y: e.y, r: 0, R: 80, life: 0.3, max: 0.3, color: '#ef4444' }); }
       if (G.P && !b.ally && !b.rico && !b.spell && hasT(G.P, 'ricochete')) {
         const nx = G.enemies.filter(o => o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 260).sort((p, q) => Math.hypot(p.x - e.x, p.y - e.y) - Math.hypot(q.x - e.x, q.y - e.y))[0];
         if (nx) shootBullet(Math.atan2(nx.y - e.y, nx.x - e.x), { x: e.x, y: e.y, life: 0.5, rico: true, skip: e.id, dk: 0.3 }); // o ricochete causa 30%

@@ -49,7 +49,7 @@ const CLASSES = {
   druida: {
     nome: 'Druida', icon: '🌿', hd: 8, ac: 13, crit: 20, dieAdj: 0, attrs: { POD: 3, AGI: 2, VIG: 2 },
     spr: { h: '#4d7c0f', b: '#78350f', d: '#3f6212' },
-    desc: 'Guardião da natureza. Atira espinhos e, na Forma Selvagem, vira o seu companheiro líder. Com a Pedra-Chave e a Megapedra do líder, [U] na forma megaevolui o próprio Druida.',
+    desc: 'Guardião da natureza. Atira espinhos e, na Forma Selvagem, vira o seu companheiro líder. Com a Pedra-Chave e a Megapedra do líder, [U] na forma megaevolui o próprio Druida; com o Bracelete Dynamax, ele vira gigante.',
     wpn: { shots: 1, speed: 440, life: 0.9, size: 6, rate: 3.1, shape: 'thorn', color: '#86efac' },
     abil: { nome: 'Forma Selvagem', cd: 24, desc: 'Forma Selvagem: vira o seu companheiro líder por 12s. Fica com o visual e o tipo dele, ganha +30% de PV e ataca com o golpe do tipo dele, causando os mesmos status que ele (o companheiro luta através de você e continua ganhando XP).' },
     weapons: ['Galho Retorcido', 'Cajado de Raiz', 'Cajado de Espinheiro', 'Cajado do Bosque', 'Cajado da Lua Cheia', 'Cajado do Carvalho Ancião', 'Cajado da Mãe Terra'], wicon: '🌿',

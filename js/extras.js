@@ -22,7 +22,7 @@ const MEGA = { 3: 10033, 6: 10034, 9: 10036, 15: 10090, 18: 10073, 65: 10037, 80
   319: 10070, 323: 10087, 334: 10067, 354: 10056, 359: 10057, 362: 10074, 373: 10089, 376: 10076, 380: 10062, 381: 10063, 384: 10079, 428: 10088, 445: 10058, 448: 10059,
   460: 10060, 475: 10068, 531: 10069, 719: 10075 };
 const MEGA_REGIONS = ['kanto', 'hoenn', 'kalos'], DYNA_REGIONS = ['galar'];
-const MEGA_T = 25, MEGA_CD = 90, MEGA_K = 1.6, DRUID_MEGA_K = 1.35, DYNA_T = 18, DYNA_CD = 120, DYNA_K = 1.4;
+const MEGA_T = 25, MEGA_CD = 90, MEGA_K = 1.6, DRUID_MEGA_K = 1.35, DRUID_DYNA_K = 1.2, DYNA_T = 18, DYNA_CD = 120, DYNA_K = 1.4;
 // Druida: na Forma Selvagem, a Mega é dele (vira a forma Mega do companheiro em que se transformou)
 const wildLook = P => (P.wildT > 0 && P.megaT > 0 && MEGA[P.wildPid] ? MEGA[P.wildPid] : P.wildPid);
 // terminou os 8 ginásios desta região
@@ -107,7 +107,7 @@ function useBoost(P) {
   } else if (P.dynaBand) {
     P.dynaT = DYNA_T; P.boostCd = DYNA_CD;
     emitEvent({ t: 'fx', x: Math.round(a.x), y: Math.round(a.y), r: 160, color: '#ef4444' });
-    G.toasts.push({ text: `🔴 ${pt.name} virou Dynamax! Gigante, com golpes em área por ${DYNA_T}s.`, color: '#fca5a5', t: 3, big: 1 });
+    G.toasts.push({ text: P.wildT > 0 ? `🔴 Sua Forma Selvagem virou Dynamax! Gigante, com tiros que explodem em área (+20% de dano).` : `🔴 ${pt.name} virou Dynamax! Gigante, com golpes em área por ${DYNA_T}s.`, color: '#fca5a5', t: 3, big: 1 });
   } else { G.toasts.push({ text: P.megaKey ? `${pt.name} não tem Megapedra. Elas caem de Alfas e chefes que megaevoluem, ou o Mercador vende a do seu líder.` : 'Só com o Bracelete Dynamax.', color: '#fca5a5', t: 3.5 }); return; }
   sfx('lvl'); G.dirty = true;
 }
