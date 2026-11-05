@@ -170,7 +170,7 @@ function renderStoryNPC(n, P) {
     return `<p class="fala">"A sua jornada agora segue a partir de ${t2.nome}. ${helper.nome} está esperando você lá com as próximas missões."</p>
       <div class="small">Use <b>[V]</b> Fly com um companheiro voador para chegar rápido.</div>`;
   } else if (needT2(P)) {
-    return `<div class="quest cur"><b>📖 Missão: ${t2.nome}</b><p class="fala">"Você já tem quatro insígnias! Daqui pra frente os ginásios ficam longe demais da ${ZONES[0].nome}. Vá até <b>${t2.nome}</b>, no coração de ${REGION.nome}, e fale com ${helper.nome}. É de lá que a sua jornada continua, e ${helper.nome} tem uma HM que vai mudar o seu jeito de viajar."</p>
+    return `<div class="quest cur"><b>📖 Missão: ${t2.nome}</b><p class="fala">"Você já tem quatro insígnias! Daqui pra frente os ginásios ficam longe demais da ${ZONES[0].nome}. Vá até <b>${t2.nome}</b>, no coração de ${REGION.nome}, e fale com ${helper.nome}. É de lá que a sua jornada continua, e ${helper.nome} tem algo para você."</p>
       <div class="small">🎯 Vá até ${t2.nome} e fale com ${helper.nome}<br>O destino aparece como ★ no minimapa.</div></div>` + pathChecklist(P);
   }
   const step = storyStep(P);

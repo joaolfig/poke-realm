@@ -1179,7 +1179,7 @@ function updatePlayer(dt) {
       if (stuck || !solidR(P.x, ny, 9, sw)) P.y = ny; else blocked = true;
       if (blocked && !(sw & 1) && isDeep(P.x + mx * 16, P.y + my * 16) && G.time - (G.deepWarn || -9) > 5) {
         G.deepWarn = G.time;
-        G.toasts.push({ text: `🌊 A água é funda demais. Um companheiro com Surf (HM02, do ${hmGymOf('surf')}º ginásio) leva você.`, color: '#93c5fd', t: 3 });
+        G.toasts.push({ text: P.hms.includes('surf') ? '🌊 A água é funda demais. Ensine Surf a um companheiro da equipe para atravessar.' : '🌊 A água é funda demais para atravessar a nado.', color: '#93c5fd', t: 3 });
       }
       clampWorld(P);
     }

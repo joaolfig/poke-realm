@@ -34,17 +34,19 @@ function needFor(P, z) {
   if (z >= 5 && badgeCount(P) < 7) miss.push(`7 insígnias (você tem ${badgeCount(P)})`);
   return miss;
 }
-// lista de caminhos para o guia da vila
+// lista de caminhos para o guia da vila: só o que o jogador já tem (nada de adiantar qual ginásio dá qual HM)
 function pathChecklist(P) {
-  const row = (ok, txt) => `<div class="small" style="color:${ok ? '#86efac' : '#fca5a5'}">${ok ? '✔' : '✖'} ${txt}</div>`;
-  return '<h4>Caminhos</h4>'
-    + row(P.hms.includes('cut'), `✂️ Cut abre as rotas para a Zona 2 (${ZONES[2].nome}, ${hmGymOf('cut')}º ginásio)`)
-    + row(P.hms.includes('smash'), `🪨 Rock Smash abre as rotas para a Zona 3 (${ZONES[3].nome}, ${hmGymOf('smash')}º ginásio)`)
-    + row(P.hms.includes('surf'), `🌊 Surf atravessa o rio até a Zona 4 (${ZONES[4].nome}), o mar e as ilhas distantes (${hmGymOf('surf')}º ginásio)`)
-    + row(badgeCount(P) >= 7, `🏅 O Portão da Liga para a Zona 5 (${ZONES[5].nome}) abre com 7 insígnias (você tem ${badgeCount(P)})`)
-    + row(P.hms.includes('flash'), `💡 Flash ilumina ginásios escuros, a noite e a névoa (${hmGymOf('flash')}º ginásio)`)
-    + row(P.hms.includes('fly'), `🪶 Fly leva você a qualquer cidade já visitada com [V] (missão em ${TOWNS[1] ? TOWNS[1].nome : 'outra cidade'})`)
-    + '<div class="small">HMs funcionam se qualquer companheiro da equipe as souber (ensine no painel). Os bloqueios aparecem no minimapa.</div>';
+  const ok = txt => `<div class="small" style="color:#86efac">✔ ${txt}</div>`;
+  const have = [
+    ['cut', `✂️ Cut corta os arbustos que fecham as estradas`], ['smash', `🪨 Rock Smash quebra as rochas rachadas`],
+    ['surf', `🌊 Surf atravessa os rios fundos e o mar`], ['flash', `💡 Flash ilumina lugares escuros, a noite e a névoa`],
+    ['fly', `🪶 Fly leva você a qualquer cidade já visitada com [V]`],
+  ].filter(([k]) => P.hms.includes(k)).map(([, t]) => ok(t));
+  if (badgeCount(P) >= 7) have.push(ok(`🏅 O Portão da Liga já se abre para você`));
+  const closed = ['cut', 'smash', 'surf'].some(k => !P.hms.includes(k)) || badgeCount(P) < 7;
+  return '<h4>Caminhos</h4>' + (have.join('') || '<div class="small">Por enquanto, só as estradas abertas.</div>')
+    + (closed ? '<div class="small">Ainda há passagens fechadas pelo mapa. Quem vence os ginásios aprende a atravessá-las.</div>' : '')
+    + (P.hms.length ? '<div class="small">As HMs funcionam se qualquer companheiro da equipe as souber (ensine no painel). Os bloqueios aparecem no minimapa.</div>' : '');
 }
 const HMS = {
   cut: { mo: 'HM01', move: 'cut', nome: 'Cut', icon: '✂️', preco: 120, ch: 0, desc: 'Corta arvorezinhas que bloqueiam atalhos e baús ([E] perto delas).' },
@@ -206,7 +208,7 @@ function hmHint(P, h) {
   const H = HMS[hmNeed(h.k)];
   if (petKnows(P, hmNeed(h.k))) return { cut: '[E] Cortar a árvore', smash: '[E] Quebrar a rocha', dive: '[E] Mergulhar' }[h.k];
   const what = { cut: 'Árvore cortável', smash: 'Rocha rachada', dive: 'Ponto de mergulho' }[h.k];
-  if (!P.hms.includes(hmNeed(h.k))) { const g = Object.keys(HM_GYM).find(n => HM_GYM[n] === hmNeed(h.k)); return `${what}: você ganha ${H.nome} (${H.mo}) ao vencer o ${g}º ginásio de ${REGION.nome}`; }
+  if (!P.hms.includes(hmNeed(h.k))) return `${what}: por enquanto não dá para passar por aqui.`; // sem adiantar qual ginásio dá a HM
   return `${what}: precisa de um companheiro na equipe que saiba ${H.nome} (${H.mo})`;
 }
 const zoneOf = P => { const z = zoneAt(P.x, P.y); return z >= 1 ? z : 1; };
