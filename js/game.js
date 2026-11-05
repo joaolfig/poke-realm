@@ -270,7 +270,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'wseed', 'expR', 'bless', 'lin', 'tq', 'moon', 'abraCd', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quests', 'qOffers', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'wseed', 'layout', 'expR', 'bless', 'lin', 'tq', 'moon', 'abraCd', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quests', 'qOffers', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -2222,6 +2222,7 @@ window.addEventListener('keydown', ev => {
   const P = G.P;
   if (ev.code === 'Escape' && G.pcRef) closePC();
   else if (ev.code === 'Escape' && G.npcOpen) closeNPC();
+  else if (ev.code === 'KeyK' && G.npcOpen) { const b = document.querySelector('#npc [data-act="sellbulk:tudo"]'); if (b) b.click(); } // loja: vender tudo
   else if (ev.code === 'Space') { ev.preventDefault(); useAbility(); }
   else if (ev.code === 'KeyQ' || ev.code === 'Digit1') usePotion();
   else if (ev.code === 'KeyX') toggleRide();
@@ -2308,7 +2309,7 @@ $('maps').addEventListener('click', ev => {
 });
 // troca o mundo para a região e baixa os Pokémon dela (com progresso no menu)
 async function prepRegion(id) {
-  if (id !== REGION_ID) setRegion(id);
+  if (id !== REGION_ID || LAYOUT.seed !== LAYOUT.built) setRegion(id);
   const ids = regionIds(REGION).filter(i => !POKE[i]);
   if (ids.length) await loadPokedex(ids, (n, t) => { $('menu-err').textContent = `Carregando os Pokémon de ${REGION.nome}... ${n}/${t}`; });
 }
@@ -2392,11 +2393,12 @@ async function startGame(saved) {
     const btns = [$('btn-start'), $('btn-cont')].filter(Boolean);
     btns.forEach(b => { b.disabled = true; });
     try {
-      if (menuSel.mode !== 'join') await prepRegion(menuSel.region);
+      if (menuSel.mode !== 'join') { LAYOUT.seed = pickLayout(saved, menuSel.region); await prepRegion(menuSel.region); }
       if (menuSel.mode === 'host') { $('menu-err').textContent = 'Criando sala...'; await netHost(); }
       else if (menuSel.mode === 'join') {
         $('menu-err').textContent = 'Conectando...';
         await netJoin($('join-code').value);
+        LAYOUT.seed = NET.layout || 0; // o mapa é o do anfitrião
         await prepRegion(REGIONS[NET.region] ? NET.region : menuSel.region);
       }
     } catch (e) {
@@ -2433,6 +2435,9 @@ async function startGame(saved) {
     loadPokedex(P.pets.map(pt => pt.pid)).then(() => { if (G) G.dirty = true; });
   } else P = createPlayer(name, menuSel.hero);
   P.story = P.stories[REGION_ID] = P.stories[REGION_ID] || { ch: 0, done: false };
+  // o personagem fica com o mapa desta partida (na sala de outro jogador, adota o mapa dele se ainda não tinha um)
+  P.layout = P.layout || {};
+  if (P.layout[REGION_ID] === undefined) P.layout[REGION_ID] = LAYOUT.seed;
   P.hms = P.hmsR[REGION_ID] = (P.hmsR[REGION_ID] || []).filter(k => HMS[k]);
   // saves de antes da 2ª cidade: quem já passou do 5º capítulo ganha a missão e a HM Fly
   if (P.story.ch > 5 || (P.story.ch === 5 && P.story.done)) { P.story.t2 = true; if (!P.hms.includes('fly')) P.hms.push('fly'); }

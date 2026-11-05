@@ -84,7 +84,7 @@ const REGIONS = {
       prologo: `A <b>Equipe Rocket</b> anda roubando Pokémon pelas estradas de Kanto, e ninguém sabe para quê.
         O Professor Carvalho acredita que os oito líderes de ginásio sabem de alguma coisa. Vença cada um, ganhe a confiança deles e descubra o plano da Equipe Rocket.`,
       caps: [
-        ['Brock, o líder de pedra, desconfia de forasteiros. Prove seu valor na Cidade de Pewter, seguindo a estrada a sudeste da vila.', 'Brock conta que a Equipe Rocket comprou todas as Pedras-Lua da região. "Para que alguém precisa de tantas?"'],
+        ['Brock, o líder de pedra, desconfia de forasteiros. Prove seu valor na Cidade de Pewter, seguindo a estrada {d:v>g1} da vila.', 'Brock conta que a Equipe Rocket comprou todas as Pedras-Lua da região. "Para que alguém precisa de tantas?"'],
         ['A Líder Misty viu barcos da Equipe Rocket no rio. Ela só fala com quem vencer suas cascatas.', 'Misty mostra um mapa molhado: a Equipe Rocket leva os Pokémon roubados para o sul, passando pelo Monte Lunar.'],
         ['O Tenente Surge guarda a usina que abastece Kanto. A Equipe Rocket tentou sabotá-la ontem à noite.', 'Surge prendeu um capanga, que repetia sem parar: "o chefe vai criar o Pokémon mais forte do mundo".'],
         ['Erika cuida da estufa onde se fazem os remédios da região. Agentes da Equipe Rocket foram vistos rondando por lá.', 'Erika descobre que a Equipe Rocket roubou amostras genéticas da estufa. Eles não querem só roubar Pokémon. Querem criar um.'],
@@ -142,9 +142,9 @@ const REGIONS = {
       prologo: `Os sinos das torres antigas de Johto pararam de tocar. Dizem que os capangas da <b>Equipe Rocket</b> roubaram as plumas sagradas que acalmam Lugia.
         O Professor Elm pede que você percorra os oito ginásios: cada líder guarda um pedaço da lenda.`,
       caps: [
-        ['Falkner, o líder dos pássaros, viu os capangas da Equipe Rocket voando para o norte. Ele treina na Cidade de Violet, a noroeste da vila.', 'Falkner mostra uma pena prateada caída no ginásio. "Isso não é de nenhum pássaro comum. É uma pluma sagrada."'],
+        ['Falkner, o líder dos pássaros, viu os capangas da Equipe Rocket voando para longe. Ele treina na Cidade de Violet, {d:v>g1} da vila.', 'Falkner mostra uma pena prateada caída no ginásio. "Isso não é de nenhum pássaro comum. É uma pluma sagrada."'],
         ['O Líder Bugsy cuida do bosque onde a pluma foi achada. Os capangas da Equipe Rocket estão capturando os insetos de lá.', 'Bugsy encontra um bilhete da Equipe Rocket: "Com as plumas, chamaremos Lugia e controlaremos o mar."'],
-        ['Whitney e sua Miltank seguram as fazendas da região. Os capangas da Equipe Rocket querem os rebanhos para alimentar seus Pokémon.', 'Whitney conta que os capangas da Equipe Rocket usam uma rádio pirata para dar ordens. O sinal vem das ruínas a oeste.'],
+        ['Whitney e sua Miltank seguram as fazendas da região. Os capangas da Equipe Rocket querem os rebanhos para alimentar seus Pokémon.', 'Whitney conta que os capangas da Equipe Rocket usam uma rádio pirata para dar ordens. O sinal vem das ruínas {d:g3>g4}.'],
         ['Morty, o vidente, fala com os espíritos das torres queimadas. Eles sabem onde estão as plumas.', 'Os espíritos sussurram: duas plumas já estão com os capangas da Equipe Rocket. Falta uma, escondida no farol.'],
         ['O Mestre Chuck treina no dojô da montanha. Os capangas da Equipe Rocket tentaram recrutar os lutadores dele à força.', 'Chuck expulsa os capangas da Equipe Rocket do dojô e descobre o nome do chefe deles: <b>o Executivo Archer</b>.'],
         ['Jasmine cuida do farol, e a Ampharos do farol adoeceu. Sem a luz, os barcos da Equipe Rocket navegam sem ser vistos.', 'Com o farol aceso de novo, Jasmine acha a terceira pluma escondida no alto da torre e a entrega a você. Lá do alto, ela vê os barcos da Equipe Rocket indo para as Ilhas Whirl.'],
@@ -201,8 +201,8 @@ const REGIONS = {
       prologo: `A <b>Equipe Aqua</b> quer expandir os oceanos e afogar a terra firme. Para isso, procura um orbe antigo capaz de despertar <b>Kyogre</b>.
         O Professor Birch quer que você siga a trilha dos oito ginásios de Hoenn e chegue antes deles.`,
       caps: [
-        ['A Líder Roxanne estuda fósseis nas cavernas. A Equipe Aqua escavou ilegalmente perto do ginásio dela, na Cidade de Rustboro, a noroeste.', 'Roxanne mostra marcas de escavação: "Eles procuravam uma pedra azul, brilhante. Não era fóssil."'],
-        ['Brawly, o surfista lutador, conhece cada onda da costa. Os barcos da Equipe Aqua andam rondando a praia dele.', 'Brawly pegou um mapa marítimo da Equipe Aqua com um X em cima do Vulcão Rubro, ao norte.'],
+        ['A Líder Roxanne estuda fósseis nas cavernas. A Equipe Aqua escavou ilegalmente perto do ginásio dela, na Cidade de Rustboro, {d:v>g1} da vila.', 'Roxanne mostra marcas de escavação: "Eles procuravam uma pedra azul, brilhante. Não era fóssil."'],
+        ['Brawly, o surfista lutador, conhece cada onda da costa. Os barcos da Equipe Aqua andam rondando a praia dele.', 'Brawly pegou um mapa marítimo da Equipe Aqua com um X em cima do Vulcão Rubro, {d:g2>z4}.'],
         ['O Inventor Wattson criou um radar de correntes. A Equipe Aqua roubou as peças para rastrear Kyogre.', 'Wattson reconstrói o radar e detecta a Equipe Aqua escavando dentro do Vulcão Rubro.'],
         ['Flannery cuida das fontes termais do vulcão. A Equipe Aqua quer esfriar o vulcão com água do mar.', 'Flannery salvou as fontes, mas a Equipe Aqua já tirou o <b>Orbe Azul</b> de dentro do vulcão.'],
         ['O Líder Norman treina a força bruta dos Pokémon. Ele já enfrentou a Equipe Aqua e sabe onde ficam as bases deles.', 'Norman aponta a base da Equipe Aqua no mar e avisa: "O orbe precisa de uma tempestade para funcionar."'],
@@ -259,13 +259,13 @@ const REGIONS = {
       prologo: `A <b>Equipe Galáctica</b> acredita que o mundo é imperfeito e quer recomeçar o tempo do zero. Para isso, vai capturar os três espíritos dos lagos e invocar <b>Dialga</b>.
         O Professor Rowan pede que você visite os oito ginásios de Sinnoh: os líderes guardam pistas dos mitos antigos.`,
       caps: [
-        ['Roark, filho de mineiros, encontrou placas antigas na mina. A Equipe Galáctica quer essas placas. O ginásio dele fica na Cidade de Oreburgh, a noroeste da vila.', 'As placas falam de um pilar no alto do Monte Coronet, onde o tempo "pode ser reescrito".'],
+        ['Roark, filho de mineiros, encontrou placas antigas na mina. A Equipe Galáctica quer essas placas. O ginásio dele fica na Cidade de Oreburgh, {d:v>g1} da vila.', 'As placas falam de um pilar no alto do Monte Coronet, onde o tempo "pode ser reescrito".'],
         ['Gardenia cuida do bosque onde dorme uma árvore milenar. A Equipe Galáctica anda cortando galhos por lá.', 'Gardenia descobre que a Equipe Galáctica procura <b>três lagos</b>: Acuity, Verity e Valor.'],
         ['Maylene medita na montanha e sente a aura dos Pokémon. Ela sentiu algo errado no Lago Acuity.', 'O Lago Acuity está vazio: a Equipe Galáctica já capturou o primeiro espírito.'],
         ['O lutador Crasher Wake vigia o grande pântano. Os barcos da Equipe Galáctica passam por ali rumo ao segundo lago.', 'Crasher Wake chegou tarde: o espírito do Lago Verity também foi levado.'],
         ['Fantina, a atriz, fala com os mortos no velório da cidade. Os fantasmas viram para onde levaram os espíritos.', 'Os fantasmas apontam o caminho: a base da Equipe Galáctica fica embaixo das muralhas da cidade de ferro.'],
         ['O Líder Byron protege as muralhas. A Equipe Galáctica cavou túneis por baixo delas.', 'Byron derruba os túneis, mas a Equipe Galáctica já fugiu levando o terceiro espírito.'],
-        ['Candice patina no lago gelado a oeste. É de lá que se sobe até o Spear Pillar.', 'Candice mostra a trilha na neve: "O chefe da Equipe Galáctica subiu ontem. Ele vai invocar Dialga."'],
+        ['Candice patina no lago gelado {d:v>g7} da vila. É de lá que se sobe até o Spear Pillar.', 'Candice mostra a trilha na neve: "O chefe da Equipe Galáctica subiu ontem. Ele vai invocar Dialga."'],
         ['Volkner, o líder entediado, acendeu a cidade inteira para guiar você até o pico. Mas antes quer uma luta de verdade.', 'Volkner finalmente se diverte: "Vai lá. Se alguém pode parar o tempo de acabar, é você."'],
       ],
       final: [`No alto do <b>Spear Pillar</b>, a Equipe Galáctica invocou <b>Dialga</b>, e o próprio tempo começou a rachar. Enfrente o lendário e liberte os espíritos.`,
@@ -316,12 +316,12 @@ const REGIONS = {
       prologo: `A <b>Equipe Plasma</b> prega que treinadores devem libertar seus Pokémon, mas por trás dos discursos há um plano para dominar Unova com um dragão lendário.
         A Professora Juniper pede que você enfrente os oito ginásios e descubra o que a Equipe Plasma esconde.`,
       caps: [
-        ['Cilan, Chili e Cress servem batalhas junto com o almoço na Cidade de Striaton, ao sul da vila. Um membro da Equipe Plasma discursou lá ontem.', 'Os trigêmeos guardaram o panfleto da Equipe Plasma: "A verdade despertará o dragão branco."'],
+        ['Cilan, Chili e Cress servem batalhas junto com o almoço na Cidade de Striaton, {d:v>g1} da vila. Um membro da Equipe Plasma discursou lá ontem.', 'Os trigêmeos guardaram o panfleto da Equipe Plasma: "A verdade despertará o dragão branco."'],
         ['A Curadora Lenora cuida do museu, onde fica uma pedra clara, quase branca, muito antiga. A Equipe Plasma quer roubá-la.', 'A pedra do museu foi trocada por uma falsa. A Equipe Plasma já levou a Pedra da Verdade.'],
         ['O artista Burgh pinta no meio da colmeia. Ele viu a Equipe Plasma escondendo algo na Pinwheel Forest.', 'Burgh desenha o rosto do líder da Equipe Plasma, um jovem chamado <b>N.</b>, que fala com os Pokémon.'],
         ['Elesa ilumina a cidade dos parques de diversão. A Equipe Plasma montou um palanque na frente do ginásio dela.', 'Elesa ouviu N. dizer que vai acordar o dragão "no castelo, quando tiver o apoio do povo".'],
         ['Clay controla as minas do deserto. A Equipe Plasma anda cavando atrás de uma passagem para o castelo.', 'Clay fecha as minas, mas confirma: o castelo da Equipe Plasma fica além do Caminho dos Gigantes.'],
-        ['Skyla dispara pelos céus num canhão. Do alto, ela consegue ver o castelo escondido.', 'Skyla viu a torre do castelo surgindo do chão, no extremo sul.'],
+        ['Skyla dispara pelos céus num canhão. Do alto, ela consegue ver o castelo escondido.', 'Skyla viu a torre do castelo surgindo do chão, no extremo {w:v>g9} da região.'],
         ['Brycen, ex-ator, treina numa pista de gelo. Ele sabe atravessar a nevasca do sul.', 'Brycen abre o caminho pela nevasca: "O dragão já está despertando. Corra."'],
         ['O Prefeito Drayden e seus dragões guardam a última passagem. Prove que pode enfrentar um dragão de verdade.', 'Drayden entrega a você a escama de um dragão ancestral: "Ela vai te proteger do fogo branco."'],
       ],
@@ -331,6 +331,61 @@ const REGIONS = {
   },
 };
 const REGION_IDS = Object.keys(REGIONS);
+
+/* ============ Mapa variável (cada partida tem o seu) ============
+ * Uma semente por personagem e por região (P.layout) escolhe a variação do mapa. 0 = mapa original.
+ * No multiplayer vale a semente do anfitrião (vai junto com a região quando alguém entra na sala).
+ * Etapa C: a região inteira é espelhada e/ou girada (8 versões); as barreiras de HM são recalculadas
+ * pelas divisas de zona, então a progressão continua a mesma.
+ */
+const LAYOUT = { seed: 0, built: -1 };
+// copia a geografia aplicando f a todos os pontos (coordenadas de célula)
+const mapGeo = (g, f, macro) => ({
+  ...g, macro, vila: f(g.vila), routes: g.routes.map(r => r.map(f)), gyms: g.gyms.map(f),
+  marks: g.marks.map(([n, x, y]) => [n, ...f([x, y])]), secrets: g.secrets.map(([k, x, y]) => [k, ...f([x, y])]),
+  town2: g.town2 && [...f(g.town2), g.town2[2]], vilas: g.vilas && g.vilas.map(f),
+});
+const flipGeo = g => { const W = g.macro[0].length; return mapGeo(g, ([x, y]) => [W - x, y], g.macro.map(r => [...r].reverse().join(''))); };
+// gira 90° no sentido horário
+const rotGeo = g => {
+  const W = g.macro[0].length, H = g.macro.length, m = [];
+  for (let c = 0; c < W; c++) { let s = ''; for (let r = H - 1; r >= 0; r--) s += g.macro[r][c]; m.push(s); }
+  return mapGeo(g, ([x, y]) => [H - y, x], m);
+};
+// versões aprovadas pelo validador (alcance de cada zona e ginásio com as HMs de cada capítulo); as outras ficam fora do sorteio
+const LAYOUT_T = { kanto: [0, 1, 3, 5, 6, 7] };
+function layoutGeo(id, seed, forceT) {
+  let g = GEO[id];
+  if (!seed && forceT === undefined) return g;
+  const Rn = rng32(seed ^ 0x5bd1e995), okT = LAYOUT_T[id] || [0, 1, 2, 3, 4, 5, 6, 7];
+  const t = forceT !== undefined ? forceT : okT[Math.floor(Rn() * okT.length)];
+  if (t & 4) g = flipGeo(g);
+  for (let k = 0; k < (t & 3); k++) g = rotGeo(g);
+  return g;
+}
+// direções nas falas da história: {d:v>g1} = "a noroeste" (da vila até o 1º ginásio), {w:...} = só a palavra.
+// Pontos: v = vila, g1..g8 = ginásios, g9 = final, z4 = meio da zona 4. Calculadas no mapa da partida.
+const DIRW = ['leste', 'sudeste', 'sul', 'sudoeste', 'oeste', 'noroeste', 'norte', 'nordeste'];
+const dirWord = (a, b) => DIRW[(Math.round(Math.atan2(b[1] - a[1], b[0] - a[0]) / (Math.PI / 4)) + 8) % 8];
+function geoPoint(geo, k) {
+  if (k === 'v') return geo.vila;
+  if (k[0] === 'g') return geo.gyms[+k.slice(1) - 1];
+  let sx = 0, sy = 0, n = 0; // z<n>: centro das células da zona
+  geo.macro.forEach((row, r) => { for (let c = 0; c < row.length; c++) if (row[c] === k[1]) { sx += c + 0.5; sy += r + 0.5; n++; } });
+  return n ? [sx / n, sy / n] : geo.vila;
+}
+const fillDirs = (s, geo) => s.replace(/\{([dw]):(\w+)>(\w+)\}/g, (m, f, a, b) => {
+  const w = dirWord(geoPoint(geo, a), geoPoint(geo, b));
+  return f === 'w' ? w : (w === 'norte' || w === 'sul' ? 'ao ' : 'a ') + w;
+});
+// semente da partida: a do personagem nessa região; quem já jogava a região antes das variações fica com o mapa original
+function pickLayout(saved, rid) {
+  if (saved) {
+    if (saved.layout && saved.layout[rid] !== undefined) return saved.layout[rid];
+    if (saved.stories && saved.stories[rid]) return 0;
+  }
+  return randi(1, 1e9);
+}
 let REGION_ID = 'kanto', REGION = REGIONS.kanto;
 
 // todos os Pokémon que a região usa (para pré-carregar)
@@ -358,7 +413,8 @@ function setRegion(id) {
   replaceObj(ZONE_POOLS, R.pools); replaceObj(WATER_POOLS, R.water);
   replaceArr(BOSSES, R.lendas); replaceArr(RARE_POOL, R.rare); replaceArr(NIGHT_POOL, R.night); replaceArr(MIGRATION_POOL, R.migra);
   replaceObj(HM_GYM, R.hmGym || HM_GYM_BASE);
-  const geo = GEO[REGION_ID];
+  const geo = layoutGeo(REGION_ID, LAYOUT.seed);
+  LAYOUT.built = LAYOUT.seed;
   setGeo(geo);
   replaceArr(LANDMARKS, [['vila', R.vila, geo.vila[0], geo.vila[1] + 0.12], ...geo.marks.map(([nome, cx, cy], i) => [REGION_ID + '_c' + i, nome, cx, cy])]
     .map(([id, nome, cx, cy]) => { const [x, y] = cellPt(cx, cy); return { id, nome, at: [cx, cy], x, y }; }));
@@ -383,10 +439,10 @@ function setRegion(id) {
   const H = R.historia;
   replaceArr(STORY, [{ titulo: 'Prólogo', intro: H.prologo }, ...R.gyms.map((g, i) => ({
     titulo: `${g.nome}`, obj: `Vença ${g.lider} no ${g.nome} (insígnia ${i + 1}/8)`, at: geo.gyms[i], zone: GYM_ZONE[i], lvl: GYM_LVL[i],
-    kind: 'dungeon', theme: 'gym' + (i + 1), nome: g.lider, intro: H.caps[i][0], fim: H.caps[i][1],
+    kind: 'dungeon', theme: 'gym' + (i + 1), nome: g.lider, intro: fillDirs(H.caps[i][0], geo), fim: fillDirs(H.caps[i][1], geo),
   })), {
     titulo: R.final.nome, obj: `Entre em ${R.final.nome} e enfrente ${R.final.lider}`, at: geo.gyms[8], zone: GYM_ZONE[8], lvl: GYM_LVL[8],
-    kind: 'dungeon', theme: 'final', nome: R.final.lider, intro: H.final[0], fim: H.final[1],
+    kind: 'dungeon', theme: 'final', nome: R.final.lider, intro: fillDirs(H.final[0], geo), fim: fillDirs(H.final[1], geo),
   }]);
   replaceArr(STORY_IDS, [R.final.boss, ...R.gyms.map(g => g.boss)]);
   // NPCs da vila

@@ -258,8 +258,8 @@ document.addEventListener('DOMContentLoaded', () => { setPad(PAD.on); });
 const PAD_LBL = { E: 'A', 'Espaço': 'RB', Q: 'X', 1: 'X', F: 'Y', 2: 'LB', 3: '↑', X: '↓', R: '←', V: '→', M: 'L3', T: 'R3', H: 'View', Shift: 'LT', Esc: 'B' };
 const PAD_RE = /\[(E|Espaço|Q|F|R|V|X|T|M|H|Shift|Esc|1|2|3)\]|\((T|Esc)\)/g;
 // no celular as teclas viram os botões da tela (o que fica no menu ⋯ aparece como "⋯ Nome")
-const MOB_LBL = { E: '💬', 'Espaço': '⭐', Q: '🧪', 1: '🧪', F: '⚪', Shift: '💨', Esc: '✕', 2: '⋯ Talismã', Z: '⋯ Talismã', 3: '⋯ Cristal', X: '⋯ Montar', R: '⋯ Cidade', V: '⋯ Fly', M: '⋯ Mapa', B: '⬆', C: '⋯ Trocar', G: '⋯ Bola', L: '⋯ Avisos', P: '⋯ Pokédex', T: '', H: '' };
-const MOB_RE = /\s?\[(E|Espaço|Q|F|R|V|X|T|M|H|Shift|Esc|B|C|G|L|P|Z|1|2|3)\]|\s?\((T|Esc)\)/g;
+const MOB_LBL = { E: '💬', 'Espaço': '⭐', Q: '🧪', 1: '🧪', F: '⚪', Shift: '💨', Esc: '✕', 2: '⋯ Talismã', Z: '⋯ Talismã', 3: '⋯ Cristal', X: '⋯ Montar', R: '⋯ Cidade', V: '⋯ Fly', M: '⋯ Mapa', B: '⬆', C: '⋯ Trocar', G: '⋯ Bola', L: '⋯ Avisos', P: '⋯ Pokédex', T: '', H: '', K: '' };
+const MOB_RE = /\s?\[(E|Espaço|Q|F|R|V|X|T|M|H|Shift|Esc|B|C|G|L|P|Z|K|1|2|3)\]|\s?\((T|Esc)\)/g;
 const isMob = () => typeof MOBILE !== 'undefined' && MOBILE && !PAD.on;
 const padText = s => (typeof s !== 'string' ? s
   : PAD.on ? s.replace(PAD_RE, (m, a, b) => (a ? `[${PAD_LBL[a]}]` : `(${PAD_LBL[b]})`))

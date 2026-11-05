@@ -94,6 +94,7 @@ function ballShop(P, town = npcTown()) {
 function bulkSellable(P, it, k) {
   if (!it || it.locked || it.myth) return false;
   if (k === 'pedra') return it.slot === 'pedra';
+  if (k === 'tudo') return it.slot === 'pedra' || !(itemScore(it) > itemScore(P.equip[it.slot]));
   return it.slot !== 'pedra' && !(itemScore(it) > itemScore(P.equip[it.slot]));
 }
 function shopList(P) {
@@ -146,7 +147,7 @@ function renderNPC() {
     // vender em lote: todos os equipamentos ou todos os cristais
     const lot = k => P.inv.filter(it => bulkSellable(P, it, k));
     const lotBtn = (k, txt) => { const L = lot(k); return L.length ? `<button data-act="sellbulk:${k}">${txt} (${L.length} · ${L.reduce((s, it) => s + sellPrice(it), 0)} 🪙)</button>` : ''; };
-    const bulk = lotBtn('equip', '⚔ Vender todos os equipamentos') + lotBtn('pedra', '💎 Vender todos os cristais');
+    const bulk = lotBtn('tudo', '💰 Vender tudo [K]') + lotBtn('equip', '⚔ Só os equipamentos') + lotBtn('pedra', '💎 Só os cristais');
     body += `<h4>Vender</h4>${bulk ? `<div class="bulk">${bulk}</div><div class="small">Nunca vende itens travados 🔒, Míticos nem os melhores que o seu (▲).</div>` : ''}${inv || '<div class="small">Mochila vazia.</div>'}`;
   } else if (n.id === 'dex') {
     body += renderContracts(P, 'dex') + renderDexNPC(P); // missões antes das recompensas

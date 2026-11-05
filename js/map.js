@@ -123,7 +123,7 @@ function pathDist(x, y) {
   return best;
 }
 
-let TT = null, TZ = null, TV = null, WET = null, MINIMAP = null;
+let TT = null, TZ = null, TV = null, WET = null, MINIMAP = null, BORDERW = null;
 // MINIMAP: 1 pixel = MAP_S px do mundo. Névoa: células de FOG_S px; KNOWN = mapa só com o que já foi visto
 const MAP_S = 64, FOG_S = 128, FOG_R = 720;
 let FOG = null, FOGW = 0, FOGH = 0, KNOWN = null, fogT = 0, FOGLAND = null;
@@ -154,6 +154,7 @@ function solidAt(x, y, swim) {
   if (TT[i] === TK.GATE) return !gateOpen();
   if (SOLIDK[TT[i]]) return true;
   if (TT[i] === TK.WATERFALL) return !(sw & 2);
+  if (!(sw & 1) && BORDERW && BORDERW[i]) return true; // água na divisa de zonas: só com Surf
   if (!(sw & 1) && TT[i] !== TK.BRIDGE && (WET[i] > 0 || TT[i] === TK.SEA) && wetAt(x, y) > DEEP_T) return true;
   const tw = townAt(x, y);
   if (tw) {
@@ -302,6 +303,20 @@ function buildWorld() {
     let t = 0;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const j = tIdx(ix + dx, iy + dy); t += j < 0 ? 1 : wet(TT[j]); }
     WET[iy * NX + ix] = t / 9;
+  }
+  // água rasa na divisa entre zonas vira funda (só Surf passa): antes dava para contornar a cerca ou o
+  // penhasco da divisa andando pela beirada de um lago ou da costa e pular uma HM (ex.: Johto, zona 3 sem HM)
+  BORDERW = new Uint8Array(NX * NY);
+  for (let iy = 2; iy < NY - 2; iy++) for (let ix = 2; ix < NX - 2; ix++) {
+    const i = iy * NX + ix, k = TT[i];
+    if (!(wet(k) > 0 || TZ[i] < 1) || k === TK.BRIDGE || k === TK.GATE || k === TK.PATH) continue;
+    let za = 0, two = false;
+    for (let dy = -2; dy <= 2 && !two; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const z = TZ[(iy + dy) * NX + ix + dx];
+      if (z < 1 || z > 5) continue;
+      if (!za) za = z; else if (z !== za) { two = true; break; }
+    }
+    if (two) BORDERW[i] = 1;
   }
   // pontos de mergulho no meio de águas fundas
   for (let i = 0; i < NX * NY; i++) if (WET[i] === 1 && (TT[i] === TK.SEA || TT[i] === TK.WATER) && hash(i * 3 + 1, 77) < 0.0022) TT[i] = TK.DIVE;
@@ -896,7 +911,7 @@ function initFog(P) {
   const k = KNOWN.getContext('2d');
   k.fillStyle = '#0b1020'; k.fillRect(0, 0, KNOWN.width, KNOWN.height);
   P.seenR = P.seenR || {};
-  const s = P.seenR[REGION_ID];
+  const s = P.seenR[fogKey(P)];
   if (s) {
     try {
       const b = atob(s);
@@ -923,8 +938,10 @@ function revealAround(x, y, R) {
   for (let j = Math.max(0, Math.floor(cy - rr)); j <= Math.min(FOGH - 1, Math.ceil(cy + rr)); j++)
     for (let i = Math.max(0, Math.floor(cx - rr)); i <= Math.min(FOGW - 1, Math.ceil(cx + rr)); i++)
       if ((i + 0.5 - cx) ** 2 + (j + 0.5 - cy) ** 2 < rr * rr && revealCell(j * FOGW + i)) any = true;
-  if (any && G && G.P) { G.P.seenR = G.P.seenR || {}; G.P.seenR[REGION_ID] = fogEncode(); exploreCheck(G.P); }
+  if (any && G && G.P) { G.P.seenR = G.P.seenR || {}; G.P.seenR[fogKey(G.P)] = fogEncode(); exploreCheck(G.P); }
 }
+// o mapa revelado é do mapa da partida: no mapa de outro jogador (outra semente) fica guardado à parte
+const fogKey = P => (!LAYOUT.seed || (P.layout && P.layout[REGION_ID] === LAYOUT.seed) ? REGION_ID : `${REGION_ID}@${LAYOUT.seed}`);
 function fogEncode() {
   const b = new Uint8Array(Math.ceil(FOG.length / 8));
   for (let i = 0; i < FOG.length; i++) if (FOG[i]) b[i >> 3] |= 1 << (i & 7);
