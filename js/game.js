@@ -64,16 +64,26 @@ function trimImage(im) {
   } catch (e) { return im; }
 }
 
+// a imagem grande (sem ícone: Pokémon a partir do nº 808) tem ~2,5x o tamanho do ícone; reduz para 40% para ficar
+// do tamanho dos outros (medido em Pikachu, Charizard, Snorlax, Lucario, Frogadier e Sylveon)
+const FRONT_K = 0.4;
+function shrinkImage(im, k) {
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k));
+  const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+  x.drawImage(im, 0, 0, c.width, c.height);
+  return c;
+}
 function loadImg(p) {
   return new Promise(res => {
-    const urls = [p.icon, ICON_URL(p.id), p.front].filter(Boolean);
+    const urls = [...new Set([p.icon, ICON_URL(p.id), p.front].filter(Boolean))];
     const next = () => {
       if (!urls.length) return res();
-      const im = new Image();
+      const im = new Image(), url = urls.shift();
       im.crossOrigin = 'anonymous';
-      im.onload = () => { p.img = trimImage(im); res(); };
+      im.onload = () => { const t = trimImage(im); p.img = url === p.front ? shrinkImage(t, FRONT_K) : t; res(); };
       im.onerror = next;
-      im.src = urls.shift();
+      im.src = url;
     };
     next();
   });
