@@ -14,7 +14,7 @@ try { PAD.on = localStorage.getItem(PAD_KEY) === '1'; } catch (e) { /* ignora */
 const PAD_KEYS = { 0: 'KeyE', 2: 'KeyQ', 3: 'KeyF', 4: 'KeyC', 5: 'Space', 6: 'ShiftLeft', 12: 'Digit3', 13: 'KeyX', 14: 'KeyR', 15: 'KeyV', 10: 'KeyM', 11: 'KeyT', 8: 'KeyH' };
 const PAD_HELP = [
   ['Analógico esquerdo', 'Andar'], ['Analógico direito', 'Mirar'], ['RT (segurar)', 'Atirar'], ['RB', 'Especial'], ['LT', 'Rolamento (talento)'],
-  ['A', 'Falar / portal / HM'], ['B', 'Fechar janela (sem janela: trocar Poké Ball)'], ['X', 'Poção'], ['Y', 'Poké Ball'], ['LB', 'Trocar Pokémon ativo'],
+  ['A', 'Falar / portal / HM'], ['B', 'Fechar janela (sem janela: trocar Poké Ball)'], ['X', 'Poção'], ['Y', 'Poké Ball'], ['LB', 'Trocar Pokémon ativo (segurar: Megaevolução / Dynamax)'],
   ['↑ direcional', 'Usar cristal'], ['↓ direcional', 'Montar'], ['← direcional', 'Voltar à última cidade'], ['→ direcional', 'Fly (HM)'],
   ['L3', 'Minimapa / mapa da região / esconder'], ['R3', 'Tiro automático'], ['View', 'Controles'], ['Menu (Start)', 'Modo menu: painel, inventário, talentos'],
 ];
@@ -198,7 +198,11 @@ function padTick(dt) {
     mouse.x = W / 2 + Math.cos(fa) * fr + (G.P.x - G.cam.x); mouse.y = H / 2 + Math.sin(fa) * fr + (G.P.y - G.cam.y);
     mouse.down = shooting;
     // botões de ação
-    for (const i in PAD_KEYS) if (down(+i)) keyTap(PAD_KEYS[i]);
+    for (const i in PAD_KEYS) if (+i !== 4 && down(+i)) keyTap(PAD_KEYS[i]);
+    // LB: tocar troca o companheiro; segurar meio segundo usa Megaevolução/Dynamax
+    if (down(4)) { PAD.lbT = performance.now(); PAD.lbUsed = false; }
+    if (btn(4) && !PAD.lbUsed && performance.now() - (PAD.lbT || 0) > 500) { PAD.lbUsed = true; keyTap('KeyU'); }
+    if (!btn(4) && PAD.prev[4] && !PAD.lbUsed) keyTap('KeyC');
     if (down(1)) { if (G.npcOpen) closeNPC(); else if (!$('help').classList.contains('hidden')) $('help').classList.add('hidden'); else cycleBall(); }
     if (down(9)) { padNav(true); PAD.auto = null; }
   }

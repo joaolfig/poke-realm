@@ -379,6 +379,7 @@ function updateAllies(dt) {
     a.face = Math.cos(shotAng) >= 0 ? 1 : -1;
     const col = TYPE_COLORS[a.type];
     const far = tr && tr.k === 'atirador';
+    if (a.pet && a.slot === P.petIdx && P.dynaT > 0) { dynaBlast(a, best, col); a.cd = 1.1; return; } // Dynamax: todo golpe é um Golpe Max em área
     if (a.pet && a.spT <= 0) {
       if (tr && tr.k === 'explosao') traitBlast(a, best, col);
       else {
@@ -449,6 +450,7 @@ function allyHit(e, a, sp) {
   const nPets = G.allies.filter(x => x.pet).length;
   let dmg = petDmg(a) * (1 + M(P, 'pet')) * (sp ? 1.5 : 1) * (a.ghost ? 1 : [1, 0.8, 0.7, 0.62][Math.max(0, nPets - 1)] || 0.62);
   if (P.subclass === 'feras') dmg *= 2;
+  if (a.pet && a.slot === P.petIdx) dmg *= boostMul(P); // Megaevolução e Dynamax
   if (P.ferasT > 0) dmg *= 1 + P.ferasK; // Bênção das Feras (Clérigo)
   const ab = !a.ghost && petAbility(a.pid), tr = !a.ghost && petTrait(a.pid);
   dmg *= abilDmgMul(ab) * hmDmgMul(a.pid) * (tr ? tr.dmg : 1);
@@ -613,7 +615,7 @@ function hostRemoveCaptured(id) {
 }
 
 /* ---------- Desenho e rede ---------- */
-const alliesToNet = () => G.allies.filter(a => !(a.pet && a.slot === carrySlot(G.P))).map(a => [a.look || a.pid, Math.round(a.x), Math.round(a.y), a.ghost ? 1 : 0]);
+const alliesToNet = () => G.allies.filter(a => !(a.pet && a.slot === carrySlot(G.P))).map(a => [a.look || a.pid, Math.round(a.x), Math.round(a.y), a.ghost ? 1 : 0, allyScale(a)]);
 const pokeLoading = new Set();
 function ensurePoke(id) {
   if (POKE[id] || pokeLoading.has(id)) return;

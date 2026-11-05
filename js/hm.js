@@ -116,6 +116,7 @@ function updateHM(dt) {
   if (!P) return;
   P.flyCd = Math.max(0, (P.flyCd || 0) - dt);
   G.nearHM = nearHM(P);
+  extrasTick(P, dt);
   updateHmAnim(dt);
   updateFog(dt);
   // [R] volta para a última cidade em que o jogador esteve

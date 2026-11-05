@@ -604,6 +604,7 @@ const otherBabies = R => ALL_BABIES.filter(id => !(R.babies || []).includes(id))
 function regionIds(R) {
   const s = new Set([...Object.values(R.pools).flat(), ...Object.values(R.water).flat(), ...R.night, ...(R.moon || []), ...R.rare, ...R.migra, ...R.lendas, ...R.grunts, ...ALL_BABIES, R.final.boss]);
   for (const g of R.gyms) { s.add(g.boss); g.pool.forEach(id => s.add(id)); }
+  if (typeof FOSSILS !== 'undefined') for (const f of Object.values(FOSSILS)) if (REGIONS[f.reg] && REGIONS[f.reg].nome === R.nome) s.add(f.pid); // Pokémon dos fósseis da região
   return [...s];
 }
 

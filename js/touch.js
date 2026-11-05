@@ -41,7 +41,7 @@ function touchSetup() {
     <div id="t-more" class="hidden">
       <button data-k="KeyV">🕊️ Fly</button><button data-k="KeyR">🏠 Voltar à cidade</button><button data-k="KeyX">🐎 Montar</button>
       <button data-k="KeyC">🔄 Trocar Pokémon</button><button data-k="KeyG">⚪ Trocar bola</button><button data-k="Digit3">💎 Cristal</button>
-      <button data-k="KeyZ">🪶 Talismã (fuga)</button><button data-k="KeyB">⬆ Equipar o melhor</button><button data-k="KeyM">🗺️ Mapa</button>
+      <button data-k="KeyZ">🪶 Talismã (fuga)</button><button data-k="KeyB">⬆ Equipar o melhor</button><button data-k="KeyU">💎 Mega / Dynamax</button><button data-k="KeyM">🗺️ Mapa</button>
       <button data-k="KeyP">📖 Pokédex</button><button data-k="KeyL">📜 Avisos</button><button data-k="Enter">💬 Chat</button><button data-k="KeyN">🔊 Som</button>
     </div>`;
   document.body.appendChild(L);

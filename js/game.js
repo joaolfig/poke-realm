@@ -287,7 +287,7 @@ function createPlayer(name, h) {
 }
 
 const SAVE_FIELDS = ['name', 'cls', 'race', 'ptype', 'subclass', 'lvl', 'xp', 'legends', 'legendIds', 'kills', 'gold', 'attrs', 'points', 'talents', 'talentOffer',
-  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'wseed', 'layout', 'expR', 'bless', 'lin', 'tq', 'moon', 'abraCd', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quests', 'qOffers', 'hp'];
+  'talentPending', 'killsPot', 'attrV2', 'lastTown', 'seenR', 'dexR', 'titles', 'title', 'box', 'towerR', 'towerCk', 'wseed', 'layout', 'expR', 'megaKey', 'megaStones', 'dynaBand', 'fossils', 'fossilQ', 'fossilN', 'bless', 'lin', 'tq', 'moon', 'abraCd', 'equip', 'inv', 'pots', 'balls', 'bag', 'ballSel', 'stories', 'hmsR', 'fly', 'chests', 'recentQ', 'pets', 'petIdx', 'petAct', 'petCap', 'quests', 'qOffers', 'hp'];
 function saveGame() {
   if (!G || !G.P) return;
   const o = {};
@@ -705,6 +705,7 @@ function onKill(m) {
   const xp = Math.max(1, Math.round(m.xp * xpShare * (1 + M(P, 'xp'))));
   gainXP(Math.round(xp * catchUp(P)));
   if (share <= 0) { G.dirty = true; return; }
+  extrasKill(P, m); // fósseis e Megapedras
   P.kills++;
   P.killsPot = (P.killsPot || 0) + 1;
   if (hasT(P, 'alquimista') && P.killsPot % 10 === 0) { P.pots.hp++; text(P.x, P.y - 60, '+1 Poção (Alquimista)', '#fca5a5', 12); }
@@ -1622,9 +1623,12 @@ function render() {
     else if (it.a) {
       const a = it.a;
       if (a.pet && (a.slot === carrySlot(G.P) || hmAnimHides(a.slot))) continue; // virou montaria (desenhada embaixo do jogador) ou está usando uma HM
+      const sc = allyScale(a);
+      if (sc !== 1) { ctx.save(); ctx.translate(a.x + ox, a.y + oy + 12); ctx.scale(sc, sc); ctx.translate(-(a.x + ox), -(a.y + oy + 12)); if (G.P.dynaT > 0) { ctx.fillStyle = 'rgba(239,68,68,.18)'; ctx.beginPath(); ctx.arc(a.x + ox, a.y + oy, 26 + Math.sin(G.time * 6) * 3, 0, 7); ctx.fill(); } }
       drawAlly(a.look || a.pid, a.x, a.y, ox, oy, a.ghost, a.t, a.face, a.moving, a.pet && G.evo && G.P && G.evo.pt === G.P.pets[a.slot], a.pet ? a.lvl : 0);
+      if (sc !== 1) ctx.restore();
       grassOver(a.x, a.y + 10, a.x + ox, a.y + oy + 14, 26);
-    } else if (it.ra) drawAlly(it.ra[0], it.ra[1], it.ra[2], ox, oy, it.ra[3], G.time, 1, false);
+    } else if (it.ra) { const sc = it.ra[4] || 1; if (sc !== 1) { ctx.save(); ctx.translate(it.ra[1] + ox, it.ra[2] + oy + 12); ctx.scale(sc, sc); ctx.translate(-(it.ra[1] + ox), -(it.ra[2] + oy + 12)); } drawAlly(it.ra[0], it.ra[1], it.ra[2], ox, oy, it.ra[3], G.time, 1, false); if (sc !== 1) ctx.restore(); }
     else if (it.r) {
       const r = it.r, x = r.x + ox, y = r.y + oy, hide = r.invis && G.P && G.P.pvp; // rival invisível na arena: só um vulto
       let lift = 0;
@@ -2084,7 +2088,7 @@ function updatePanel() {
   const ab = curAbil(P), cd = abilCd(P);
   $('p-abil').innerHTML = `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>
     ${blessPhase(P) ? `<div class="small" title="${blessOf(P) ? BLESS[blessOf(P)].desc : 'Escolha uma bênção no templo da 2ª cidade'}">✝ Bênção: ${blessOf(P) ? `${BLESS[blessOf(P)].icon} ${BLESS[blessOf(P)].nome}` : `nenhuma (escolha no templo de ${esc(TOWNS[1] ? townName(TOWNS[1]) : 'a 2ª cidade')})`}</div>` : ''}
-    ${blessBuffs(P)}${linBuffs(P)}<div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Fly: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
+    ${blessBuffs(P)}${boostLine(P)}${linBuffs(P)}<div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Fly: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
   padFixDom($('p-abil'));
   if (!G.dirty) return;
   G.dirty = false;
@@ -2139,6 +2143,7 @@ function updatePanel() {
           : P.hms.includes(k) && canLearn(pt.pid, k) ? `<button class="hmt${P.hmTeach === k ? ' pulse' : ''}" data-teach="${i}:${k}" title="Ensinar ${HMS[k].mo} ${HMS[k].nome}">+${HMS[k].icon}</button>` : '').join('')}</div></div>`;
     }).join('')}</div>${P.bag.doce && P.petIdx >= 0 ? `<button data-candy="1" class="candy">🍬 Dar Doce Raro ao ativo (×${P.bag.doce})</button>` : ''}`
     : '<div class="small">Enfraqueça um Pokémon, mire nele e aperte <b>[F]</b> para jogar uma Poké Ball. Companheiros sobem de nível e evoluem!</div>')
+    + extrasKeyItems(P)
     + (P.hms.length ? `<div class="small keyit">Itens-chave: ${P.hms.map(k => `<span title="${HMS[k].desc}">${HMS[k].icon} ${HMS[k].mo} ${HMS[k].nome}</span>`).join(' ')}</div>` : '');
   if (NET.mode === 'host') $('p-room').innerHTML = `<h4>Multiplayer</h4><div class="room">Código da sala: <b>${NET.room}</b> <button data-copy="1">Copiar</button></div><div class="small">Seus amigos escolhem "Entrar em sala" e digitam este código.</div>`;
   else if (NET.mode === 'client') $('p-room').innerHTML = `<h4>Multiplayer</h4><div class="room">Conectado à sala <b>${NET.room}</b></div>`;
@@ -2264,6 +2269,7 @@ window.addEventListener('keydown', ev => {
     else if (G.nearHM) useHMTile(P, G.nearHM);
   } else if (ev.code === 'Digit3') { const i = P.inv.findIndex(it => it && it.slot === 'pedra'); if (i >= 0) { useStone(i); G.dirty = true; } }
   else if (ev.code === 'KeyT') autofire = !autofire;
+  else if (ev.code === 'KeyU') useBoost(P);
   else if (ev.code === 'KeyM') { showMap = (showMap + 1) % 3; if (showMap === 2) G.toasts.push({ text: '🗺️ Mapa da região: só aparece o que você já explorou. [M] de novo esconde.', color: '#e5e7eb', t: 2.5 }); }
   else if (ev.code === 'KeyH') $('help').classList.toggle('hidden');
   else if (ev.code === 'KeyP') toggleDex();

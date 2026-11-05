@@ -11,6 +11,7 @@ const NPCS = [
   { id: 'dex', nome: 'Pesquisadora Íris', icon: '📖', x: 60, y: 205, spr: { h: '#7c2d12', b: '#f8fafc', d: '#0f766e' }, fala: '' },
   { id: 'grupo', nome: 'Mural de Grupo', icon: '📌', x: 178, y: -6, spr: { h: '#78350f', b: '#a16207', d: '#451a03' }, fala: '' }, // mural de madeira (desenhado à parte)
   { id: 'templo', nome: 'Sacerdotisa Aurora', icon: '⛪', x: -150, y: 30, t2: 1, spr: { h: '#fde68a', b: '#f8fafc', d: '#ca8a04' }, fala: '' },
+  { id: 'fossil', nome: 'Cientista de Fósseis', icon: '🦴', x: -205, y: -24, t2: 1, show: () => regionFossils().length > 0, spr: { h: '#9ca3af', b: '#f8fafc', d: '#0e7490' }, fala: '' },
   { id: 'gundo', nome: 'Gundo Buscapedra', icon: '⛏️', x: -60, y: 205, t2: 1, spr: { h: '#b45309', b: '#7c2d12', d: '#451a03' }, fala: '' },
 ];
 const NPC_SPR = {};
@@ -32,8 +33,8 @@ function rebuildTownNPCs() {
   NPCS2.length = 0;
   const t = TOWNS[1];
   if (!t) return;
-  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex', 'pc', 'torre', 'gundo', 'templo', 'grupo'].includes(n.id))
-    NPCS2.push({ ...n, x: n.x + t.x, y: n.y + t.y, town: 1, nome: n.id === 'sildo' ? `Assistente ${REGION.guia.nome.split(' ').pop()}` : n.nome, show: n.id === 'gundo' ? n.show : null });
+  for (const n of NPCS) if (['cura', 'loja', 'ferreiro', 'guilda', 'sildo', 'dex', 'pc', 'torre', 'gundo', 'templo', 'grupo', 'fossil'].includes(n.id))
+    NPCS2.push({ ...n, x: n.x + t.x, y: n.y + t.y, town: 1, nome: n.id === 'sildo' ? `Assistente ${REGION.guia.nome.split(' ').pop()}` : n.nome, show: n.show || null });
 }
 const allNPCs = () => NPCS.filter(n => !n.t2).concat(NPCS2); // o guardião da torre só existe na 2ª cidade
 function nearNPC(P) {
@@ -111,6 +112,7 @@ function shopList(P) {
     { id: 'anel', nome: 'Anel aleatório', icon: '💍', preco: 70 + tier * 30, tier },
     { id: 'amuleto', nome: 'Amuleto aleatório', icon: '📿', preco: 90 + tier * 40, tier },
     ...bagUpgrade(P),
+    ...megaShop(P),
   ];
 }
 // mochila maior: 8 → 12 na vila (a partir do Nv 8), 12 → 16 só na loja da 2ª cidade
@@ -149,6 +151,8 @@ function renderNPC() {
     const lotBtn = (k, txt) => { const L = lot(k); return L.length ? `<button data-act="sellbulk:${k}">${txt} (${L.length} · ${L.reduce((s, it) => s + sellPrice(it), 0)} 🪙)</button>` : ''; };
     const bulk = lotBtn('tudo', '💰 Vender tudo [K]') + lotBtn('equip', '⚔ Só os equipamentos') + lotBtn('pedra', '💎 Só os cristais');
     body += `<h4>Vender</h4>${bulk ? `<div class="bulk">${bulk}</div><div class="small">Nunca vende itens travados 🔒, Míticos nem os melhores que o seu (▲).</div>` : ''}${inv || '<div class="small">Mochila vazia.</div>'}`;
+  } else if (n.id === 'fossil') {
+    body += renderFossil(P);
   } else if (n.id === 'dex') {
     body += renderContracts(P, 'dex') + renderDexNPC(P); // missões antes das recompensas
   } else if (n.id === 'pc') {
@@ -207,6 +211,7 @@ $('npc').addEventListener('click', ev => {
   else if (act === 'gift') { P.pots.hp = Math.max(P.pots.hp, 2); P.giftT = 300; sfx('pick'); }
   else if (act === 'buy') buyItem(P, arg);
   else if (act === 'tq') templeAct(P, arg);
+  else if (act === 'fossil') fossilAct(P, arg, arg2);
   else if (act === 'bless' && BLESS[arg] && BLESS[arg].subs.includes(blessPhase(P))) { P.bless = arg; burst(P.x, P.y, '#fde68a', 24); sfx('lvl'); G.toasts.push({ text: `✝ Bênção ativa: ${BLESS[arg].nome}`, color: '#fde68a', t: 3 }); saveGame(); }
   else if (act === 'sellbulk') {
     let g = 0, n = 0;
@@ -275,6 +280,7 @@ function buyItem(P, id) {
   else if (CONS[id]) P.bag[id]++;
   else if (id === 'statpot') drinkStat(P, pick(ATTRS));
   else if (id === 'mochila') { const add = (P.inv.length < 12 ? 12 : 16) - P.inv.length; for (let k = 0; k < add; k++) P.inv.push(null); G.toasts.push({ text: `🎒 Mochila maior: agora cabem ${P.inv.length} itens!`, color: '#86efac', t: 3 }); G.dirty = true; }
+  else if (id === 'mega') buyMega(P);
   else if (id === 'cinto') { P.petCap = petCap(P) + 1; G.toasts.push({ text: `🎒 Agora você pode levar ${P.petCap} companheiros!`, color: '#86efac', t: 3 }); G.dirty = true; }
   P.gold -= s.preco;
   sfx('pick');
