@@ -282,9 +282,10 @@ const abilDur = P => ABIL_DUR[P.subclass || P.cls] || 0;
 const abilPow = P => clamp(Math.sqrt(abilCd(P, true) / curAbil(P).cd), 0.55, 1); // Foco e recarga dos itens não enfraquecem o especial
 function abilCd(P, raw) {
   // Forma Selvagem (Druida, Lua e Terra): espera de 30 s depois que a forma acaba no Nv 1, caindo até 10 s no Nv 30
+  // Transformado, a recarga é a do golpe da forma; a da Forma Selvagem só começa a contar quando ele volta ao normal
   if (P.cls === 'druida') {
     const gap = (30 - 20 * clamp((P.lvl - 1) / 29, 0, 1)) * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
-    return wildDur(P) + Math.max(1, gap);
+    return raw ? wildDur(P) + Math.max(1, gap) : P.wildT > 0 ? WSIG_CD : Math.max(1, gap);
   }
   const t = clamp((P.lvl - 1) / 29, 0, 1), start = curAbil(P).cd * (abilDur(P) ? 1.2 : 1.6), end = Math.min(start, abilDur(P) + 2); // nunca cresce com o nível
   const cd = (start + (end - start) * t) * (raw ? 1 : (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd')));
@@ -2147,7 +2148,7 @@ function updatePanel() {
     <div class="st" title="Ouro"><span>Ouro</span><b style="color:var(--gold)">${P.gold}</b></div><div class="st" title="Insígnias conquistadas em todas as regiões"><span>Insígnias</span><b>${totalBadges(P)}</b></div><div class="st" title="Pokémon lendários derrotados"><span>Lendários</span><b>${(P.legendIds || []).length}</b></div>
     <div class="ptype" title="Seu tipo define o que é super efetivo nos seus ataques e quais ataques te acertam forte">Tipo: ${typeBadge(pType(P))}${P.tempTypeT > 0 ? ` <span class="small">cristal ${Math.ceil(P.tempTypeT)}s (natural: ${TYPE_PT[P.ptype]})</span>` : ''}</div>`;
   const ab = curAbil(P), cd = abilCd(P), ws = P.wildT > 0 && P.cls === 'druida';
-  const abH = ws ? `<div class="abil ${P.wildSigCd > 0 ? 'off' : ''}" title="Golpe do Pokémon em que você se transformou (sempre o mesmo para cada Pokémon)"><i class="cd" style="width:${P.wildSigCd > 0 ? Math.min(100, P.wildSigCd / WSIG_CD * 100) : 0}%"></i><b>[Espaço] ${wildSigNext(P).nome}</b> <span>${P.wildSigCd > 0 ? P.wildSigCd.toFixed(1) + 's' : 'pronto'}</span></div>` : `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>`;
+  const abH = ws ? `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="Golpe do Pokémon em que você se transformou (sempre o mesmo para cada Pokémon)"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${wildSigNext(P).nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>` : `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>`;
   $('p-abil').innerHTML = `${abH}
     ${blessPhase(P) ? `<div class="small" title="${blessOf(P) ? BLESS[blessOf(P)].desc : 'Escolha uma bênção no templo da 2ª cidade'}">✝ Bênção: ${blessOf(P) ? `${BLESS[blessOf(P)].icon} ${BLESS[blessOf(P)].nome}` : `nenhuma (escolha no templo de ${esc(TOWNS[1] ? townName(TOWNS[1]) : 'a 2ª cidade')})`}</div>` : ''}
     ${blessBuffs(P)}${boostLine(P)}${linBuffs(P)}<div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Fly: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;

@@ -98,9 +98,9 @@ const SUBCLASSES = {
   ],
   druida: [
     { id: 'lua', nome: 'Círculo da Lua', icon: '🌙', desc: 'A Forma Selvagem fica bem maior, dura 18s, causa +20% de dano, dá +50% de PV (em vez de 30%) e cura 25% da vida ao transformar (os aliados próximos recebem 15% da sua vida máxima).',
-      abil: { nome: 'Forma Selvagem Lunar', cd: 28, desc: 'Forma Selvagem: vira o seu companheiro líder por 18s, com +50% de PV, e se cura em 25% da vida ao transformar; o uivo cura os aliados próximos em 15% da sua vida máxima.' } },
+      abil: { nome: 'Forma Selvagem Lunar', cd: 28, desc: 'Forma Selvagem (transformado, o [Espaço] solta o golpe do Pokémon a cada 4,5s; a recarga da forma só começa quando você volta ao normal): vira o seu companheiro líder por 18s, com +50% de PV, e se cura em 25% da vida ao transformar; o uivo cura os aliados próximos em 15% da sua vida máxima.' } },
     { id: 'terra', nome: 'Círculo da Terra', icon: '🌱', desc: 'A Forma Selvagem fica um pouco maior e causa +30% de dano e, ao transformar, raízes espinhosas brotam em volta por 6s: curam você e os aliados, ferem e deixam lentos os inimigos.',
-      abil: { nome: 'Forma Selvagem da Terra', cd: 24, desc: 'Forma Selvagem: vira o seu companheiro líder por 12s (+30% de PV) e faz brotar raízes que curam (1 + nível/6)d6 + Vigor/2 por segundo e ferem os inimigos em (2 + nível/5)d6 + Poder.' } },
+      abil: { nome: 'Forma Selvagem da Terra', cd: 24, desc: 'Forma Selvagem (transformado, o [Espaço] solta o golpe do Pokémon a cada 4,5s; a recarga da forma só começa quando você volta ao normal): vira o seu companheiro líder por 12s (+30% de PV) e faz brotar raízes que curam (1 + nível/6)d6 + Vigor/2 por segundo e ferem os inimigos em (2 + nível/5)d6 + Poder.' } },
   ],
 };
 /* ============ Bênçãos do Clérigo ============

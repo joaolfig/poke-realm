@@ -281,7 +281,7 @@ function wildShape(P) {
   }
   const before = maxHP(P);
   P.riding = false;
-  P.wildT = wildDur(P); P.wildPid = pt.pid; P.wildType = mainType(POKE[pt.pid]); P.wildSlot = P.petIdx; P.wildSigCd = 1;
+  P.wildT = wildDur(P); P.wildPid = pt.pid; P.wildType = mainType(POKE[pt.pid]); P.wildSlot = P.petIdx; P.abilCd = 1; // o primeiro golpe da forma sai logo
   P.hp += maxHP(P) - before; // os PV extras chegam cheios
   if (hasS(P, 'lua')) { P.hp = Math.min(maxHP(P), P.hp + maxHP(P) * 0.25); emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.round(maxHP(P) * 0.15), name: P.name, quiet: 1, others: 1, r: 240 }); } // uivo: cura também os aliados perto
   if (hasS(P, 'terra')) G.zones.push({ k: 'raizes', x: P.x, y: P.y, r: 150, t: 6, wait: 0, every: 1, tick: 0 });
@@ -293,13 +293,14 @@ function wildShape(P) {
 }
 function endWild(P) {
   P.wildT = 0;
+  if (P.cls === 'druida') P.abilCd = abilCd(P); // a recarga da Forma Selvagem começa agora
   P.hp = Math.min(P.hp, maxHP(P));
   burst(P.x, P.y, '#86efac', 22);
   text(P.x, P.y - 44, 'Você voltou à forma normal', '#cbd5e1', 12);
 }
 function wildTick(P, dt) {
   if (!(P.wildT > 0)) return;
-  P.wildT -= dt; P.wildSigCd = Math.max(0, (P.wildSigCd || 0) - dt);
+  P.wildT -= dt;
   if (P.wildT <= 0 || P.petIdx !== P.wildSlot || !activePet(P) || activePet(P).pid !== P.wildPid) endWild(P);
   else if (Math.random() < 0.12) G.parts.push({ x: P.x + rand(-16, 16), y: P.y + rand(-10, 14), vx: rand(-10, 10), vy: -30, life: 0.6, color: Math.random() < 0.5 ? '#86efac' : TYPE_COLORS[P.wildType], size: 3 });
 }
@@ -308,13 +309,13 @@ function wildTick(P, dt) {
 let WSIG_CD = 4.5, WSIG_K = 0.8;
 const wildSigNext = P => SIG_MOVES[wildSigKey(P.wildPid, P.wildType)]; // sempre o mesmo golpe para cada Pokémon
 function wildSig(P) {
-  if (P.wildSigCd > 0) { text(P.x, P.y - 40, `${wildSigNext(P).nome}: ${P.wildSigCd.toFixed(1)}s`, '#cbd5e1', 12); return; }
+  if (P.abilCd > 0) return;
   if (!inDungeonArea(P.x) && inTown(P.x, P.y)) { text(P.x, P.y - 40, '🕊️ A vila é zona de paz', '#fef3c7', 12); return; }
   const S = wildSigNext(P), t = aimPoint(P, 420), a = Math.atan2(t.y - P.y, t.x - P.x);
   const list = S.f(P, t, a);
   for (const o of list) { o.d = +Math.max(0.3, o.d * 0.45).toFixed(2); o.fx = S.fx; } // o aviso do jogador é bem mais curto que o dos chefes
   if (S.dash) P.dash = { a, t: 0.22, trailT: 0 }; // investidas: o Druida avança junto
-  P.wildSigCd = WSIG_CD; P.shotT = G.time;
+  P.abilCd = WSIG_CD; P.shotT = G.time;
   G.wsig = (G.wsig || 0) + 1;
   emitEvent({ t: 'atele', l: list, nm: S.nome, bx: Math.round(P.x), by: Math.round(P.y), ty: P.wildType, cid: G.wsig, lv: P.lvl });
   if (hasT(P, 'barreira')) { P.shield = Math.max(P.shield || 0, Math.round(maxHP(P) * 0.08)); P.shieldT = Math.max(P.shieldT || 0, 4); }
