@@ -24,7 +24,7 @@ const MEGA = { 3: 10033, 6: 10034, 9: 10036, 15: 10090, 18: 10073, 65: 10037, 80
 const MEGA_REGIONS = ['kanto', 'hoenn', 'kalos'], DYNA_REGIONS = ['galar'];
 const MEGA_T = 25, MEGA_CD = 90, MEGA_K = 1.6, DRUID_MEGA_K = 1.35, DRUID_DYNA_K = 1.2, DYNA_T = 18, DYNA_CD = 120, DYNA_K = 1.4;
 // Druida: na Forma Selvagem, a Mega é dele (vira a forma Mega do companheiro em que se transformou)
-const wildLook = P => (P.wildT > 0 && P.megaT > 0 && MEGA[P.wildPid] ? MEGA[P.wildPid] : P.wildPid);
+const wildLook = P => (P.wildT > 0 && P.dittoT > 0 && POKE[P.dittoPid] ? P.dittoPid : P.wildT > 0 && P.megaT > 0 && MEGA[P.wildPid] ? MEGA[P.wildPid] : P.wildPid); // Ditto: vira o Pokémon copiado enquanto usa o golpe
 // terminou os 8 ginásios desta região
 const gyms8 = P => !!(P && P.story && (P.story.ch > 8 || (P.story.ch === 8 && P.story.done)));
 const leaderAlly = P => G.allies.find(a => a.pet && a.slot === P.petIdx);

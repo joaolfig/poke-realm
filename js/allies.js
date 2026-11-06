@@ -292,7 +292,7 @@ function wildShape(P) {
   return true;
 }
 function endWild(P) {
-  P.wildT = 0;
+  P.wildT = 0; P.dittoT = 0;
   if (P.cls === 'druida') P.abilCd = abilCd(P); // a recarga da Forma Selvagem começa agora
   P.hp = Math.min(P.hp, maxHP(P));
   burst(P.x, P.y, '#86efac', 22);
@@ -301,6 +301,7 @@ function endWild(P) {
 function wildTick(P, dt) {
   if (!(P.wildT > 0)) return;
   P.wildT -= dt;
+  if (P.dittoT > 0 && (P.dittoT -= dt) <= 0) { burst(P.x, P.y, '#c084fc', 18); text(P.x, P.y - 44, 'Voltou a ser Ditto', '#d8b4fe', 11); }
   if (P.wildT <= 0 || P.petIdx !== P.wildSlot || !activePet(P) || activePet(P).pid !== P.wildPid) endWild(P);
   else if (Math.random() < 0.12) G.parts.push({ x: P.x + rand(-16, 16), y: P.y + rand(-10, 14), vx: rand(-10, 10), vy: -30, life: 0.6, color: Math.random() < 0.5 ? '#86efac' : TYPE_COLORS[P.wildType], size: 3 });
 }
@@ -320,6 +321,7 @@ function wildSig(P) {
     S = SIG_MOVES[wildSigKey(e.pid, e.type)];
     if (!S || S.u) S = SIG_MOVES.hiperraio;
     text(P.x, P.y - 58, `🟣 Copiou ${S.nome} de ${e.name}!`, '#d8b4fe', 13);
+    P.dittoPid = e.pid; P.dittoT = 2.2; burst(P.x, P.y, '#c084fc', 22); // vira o Pokémon copiado enquanto o golpe acontece
   }
   if (S.u === 'dig') { // Escavar: some no chão e sai embaixo do alvo
     burst(P.x, P.y, '#a16207', 16);
