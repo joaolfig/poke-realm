@@ -292,7 +292,7 @@ function wildShape(P) {
   return true;
 }
 function endWild(P) {
-  P.wildT = 0; P.dittoKey = null; P.dittoPid = 0; P.dittoType = null;
+  P.wildT = 0; P.illuT = 0; P.dittoKey = null; P.dittoPid = 0; P.dittoType = null;
   if (P.cls === 'druida') P.abilCd = abilCd(P); // a recarga da Forma Selvagem começa agora
   P.hp = Math.min(P.hp, maxHP(P));
   burst(P.x, P.y, '#86efac', 22);
@@ -301,13 +301,25 @@ function endWild(P) {
 function wildTick(P, dt) {
   if (!(P.wildT > 0)) return;
   P.wildT -= dt;
+  if (P.illuT > 0) { // a Ilusão acaba no tempo ou ao levar dano
+    if ((P.illuT -= dt) <= 0) { P.illuT = 0.01; illuEnd(P, 'A ilusão se desfez'); }
+    else if (P.hp < P.illuHp) illuEnd(P, 'O golpe desfez a ilusão!');
+    else P.illuHp = P.hp;
+  }
   if (P.wildT <= 0 || P.petIdx !== P.wildSlot || !activePet(P) || activePet(P).pid !== P.wildPid) endWild(P);
   else if (Math.random() < 0.12) G.parts.push({ x: P.x + rand(-16, 16), y: P.y + rand(-10, 14), vx: rand(-10, 10), vy: -30, life: 0.6, color: Math.random() < 0.5 ? '#86efac' : TYPE_COLORS[P.wildType], size: 3 });
 }
 /* Golpe da forma: na Forma Selvagem o especial solta um golpe do Pokémon (os de assinatura dele, como os chefes usam,
  * ou os do tipo). O aviso aparece verde no chão para todo o grupo; só quem lançou calcula o dano nos inimigos. */
 let WSIG_CD = 4.5, WSIG_K = 0.8, WSIG_R = 0.7;
-const wildSigNext = P => SIG_MOVES[P.dittoKey || wildSigKey(P.wildPid, P.wildType)]; // sempre o mesmo golpe para cada Pokémon (o Ditto: o copiado)
+const ILLU_T = 4, ILLU_K = 1.5; // Ilusão: dura 4 s; a Explosão Noturna saindo do disfarce bate 50% mais forte
+const illuNet = P => (P && P.wildT > 0 && P.illuT > 0 ? P.illuPid : 0);
+function illuEnd(P, why) {
+  if (!(P.illuT > 0)) return;
+  P.illuT = 0; burst(P.x, P.y, '#7c3aed', 18);
+  if (why) { text(P.x, P.y - 44, why, '#c4b5fd', 12); P.abilCd = Math.max(P.abilCd, 3); }
+}
+const wildSigNext = P => (P.illuT > 0 ? SIG_MOVES.explosaonoturna : SIG_MOVES[P.dittoKey || wildSigKey(P.wildPid, P.wildType)]); // sempre o mesmo golpe para cada Pokémon (o Ditto: o copiado)
 // Ditto: depois de usar o golpe copiado, volta a ser Ditto
 function dittoBack(P) {
   if (!P.dittoKey) return;
@@ -320,6 +332,17 @@ function wildSig(P) {
   let S = wildSigNext(P);
   const t = aimPoint(P, 420), a = Math.atan2(t.y - P.y, t.x - P.x);
   if (S.u && wildUtil(P, S, t)) { dittoBack(P); return; }
+  if (S.u === 'illu') { // Zoroark: disfarça de um Pokémon na mira
+    const mw = mouseWorld(), dm = o => Math.hypot(o.x - mw.x, o.y - mw.y) - (o.r || 0);
+    const e = G.enemies.filter(o => o.hp > 0 && !o.dead && !o.boss && dm(o) < 120 && Math.hypot(o.x - P.x, o.y - P.y) < 700).sort((p, q) => dm(p) - dm(q))[0];
+    if (!e) { text(P.x, P.y - 40, 'Mire em um Pokémon para se disfarçar', '#cbd5e1', 12); P.abilCd = 0.5; return; }
+    P.illuPid = e.pid; P.illuT = ILLU_T; P.illuHp = P.hp; P.abilCd = 0.4;
+    burst(P.x, P.y, '#7c3aed', 24);
+    text(P.x, P.y - 58, `🦊 Disfarçado de ${e.name}! Os ${e.name} não te atacam por ${ILLU_T}s`, '#c4b5fd', 13);
+    return;
+  }
+  const surpresa = P.illuT > 0; // Explosão Noturna saindo do disfarce
+  if (surpresa) illuEnd(P);
   if (S.u === 'copy') { // Ditto: o 1º toque vira o Pokémon na mira (e guarda o golpe dele); o 2º usa o golpe e volta a ser Ditto
     const mw = mouseWorld(), dm = o => Math.hypot(o.x - mw.x, o.y - mw.y) - (o.r || 0);
     const e = G.enemies.filter(o => o.hp > 0 && !o.dead && dm(o) < 120 && Math.hypot(o.x - P.x, o.y - P.y) < 700).sort((p, q) => dm(p) - dm(q))[0];
@@ -341,10 +364,10 @@ function wildSig(P) {
   for (const o of list) {
     o.x = Math.round(P.x + (o.x - P.x) * WSIG_R); o.y = Math.round(P.y + (o.y - P.y) * WSIG_R);
     if (o.s === 'l') o.len = Math.round(o.len * WSIG_R); else if (o.s === 'm') o.dur = +(o.dur * WSIG_R).toFixed(2); else o.r = Math.round(o.r * Math.sqrt(WSIG_R));
-    o.d = +Math.max(0.3, o.d * 0.45).toFixed(2); o.fx = S.fx; if (S.ust) o.ust = S.ust; // o aviso do jogador é bem mais curto que o dos chefes
+    o.d = +Math.max(0.3, o.d * 0.45).toFixed(2); o.fx = S.fx; if (S.ust) o.ust = S.ust; if (surpresa) o.k = ILLU_K; // o aviso do jogador é bem mais curto que o dos chefes
   }
   if (S.dash) P.dash = { a, t: 0.22, trailT: 0 }; // investidas: o Druida avança junto
-  P.abilCd = S.cd || WSIG_CD; P.shotT = G.time;
+  P.abilCd = surpresa ? SIG_MOVES.ilusao.cd : S.cd || WSIG_CD; P.shotT = G.time;
   G.wsig = (G.wsig || 0) + 1;
   emitEvent({ t: 'atele', l: list, nm: S.nome, bx: Math.round(P.x), by: Math.round(P.y), ty: P.dittoType || P.wildType, cid: G.wsig, lv: P.lvl });
   dittoBack(P);
@@ -377,7 +400,7 @@ function wildSigHit(o, e) {
   if (k.has(e.id) || !P) return;
   k.add(e.id);
   if (o.ust) { if (!e.st) inflict(e, o.ust); return; } // golpe de status: só o efeito
-  abilHit(e, (roll(2 + Math.floor(P.lvl / 4), 8) + A(P, 'POD')) * WSIG_K * 12 / wildDur(P), o.ty); // forma mais longa (Lua) = mais golpes, cada um um pouco mais fraco
+  abilHit(e, (roll(2 + Math.floor(P.lvl / 4), 8) + A(P, 'POD')) * WSIG_K * 12 / wildDur(P) * (o.k || 1), o.ty); // forma mais longa (Lua) = mais golpes, cada um um pouco mais fraco
 }
 
 // desenha o Druida transformado: o Pokémon no lugar do herói, com os pés no mesmo ponto

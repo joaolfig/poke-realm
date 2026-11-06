@@ -122,7 +122,7 @@ function hostOnData(from, m) {
       if (m.dead) { if (r) r.dead = true; break; }
       if (!r) { r = { id: from, x: m.s[0], y: m.s[1], walk: 0 }; G.remotes.set(from, r); }
       const s = m.s;
-      Object.assign(r, { name: m.name, cls: m.cls, tx: s[0], ty: s[1], face: s[2], moving: !!s[3], invis: !!s[4], hp: s[5], maxHp: s[6], lvl: s[7], aim: s[8], ptype: s[9] || '', mount: s[10] || 0, pst: s[11] || 0, champ: !!m.ch, allies: m.al || [], dead: false });
+      Object.assign(r, { name: m.name, cls: m.cls, tx: s[0], ty: s[1], face: s[2], moving: !!s[3], invis: !!s[4], hp: s[5], maxHp: s[6], lvl: s[7], aim: s[8], ptype: s[9] || '', mount: s[10] || 0, pst: s[11] || 0, illu: s[12] || 0, champ: !!m.ch, allies: m.al || [], dead: false });
       if (m.b) for (const sh of m.b) { addCosmetic(sh, from); NET.relayS.push([from, ...sh]); }
       break;
     }
@@ -186,7 +186,7 @@ function clientOnData(m) {
       ps.add(a[0]);
       let r = G.remotes.get(a[0]);
       if (!r) { r = { id: a[0], x: a[3], y: a[4], walk: 0 }; G.remotes.set(a[0], r); G.dirty = true; }
-      Object.assign(r, { name: a[1], cls: a[2], tx: a[3], ty: a[4], face: a[5], moving: !!a[6], invis: !!a[7], hp: a[8], maxHp: a[9], lvl: a[10], aim: a[11], ptype: a[12] || '', allies: a[13] || [], mount: a[14] || 0, pst: a[15] || 0, dead: false });
+      Object.assign(r, { name: a[1], cls: a[2], tx: a[3], ty: a[4], face: a[5], moving: !!a[6], invis: !!a[7], hp: a[8], maxHp: a[9], lvl: a[10], aim: a[11], ptype: a[12] || '', allies: a[13] || [], mount: a[14] || 0, pst: a[15] || 0, illu: a[16] || 0, dead: false });
     }
     for (const id of [...G.remotes.keys()]) if (!ps.has(id)) { G.remotes.delete(id); G.dirty = true; }
 
@@ -204,8 +204,8 @@ function sendSnapshot() {
   const e = G.enemies.map(e => [e.id, e.pid, e.kind, e.zone, Math.round(e.x), Math.round(e.y), Math.max(0, Math.round(e.hp)), e.story || (e.bountyT !== undefined ? 10 + e.bountyT : 0) || (e.mini ? 40 + e.mini : 0) || (e.moonA ? 60 : 0), e.st || 0]);
   const pl = [];
   const P = G.P;
-  if (P) pl.push([NET.myId, P.name, P.cls, Math.round(P.x), Math.round(P.y), P.face, P.moving ? 1 : 0, P.invis > 0 ? 1 : 0, Math.round(P.hp), maxHP(P), P.lvl, +P.aim.toFixed(2), myType(P), alliesToNet(), netMount(P), pstNet(P)]);
-  for (const r of G.remotes.values()) if (!r.dead && r.name) pl.push([r.id, r.name, r.cls, Math.round(r.tx), Math.round(r.ty), r.face, r.moving ? 1 : 0, r.invis ? 1 : 0, r.hp, r.maxHp, r.lvl, r.aim || 0, r.ptype || '', r.allies || [], r.mount || 0, r.pst || 0]);
+  if (P) pl.push([NET.myId, P.name, P.cls, Math.round(P.x), Math.round(P.y), P.face, P.moving ? 1 : 0, P.invis > 0 ? 1 : 0, Math.round(P.hp), maxHP(P), P.lvl, +P.aim.toFixed(2), myType(P), alliesToNet(), netMount(P), pstNet(P), illuNet(P)]);
+  for (const r of G.remotes.values()) if (!r.dead && r.name) pl.push([r.id, r.name, r.cls, Math.round(r.tx), Math.round(r.ty), r.face, r.moving ? 1 : 0, r.invis ? 1 : 0, r.hp, r.maxHp, r.lvl, r.aim || 0, r.ptype || '', r.allies || [], r.mount || 0, r.pst || 0, r.illu || 0]);
   const cs = NET.outS.map(s => [NET.myId, ...s]).concat(NET.relayS);
   const m = { t: 'snap', e, pl, b: NET.outB, cs, dg: dungeonsToNet(), po: portalsToNet(), ev: G.evInfo, wx: G.wx };
   for (const c of NET.conns.values()) if (c.open) c.send(m);
@@ -216,7 +216,7 @@ function sendPlayerState() {
   if (!NET.host || !NET.host.open) return;
   const P = G.P;
   if (!P) { NET.host.send({ t: 'p', dead: 1 }); NET.outS = []; return; }
-  const m = { t: 'p', name: P.name, cls: P.cls, s: [Math.round(P.x), Math.round(P.y), P.face, P.moving ? 1 : 0, P.invis > 0 ? 1 : 0, Math.round(P.hp), maxHP(P), P.lvl, +P.aim.toFixed(2), myType(P), netMount(P), pstNet(P)], ch: storyOver(P) ? 1 : 0 };
+  const m = { t: 'p', name: P.name, cls: P.cls, s: [Math.round(P.x), Math.round(P.y), P.face, P.moving ? 1 : 0, P.invis > 0 ? 1 : 0, Math.round(P.hp), maxHP(P), P.lvl, +P.aim.toFixed(2), myType(P), netMount(P), pstNet(P), illuNet(P)], ch: storyOver(P) ? 1 : 0 };
   if (NET.outS.length) m.b = NET.outS;
   if (G.allies.length) m.al = alliesToNet();
   NET.host.send(m);

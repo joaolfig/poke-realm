@@ -145,6 +145,7 @@ const SIG_MOVES = {
   // cura para você e quem estiver perto
   luzlua: { nome: '🌙 Luz da Lua', u: 'heal', cd: 8, f: () => [] },
   sintese: { nome: '🌿 Síntese', u: 'heal', cd: 8, f: () => [] },
+  pulsocura: { nome: '💗 Pulso Curativo', u: 'heal', cd: 8, f: () => [] },
   // incentivos para o grupo perto (os mesmos efeitos das classes de suporte)
   barreira: { nome: '🛡 Barreira', u: 'buff', bk: 'selo', dur: 5, cd: 10, f: () => [] },
   ventofavor: { nome: '🌬 Vento a Favor', u: 'buff', bk: 'pressa', dur: 6, cd: 10, f: () => [] },
@@ -152,6 +153,9 @@ const SIG_MOVES = {
   maoamiga: { nome: '🤝 Mão Amiga', u: 'buff', bk: 'furia', dur: 4, cd: 10, f: () => [] },
   // some no chão e sai embaixo do alvo, com dano em volta
   escavarw: { nome: '🕳 Escavar', fx: 'quake', u: 'dig', f: (e, t) => [tC(t.x, t.y, 130, 0.5)] },
+  // Zorua e Zoroark: o 1º toque disfarça de um Pokémon na mira (a mesma espécie o ignora por pouco tempo); o 2º solta a Explosão Noturna
+  ilusao: { nome: '🦊 Ilusão', u: 'illu', cd: 6, f: () => [] },
+  explosaonoturna: { nome: '🌑 Explosão Noturna', fx: 'shadow', f: e => [tC(e.x, e.y, 200, 0.6), ...sRing(e.x, e.y, 320, 10, 55, 1.0)] },
   // Magikarp e Ditto
   splash: { nome: '💦 Splash', u: 'nada', cd: 2, f: () => [] },
   transformar: { nome: '🟣 Transformação', u: 'copy', f: () => [] },
@@ -243,13 +247,13 @@ const WILD_LEARN = {}; for (const [k, ids] of Object.entries({ petalas: [1, 2, 4
 // golpes de suporte de cada Pokémon (Jigglypuff canta, Diglett cava, Politoed chama a chuva...)
 const WILD_UTIL = {};
 for (const [k, ids] of Object.entries({
-  canto: [39, 40, 174], hipnose: [96, 97, 92, 93, 60, 61, 163, 164, 280, 281, 686, 687], esporo: [46, 47, 285, 286, 590, 591], posono: [12, 43, 44, 69, 70, 71, 182, 315, 406],
-  ondatrovao: [172, 179, 180, 181, 417, 587, 702, 777, 921, 922, 923], poparalisa: [48, 49, 269, 742, 743], olhar: [23, 24, 206, 336],
-  supersom: [41, 42, 169], raioconfuso: [170, 171, 200], dancaconfusa: [327],
+  canto: [39, 40, 174, 401, 402], hipnose: [96, 97, 92, 93, 60, 61, 163, 164, 280, 281, 686, 687, 517, 518, 504, 505], esporo: [46, 47, 285, 286, 590, 591], posono: [12, 43, 44, 69, 70, 71, 182, 315, 406, 548, 549],
+  ondatrovao: [172, 179, 180, 181, 417, 587, 702, 777, 921, 922, 923, 859, 860, 861], poparalisa: [48, 49, 269, 742, 743], olhar: [23, 24, 206, 336],
+  supersom: [41, 42, 169, 535, 536, 537, 441], raioconfuso: [170, 171, 200], dancaconfusa: [327],
   dancachuva: [186, 278, 279, 270, 271, 272], diaensolarado: [37, 38, 191, 192, 420, 421, 357],
-  luzlua: [35, 36, 173, 197, 337], sintese: [152, 153, 154],
-  barreira: [122, 439, 436, 437, 876, 856, 857], ventofavor: [187, 188, 189, 333, 425, 426, 546, 547], uivo: [261, 262, 228, 229, 506, 507, 508, 744], maoamiga: [311, 312],
-  escavarw: [50, 51, 27, 28, 529, 960, 961, 328], splash: [129], transformar: [132],
+  luzlua: [35, 36, 173, 197, 337], sintese: [152, 153, 154, 556], pulsocura: [113, 242, 440, 531, 594, 577, 578, 579, 175, 176, 468, 858, 868, 869, 764],
+  barreira: [122, 439, 436, 437, 876, 856, 857, 866, 561, 825, 826, 832, 416], ventofavor: [187, 188, 189, 333, 425, 426, 546, 547, 580], uivo: [261, 262, 228, 229, 506, 507, 508, 744, 835, 836], maoamiga: [311, 312],
+  escavarw: [50, 51, 27, 28, 529, 960, 961, 328], splash: [129], transformar: [132], ilusao: [570, 571],
 })) for (const id of ids) WILD_UTIL[id] = k;
 const wildSigKey = (pid, type) => WILD_UTIL[pid] || WILD_ONE[pid] || (SIG_SPECIES[pid] && SIG_SPECIES[pid][0]) || WILD_LEARN[pid] || WILD_DEF[type] || 'investida';
 

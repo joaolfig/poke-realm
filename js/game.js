@@ -510,8 +510,8 @@ const BOSS_PH = [
 function allPlayers() {
   const arr = [];
   const P = G.P;
-  if (P) arr.push({ x: P.x, y: P.y, invis: P.invis > 0, champ: storyOver(P) });
-  for (const r of G.remotes.values()) if (!r.dead && r.name) arr.push({ x: r.tx, y: r.ty, invis: r.invis, champ: !!r.champ });
+  if (P) arr.push({ x: P.x, y: P.y, invis: P.invis > 0, champ: storyOver(P), illu: illuNet(P) });
+  for (const r of G.remotes.values()) if (!r.dead && r.name) arr.push({ x: r.tx, y: r.ty, invis: r.invis, champ: !!r.champ, illu: r.illu || 0 });
   return arr;
 }
 
@@ -533,7 +533,7 @@ function updateEnemiesHost(dt) {
     }
     let tgt = null, best = 1e9;
     const aware = e.boss ? 750 : 560;
-    for (const t of T) { const dd = Math.hypot(t.x - e.x, t.y - e.y); if (dd < best && dd < aware) { best = dd; tgt = t; } }
+    for (const t of T) { if (t.illu && t.illu === e.pid) continue; const dd = Math.hypot(t.x - e.x, t.y - e.y); if (dd < best && dd < aware) { best = dd; tgt = t; } } // Ilusão do Zoroark: a mesma espécie não ataca
     let vx = 0, vy = 0;
     if (e.mig) {
       // revoada: atravessa o mapa em linha reta
