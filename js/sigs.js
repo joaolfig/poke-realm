@@ -200,6 +200,20 @@ const SIG_TYPE = {
   dragon: ['cometa', 'furia', 'pulsodragao'], poison: ['bombalodo', 'ondatoxica', 'espinhostox'], flying: ['furacao', 'ataqueaereo', 'rajada'],
   bug: ['enxame', 'teia', 'picada'], steel: ['chuvaaco', 'caudaferro', 'canhaoflash'], fairy: ['luamagica', 'vozencantada', 'brilho'],
 };
+/* ---------- O golpe único do Druida na Forma Selvagem ----------
+ * Os chefes sorteiam entre os 3 golpes deles; o Druida transformado usa sempre UM golpe, o que mais combina com o Pokémon
+ * (previsível para quem joga). Quem tem golpes próprios usa o primeiro da lista ou o escolhido aqui; os outros usam o
+ * golpe padrão do tipo, ou um dos golpes do tipo que o Pokémon aprende nos jogos (WILD_LEARN, tirado dos golpes da PokeAPI).
+ */
+const WILD_ONE = {
+  121: 'giro', 110: 'explosao', 419: 'aquacauda', 466: 'investidaeletrica', 512: 'laminafolha', 530: 'broca', 614: 'presagelo', 6: 'lancachamas',
+  464: 'deslizamento', 645: 'terremoto', 251: 'futuro', 678: 'psicoonda', 869: 'brilho', 893: 'raizes', 894: 'rede', 895: 'furia', 982: 'broca', 297: 'socodinamico',
+};
+const WILD_DEF = { fire: 'lancachamas', water: 'hidrobomba', electric: 'trovao', grass: 'folhas', ice: 'nevasca', ground: 'terremoto', rock: 'deslizamento', psychic: 'psiquico',
+  ghost: 'bolasombria', dark: 'pulsosombrio', fighting: 'chutegiratorio', normal: 'hiperraio', dragon: 'cometa', poison: 'bombalodo', flying: 'furacao', bug: 'enxame', steel: 'canhaoflash', fairy: 'luamagica' };
+const WILD_LEARN = {}; for (const [k, ids] of Object.entries({ petalas: [1, 2, 43, 44, 45, 182, 192, 315, 406, 407, 420, 421, 549, 556, 930], raizes: [3, 154, 254, 389, 497, 652, 724, 812, 908], investida: [19, 52, 133, 161, 190, 216, 263, 287, 288, 399, 440, 446, 506, 507, 532, 533, 534, 572, 619, 659, 676, 701, 734, 739, 740, 759, 760, 819, 870, 889, 891, 892, 915, 924, 992, 1007], ataqueaereo: [21, 22, 83, 84, 85, 277, 519, 520, 731, 732, 821], brilho: [39, 40, 174, 209, 210, 684, 685, 764, 868, 869, 926, 927, 985], ondachoque: [56, 57, 67, 68, 107, 236, 296, 297, 307, 308, 447, 448, 620, 766, 903, 979], surf: [98, 270, 349, 366, 400, 580], erupcao: [155, 156, 157, 244, 323, 324], picada: [167, 168, 214, 545, 588, 589], teia: [213, 736, 737, 824], pisotear: [293, 294, 626, 831], caudaferro: [304, 305, 863], chuvaaco: [375, 376, 385], chuva: [771], golpebaixo: [827], anelfogo: [850], pedraafiada: [1022] })) for (const id of ids) WILD_LEARN[id] = k;
+const wildSigKey = (pid, type) => WILD_ONE[pid] || (SIG_SPECIES[pid] && SIG_SPECIES[pid][0]) || WILD_LEARN[pid] || WILD_DEF[type] || 'investida';
+
 // escolhe o próximo golpe do chefe: sorteia entre os dele, sem repetir o último
 function sigPick(e) {
   const L = SIG_SPECIES[e.pid] || SIG_TYPE[e.type] || SIG_TYPE.normal;

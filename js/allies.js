@@ -281,13 +281,13 @@ function wildShape(P) {
   }
   const before = maxHP(P);
   P.riding = false;
-  P.wildT = wildDur(P); P.wildPid = pt.pid; P.wildType = mainType(POKE[pt.pid]); P.wildSlot = P.petIdx; P.wildSigCd = 1; P.wildNext = null;
+  P.wildT = wildDur(P); P.wildPid = pt.pid; P.wildType = mainType(POKE[pt.pid]); P.wildSlot = P.petIdx; P.wildSigCd = 1;
   P.hp += maxHP(P) - before; // os PV extras chegam cheios
   if (hasS(P, 'lua')) { P.hp = Math.min(maxHP(P), P.hp + maxHP(P) * 0.25); emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.round(maxHP(P) * 0.15), name: P.name, quiet: 1, others: 1, r: 240 }); } // uivo: cura também os aliados perto
   if (hasS(P, 'terra')) G.zones.push({ k: 'raizes', x: P.x, y: P.y, r: 150, t: 6, wait: 0, every: 1, tick: 0 });
   burst(P.x, P.y, '#86efac', 30); burst(P.x, P.y, TYPE_COLORS[P.wildType], 24);
   emitEvent({ t: 'fx', x: Math.round(P.x), y: Math.round(P.y), r: 90, color: '#86efac' });
-  text(P.x, P.y - 50, `🌿 Você virou ${pt.name}! [Espaço] usa os golpes dele`, '#86efac', 14);
+  text(P.x, P.y - 50, `🌿 Você virou ${pt.name}! [Espaço]: ${wildSigNext(P).nome}`, '#86efac', 14);
   sfx('lvl');
   return true;
 }
@@ -306,8 +306,7 @@ function wildTick(P, dt) {
 /* Golpe da forma: na Forma Selvagem o especial solta um golpe do Pokémon (os de assinatura dele, como os chefes usam,
  * ou os do tipo). O aviso aparece verde no chão para todo o grupo; só quem lançou calcula o dano nos inimigos. */
 let WSIG_CD = 4.5, WSIG_K = 0.8;
-const wildSigList = P => SIG_SPECIES[P.wildPid] || SIG_TYPE[P.wildType] || SIG_TYPE.normal;
-const wildSigNext = P => { const L = wildSigList(P); if (!L.includes(P.wildNext)) P.wildNext = L[0]; return SIG_MOVES[P.wildNext]; };
+const wildSigNext = P => SIG_MOVES[wildSigKey(P.wildPid, P.wildType)]; // sempre o mesmo golpe para cada Pokémon
 function wildSig(P) {
   if (P.wildSigCd > 0) { text(P.x, P.y - 40, `${wildSigNext(P).nome}: ${P.wildSigCd.toFixed(1)}s`, '#cbd5e1', 12); return; }
   if (!inDungeonArea(P.x) && inTown(P.x, P.y)) { text(P.x, P.y - 40, '🕊️ A vila é zona de paz', '#fef3c7', 12); return; }
@@ -315,7 +314,6 @@ function wildSig(P) {
   const list = S.f(P, t, a);
   for (const o of list) { o.d = +Math.max(0.3, o.d * 0.45).toFixed(2); o.fx = S.fx; } // o aviso do jogador é bem mais curto que o dos chefes
   if (S.dash) P.dash = { a, t: 0.22, trailT: 0 }; // investidas: o Druida avança junto
-  const L = wildSigList(P); P.wildNext = L.length > 1 ? pick(L.filter(k => k !== P.wildNext)) : L[0];
   P.wildSigCd = WSIG_CD; P.shotT = G.time;
   G.wsig = (G.wsig || 0) + 1;
   emitEvent({ t: 'atele', l: list, nm: S.nome, bx: Math.round(P.x), by: Math.round(P.y), ty: P.wildType, cid: G.wsig, lv: P.lvl });
