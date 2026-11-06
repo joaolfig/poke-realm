@@ -24,7 +24,7 @@ const MEGA = { 3: 10033, 6: 10034, 9: 10036, 15: 10090, 18: 10073, 65: 10037, 80
 const MEGA_REGIONS = ['kanto', 'hoenn', 'kalos'], DYNA_REGIONS = ['galar'];
 const MEGA_T = 25, MEGA_CD = 90, MEGA_K = 1.6, DRUID_MEGA_K = 1.35, DRUID_DYNA_K = 1.2, DYNA_T = 18, DYNA_CD = 120, DYNA_K = 1.4;
 // Druida: na Forma Selvagem, a Mega é dele (vira a forma Mega do companheiro em que se transformou)
-const wildLook = P => (P.wildT > 0 && P.dittoT > 0 && POKE[P.dittoPid] ? P.dittoPid : P.wildT > 0 && P.megaT > 0 && MEGA[P.wildPid] ? MEGA[P.wildPid] : P.wildPid); // Ditto: vira o Pokémon copiado enquanto usa o golpe
+const wildLook = P => (P.wildT > 0 && P.dittoPid && POKE[P.dittoPid] ? P.dittoPid : P.wildT > 0 && P.megaT > 0 && MEGA[P.wildPid] ? MEGA[P.wildPid] : P.wildPid); // Ditto: fica com a cara do Pokémon copiado até usar o golpe dele
 // terminou os 8 ginásios desta região
 const gyms8 = P => !!(P && P.story && (P.story.ch > 8 || (P.story.ch === 8 && P.story.done)));
 const leaderAlly = P => G.allies.find(a => a.pet && a.slot === P.petIdx);
@@ -144,4 +144,26 @@ function extrasKeyItems(P) {
   if (P.dynaBand) parts.push('<span title="[U] deixa o companheiro gigante">🔴 Bracelete Dynamax</span>');
   for (const k of Object.keys(P.fossils || {})) if (P.fossils[k] > 0 && FOSSILS[k]) parts.push(`<span title="Leve ao Cientista de Fósseis da 2ª cidade">🦴 ${FOSSILS[k].nome} ×${P.fossils[k]}</span>`);
   return parts.length ? `<div class="small keyit">${parts.join(' ')}</div>` : '';
+}
+
+/* ---------- Link de teste: ?teste=ditto ----------
+ * Para experimentar o Ditto sem precisar capturar um: vira um Druida Nv 20 com um Ditto e aparecem Pokémon variados
+ * em volta. Nada é salvo e não dá para morrer (a morte apagaria o save): o save do jogador fica intacto.
+ */
+if (/[?&]teste=ditto\b/.test(location.search)) {
+  const iv = setInterval(async () => {
+    if (!G || !G.P || state !== 'play') return;
+    clearInterval(iv);
+    saveGame = () => {};
+    playerDie = () => { const Q = G.P; if (Q) { Q.hp = maxHP(Q); text(Q.x, Q.y - 50, '🧪 Teste: não morre', '#d8b4fe', 13); } };
+    const P = G.P, ids = [132, 6, 39, 25, 50, 186, 122, 94];
+    await loadPokedex(ids);
+    P.cls = 'druida'; P.subclass = null; P.lvl = Math.max(P.lvl, 20); P.hp = maxHP(P);
+    P.pets = [{ pid: 132, name: 'Ditto', type: 'normal', lvl: 20, xp: 0, hms: [] }]; P.petAct = [0]; P.petIdx = 0; syncPet();
+    const [zx, zy] = randomZonePoint(2); P.x = zx; P.y = zy;
+    for (const a of G.allies) { a.x = P.x; a.y = P.y; }
+    ids.slice(1).forEach((pid, i) => { const a = i * 0.9; hostSpawn(pid, 2, 0, P.x + Math.cos(a) * 340, P.y + Math.sin(a) * 340); });
+    G.dirty = true;
+    G.toasts.push({ text: '🧪 Teste do Ditto (nada é salvo e você não morre): [Espaço] vira Ditto; mire num Pokémon e aperte [Espaço] para virar ele; aperte de novo para usar o golpe dele.', color: '#d8b4fe', t: 12, big: 1 });
+  }, 500);
 }

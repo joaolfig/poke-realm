@@ -292,7 +292,7 @@ function wildShape(P) {
   return true;
 }
 function endWild(P) {
-  P.wildT = 0; P.dittoT = 0;
+  P.wildT = 0; P.dittoKey = null; P.dittoPid = 0; P.dittoType = null;
   if (P.cls === 'druida') P.abilCd = abilCd(P); // a recarga da Forma Selvagem começa agora
   P.hp = Math.min(P.hp, maxHP(P));
   burst(P.x, P.y, '#86efac', 22);
@@ -301,27 +301,35 @@ function endWild(P) {
 function wildTick(P, dt) {
   if (!(P.wildT > 0)) return;
   P.wildT -= dt;
-  if (P.dittoT > 0 && (P.dittoT -= dt) <= 0) { burst(P.x, P.y, '#c084fc', 18); text(P.x, P.y - 44, 'Voltou a ser Ditto', '#d8b4fe', 11); }
   if (P.wildT <= 0 || P.petIdx !== P.wildSlot || !activePet(P) || activePet(P).pid !== P.wildPid) endWild(P);
   else if (Math.random() < 0.12) G.parts.push({ x: P.x + rand(-16, 16), y: P.y + rand(-10, 14), vx: rand(-10, 10), vy: -30, life: 0.6, color: Math.random() < 0.5 ? '#86efac' : TYPE_COLORS[P.wildType], size: 3 });
 }
 /* Golpe da forma: na Forma Selvagem o especial solta um golpe do Pokémon (os de assinatura dele, como os chefes usam,
  * ou os do tipo). O aviso aparece verde no chão para todo o grupo; só quem lançou calcula o dano nos inimigos. */
 let WSIG_CD = 4.5, WSIG_K = 0.8, WSIG_R = 0.7;
-const wildSigNext = P => SIG_MOVES[wildSigKey(P.wildPid, P.wildType)]; // sempre o mesmo golpe para cada Pokémon
+const wildSigNext = P => SIG_MOVES[P.dittoKey || wildSigKey(P.wildPid, P.wildType)]; // sempre o mesmo golpe para cada Pokémon (o Ditto: o copiado)
+// Ditto: depois de usar o golpe copiado, volta a ser Ditto
+function dittoBack(P) {
+  if (!P.dittoKey) return;
+  P.dittoKey = null; P.dittoPid = 0; P.dittoType = null;
+  burst(P.x, P.y, '#c084fc', 18); text(P.x, P.y - 44, 'Voltou a ser Ditto', '#d8b4fe', 11);
+}
 function wildSig(P) {
   if (P.abilCd > 0) return;
   if (!inDungeonArea(P.x) && inTown(P.x, P.y)) { text(P.x, P.y - 40, '🕊️ A vila é zona de paz', '#fef3c7', 12); return; }
   let S = wildSigNext(P);
   const t = aimPoint(P, 420), a = Math.atan2(t.y - P.y, t.x - P.x);
-  if (S.u && wildUtil(P, S, t)) return;
-  if (S.u === 'copy') { // Ditto: copia o golpe do inimigo mais perto
-    const e = G.enemies.filter(o => o.hp > 0 && !o.dead).sort((p, q) => Math.hypot(p.x - P.x, p.y - P.y) - Math.hypot(q.x - P.x, q.y - P.y))[0];
-    if (!e || Math.hypot(e.x - P.x, e.y - P.y) > 700) { text(P.x, P.y - 40, 'Nenhum inimigo por perto para copiar', '#cbd5e1', 12); P.abilCd = 0.5; return; }
-    S = SIG_MOVES[wildSigKey(e.pid, e.type)];
-    if (!S || S.u) S = SIG_MOVES.hiperraio;
-    text(P.x, P.y - 58, `🟣 Copiou ${S.nome} de ${e.name}!`, '#d8b4fe', 13);
-    P.dittoPid = e.pid; P.dittoT = 2.2; burst(P.x, P.y, '#c084fc', 22); // vira o Pokémon copiado enquanto o golpe acontece
+  if (S.u && wildUtil(P, S, t)) { dittoBack(P); return; }
+  if (S.u === 'copy') { // Ditto: o 1º toque vira o Pokémon na mira (e guarda o golpe dele); o 2º usa o golpe e volta a ser Ditto
+    const mw = mouseWorld(), dm = o => Math.hypot(o.x - mw.x, o.y - mw.y) - (o.r || 0);
+    const e = G.enemies.filter(o => o.hp > 0 && !o.dead && dm(o) < 120 && Math.hypot(o.x - P.x, o.y - P.y) < 700).sort((p, q) => dm(p) - dm(q))[0];
+    if (!e) { text(P.x, P.y - 40, 'Mire em um Pokémon para copiar', '#cbd5e1', 12); P.abilCd = 0.5; return; }
+    let k = wildSigKey(e.pid, e.type);
+    if (!SIG_MOVES[k] || SIG_MOVES[k].u === 'copy') k = 'hiperraio';
+    P.dittoKey = k; P.dittoPid = e.pid; P.dittoType = e.type;
+    text(P.x, P.y - 58, `🟣 Virou ${e.name}! [Espaço]: ${SIG_MOVES[k].nome}`, '#d8b4fe', 13);
+    burst(P.x, P.y, '#c084fc', 22); P.abilCd = 0.4;
+    return;
   }
   if (S.u === 'dig') { // Escavar: some no chão e sai embaixo do alvo
     burst(P.x, P.y, '#a16207', 16);
@@ -338,7 +346,8 @@ function wildSig(P) {
   if (S.dash) P.dash = { a, t: 0.22, trailT: 0 }; // investidas: o Druida avança junto
   P.abilCd = S.cd || WSIG_CD; P.shotT = G.time;
   G.wsig = (G.wsig || 0) + 1;
-  emitEvent({ t: 'atele', l: list, nm: S.nome, bx: Math.round(P.x), by: Math.round(P.y), ty: P.wildType, cid: G.wsig, lv: P.lvl });
+  emitEvent({ t: 'atele', l: list, nm: S.nome, bx: Math.round(P.x), by: Math.round(P.y), ty: P.dittoType || P.wildType, cid: G.wsig, lv: P.lvl });
+  dittoBack(P);
   if (hasT(P, 'barreira')) { P.shield = Math.max(P.shield || 0, Math.round(maxHP(P) * 0.08)); P.shieldT = Math.max(P.shieldT || 0, 4); }
 }
 // golpes de suporte sem aviso no chão (clima, cura, Splash); devolve true se já resolveu
