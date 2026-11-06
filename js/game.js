@@ -285,7 +285,7 @@ function abilCd(P, raw) {
   // Transformado, a recarga é a do golpe da forma; a da Forma Selvagem só começa a contar quando ele volta ao normal
   if (P.cls === 'druida') {
     const gap = (30 - 20 * clamp((P.lvl - 1) / 29, 0, 1)) * (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd'));
-    return raw ? wildDur(P) + Math.max(1, gap) : P.wildT > 0 ? WSIG_CD : Math.max(1, gap);
+    return raw ? wildDur(P) + Math.max(1, gap) : P.wildT > 0 ? wildSigNext(P).cd || WSIG_CD : Math.max(1, gap);
   }
   const t = clamp((P.lvl - 1) / 29, 0, 1), start = curAbil(P).cd * (abilDur(P) ? 1.2 : 1.6), end = Math.min(start, abilDur(P) + 2); // nunca cresce com o nível
   const cd = (start + (end - start) * t) * (raw ? 1 : (1 - 0.15 * tRank(P, 'foco')) * Math.max(0.5, 1 - M(P, 'cd')));
@@ -1418,6 +1418,12 @@ function handleEvent(m, local) {
     case 'decoy': G.decoys.push({ x: m.x, y: m.y, t: m.dur, cls: m.cls, ptype: m.ptype }); break;
     case 'tele': teleEvent(m); break;
     case 'atele': teleEvent(m, true); break;
+    case 'wxset': {
+      G.wx = G.wx || ['', '', '', '', '', '']; G.wx[m.z] = m.k;
+      if (G.wxT) G.wxT[m.z] = m.dur;
+      if (G.P && zoneAt(G.P.x, G.P.y) === m.z) G.toasts.push({ text: `${WEATHER[m.k].icon} ${m.name} mudou o tempo: ${WEATHER[m.k].nome} por ${m.dur}s (${WEATHER[m.k].fx})`, color: WEATHER[m.k].color, t: 4 });
+      break;
+    }
     case 'moonch': moonChestEvent(m); break;
     case 'gq': groupQEvent(m, local); break;
     case 'cap2': { const P = G.P; if (!local && P && Math.hypot(P.x - m.x, P.y - m.y) < DUO_R && duoNear(P)) questProgress('duoCaptura', { types: m.types }); break; }

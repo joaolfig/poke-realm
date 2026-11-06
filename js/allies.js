@@ -306,25 +306,66 @@ function wildTick(P, dt) {
 }
 /* Golpe da forma: na Forma Selvagem o especial solta um golpe do Pokémon (os de assinatura dele, como os chefes usam,
  * ou os do tipo). O aviso aparece verde no chão para todo o grupo; só quem lançou calcula o dano nos inimigos. */
-let WSIG_CD = 4.5, WSIG_K = 0.8;
+let WSIG_CD = 4.5, WSIG_K = 0.8, WSIG_R = 0.7;
 const wildSigNext = P => SIG_MOVES[wildSigKey(P.wildPid, P.wildType)]; // sempre o mesmo golpe para cada Pokémon
 function wildSig(P) {
   if (P.abilCd > 0) return;
   if (!inDungeonArea(P.x) && inTown(P.x, P.y)) { text(P.x, P.y - 40, '🕊️ A vila é zona de paz', '#fef3c7', 12); return; }
-  const S = wildSigNext(P), t = aimPoint(P, 420), a = Math.atan2(t.y - P.y, t.x - P.x);
+  let S = wildSigNext(P);
+  const t = aimPoint(P, 420), a = Math.atan2(t.y - P.y, t.x - P.x);
+  if (S.u && wildUtil(P, S, t)) return;
+  if (S.u === 'copy') { // Ditto: copia o golpe do inimigo mais perto
+    const e = G.enemies.filter(o => o.hp > 0 && !o.dead).sort((p, q) => Math.hypot(p.x - P.x, p.y - P.y) - Math.hypot(q.x - P.x, q.y - P.y))[0];
+    if (!e || Math.hypot(e.x - P.x, e.y - P.y) > 700) { text(P.x, P.y - 40, 'Nenhum inimigo por perto para copiar', '#cbd5e1', 12); P.abilCd = 0.5; return; }
+    S = SIG_MOVES[wildSigKey(e.pid, e.type)];
+    if (!S || S.u) S = SIG_MOVES.hiperraio;
+    text(P.x, P.y - 58, `🟣 Copiou ${S.nome} de ${e.name}!`, '#d8b4fe', 13);
+  }
+  if (S.u === 'dig') { // Escavar: some no chão e sai embaixo do alvo
+    burst(P.x, P.y, '#a16207', 16);
+    if (walkableR(t.x, t.y, 10) && !solidR(t.x, t.y, 10)) { P.x = t.x; P.y = t.y; }
+    P.invis = Math.max(P.invis || 0, 0.5); P.dodgeT = Math.max(P.dodgeT || 0, 0.5);
+  }
   const list = S.f(P, t, a);
-  for (const o of list) { o.d = +Math.max(0.3, o.d * 0.45).toFixed(2); o.fx = S.fx; } // o aviso do jogador é bem mais curto que o dos chefes
+  // no Druida os golpes chegam menos longe que nos chefes (WSIG_R): tudo encolhe em direção a ele
+  for (const o of list) {
+    o.x = Math.round(P.x + (o.x - P.x) * WSIG_R); o.y = Math.round(P.y + (o.y - P.y) * WSIG_R);
+    if (o.s === 'l') o.len = Math.round(o.len * WSIG_R); else if (o.s === 'm') o.dur = +(o.dur * WSIG_R).toFixed(2); else o.r = Math.round(o.r * Math.sqrt(WSIG_R));
+    o.d = +Math.max(0.3, o.d * 0.45).toFixed(2); o.fx = S.fx; if (S.ust) o.ust = S.ust; // o aviso do jogador é bem mais curto que o dos chefes
+  }
   if (S.dash) P.dash = { a, t: 0.22, trailT: 0 }; // investidas: o Druida avança junto
-  P.abilCd = WSIG_CD; P.shotT = G.time;
+  P.abilCd = S.cd || WSIG_CD; P.shotT = G.time;
   G.wsig = (G.wsig || 0) + 1;
   emitEvent({ t: 'atele', l: list, nm: S.nome, bx: Math.round(P.x), by: Math.round(P.y), ty: P.wildType, cid: G.wsig, lv: P.lvl });
   if (hasT(P, 'barreira')) { P.shield = Math.max(P.shield || 0, Math.round(maxHP(P) * 0.08)); P.shieldT = Math.max(P.shieldT || 0, 4); }
 }
-// dano de um golpe da forma em um inimigo (só no jogador que lançou)
+// golpes de suporte sem aviso no chão (clima, cura, Splash); devolve true se já resolveu
+function wildUtil(P, S, t) {
+  if (S.u === 'wx') {
+    if (inDungeonArea(P.x)) { text(P.x, P.y - 40, 'Aqui dentro o tempo não muda', '#cbd5e1', 12); P.abilCd = 0.5; return true; }
+    const z = zoneAt(P.x, P.y);
+    if (!(z >= 1 && z <= 5)) { text(P.x, P.y - 40, 'Na cidade o tempo não muda', '#cbd5e1', 12); P.abilCd = 0.5; return true; }
+    emitEvent({ t: 'wxset', z, k: S.wx, dur: 25, name: P.name });
+  } else if (S.u === 'heal') {
+    emitEvent({ t: 'heal', x: Math.round(P.x), y: Math.round(P.y), amt: Math.round(roll(2 + Math.floor(P.lvl / 4), 8) + A(P, 'VIG')), name: P.name, r: 240 });
+    emitEvent({ t: 'fx', x: Math.round(P.x), y: Math.round(P.y), r: 240, color: S === SIG_MOVES.luzlua ? '#e0e7ff' : '#86efac' });
+  } else if (S.u === 'buff') {
+    emitEvent({ t: 'buff', k: S.bk, x: Math.round(P.x), y: Math.round(P.y), dur: S.dur, name: P.name });
+    emitEvent({ t: 'fx', x: Math.round(P.x), y: Math.round(P.y), r: 240, color: S.bk === 'selo' ? '#fde68a' : S.bk === 'furia' ? '#ef4444' : '#e2e8f0' });
+  } else if (S.u === 'nada') {
+    for (let i = 0; i < 14; i++) G.parts.push({ x: P.x + rand(-14, 14), y: P.y + 10, vx: rand(-60, 60), vy: -rand(80, 180), life: 0.6, color: '#7dd3fc', size: 3 });
+    text(P.x, P.y - 50, 'Mas nada aconteceu!', '#e5e7eb', 14);
+  } else return false;
+  text(P.x, P.y - 62, S.nome, '#86efac', 15);
+  P.abilCd = S.cd || WSIG_CD; P.shotT = G.time;
+  return true;
+}
+// dano (ou status) de um golpe da forma em um inimigo (só no jogador que lançou)
 function wildSigHit(o, e) {
   const P = G.P, k = o.hit || (o.hit = new Set());
   if (k.has(e.id) || !P) return;
   k.add(e.id);
+  if (o.ust) { if (!e.st) inflict(e, o.ust); return; } // golpe de status: só o efeito
   abilHit(e, (roll(2 + Math.floor(P.lvl / 4), 8) + A(P, 'POD')) * WSIG_K * 12 / wildDur(P), o.ty); // forma mais longa (Lua) = mais golpes, cada um um pouco mais fraco
 }
 

@@ -127,6 +127,34 @@ const SIG_MOVES = {
   raiocruzado: { nome: '⚡ Raio Cruzado', fx: 'bolt', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 580, 100, 0.95), ...[1.2, 1.6, 2.0].map(d => tC(...near2(t, 90), 65, d))] },
   espadagigante: { nome: '🗡 Espada Gigante', fx: 'steel', dash: 1, f: (e, t, a) => [tL(e.x, e.y, a, 620, 120, 1.0), ...sFan(t, a, [-1.2, 1.2], 300, 50, 1.6)] },
   escudogigante: { nome: '🛡 Escudo Gigante', fx: 'steel', f: (e, t, a) => [tC(e.x, e.y, 200, 1.2), ...sPar(e, a, [-120, 0, 120], 640, 60, 1.7)] },
+  // ---------- golpes de suporte: só o Druida transformado usa (u = efeito; cd = recarga própria) ----------
+  // status: não causam dano, só o efeito nos inimigos dentro do aviso (chefes não dormem nem ficam confusos)
+  canto: { nome: '💤 Canção de Ninar', fx: 'fairy', u: 'st', ust: 1, cd: 7, f: (e, t) => [tC(t.x, t.y, 160, 1.0)] },
+  hipnose: { nome: '🌀 Hipnose', fx: 'psy', u: 'st', ust: 1, cd: 7, f: (e, t, a) => [tL(e.x, e.y, a, 520, 110, 0.9)] },
+  esporo: { nome: '🍄 Esporo', fx: 'petal', u: 'st', ust: 1, cd: 7, f: (e, t) => [tC(t.x, t.y, 80, 0.9), ...sRing(t.x, t.y, 120, 5, 60, 1.1)] },
+  posono: { nome: '💤 Pó do Sono', fx: 'petal', u: 'st', ust: 1, cd: 7, f: (e, t) => sRain(t, 6, 150, 60, 0.9, 0.2) },
+  ondatrovao: { nome: '⚡ Onda Trovão', fx: 'spark', u: 'st', ust: 2, cd: 6, f: (e, t, a) => sFan(e, a, [-0.35, 0, 0.35], 560, 70, 0.9) },
+  poparalisa: { nome: '✨ Pó Paralisante', fx: 'spark', u: 'st', ust: 2, cd: 6, f: (e, t) => sRain(t, 6, 150, 60, 0.9, 0.2) },
+  olhar: { nome: '👁 Olhar Paralisante', fx: 'slime', u: 'st', ust: 2, cd: 6, f: (e, t, a) => [tL(e.x, e.y, a, 600, 130, 0.8)] },
+  supersom: { nome: '🔊 Supersom', fx: 'psy', u: 'st', ust: 6, cd: 6, f: e => sRing(e.x, e.y, 0, 1, 200, 0.8) },
+  raioconfuso: { nome: '💫 Raio Confuso', fx: 'ghostfire', u: 'st', ust: 6, cd: 6, f: (e, t) => [tC(t.x, t.y, 140, 0.9)] },
+  dancaconfusa: { nome: '💃 Dança Cambaleante', fx: 'fairy', u: 'st', ust: 6, cd: 6, f: e => [tC(e.x, e.y, 220, 0.9)] },
+  // clima: muda o tempo da área por 25 s (Água e Elétrico mais fortes na chuva, Fogo no sol), para o grupo todo
+  dancachuva: { nome: '🌧 Dança da Chuva', u: 'wx', wx: 'chuva', cd: 12, f: () => [] },
+  diaensolarado: { nome: '☀ Dia Ensolarado', u: 'wx', wx: 'sol', cd: 12, f: () => [] },
+  // cura para você e quem estiver perto
+  luzlua: { nome: '🌙 Luz da Lua', u: 'heal', cd: 8, f: () => [] },
+  sintese: { nome: '🌿 Síntese', u: 'heal', cd: 8, f: () => [] },
+  // incentivos para o grupo perto (os mesmos efeitos das classes de suporte)
+  barreira: { nome: '🛡 Barreira', u: 'buff', bk: 'selo', dur: 5, cd: 10, f: () => [] },
+  ventofavor: { nome: '🌬 Vento a Favor', u: 'buff', bk: 'pressa', dur: 6, cd: 10, f: () => [] },
+  uivo: { nome: '🐺 Uivo', u: 'buff', bk: 'furia', dur: 4, cd: 10, f: () => [] },
+  maoamiga: { nome: '🤝 Mão Amiga', u: 'buff', bk: 'furia', dur: 4, cd: 10, f: () => [] },
+  // some no chão e sai embaixo do alvo, com dano em volta
+  escavarw: { nome: '🕳 Escavar', fx: 'quake', u: 'dig', f: (e, t) => [tC(t.x, t.y, 130, 0.5)] },
+  // Magikarp e Ditto
+  splash: { nome: '💦 Splash', u: 'nada', cd: 2, f: () => [] },
+  transformar: { nome: '🟣 Transformação', u: 'copy', f: () => [] },
   terablast: { nome: '💎 Explosão Tera', fx: 'star', f: (e, t, a) => [tL(e.x, e.y, a, 840, 110, 1.3), ...sRing(t.x, t.y, 150, 8, 50, 1.9)] },
 };
 
@@ -212,7 +240,18 @@ const WILD_ONE = {
 const WILD_DEF = { fire: 'lancachamas', water: 'hidrobomba', electric: 'trovao', grass: 'folhas', ice: 'nevasca', ground: 'terremoto', rock: 'deslizamento', psychic: 'psiquico',
   ghost: 'bolasombria', dark: 'pulsosombrio', fighting: 'chutegiratorio', normal: 'hiperraio', dragon: 'cometa', poison: 'bombalodo', flying: 'furacao', bug: 'enxame', steel: 'canhaoflash', fairy: 'luamagica' };
 const WILD_LEARN = {}; for (const [k, ids] of Object.entries({ petalas: [1, 2, 43, 44, 45, 182, 192, 315, 406, 407, 420, 421, 549, 556, 930], raizes: [3, 154, 254, 389, 497, 652, 724, 812, 908], investida: [19, 52, 133, 161, 190, 216, 263, 287, 288, 399, 440, 446, 506, 507, 532, 533, 534, 572, 619, 659, 676, 701, 734, 739, 740, 759, 760, 819, 870, 889, 891, 892, 915, 924, 992, 1007], ataqueaereo: [21, 22, 83, 84, 85, 277, 519, 520, 731, 732, 821], brilho: [39, 40, 174, 209, 210, 684, 685, 764, 868, 869, 926, 927, 985], ondachoque: [56, 57, 67, 68, 107, 236, 296, 297, 307, 308, 447, 448, 620, 766, 903, 979], surf: [98, 270, 349, 366, 400, 580], erupcao: [155, 156, 157, 244, 323, 324], picada: [167, 168, 214, 545, 588, 589], teia: [213, 736, 737, 824], pisotear: [293, 294, 626, 831], caudaferro: [304, 305, 863], chuvaaco: [375, 376, 385], chuva: [771], golpebaixo: [827], anelfogo: [850], pedraafiada: [1022] })) for (const id of ids) WILD_LEARN[id] = k;
-const wildSigKey = (pid, type) => WILD_ONE[pid] || (SIG_SPECIES[pid] && SIG_SPECIES[pid][0]) || WILD_LEARN[pid] || WILD_DEF[type] || 'investida';
+// golpes de suporte de cada Pokémon (Jigglypuff canta, Diglett cava, Politoed chama a chuva...)
+const WILD_UTIL = {};
+for (const [k, ids] of Object.entries({
+  canto: [39, 40, 174], hipnose: [96, 97, 92, 93, 60, 61, 163, 164, 280, 281, 686, 687], esporo: [46, 47, 285, 286, 590, 591], posono: [12, 43, 44, 69, 70, 71, 182, 315, 406],
+  ondatrovao: [172, 179, 180, 181, 417, 587, 702, 777, 921, 922, 923], poparalisa: [48, 49, 269, 742, 743], olhar: [23, 24, 206, 336],
+  supersom: [41, 42, 169], raioconfuso: [170, 171, 200], dancaconfusa: [327],
+  dancachuva: [186, 278, 279, 270, 271, 272], diaensolarado: [37, 38, 191, 192, 420, 421, 357],
+  luzlua: [35, 36, 173, 197, 337], sintese: [152, 153, 154],
+  barreira: [122, 439, 436, 437, 876, 856, 857], ventofavor: [187, 188, 189, 333, 425, 426, 546, 547], uivo: [261, 262, 228, 229, 506, 507, 508, 744], maoamiga: [311, 312],
+  escavarw: [50, 51, 27, 28, 529, 960, 961, 328], splash: [129], transformar: [132],
+})) for (const id of ids) WILD_UTIL[id] = k;
+const wildSigKey = (pid, type) => WILD_UTIL[pid] || WILD_ONE[pid] || (SIG_SPECIES[pid] && SIG_SPECIES[pid][0]) || WILD_LEARN[pid] || WILD_DEF[type] || 'investida';
 
 // escolhe o próximo golpe do chefe: sorteia entre os dele, sem repetir o último
 function sigPick(e) {
