@@ -44,12 +44,14 @@
   .hud { position: fixed; z-index: 4; left: calc((100vw - 284px) / 2); transform: translateX(-50%); pointer-events: none; }
   .hud button, .hud [title] { pointer-events: auto; }
   #hud-top { top: auto; bottom: 12px; left: auto; right: 296px; transform: none; } /* status no canto inferior direito: o topo fica livre para região e missões */
-  #p-derived { display: flex; align-items: stretch; background: rgba(13, 14, 16, .82); border: 2px solid #000; box-shadow: 0 0 0 1px var(--line-hi); }
+  #p-derived { display: flex; align-items: stretch; background: rgba(13, 14, 16, .38); border: 2px solid rgba(0,0,0,.5); box-shadow: 0 0 0 1px rgba(255,255,255,.08); text-shadow: 0 1px 2px #000, 0 0 3px #000; }
   #p-derived .st { padding: 3px 12px 2px; text-align: center; border-right: 1px solid var(--line); }
-  #p-derived .st span { display: block; font: 600 10px var(--px); color: var(--faint); text-transform: uppercase; letter-spacing: .08em; }
+  #p-derived .st span { display: block; font: 600 10px var(--px); color: #cbd5e1; text-transform: uppercase; letter-spacing: .08em; }
   #p-derived .st b { font: 700 17px var(--px); }
-  #hud-bot { left: 12px; transform: none; bottom: 12px; width: 340px; background: rgba(13, 14, 16, .85); border: 2px solid #000; box-shadow: 0 0 0 1px var(--line-hi), 0 6px 20px rgba(0,0,0,.5); padding: 6px 8px; }
-  #hud-bot .bar { margin: 0 0 4px; }
+  #hud-bot { left: 12px; transform: none; bottom: 12px; width: 340px; background: rgba(13, 14, 16, .38); border: 2px solid rgba(0,0,0,.5); box-shadow: 0 0 0 1px rgba(255,255,255,.08); text-shadow: 0 1px 2px #000, 0 0 3px #000; padding: 6px 8px; }
+  #hud-bot .bar { margin: 0 0 4px; background: rgba(0,0,0,.35); }
+  #hud-bot .abil, #hud-bot .slot, #hud-bot #p-pots button { background: rgba(0,0,0,.3); }
+  #hud-bot .small { color: #e5e7eb; } /* [R] cidade, bênção...: legível sobre o mapa (o fundo do painel é transparente) */
   .stchip { margin: 0 0 4px; padding: 2px 6px; border: 2px solid #000; color: #111; font: 700 12px/14px var(--px); letter-spacing: .02em; animation: stblink .45s ease-in-out infinite alternate; }
   @keyframes stblink { from { filter: brightness(1); } to { filter: brightness(.6); } }
   #hud-bot .hp { height: 18px; } #hud-bot .hp span { line-height: 14px; font-size: 12px; }
@@ -494,26 +496,26 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=355"></script>
-<script src="js/data.js?v=355"></script>
-<script src="js/rules.js?v=355"></script>
-<script src="js/items.js?v=355"></script>
-<script src="js/dungeon.js?v=355"></script>
-<script src="js/net.js?v=355"></script>
-<script src="js/map.js?v=355"></script>
-<script src="js/world.js?v=355"></script>
-<script src="js/story.js?v=355"></script>
-<script src="js/hm.js?v=355"></script>
-<script src="js/allies.js?v=355"></script>
-<script src="js/extras.js?v=355"></script>
-<script src="js/town.js?v=355"></script>
-<script src="js/geo.js?v=355"></script>
-<script src="js/regions.js?v=355"></script>
-<script src="js/audio.js?v=355"></script>
-<script src="js/pad.js?v=355"></script>
-<script src="js/pvp.js?v=355"></script>
-<script src="js/sigs.js?v=355"></script>
-<script src="js/game.js?v=355"></script>
-<script src="js/touch.js?v=355"></script>
+<script src="js/pokedex.js?v=356"></script>
+<script src="js/data.js?v=356"></script>
+<script src="js/rules.js?v=356"></script>
+<script src="js/items.js?v=356"></script>
+<script src="js/dungeon.js?v=356"></script>
+<script src="js/net.js?v=356"></script>
+<script src="js/map.js?v=356"></script>
+<script src="js/world.js?v=356"></script>
+<script src="js/story.js?v=356"></script>
+<script src="js/hm.js?v=356"></script>
+<script src="js/allies.js?v=356"></script>
+<script src="js/extras.js?v=356"></script>
+<script src="js/town.js?v=356"></script>
+<script src="js/geo.js?v=356"></script>
+<script src="js/regions.js?v=356"></script>
+<script src="js/audio.js?v=356"></script>
+<script src="js/pad.js?v=356"></script>
+<script src="js/pvp.js?v=356"></script>
+<script src="js/sigs.js?v=356"></script>
+<script src="js/game.js?v=356"></script>
+<script src="js/touch.js?v=356"></script>
 </body>
 </html>
