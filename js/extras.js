@@ -171,3 +171,28 @@ if (TESTE) {
     G.toasts.push({ text: TESTE === 'zoroark' ? '🧪 Teste do Zoroark (o teste não salva; morrer apaga o save como no jogo normal): [Espaço] vira Zoroark; mire num Pokémon e aperte [Espaço] para se disfarçar dele (os iguais não te atacam por 4s); aperte de novo para soltar a Explosão Noturna.' : '🧪 Teste do Ditto (o teste não salva; morrer apaga o save como no jogo normal): [Espaço] vira Ditto; mire num Pokémon e aperte [Espaço] para virar ele; aperte de novo para usar o golpe dele.', color: '#d8b4fe', t: 12, big: 1 });
   }, 500);
 }
+
+/* ---------- Prévia: ?hud=transp ----------
+ * Painel de vida/XP mais transparente, e quase invisível quando há inimigo ou tiro atrás dele.
+ * Só para comparar; sem o parâmetro nada muda.
+ */
+if (/[?&]hud=transp/.test(location.search)) {
+  const st = document.createElement('style');
+  st.textContent = `
+    #hud-bot, #p-derived { background: rgba(13, 14, 16, .38) !important; box-shadow: 0 0 0 1px rgba(255,255,255,.08) !important; border-color: rgba(0,0,0,.5) !important; transition: opacity .2s; }
+    #hud-bot .bar { background: rgba(0,0,0,.35) !important; }
+    #hud-bot .abil, #hud-bot .slot, #hud-bot #p-pots button { background: rgba(0,0,0,.3) !important; }
+    #hud-bot.ghost, #hud-top.ghost { opacity: .28; }`;
+  document.head.appendChild(st);
+  setInterval(() => {
+    if (!G || !G.P) return;
+    for (const id of ['hud-bot', 'hud-top']) {
+      const el = document.getElementById(id), r = el && el.getBoundingClientRect();
+      if (!r || !r.width) continue;
+      const cv = document.getElementById('c'), cr = cv.getBoundingClientRect(), kx = cr.width / W, ky = cr.height / H;
+      const inside = (x, y, pad) => { const sx = cr.left + (x - G.cam.x + W / 2) * kx, sy = cr.top + (y - G.cam.y + H / 2) * ky; return sx > r.left - pad && sx < r.right + pad && sy > r.top - pad && sy < r.bottom + pad; };
+      const behind = G.enemies.some(e => e.hp > 0 && !e.dead && inside(e.x, e.y, 30)) || (G.eb || []).some(b => inside(b.x, b.y, 10));
+      el.classList.toggle('ghost', behind);
+    }
+  }, 100);
+}
