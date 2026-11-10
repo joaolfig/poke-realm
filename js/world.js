@@ -91,9 +91,9 @@ function ballShop(P, town = npcTown()) {
     ...(petCap(P) < PET_CAP_MAX ? [{ id: 'cinto', nome: `Cinto de Poké Balls: +1 vaga de companheiro (${petCap(P)} → ${petCap(P) + 1})`, icon: '🎒', preco: CINTO_PRECO[petCap(P)] }] : []),
   ];
 }
-// venda em lote: cristais, ou equipamentos (nunca travados, Míticos nem os melhores que o equipado)
+// venda em lote: cristais, ou equipamentos (nunca os travados nem os melhores que o equipado)
 function bulkSellable(P, it, k) {
-  if (!it || it.locked || it.myth) return false;
+  if (!it || it.locked) return false;
   if (k === 'pedra') return it.slot === 'pedra';
   if (k === 'tudo') return it.slot === 'pedra' || !(itemScore(it) > itemScore(P.equip[it.slot]));
   return it.slot !== 'pedra' && !(itemScore(it) > itemScore(P.equip[it.slot]));
@@ -131,6 +131,16 @@ const sellPrice = it => (it.starter ? 25 : 0) + 8 + it.tier * 12 + (it.upg || 0)
 const upgMax = (P, town = npcTown()) => (town === 2 ? 12 : town === 1 || !TOWNS[1] ? (storyOver(P) ? 8 : 6) : 4);
 const upgCost = it => Math.round(60 * ((it.upg || 0) + 1) * (1 + it.tier * 0.5));
 
+// vender (loja da cidade e Mercadora da Torre)
+function renderSell(P) {
+  const inv = P.inv.map((it, i) => it ? `<div class="sellrow"><button class="sell" data-act="sell:${i}" title="${esc(it.name)}" ${it.locked ? 'disabled' : ''}>${itemIcon(it)} ${esc(it.name)} → ${sellPrice(it)} 🪙</button><button data-act="lock:${i}" title="${it.locked ? 'Destravar' : 'Travar: não vende nem solta'}">${it.locked ? '🔒' : '🔓'}</button></div>` : '').join('');
+  // vender em lote: todos os equipamentos ou todos os cristais
+  const lot = k => P.inv.filter(it => bulkSellable(P, it, k));
+  const lotBtn = (k, txt) => { const L = lot(k); return L.length ? `<button data-act="sellbulk:${k}">${txt} (${L.length} · ${L.reduce((s, it) => s + sellPrice(it), 0)} 🪙)</button>` : ''; };
+  const bulk = lotBtn('tudo', '💰 Vender tudo [K]') + lotBtn('equip', '⚔ Só os equipamentos') + lotBtn('pedra', '💎 Só os cristais');
+  return `<h4>Vender</h4>${bulk ? `<div class="bulk">${bulk}</div><div class="small">Nunca vende itens travados 🔒 nem os melhores que o seu (▲).</div>` : ''}${inv || '<div class="small">Mochila vazia.</div>'}`;
+}
+
 function renderNPC() {
   const P = G.P, n = G.npcRef && G.npcRef.id === G.npcOpen ? G.npcRef : NPCS.find(x => x.id === G.npcOpen);
   if (P && G.npcOpen === 'fly') { $('npc').innerHTML = renderFly(P); return; }
@@ -145,12 +155,7 @@ function renderNPC() {
   } else if (n.id === 'loja') {
     body += '<h4>Comprar</h4>' + shopList(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}${s.tier !== undefined ? ` <i style="color:${TIER_COLORS[s.tier]}">${TIER_NAMES[s.tier]}</i>` : ''}</span>
       <button data-act="buy:${s.id}" ${s.lock || P.gold < s.preco ? 'disabled' : ''}>${s.lock ? s.why || 'travado' : s.preco + ' 🪙'}</button></div>`).join('');
-    const inv = P.inv.map((it, i) => it ? `<div class="sellrow"><button class="sell" data-act="sell:${i}" title="${esc(it.name)}" ${it.locked ? 'disabled' : ''}>${itemIcon(it)} ${esc(it.name)} → ${sellPrice(it)} 🪙</button><button data-act="lock:${i}" title="${it.locked ? 'Destravar' : 'Travar: não vende nem solta'}">${it.locked ? '🔒' : '🔓'}</button></div>` : '').join('');
-    // vender em lote: todos os equipamentos ou todos os cristais
-    const lot = k => P.inv.filter(it => bulkSellable(P, it, k));
-    const lotBtn = (k, txt) => { const L = lot(k); return L.length ? `<button data-act="sellbulk:${k}">${txt} (${L.length} · ${L.reduce((s, it) => s + sellPrice(it), 0)} 🪙)</button>` : ''; };
-    const bulk = lotBtn('tudo', '💰 Vender tudo [K]') + lotBtn('equip', '⚔ Só os equipamentos') + lotBtn('pedra', '💎 Só os cristais');
-    body += `<h4>Vender</h4>${bulk ? `<div class="bulk">${bulk}</div><div class="small">Nunca vende itens travados 🔒, Míticos nem os melhores que o seu (▲).</div>` : ''}${inv || '<div class="small">Mochila vazia.</div>'}`;
+    body += renderSell(P);
   } else if (n.id === 'fossil') {
     body += renderFossil(P);
   } else if (n.id === 'dex') {
@@ -162,7 +167,7 @@ function renderNPC() {
   } else if (n.id === 'torre') {
     body += renderTowerNPC(P);
   } else if (n.id === 'tshop') {
-    body += renderTowerShop(P);
+    body += renderTowerShop(P) + renderSell(P);
   } else if (n.id === 'sildo' || n.id === 'gundo') {
     body += renderStoryNPC(n, P);
   } else if (n.id === 'ferreiro') {
@@ -357,7 +362,7 @@ function renderContracts(P, g) {
   return h;
 }
 function genQuests(P, g = 'guilda') {
-  const z = questZone(P);
+  const z = questZone(P), zn = `${ZONES[z].nome} (Zona ${z})`;
   const recent = P.recentQ || [];
   const unknown = LANDMARKS.filter(l => !P.fly.includes(l.id) && zoneAt(l.x, l.y) <= z + 1);
   const side = REGION.side || {};
@@ -382,7 +387,7 @@ function genQuests(P, g = 'guilda') {
       q.desc = `Derrote ${q.need} Pokémon do tipo ${TYPE_PT[q.type]}`;
     } else if (k === 'zona') {
       q.need = need(18 + z * 5);
-      q.desc = `Derrote ${q.need} Pokémon na Zona ${z}`;
+      q.desc = `Derrote ${q.need} Pokémon em ${zn}`;
     } else if (k === 'alfa') {
       q.need = need(1 + Math.floor(z / 2)); diff = 2;
       q.desc = `Derrote ${q.need} Pokémon Alfa`;
@@ -391,7 +396,7 @@ function genQuests(P, g = 'guilda') {
       q.desc = q.need > 1 ? `Conclua ${q.need} masmorras (derrote os chefes)` : 'Conclua uma masmorra (derrote o chefe)';
     } else if (k === 'captura') {
       const p = POKE[pick(pool)]; q.type = p ? mainType(p) : 'normal'; q.need = need(1 + Math.floor(z / 3)); diff = 1.6;
-      q.desc = `Capture ${q.need} Pokémon do tipo ${TYPE_PT[q.type]} na Zona ${z} ou acima`;
+      q.desc = `Capture ${q.need} Pokémon do tipo ${TYPE_PT[q.type]} em ${zn} ou adiante`;
     } else if (k === 'evento') {
       q.need = need(idx === 2 ? 1.3 : 1); diff = 2;
       q.desc = q.need > 1 ? `Complete ${q.need} eventos do mundo` : 'Complete um evento do mundo';
@@ -425,19 +430,19 @@ function genQuests(P, g = 'guilda') {
       q.desc = `Derrote ${q.need} ${POKE[q.pid] ? POKE[q.pid].name : 'Pokémon'}`;
     } else if (k === 'pegar') {
       q.pid = pick(pool); q.need = idx === 2 ? 2 : 1; diff = 1.8;
-      q.desc = `Capture ${q.need > 1 ? q.need + ' ' : 'um '}${POKE[q.pid] ? POKE[q.pid].name : 'Pokémon'} (aparece na Zona ${z})`;
+      q.desc = `Capture ${q.need > 1 ? q.need + ' ' : 'um '}${POKE[q.pid] ? POKE[q.pid].name : 'Pokémon'} (aparece em ${zn})`;
     } else if (k === 'pegaralfa') {
       q.need = 1; diff = 2.6;
       q.desc = 'Capture um Pokémon Alfa (enfraqueça bem: eles resistem mais)';
     } else if (k === 'pesquisa') {
       q.need = need(3 + Math.floor(z / 2)); q.seen = []; diff = 1.7;
-      q.desc = `Pesquisa de campo: capture ${q.need} espécies diferentes na Zona ${z}`;
+      q.desc = `Pesquisa de campo: capture ${q.need} espécies diferentes em ${zn}`;
     } else if (k === 'noturno') {
       q.need = need(2); diff = 1.8;
-      q.desc = `Capture ${q.need} Pokémon durante a noite na Zona ${z} ou acima`;
+      q.desc = `Capture ${q.need} Pokémon durante a noite em ${zn} ou adiante`;
     } else if (k === 'bolaboa') {
       q.need = need(2); diff = 1.6;
-      q.desc = `Capture ${q.need} Pokémon usando Great Ball ou Ultra Ball na Zona ${z} ou acima`;
+      q.desc = `Capture ${q.need} Pokémon usando Great Ball ou Ultra Ball em ${zn} ou adiante`;
     } else if (k === 'coleta') {
       const p = POKE[pick(pool)]; q.type = p ? mainType(p) : 'normal'; q.need = need(5 + z * 2); diff = 1.4;
       q.desc = `Colete ${q.need} ${MATERIAL[q.type]} de Pokémon do tipo ${TYPE_PT[q.type]}`;

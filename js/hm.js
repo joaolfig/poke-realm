@@ -172,14 +172,20 @@ function flyTo(P, id) {
   const l = LANDMARKS.find(x => x.id === id);
   if (!l || !P.fly.includes(id) || !petKnows(P, 'fly')) return;
   closeNPC();
-  const pt = hmPet(P, 'fly');
+  if (G.recall) return;
+  G.recall = { t: 1.5, fly: id }; // como o [R]: precisa ficar parado, então não serve para fugir no meio da luta
+  text(P.x, P.y - 40, `🪶 Fly para ${l.nome}... fique parado`, '#93c5fd', 12);
+}
+function flyLand(P, id) {
+  const l = LANDMARKS.find(x => x.id === id), pt = hmPet(P, 'fly');
+  if (!l || !pt) return;
   burst(P.x, P.y, '#e0f2fe', 30);
   P.x = l.x + rand(-20, 20); P.y = l.y + rand(14, 30);
   const tw = townAt(P.x, P.y); if (tw) P.lastTown = tw.i;
   G.cam.x = P.x; G.cam.y = P.y;
   burst(P.x, P.y, '#e0f2fe', 30);
   G.shake = 6;
-  P.flyCd = 15;
+  P.flyCd = 45;
   G.toasts.push({ text: `🪶 ${pt.name} usou Fly! Você pousou em ${l.nome}.`, color: '#93c5fd', t: 3 });
   sfx('pot');
 }

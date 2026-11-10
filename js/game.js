@@ -247,7 +247,7 @@ const pType = P => (P.wildT > 0 ? P.wildType : P.tempTypeT > 0 ? P.tempType : P.
 // arma atual: a da classe ou, na Forma Selvagem, o golpe do tipo do Pokémon
 const curWpn = P => (P.wildT > 0 ? wildWpn(P.wildType) : CLASSES[P.cls].wpn);
 // valor efetivo usado nas regras: cada 2 pontos de atributo valem 1 (o anel soma direto no efetivo)
-const A = (P, k) => P.attrs[k] / 2 + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus : 0);
+const A = (P, k) => attrEff(P.attrs[k]) / 2 + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus : 0);
 // valor mostrado no painel (pontos)
 const Araw = (P, k) => P.attrs[k] + (P.equip.anel && P.equip.anel.attr === k ? P.equip.anel.bonus * 2 : 0);
 // curva de vida: no Nv 1 a vida é a que seria no Nv 3; ela cresce a cada nível, acelerando até o ritmo normal,
@@ -515,10 +515,10 @@ function allPlayers() {
   return arr;
 }
 
-// Lendários (fim de jogo): regeneram o tempo todo. Com um só jogador por perto a regeneração passa do dano de um
-// herói Nv 30 bem equipado (medido: 360-770 de dano/s contra ~710/s); com 2+ jogadores ela cai e o grupo vence em poucos minutos.
-const LEGEND_HP = 280, LEGEND_REGEN = 0.0025, LEGEND_REGEN_SOLO = 0.0055;
-const legendRegen = e => (allPlayers().filter(p => Math.hypot(p.x - e.x, p.y - e.y) < 1100).length >= 2 ? LEGEND_REGEN : LEGEND_REGEN_SOLO);
+// Lendários (fim de jogo): regeneram o tempo todo, 0,08% da vida por segundo para cada jogador perto. Sozinho, um herói
+// Nv 30 bem equipado vence em ~3-4 min (medido: ~310 de dano/s contra ~45/s); em grupo a luta não fica fácil demais.
+const LEGEND_HP = 120, LEGEND_REGEN = 0.0008;
+const legendRegen = e => LEGEND_REGEN * Math.max(1, allPlayers().filter(p => Math.hypot(p.x - e.x, p.y - e.y) < 1100).length);
 function updateEnemiesHost(dt) {
   for (const e of G.enemies) if (e.legend && !e.dead) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * legendRegen(e) * dt);
   const T = allPlayers().filter(t => !t.invis && zoneAt(t.x, t.y) !== 0).concat(G.decoys.map(d => ({ x: d.x, y: d.y })));
@@ -754,7 +754,7 @@ function onKill(m) {
     P.legends = P.legendIds.length; dexCatch(P, m.pid);
   }
   rollLoot(m); // saque: cada jogador perto rola o seu, mesmo sem ter acertado
-  const xp = Math.max(1, Math.round(m.xp * xpShare * (1 + M(P, 'xp'))));
+  const xp = Math.max(1, Math.round(m.xp * xpShare * (1 + M(P, 'xp')) * overLvl(P, m.zone)));
   gainXP(Math.round(xp * catchUp(P)));
   if (share <= 0) { G.dirty = true; return; }
   extrasKill(P, m); // fósseis e Megapedras
@@ -778,6 +778,9 @@ function onKill(m) {
 
 /* ---------- Jogador ---------- */
 // recuperação: quem está abaixo do nível recomendado do próximo capítulo da história ganha +50% de XP nos abates
+// acima da faixa de nível da zona, os abates de lá rendem menos XP (-20% por nível, até 25%): assim o herói não
+// dispara na frente das zonas e o desafio acompanha. Masmorras e lendários usam a zona deles.
+const overLvl = (P, z) => clamp(1 - 0.2 * (P.lvl - ZONE_LVL_MAX[clamp(Math.round(z) || 1, 1, 5)]), 0.25, 1);
 const catchUp = P => { const s = P.story && !storyOver(P) && STORY[P.story.ch]; return s && s.lvl && P.lvl < s.lvl ? 1.5 : 1; };
 // parte do XP do jogador que vai para cada Pokémon fora da Poké Ball (medido: o primeiro companheiro fica
 // perto do nível do jogador e chega ao Nv 30 junto com o fim do jogo; um capturado tarde alcança em poucas zonas)
@@ -1241,7 +1244,8 @@ function updatePlayer(dt) {
   }
   if (G.recall) {
     G.recall.t -= dt;
-    if (P.moving || P.sinceHit < 0.05) { G.recall = null; text(P.x, P.y - 40, 'Retorno cancelado', '#fca5a5', 12); }
+    if (P.moving || P.sinceHit < 0.05) { text(P.x, P.y - 40, G.recall.fly ? 'Fly cancelado' : 'Retorno cancelado', '#fca5a5', 12); G.recall = null; }
+    else if (G.recall.t <= 0 && G.recall.fly) { const id = G.recall.fly; G.recall = null; flyLand(P, id); return; }
     else if (G.recall.t <= 0) { const t = TOWNS[P.lastTown] || TOWNS[0]; G.recall = null; burst(P.x, P.y, '#fde68a', 20); P.x = t.x + rand(-50, 50); P.y = t.y + rand(55, 80); P.recallCd = 45; burst(P.x, P.y, '#fde68a', 20); sfx('pot'); G.cam.x = P.x; G.cam.y = P.y; return; } // o resto do quadro ainda achava que você estava na masmorra (travava o jogo ao voltar dela)
   }
   const wasSurf = P.surfing;
@@ -1739,7 +1743,7 @@ function render() {
       ctx.filter = 'none';
       if (pst(P, 2) && P.pstShock) drawShock(x, y - lift - 4, 30, 40);
       if (!mpid) grassOver(P.x, P.y + 14, x, y + 18, 28);
-      if (G.recall) { ctx.strokeStyle = '#fde68a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - G.recall.t / 1.5)); ctx.stroke(); }
+      if (G.recall) { ctx.strokeStyle = G.recall.fly ? '#93c5fd' : '#fde68a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - G.recall.t / 1.5)); ctx.stroke(); }
       bar(x - 16, y + 22, 32, 4, P.hp / maxHP(P), '#22c55e');
       bar(x - 16, y + 28, 32, 3, 1 - P.abilCd / abilCd(P), '#60a5fa');
       if (P.wildT > 0) bar(x - 16, y + 33, 32, 3, P.wildT / wildDur(P), '#86efac'); // tempo restante da Forma Selvagem
@@ -1994,7 +1998,7 @@ function drawHUD(ox, oy) {
     const w = Math.min(420, W - 260);
     bar(W / 2 - w / 2, 74, w, 12, boss.hp / boss.maxHp, boss.legend ? '#dc2626' : '#a855f7');
     ctx.font = 'bold 13px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
-    outlined(`${boss.name} — ${Math.max(0, Math.ceil(boss.hp))}/${boss.maxHp}${boss.legend ? ` · ♻ regenera ${Math.round(boss.maxHp * legendRegen(boss))}/s${legendRegen(boss) > LEGEND_REGEN ? ' (sozinho! traga mais alguém)' : ''}` : ''}`, W / 2, 68);
+    outlined(`${boss.name} — ${Math.max(0, Math.ceil(boss.hp))}/${boss.maxHp}${boss.legend ? ` · ♻ regenera ${Math.round(boss.maxHp * legendRegen(boss))}/s` : ''}`, W / 2, 68);
   }
   const legend = G.enemies.find(e => e.legend);
   if (legend && !dg) {
@@ -2157,7 +2161,7 @@ function updatePanel() {
   const abH = ws ? `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="Golpe do Pokémon em que você se transformou (sempre o mesmo para cada Pokémon)"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${wildSigNext(P).nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>` : `<div class="abil ${P.abilCd > 0 ? 'off' : ''}" title="${ab.desc}"><i class="cd" style="width:${P.abilCd > 0 ? Math.min(100, P.abilCd / cd * 100) : 0}%"></i><b>[Espaço] ${ab.nome}</b> <span>${P.abilCd > 0 ? P.abilCd.toFixed(1) + 's' : 'pronto'}</span></div>`;
   $('p-abil').innerHTML = `${abH}
     ${blessPhase(P) ? `<div class="small" title="${blessOf(P) ? BLESS[blessOf(P)].desc : 'Escolha uma bênção no templo da 2ª cidade'}">✝ Bênção: ${blessOf(P) ? `${BLESS[blessOf(P)].icon} ${BLESS[blessOf(P)].nome}` : `nenhuma (escolha no templo de ${esc(TOWNS[1] ? townName(TOWNS[1]) : 'a 2ª cidade')})`}</div>` : ''}
-    ${blessBuffs(P)}${boostLine(P)}${linBuffs(P)}<div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Fly: ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
+    ${blessBuffs(P)}${boostLine(P)}${linBuffs(P)}<div class="small" title="Voltar à última cidade visitada: fique parado 1,5s">[R] ${esc(townName(TOWNS[P.lastTown] || TOWNS[0]))}: ${P.recallCd > 0 ? Math.ceil(P.recallCd) + 's' : 'pronto'}${P.hms.includes('fly') ? ` · [V] Fly (parado 1,5s): ${P.flyCd > 0 ? Math.ceil(P.flyCd) + 's' : 'pronto'} (${P.fly.length} destinos)` : ''}</div>`;
   padFixDom($('p-abil'));
   if (!G.dirty) return;
   G.dirty = false;
@@ -2176,14 +2180,14 @@ function updatePanel() {
     choose += `<h4>Talentos</h4><div class="tchips">${sub ? `<span class="subchip" title="${sub.desc}">${sub.icon} ${sub.nome}</span>` : ''}${[...new Set(P.talents)].map(id => `<span title="${TALENTS[id].desc}">${TALENTS[id].icon} ${TALENTS[id].nome}${tRank(P, id) > 1 ? ' ×' + tRank(P, id) : ''}</span>`).join('')}</div>`;
   }
   $('p-talents').innerHTML = choose;
-  $('p-attrs').innerHTML = `<h4>Atributos <span class="small" title="Ganhe +1 ponto por nível. A cada 2 pontos o atributo rende +1. Poções de Poder/Agilidade/Vigor (Alfas, chefes, lendários, baús) dão +2 para sempre.">máx ${ATTR_MAX}</span>${P.points ? `<span class="pts">${P.points} ponto(s)!</span>` : ''}</h4>` + ATTRS.map(k => {
+  $('p-attrs').innerHTML = `<h4>Atributos <span class="small" title="Ganhe +1 ponto por nível. A cada 2 pontos o atributo rende +1; acima de ${ATTR_SOFT}, a cada 4. Poções de Poder/Agilidade/Vigor (Alfas, chefes, lendários, baús, torre) dão +2 para sempre.">até ${ATTR_SOFT} rende cheio · máx ${ATTR_MAX}</span>${P.points ? `<span class="pts">${P.points} ponto(s)!</span>` : ''}</h4>` + ATTRS.map(k => {
     const v = Araw(P, k), bonus = v - P.attrs[k];
     return `<div class="attr" title="${ATTR_DESC[k]}"><span class="an">${ATTR_NAMES[k]}</span><span><span class="pips" style="width:${Math.min(100, P.attrs[k] / ATTR_MAX * 100)}%"></span></span><span class="av">${v}${bonus ? `<i>(+${bonus})</i>` : ''}</span>
       ${P.points && P.attrs[k] < ATTR_MAX ? `<button data-attr="${k}">+</button>` : '<span></span>'}</div>`;
   }).join('');
   const slot = (s, label) => {
     const it = P.equip[s];
-    return `<div class="slot" ${it ? `style="border-color:${TIER_COLORS[it.tier]}" title="${esc(it.name)}${it.upg ? ' +' + it.upg : ''} — ${itemDesc(it)} (${TIER_NAMES[it.tier]})${s === 'anel' || s === 'amuleto' ? ' · clique para guardar' : ''}"` : `title="${label} vazio"`} data-eq="${s}">
+    return `<div class="slot" ${it ? `style="border-color:${itemColor(it)}" title="${esc(it.name)}${it.upg ? ' +' + it.upg : ''} — ${itemDesc(it)} (${it.myth ? 'Mítico' : TIER_NAMES[it.tier]})${s === 'anel' || s === 'amuleto' ? ' · clique para guardar' : ''}"` : `title="${label} vazio"`} data-eq="${s}">
       ${it ? itemIcon(it) : '<span class="empty">' + label + '</span>'}</div>`;
   };
   const nb = bestSwaps(P).length;

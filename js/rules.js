@@ -7,8 +7,10 @@ const ATTR_DESC = {
   AGI: 'A cada 2 pontos: +½ CA, mais velocidade e cadência de tiro.',
   VIG: 'A cada 2 pontos: +1 PV por nível e mais regeneração.',
 };
-// teto 20 e 1 ponto por nível; cada ponto vale metade (o poder máximo é o mesmo de antes, mas a progressão vai até o nível 30)
-const ATTR_MAX = 20;
+// 1 ponto por nível; cada ponto vale metade. Até 20 o ponto rende cheio; de 21 a 40 rende metade
+// (teto 40: com os níveis e as poções ninguém completa os três, então escolher onde pôr continua importando)
+const ATTR_MAX = 40, ATTR_SOFT = 20;
+const attrEff = v => (v <= ATTR_SOFT ? v : ATTR_SOFT + (v - ATTR_SOFT) / 2);
 
 /* ============ Tipos ============ */
 const TYPE_PT = {

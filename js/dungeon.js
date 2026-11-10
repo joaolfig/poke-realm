@@ -62,9 +62,11 @@ const TOWER_MODS = {
   rapidos: '💨 Rápidos', alfas: '👑 Só Alfas', tipo: '🎯 Um tipo só', enxame: '🐝 Enxame', semcura: '🩸 Sem regeneração',
   escuro: '🌑 Escuro', explosivos: '💥 Explodem ao morrer', chuva: '🌧 Chuva', areia: '🌪 Areia',
 };
-// força dos inimigos da torre: +8% por andar acima do 1º (vida e dano)
+// força dos inimigos da torre: +8% por andar acima do 1º (vida e dano); o nível sobe junto (andar 1 = Nv 30, andar 11 = Nv 40...)
 function towerScale(e, f) {
-  if (!f || f <= 1) return;
+  if (!f) return;
+  e.lvl = Math.min(100, 29 + f + (e.alfa ? 2 : 0));
+  if (f <= 1) return;
   const k = Math.pow(1.08, f - 1);
   e.maxHp = Math.round(e.maxHp * k); e.hp = e.maxHp;
   e.atk += Math.floor(f / 3);

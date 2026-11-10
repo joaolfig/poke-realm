@@ -187,7 +187,8 @@ function togglePet(P, i) {
 }
 function giveCandy() {
   const P = G.P, pt = P.pets[P.petIdx];
-  if (!pt || P.bag.doce <= 0 || pt.lvl >= PET_MAX) return;
+  if (pt && pt.lvl >= PET_MAX) return G.toasts.push({ text: `${pt.name} já está no Nv ${pt.lvl}: não sobe mais de nível.`, color: '#fca5a5', t: 2.5 });
+  if (!pt || P.bag.doce <= 0) return;
   P.bag.doce--;
   pt.lvl++; pt.xp = 0;
   G.toasts.push({ text: `🍬 ${pt.name} comeu um Doce Raro e foi para o Nv ${pt.lvl}!`, color: '#f9a8d4', t: 3 });
@@ -680,7 +681,8 @@ function drawThrows(ox, oy) {
 function capture(e, rollTxt, k = 'poke') {
   const P = G.P;
   e.hp = 0; e.dead = true;
-  const lvl = clamp(e.lvl || e.zone * 5 - 4, 1, 28); // o companheiro vem no nível em que foi capturado
+  // o companheiro vem no nível em que foi capturado; os da torre podem passar do 30, mas aí não sobem mais (nem com Doce Raro)
+  const lvl = e.lvl > PET_MAX ? e.lvl : clamp(e.lvl || e.zone * 5 - 4, 1, 28);
   const mon = { pid: e.pid, name: e.p.name, type: e.type, lvl, xp: 0 };
   dexCatch(P, e.pid);
   const toPC = P.pets.length >= petCap(P);
