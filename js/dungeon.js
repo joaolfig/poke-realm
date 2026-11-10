@@ -63,15 +63,16 @@ const TOWER_MODS = {
   rapidos: '💨 Rápidos', alfas: '👑 Só Alfas', tipo: '🎯 Um tipo só', enxame: '🐝 Enxame', semcura: '🩸 Sem regeneração',
   escuro: '🌑 Escuro', explosivos: '💥 Explodem ao morrer', chuva: '🌧 Chuva', areia: '🌪 Areia',
 };
-// força dos inimigos da torre: +8% por andar acima do 1º (vida e dano); o nível sobe junto (andar 1 = Nv 30, andar 11 = Nv 40...)
+// força dos inimigos da torre (é um bullet hell: morrem rápido, mas os tiros doem; quem fica parado morre)
+// vida +3,5% por andar; dano +4,5 por andar (somado a cada tiro) e acerto +1 a cada 2 andares
+// o nível sobe junto (andar 1 = Nv 30, andar 11 = Nv 40...)
+const TW_HP = 1.035, TW_DMG = 4.5;
 function towerScale(e, f) {
   if (!f) return;
   e.lvl = 29 + f + (e.alfa ? 2 : 0);
-  if (f <= 1) return;
-  const k = Math.pow(1.08, f - 1);
-  e.maxHp = Math.round(e.maxHp * k); e.hp = e.maxHp;
-  e.atk += Math.floor(f / 3);
-  e.dice = [e.dice[0], e.dice[1], e.dice[2] + Math.floor(f * 0.8)];
+  e.maxHp = Math.round(e.maxHp * Math.pow(TW_HP, f - 1)); e.hp = e.maxHp;
+  e.atk += Math.floor(f / 2);
+  e.dice = [e.dice[0], e.dice[1], e.dice[2] + Math.round(8 + f * TW_DMG)];
 }
 const DG_MODS = {
   escuro: '🌑 Escura: sem Flash você mal enxerga', frenesi: '💢 Frenesi: os Pokémon são mais rápidos e atacam mais',
