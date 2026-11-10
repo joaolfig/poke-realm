@@ -443,7 +443,7 @@ function renderDungeonFloor(dg, ox, oy) {
 // nível recomendado de uma masmorra: ginásio/final = nível do capítulo; torre = andar; comum = faixa da zona
 function dgLevelTxt(dg) {
   if (!dg) return '';
-  if (dg.floor) return `Andar ${dg.floor} (Nv 30)`;
+  if (dg.floor) return `Andar ${dg.floor} · Pokémon Nv ${29 + dg.floor}`;
   const st = THEMES[dg.theme] && THEMES[dg.theme].story;
   if (st && STORY[st] && STORY[st].lvl) return `Nv ${STORY[st].lvl}+`;
   const z = clamp(dg.zone, 1, 5);
@@ -653,7 +653,9 @@ function towerShopOf(dg) {
   const c = roomCenter(dg, dg.rooms[dg.rooms.length - 1]);
   return { id: 'tshop', nome: 'Mercadora da Torre', icon: '🛒', x: c.x + 110, y: c.y + 30, town: 2 };
 }
-function nearTowerShop(P) { const n = towerShopOf(dungeonAt(P.x)); return n && Math.hypot(n.x - P.x, n.y - P.y) < 60 ? n : null; }
+// PC ao lado da Mercadora: troca Pokémon da equipe sem sair da torre
+const towerPCOf = dg => { const s = towerShopOf(dg); return s && { id: 'pc', nome: 'PC', icon: '💻', x: s.x + 80, y: s.y }; };
+function nearTowerShop(P) { const dg = dungeonAt(P.x); return [towerShopOf(dg), towerPCOf(dg)].find(n => n && Math.hypot(n.x - P.x, n.y - P.y) < 60) || null; }
 function towerShopList(P) {
   return [
     { id: 'pot', nome: 'Poção de Cura', icon: '❤️', preco: 40 },
@@ -684,6 +686,7 @@ function drawTowerShop(ox, oy) {
   if (NPC_SPR.loja) ctx.drawImage(NPC_SPR.loja, x - 18, y - 18, 36, 36);
   ctx.font = 'bold 11px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.fillStyle = '#e9d5ff';
   outlined('🛒 Mercadora da Torre', x, y - 26);
+  drawNPC(towerPCOf(dungeonAt(P.x)), ox, oy);
 }
 
 /* ---------- Enigmas das masmorras ----------

@@ -1972,7 +1972,8 @@ function drawHUD(ox, oy) {
     ctx.textAlign = 'center'; ctx.font = 'bold 36px Tiny5, sans-serif'; ctx.lineWidth = 5; ctx.fillStyle = dg ? THEMES[dg.theme].accent : '#fef3c7';
     outlined(name, W / 2, H * 0.28);
     const z = dg ? dg.zone : zoneAt(cx, cy);
-    if (z > 0 && P) {
+    if (dg && dg.floor) { ctx.font = 'bold 16px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 4; ctx.fillStyle = '#e5e7eb'; outlined(`Andar ${dg.floor} · Pokémon Nv ${29 + dg.floor}`, W / 2, H * 0.28 + 26); }
+    else if (z > 0 && P) {
       const Z = ZONES[Math.min(z, 5)], rec = Z.lvl, top = Z.lvlMax || 30, low = P.lvl < rec - 1, high = P.lvl > top + 1;
       ctx.font = 'bold 16px Barlow Semi Condensed, system-ui'; ctx.lineWidth = 4; ctx.fillStyle = low ? '#fca5a5' : high ? '#9ca3af' : '#e5e7eb';
       outlined(low ? `⚠ Perigoso para o seu nível (recomendado ${rec}–${top})` : high ? `Fácil para o seu nível (recomendado ${rec}–${top})` : `Nível recomendado ${rec}–${top}`, W / 2, H * 0.28 + 26);
