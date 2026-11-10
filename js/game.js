@@ -1927,7 +1927,7 @@ function drawHUD(ox, oy) {
     ctx.fillStyle = gr; ctx.fillRect(0, 0, 560, bh); }
   ctx.textAlign = 'left'; ctx.font = 'bold 14px Barlow Semi Condensed, system-ui'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
   let hy = 22;
-  if (dg && dg.floor) { outlined(`🗼 Torre Infinita · Andar ${dg.floor}`, 12, hy); if (dg.mods.length) { hy += 18; ctx.fillStyle = '#c4b5fd'; outlined(dg.mods.map(m => TOWER_MODS[m]).join(' · '), 12, hy); ctx.fillStyle = '#fff'; } }
+  if (dg && dg.floor) { outlined(`🗼 Torre Infinita · Andar ${dg.floor}${dg.tsub && THEMES[dg.tsub] ? ' · ' + THEMES[dg.tsub].nome : ''}`, 12, hy); if (dg.mods.length) { hy += 18; ctx.fillStyle = '#c4b5fd'; outlined(dg.mods.map(m => TOWER_MODS[m]).join(' · '), 12, hy); ctx.fillStyle = '#fff'; } }
   else if (dg) {
     outlined(`${name} · Zona ${clamp(dg.zone, 1, 5)}/5 · ${dgLevelTxt(dg)}`, 12, hy);
     ctx.font = 'bold 12px Barlow Semi Condensed, system-ui';

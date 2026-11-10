@@ -53,6 +53,7 @@ function shapeRoom(grid, x, y, w, h, shape) {
   else if (shape === 'poco') { const pw = Math.max(2, Math.floor(w / 5)), ph = Math.max(2, Math.floor(h / 5)), px = x + Math.floor(w / 2 - pw / 2), py = y + Math.floor(h / 2 - ph / 2) - ph - 1; for (let j = py; j < py + ph; j++) for (let i = px; i < px + pw; i++) off(i, j); for (let j = py + 2 * ph + 2; j < py + 3 * ph + 2; j++) for (let i = px; i < px + pw; i++) off(i, j); }
 }
 // terreno perigoso conforme o tema: lava queima, ácido envenena, gelo e espinhos só machucam
+const TOWER_SUBS = ['fire', 'water', 'grass', 'electric', 'ghost', 'psychic', 'ice', 'mine', 'dragon'];
 const DG_HAZARD = { fire: 'lava', ghost: 'acido', ice: 'gelo', water: 'acido', psychic: 'espinhos', electric: 'espinhos', mine: 'espinhos', grass: 'acido', dragon: 'lava' };
 const HAZ = {
   lava: { c1: '#9a3412', c2: '#f97316', st: 3, nome: 'lava' }, acido: { c1: '#3f6212', c2: '#a3e635', st: 4, nome: 'ácido' },
@@ -82,16 +83,19 @@ function genDungeon(id, theme, seed, zone, floor = 0) {
     for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (i > 0 && j > 0 && i < DG_W - 1 && j < DG_H - 1) grid[j * DG_W + i] = 1;
   };
   let cx = 3;
-  const gs = gymStage(theme), kinds = floor ? ['start', floor % 5 ? 'fight' : 'boss'] : ['start', ...Array(gs ? gymFights(gs) : 2 + Math.floor(R() * 3)).fill('fight'), 'boss'];
+  // torre: cada andar copia o formato de uma masmorra comum (mantém as cores escuras da torre); 2 a 3 salas de luta
+  // e, nos andares de guardião (a cada 5), a sala do chefe no fim
+  const tsub = floor ? pick2(R, TOWER_SUBS) : '';
+  const gs = gymStage(theme), kinds = floor ? ['start', ...Array(2 + Math.floor(R() * 2)).fill('fight'), floor % 5 ? 'fight' : 'boss'] : ['start', ...Array(gs ? gymFights(gs) : 2 + Math.floor(R() * 3)).fill('fight'), 'boss'];
   // modificador da masmorra comum (sai da semente: igual para todos)
   const mod = !gs && !floor && zone >= 2 && R() < 0.6 ? pick2(R, ['escuro', 'frenesi', 'infestada', 'rica']) : '';
   // torre: 1 modificador por andar (2 a partir do 15)
   const mods = [];
   if (floor) { const all = Object.keys(TOWER_MODS); while (mods.length < (floor >= 15 ? 2 : 1)) { const m = pick2(R, all); if (!mods.includes(m)) mods.push(m); } }
-  const hz = DG_HAZARD[theme] || 'espinhos';
+  const hz = DG_HAZARD[tsub || theme] || 'espinhos';
   for (const kind of kinds) {
-    const w = kind === 'start' ? 10 : floor ? 30 : kind === 'boss' ? 24 : gs ? 16 + Math.floor(R() * 4) : 14 + Math.floor(R() * 6);
-    const h = kind === 'start' ? 10 : floor ? 24 : kind === 'boss' ? 22 : gs ? 15 + Math.floor(R() * 5) : 12 + Math.floor(R() * 6);
+    const w = kind === 'start' ? 10 : kind === 'boss' ? 24 : gs ? 16 + Math.floor(R() * 4) : 14 + Math.floor(R() * 6);
+    const h = kind === 'start' ? 10 : kind === 'boss' ? 22 : gs ? 15 + Math.floor(R() * 5) : 12 + Math.floor(R() * 6);
     const y = clamp(Math.floor(DG_H / 2 - h / 2 + (R() - 0.5) * 16), 2, DG_H - h - 2);
     const shape = kind === 'fight' ? pick2(R, ['ret', 'ret', 'oval', 'cruz', 'poco']) : kind === 'boss' ? pick2(R, ['ret', 'oval']) : 'ret';
     rooms.push({ x: cx, y, w, h, kind, state: 0, shape });
@@ -109,7 +113,7 @@ function genDungeon(id, theme, seed, zone, floor = 0) {
   // salas de tesouro: ramos acima ou abaixo de algumas salas de luta, com um baú
   const side = [], chests = [];
   const fights = rooms.filter(r => r.kind === 'fight');
-  const nSide = gs || floor ? 0 : (mod === 'rica' ? 2 : R() < 0.6 ? 1 : 0);
+  const nSide = gs ? 0 : (mod === 'rica' ? 2 : R() < (floor ? 0.45 : 0.6) ? 1 : 0);
   for (let k = 0; k < nSide && fights.length; k++) {
     const r = fights[Math.floor(R() * fights.length)], up = R() < 0.5;
     const w = 9, h = 7, sx = (r.x + r.w / 2 - w / 2) | 0, sy = up ? r.y - h - 6 : r.y + r.h + 6;
@@ -130,7 +134,7 @@ function genDungeon(id, theme, seed, zone, floor = 0) {
       if (q < 0.75 + R() * 0.5 && grid[j * DG_W + i] === 1) grid[j * DG_W + i] = 2;
     }
   };
-  if (!gs && !floor) for (const r of fights) {
+  if (!gs) for (const r of fights) {
     if (!acid && R() < 0.45) continue;
     const n = acid ? 4 + Math.floor(R() * 4) : 2 + Math.floor(R() * 3);
     for (let k = 0; k < n; k++) {
@@ -142,7 +146,7 @@ function genDungeon(id, theme, seed, zone, floor = 0) {
     }
   }
   // sala do chefe: poças nas laterais limitam por onde dá para desviar; o centro (onde ele começa) e a entrada ficam livres
-  if (!gs && !floor) {
+  if (!gs) {
     const b = rooms[rooms.length - 1], bcx = b.x + b.w / 2, bcy = b.y + b.h / 2;
     let made = 0;
     for (let k = 0; k < 40 && made < (acid ? 6 : 4); k++) {
@@ -164,7 +168,7 @@ function genDungeon(id, theme, seed, zone, floor = 0) {
   }
   // enigma: uma sala de luta tem a saída selada; placas de pressão ou runas em ordem abrem a porta e revelam um baú
   let pz = null;
-  if (!gs && !floor && fights.length && R() < 0.65) {
+  if (!gs && fights.length > 1 && R() < (floor ? 0.4 : 0.65)) {
     const r = fights[Math.floor(R() * fights.length)], kind = R() < 0.5 ? 'placas' : 'runas', n = kind === 'placas' ? 3 : 4;
     const ay = (r.y + r.h / 2) | 0, door = [];
     for (let i = r.x + r.w; i <= r.x + r.w + 1; i++) for (let j = ay - 3; j <= ay + 2; j++) if (grid[j * DG_W + i] === 1) { grid[j * DG_W + i] = 3; door.push(j * DG_W + i); }
@@ -180,7 +184,7 @@ function genDungeon(id, theme, seed, zone, floor = 0) {
       chests.push({ x: DG_BASE + id * DG_SPACING + (r.x + r.w / 2) * TILE, y: (r.y + r.h / 2) * TILE, i: chests.length, pz: 1 });
     } else for (const c of door) grid[c] = 1;
   }
-  return { id, theme, seed, zone, grid, rooms, side, chests, mod, hz, floor, mods, pz, wx: mods.includes('chuva') ? 'chuva' : mods.includes('areia') ? 'areia' : '', ox: DG_BASE + id * DG_SPACING, oy: 0, done: false, doneT: 0, emptyT: 0, ent: { x: 0, y: 0 }, bossId: 0, mini: null };
+  return { id, theme, seed, zone, grid, rooms, side, chests, mod, hz, floor, mods, pz, tsub, wx: mods.includes('chuva') ? 'chuva' : mods.includes('areia') ? 'areia' : '', ox: DG_BASE + id * DG_SPACING, oy: 0, done: false, doneT: 0, emptyT: 0, ent: { x: 0, y: 0 }, bossId: 0, mini: null };
 }
 
 function walkable(x, y) {
@@ -235,10 +239,10 @@ function spawnRoomInner(dg, r) {
   const th = THEMES[dg.theme];
   const pool = th.pool.filter(id => POKE[id]);
   const fallback = ZONE_POOLS[clamp(dg.zone, 1, 5)];
-  if (dg.floor) return towerRoom(dg, r, pool.length ? pool : fallback);
+  if (dg.floor && r.kind !== 'tesouro') return towerRoom(dg, r, pool.length ? pool : fallback);
   if (r.kind === 'tesouro') {
     // às vezes um Alfa guarda o baú
-    if (Math.random() < 0.5) { const c = roomCenter(dg, r); const e = hostSpawn(pick(pool.length ? pool : fallback), dg.zone, 1, c.x, c.y - 40); e.dg = dg.id; e.cd = rand(1, 2); }
+    if (Math.random() < 0.5) { const c = roomCenter(dg, r); const e = hostSpawn(pick(pool.length ? pool : fallback), dg.zone, 1, c.x, c.y - 40); e.dg = dg.id; e.cd = rand(1, 2); if (dg.floor) towerScale(e, dg.floor); }
     return;
   }
   if (r.kind === 'boss') {
@@ -547,14 +551,16 @@ function hazardTick(dt) {
 }
 
 /* ============ Torre Infinita (mapa à parte; liberada depois da história) ============
- * Cada andar é uma arena; ao limpar, abre a escada para o próximo. Cada andar é 8% mais forte.
+ * Cada andar é uma masmorra no formato de um dos modelos (vulcão, gruta, mina...), com as cores da torre; ao limpar
+ * todas as salas, abre a escada para o próximo. Cada andar é 8% mais forte.
  * A cada 5 andares, um chefe (lendário a partir do 20). Morrer aqui não apaga o personagem.
  */
 const towerBest = P => ((P.towerR || {})[REGION_ID] || 0);
 const towerCk = P => ((P.towerCk || {})[REGION_ID] || 0);
 function towerRoom(dg, r, pool) {
   const f = dg.floor, c = roomCenter(dg, r), mods = dg.mods || [];
-  let src = pool;
+  const sub = dg.tsub && THEMES[dg.tsub] ? THEMES[dg.tsub].pool.filter(id => POKE[id]) : [];
+  let src = sub.length >= 3 ? [...sub, ...sub, ...pool] : pool;
   if (mods.includes('tipo')) { const t = pick(src.map(id => POKE[id] && POKE[id].types[0]).filter(Boolean)); const f2 = src.filter(id => POKE[id] && POKE[id].types.includes(t)); if (f2.length) src = f2; }
   const tune = (e, boss) => {
     e.dg = dg.id;
@@ -570,7 +576,7 @@ function towerRoom(dg, r, pool) {
     emitEvent({ t: 'toast', text: `🗼 Andar ${f}: ${b.p.name} guarda a passagem!`, color: '#a78bfa', big: 1 });
   }
   const swarm = mods.includes('enxame');
-  const n = Math.round(Math.min(12, 5 + Math.floor(f / 3)) * (swarm ? 1.6 : 1) * (r.kind === 'boss' ? 0.5 : 1));
+  const n = Math.round(Math.min(8, 3 + Math.floor(f / 4)) * (swarm ? 1.6 : 1) * (r.kind === 'boss' ? 0.6 : 1));
   for (let i = 0; i < n; i++) {
     const p = roomPos(dg, r);
     const e = hostSpawn(pick(src), 5, mods.includes('alfas') ? 1 : Math.random() < 0.08 ? 1 : 0, p.x, p.y);
@@ -608,7 +614,7 @@ function towerEnter(P, dg) {
   P.towerR = P.towerR || {};
   const best = towerBest(P);
   const names = (dg.mods || []).map(m => TOWER_MODS[m]).join(' · ');
-  G.toasts.push({ text: `🗼 Andar ${dg.floor}${names ? ' · ' + names : ''}`, color: '#c4b5fd', t: 5, big: 1 });
+  G.toasts.push({ text: `🗼 Andar ${dg.floor}${dg.tsub ? ' · ' + THEMES[dg.tsub].nome : ''}${names ? ' · ' + names : ''}`, color: '#c4b5fd', t: 5, big: 1 });
   if (dg.floor > best) {
     P.towerR[REGION_ID] = dg.floor;
     if (best && dg.floor % 5 === 0) emitEvent({ t: 'chat', sys: 1, text: `🏆 ${P.name} chegou ao andar ${dg.floor} da Torre Infinita!` });
