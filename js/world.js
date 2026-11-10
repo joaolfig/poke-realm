@@ -127,9 +127,9 @@ function bagUpgrade(P) {
 const REFORGE_BASE = [300, 540, 780, 846, 912, 978, 1044];
 const reforgeCost = it => Math.round(REFORGE_BASE[clamp(it.tier, 0, 6)] * (it.myth ? 5 / 3 : 1) * (it.slot === 'anel' || it.slot === 'amuleto' ? 1.3 : 1));
 const sellPrice = it => (it.starter ? 25 : 0) + 8 + it.tier * 12 + (it.upg || 0) * 10 + (it.myth ? 150 + it.myth * 10 : 0);
-// vila: +4 · 2ª cidade: +6 (+8 depois da história) · loja da torre: +12
-const upgMax = (P, town = npcTown()) => (town === 2 ? 12 : town === 1 || !TOWNS[1] ? (storyOver(P) ? 8 : 6) : 4);
-const upgCost = it => Math.round(60 * ((it.upg || 0) + 1) * (1 + it.tier * 0.5));
+// vila: +4 · 2ª cidade: +6 (+8 depois da história) · forja da torre: sem limite (acima de +12 o preço sobe 12% a cada nível)
+const upgMax = (P, town = npcTown()) => (town === 2 ? Infinity : town === 1 || !TOWNS[1] ? (storyOver(P) ? 8 : 6) : 4);
+const upgCost = it => Math.round(60 * ((it.upg || 0) + 1) * (1 + it.tier * 0.5) * Math.pow(1.12, Math.max(0, (it.upg || 0) - 11)));
 
 // vender (loja da cidade e Mercadora da Torre)
 function renderSell(P) {
@@ -246,6 +246,7 @@ $('npc').addEventListener('click', ev => {
   else if (act === 'story') storyAct(P, arg);
   else if (act === 'dex') dexClaim(P, +arg);
   else if (act === 'torre') { towerRequest(+arg); closeNPC(); }
+  else if (act === 'tpc') { const n = G.npcRef; closeNPC(); openPC(n); return; }
   else if (act === 'pc') { const [a2, i2] = arg.split(':'); pcAct(P, a2, +i2); }
   else if (act === 'dexopen') { closeNPC(); toggleDex(); }
   else if (act === 'fly') { flyTo(P, arg); return; }

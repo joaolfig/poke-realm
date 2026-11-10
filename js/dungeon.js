@@ -667,12 +667,13 @@ function towerShopList(P) {
 function renderTowerShop(P) {
   const cap = upgMax(P, 2);
   return `<p class="fala">"Subiu até aqui? Então merece o melhor que eu tenho. Só aqui na torre eu passo dos limites das forjas lá de baixo."</p>
-    <h4>Forja da Torre (até +${cap})</h4>
+    <h4>Forja da Torre (sem limite)</h4>
     ${['arma', 'armadura'].map(s => { const it = P.equip[s], c = upgCost(it), maxed = (it.upg || 0) >= cap;
       return `<div class="shoprow"><span>${itemIcon(it)} ${esc(it.name)}${it.upg ? ' +' + it.upg : ''}</span><button data-act="upg:${s}" ${maxed || P.gold < c ? 'disabled' : ''}>${maxed ? 'Máximo' : `Aprimorar (${c} 🪙)`}</button></div>`; }).join('')}
     <h4>Suprimentos</h4>
     ${towerShopList(P).map(s => `<div class="shoprow"><span>${s.icon} ${s.nome}</span><button data-act="buy:${s.id}" ${P.gold < s.preco ? 'disabled' : ''}>${s.preco} 🪙</button></div>`).join('')}
-    <div class="small">Você tem ${P.gold} 🪙.</div>`;
+    <div class="small">Você tem ${P.gold} 🪙.</div>
+    <h4>PC</h4><div class="shoprow"><span>💻 Trocar Pokémon da equipe com o PC</span><button data-act="tpc">Abrir o PC</button></div>`;
 }
 function drawTowerShop(ox, oy) {
   const P = G.P, n = P && towerShopOf(dungeonAt(P.x));
