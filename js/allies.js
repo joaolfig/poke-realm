@@ -168,7 +168,8 @@ function petGainXP(n) {
   const k = hasT(P, 'mentor') ? 1.5 : 1; // cada Pokémon fora ganha o XP inteiro (não divide entre eles)
   for (const a of act) {
     const pt = P.pets[a.slot];
-    if (!pt || pt.lvl >= PET_MAX) continue;
+    if (!pt) continue;
+    if (pt.lvl >= PET_MAX) { checkEvolve(pt); continue; } // no nível máximo (ou acima, os da torre) não ganha XP, mas ainda evolui
     pt.xp += Math.round(n * k);
     let up = false;
     while (pt.lvl < PET_MAX && pt.xp >= petNeed(pt.lvl)) { pt.xp -= petNeed(pt.lvl); pt.lvl++; up = true; }
