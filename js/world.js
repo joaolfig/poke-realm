@@ -455,7 +455,7 @@ function genQuests(P, g = 'guilda') {
     q.desc = `<span class="qtier t${idx}">${T.n}</span> ${q.desc}<div class="small"><i>${who}: "${why}."</i></div>`;
     // dupla: dá mais trabalho e rende 30% a mais de XP que o contrato individual equivalente (o ouro é o mesmo)
     q.xpk = (0.1 + 0.06 * diff) * T.r * (k.startsWith('duo') ? 1.3 : 1);
-    q.xp = Math.round(xpNeed(P.lvl) * q.xpk);
+    q.xp = Math.round(xpNeed(P.lvl) * q.xpk * overLvl(P, z)); // contrato numa zona abaixo do seu nível (ex.: travado por HM) rende menos
     if (k.startsWith('duo')) q.gid = `${NET.myId || 'eu'}_${Date.now()}_${g}`;
     q.gold = Math.round((30 + z * 25) * diff * T.r);
     q.bonus = idx === 2 ? (Math.random() < 0.5 ? 'statpot' : 'item') : idx === 1 ? pick(['stone', 'item', 'ball']) : pick(['ball', 'stone', null]);
