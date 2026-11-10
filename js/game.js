@@ -413,7 +413,9 @@ function enemyStats(pid, zone, kind) {
   if (!PAT[type]) type = 'normal';
   // a força cresce mais rápido que linear com a zona, acompanhando o poder do herói do nível 1 ao 30
   // (só a zona 1 fica como antes). Lendários são feitos para 2 heróis de nível 30.
-  const zh = [1, 1, 3, 5.6, 8.8, 12.8][clamp(Math.round(zone), 1, 5)]; // vida por zona (testado com simulação de combate)
+  // os Pokémon comuns da zona 5 têm menos vida que os chefes (bullet hell: morrem em ~3-5 s, quem fica parado é que morre;
+  // com 12,8 levavam 4,4-8 s por abate na simulação). Chefes e lendários seguem a tabela antiga
+  const zh = (legend || dboss ? [1, 1, 3, 5.6, 8.8, 12.8] : [1, 1, 3, 5.6, 8.8, 9.6])[clamp(Math.round(zone), 1, 5)]; // vida por zona (testado com simulação de combate)
   const nd = Math.max(1, Math.round(zone * 1.75 - 0.9));    // dados de dano: 1 · 3 · 4 · 6 · 8
   return {
     p, pid, zone, kind, boss: kind === 2 || kind === 3, legend, alfa, rare, type, color: TYPE_COLORS[type] || '#fff',
