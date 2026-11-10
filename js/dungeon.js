@@ -66,7 +66,7 @@ const TOWER_MODS = {
 // força dos inimigos da torre: +8% por andar acima do 1º (vida e dano); o nível sobe junto (andar 1 = Nv 30, andar 11 = Nv 40...)
 function towerScale(e, f) {
   if (!f) return;
-  e.lvl = Math.min(100, 29 + f + (e.alfa ? 2 : 0));
+  e.lvl = 29 + f + (e.alfa ? 2 : 0);
   if (f <= 1) return;
   const k = Math.pow(1.08, f - 1);
   e.maxHp = Math.round(e.maxHp * k); e.hp = e.maxHp;
