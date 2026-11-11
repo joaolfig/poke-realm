@@ -2801,7 +2801,9 @@ const linBuffs = P => {
  */
 // no começo do jogo o que importa são as balas: golpes de assinatura fracos, raros e com aviso longo;
 // no fim eles ficam fortes e frequentes. Todo aviso dura pelo menos ~1 s (sempre dá para sair).
-const sigPct = e => (e.legend ? 0.3 : 0.06 + 0.036 * clamp(e.zone, 1, 5)); // fração da vida máxima: ~10% (zona 1) a 24% (zona 5)
+// fração da vida máxima por golpe de assinatura: ~17% (zona 1) a ~35% (zona 5), lendários 40%; na torre +0,6% por andar.
+// O aviso no chão dá tempo de sair: quem desvia não leva nada, quem fica parado sente (antes 10-24%: dava para ignorar)
+const sigPct = e => { const tf = inDungeonArea(e.x) && dungeonAt(e.x), f = tf && tf.floor ? tf.floor : 0; return Math.min(0.6, (e.legend ? 0.4 : 0.12 + 0.045 * clamp(e.zone, 1, 5)) + f * 0.006); };
 const sigEvery = e => (e.legend ? 5 : 10.5 - 1.1 * clamp(e.zone, 1, 5)); // a cada ~9,4 s (zona 1) a ~5 s (zona 5)
 const sigWarn = e => Math.max(1, 1.45 - 0.1 * clamp(e.zone, 1, 5)); // aviso mais longo no começo
 const near2 = (t, r) => { const a = Math.random() * 6.28, d = Math.random() * r; return [t.x + Math.cos(a) * d, t.y + Math.sin(a) * d]; };
