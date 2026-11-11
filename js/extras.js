@@ -172,3 +172,54 @@ if (TESTE) {
   }, 500);
 }
 
+
+/* Teste de chefes: ?teste=chefe&g=1..8 (ginásio), g=final ou g=lenda. Você entra direto na sala do líder com o nível e o
+ * equipamento esperados para aquele capítulo (classe do herói escolhido) e 5 poções. Não salva e morrer NÃO apaga o save:
+ * você volta na entrada da sala e a morte é contada. Recarregue a página para tentar de novo. */
+const TESTE_CHEFE = /[?&]teste=chefe/.test(location.search) ? ((location.search.match(/[?&]g=(\d|final|lenda)/) || [])[1] || '8') : null;
+if (TESTE_CHEFE) {
+  const iv = setInterval(async () => {
+    if (!G || !G.P || state !== 'play') return;
+    clearInterval(iv);
+    saveGame = () => {};
+    const P = G.P, lenda = TESTE_CHEFE === 'lenda', gs = lenda ? 9 : TESTE_CHEFE === 'final' ? 9 : clamp(+TESTE_CHEFE, 1, 8);
+    const lvl = lenda ? 30 : GYM_LVL[gs - 1], z = lenda ? 5 : GYM_ZONE[gs - 1], cls = P.cls;
+    P.lvl = lvl; P.subclass = lvl >= SUB_LVL ? (P.subclass || SUBCLASSES[cls][0].id) : null;
+    const c0 = CLASSES[cls].attrs; let pts = lvl + 2;
+    P.attrs = { ...c0 }; const prim = Object.entries(c0).sort((a, b) => b[1] - a[1])[0][0];
+    while (pts > 0 && P.attrs[prim] < ATTR_SOFT) { P.attrs[prim]++; pts--; }
+    for (const k of ATTRS) while (pts > 0 && P.attrs[k] < ATTR_SOFT) { P.attrs[k]++; pts--; if (pts % 2 === 0) break; }
+    P.points = 0;
+    const tier = clamp(Math.round((z - 1) * 1.25), 0, 6), upg = Math.min(8, Math.floor(lvl / 4));
+    P.talents = ['atirador', 'adepto', 'regeneracao', 'foco', 'mobilidade', 'vampirico', 'equipe'].filter(t => TALENTS[t]).slice(0, Math.floor(lvl / 4)); P.talentPending = 0; P.talentOffer = null;
+    P.equip.arma = { slot: 'arma', tier, cls, dice: [WDICE[tier][0], WDICE[tier][1] + CLASSES[cls].dieAdj], bonus: WBONUS[tier] + upg, upg, mods: {}, name: `${CLASSES[cls].weapons[tier]} de teste` };
+    P.equip.armadura = { slot: 'armadura', tier, ac: tier + 1 + upg, upg, mods: {}, name: `${ARMORS[tier]} de teste` };
+    P.equip.anel = null; P.equip.amuleto = null; P.pots.hp = 5;
+    const pid = 19; await loadPokedex([pid]);
+    P.pets = [{ pid, name: POKE[pid].name, type: 'normal', lvl, xp: 0, hms: [] }]; P.petAct = [0]; P.petIdx = 0;
+    let mortes = 0, t0 = G.time, entrada = null;
+    playerDie = () => { mortes++; P.hp = maxHP(P); P.dodgeT = 2; if (entrada) { P.x = entrada.x; P.y = entrada.y; } G.toasts.push({ text: `💀 Morte nº ${mortes} (no teste você volta para a entrada)`, color: '#fca5a5', t: 3, big: 1 }); };
+    let boss = null;
+    if (lenda) {
+      const [x, y] = randomZonePoint(3); P.x = x; P.y = y; syncPet();
+      const lid = pick(BOSSES.filter(id => POKE[id])) || BOSSES[0]; await loadPokedex([lid]);
+      boss = hostSpawn(lid, 5, 2, P.x + 380, P.y); entrada = { x: P.x, y: P.y };
+    } else {
+      G.dungeons.clear(); G.portals = [];
+      const dg = createDungeon(P.x, P.y, null, z, { theme: gs === 9 ? 'final' : 'gym' + gs, force: true, quiet: true });
+      usePortal(P, G.portals[G.portals.length - 1]);
+      const br = dg.rooms[dg.rooms.length - 1], c = roomCenter(dg, br);
+      for (const r of dg.rooms) if (r !== br) r.state = 2;
+      P.x = c.x - br.w * TILE / 2 + 70; P.y = c.y; entrada = { x: P.x, y: P.y }; syncPet();
+      const w = setInterval(() => { if (dg.bossId && G.emap.get(dg.bossId)) { boss = G.emap.get(dg.bossId); clearInterval(w); } }, 200);
+    }
+    P.hp = maxHP(P); G.dirty = true;
+    const nome = lenda ? 'um lendário' : gs === 9 ? 'o confronto final' : `o ginásio ${gs}`;
+    G.toasts.push({ text: `🧪 Teste de chefe: ${nome} · ${CLASSES[cls].nome} Nv ${lvl} com equipamento da zona ${z} e 5 poções. Não salva; morrer não apaga nada (você volta e a morte é contada).`, color: '#d8b4fe', t: 10, big: 1 });
+    const fim = setInterval(() => {
+      if (!boss || !(boss.dead || boss.hp <= 0)) return;
+      clearInterval(fim);
+      G.toasts.push({ text: `🏁 Venceu ${nome} em ${Math.round(G.time - t0)}s com ${mortes} morte(s) e ${5 - P.pots.hp} poção(ões). Recarregue a página para repetir.`, color: '#86efac', t: 30, big: 1 });
+    }, 300);
+  }, 500);
+}
