@@ -853,10 +853,10 @@ function playerShoot() {
 function typed(P, e, dmg, atkType, pet) {
   let eff = typeEff(atkType, e.p.types);
   if (!pet) { const w = weatherAt(e.x, e.y), b = wxBoost(e.x, e.y, atkType); if (w && b < 1) dmg *= (M(P, 'wx' + w.k) > 0 ? 1 / b : 1 + (1 / b - 1) * Math.min(1, M(P, 'wxcapa'))); }
-  // tipos pesam um pouco menos (o jogo todo ficava sensível demais a eles): super efetivo ×1,75 (duplo ×3,25);
-  // pouco efetivo ½ → 0,725 (¼ → ~0,59), para nenhum ginásio ficar impossível só pelo tipo. Imunidade segue igual
-  if (eff > 1) eff = 1 + (eff - 1) * 0.75;
-  if (eff > 0 && eff < 1) eff = 1 - (1 - eff) * 0.55;
+  // tipos pesam menos (o jogo todo ficava sensível demais a eles): super efetivo ×1,45 (duplo ×2,35);
+  // pouco efetivo ½ → 0,82 (¼ → ~0,73), para nenhum ginásio ficar impossível só pelo tipo. Imunidade segue igual
+  if (eff > 1) eff = 1 + (eff - 1) * 0.45;
+  if (eff > 0 && eff < 1) eff = 1 - (1 - eff) * 0.36;
   if (!pet && eff > 0 && eff < 1 && hasT(P, 'persistencia')) eff = 1 - (1 - eff) / 2;
   // imune: o herói ainda causa 15% (antes 0: um herói Elétrico não conseguia matar Pokémon de Terra e ficava preso); Quebra-Imunidade 40%
   if (!pet && eff === 0) eff = hasT(P, 'quebra') ? 0.4 : 0.15;
@@ -1140,8 +1140,8 @@ function enemyAttack(b) {
   const graze = !crit && r + b.atk < AC(P);
   let eff = typeEff(b.type, [pType(P)]);
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
-  if (eff > 1) eff = 1 + (eff - 1) * 0.5; // super efetivo no herói: ×1,5 (duplo ×2,5), para o tipo não decidir sozinho quem sobrevive
-  if (eff > 0 && eff < 1) eff = 1 - (1 - eff) * 0.75; // pouco efetivo no herói: ½ → 0,625
+  if (eff > 1) eff = 1 + (eff - 1) * 0.3; // super efetivo no herói: ×1,3 (duplo ×1,9), para o tipo não decidir sozinho quem sobrevive
+  if (eff > 0 && eff < 1) eff = 1 - (1 - eff) * 0.46; // pouco efetivo no herói: ½ → 0,77 (¼ → ~0,66)
   { const gd = inDungeonArea(P.x) && dungeonAt(P.x); eff *= (gd && gymStage(gd.theme) ? ZONE_DMG_GYM : ZONE_DMG)[b.zone || 1]; } // ginásios: sem os +25% (os especiais dos líderes já pesam)
   if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type) || (P.lin && LIN[P.lin].resist.includes(b.type))) eff *= 0.5;
   eff *= linTaken(P, b.type); // linhagem
@@ -2132,11 +2132,11 @@ function typeMatchHTML(t) {
   const all = Object.keys(TYPE_CHART), by = k => all.filter(x => TYPE_CHART[x][k].includes(t));
   const L = l => l.map(typeBadge).join(' ');
   const row = (ic, mult, l, tip) => (l.length ? `<div class="tmr" title="${tip}"><b>${ic} ${mult}</b> ${L(l)}</div>` : '');
-  const atk = row('💥', 'Mais dano em', C.s, 'Seus ataques causam +75% de dano nesses tipos')
-    + row('🔻', 'Menos dano em', C.w, 'Seus ataques causam cerca de 27% menos dano nesses tipos')
+  const atk = row('💥', 'Mais dano em', C.s, 'Seus ataques causam +45% de dano nesses tipos')
+    + row('🔻', 'Menos dano em', C.w, 'Seus ataques causam cerca de 18% menos dano nesses tipos')
     + row('🚫', 'Nada em', C.i, 'Seus ataques NÃO causam dano nesses tipos');
-  const def = row('💔', 'Mais dano em', by('s'), 'Ataques desses tipos causam +50% de dano em você')
-    + row('🛡', 'Menos dano em', by('w'), 'Ataques desses tipos causam cerca de 37% menos dano em você')
+  const def = row('💔', 'Mais dano em', by('s'), 'Ataques desses tipos causam +30% de dano em você')
+    + row('🛡', 'Menos dano em', by('w'), 'Ataques desses tipos causam cerca de 23% menos dano em você')
     + row('✨', 'Nada em', by('i'), 'Ataques desses tipos NÃO causam dano em você');
   return `<div class="tmatch"><div class="tmg"><div class="tmh">⚔ Seus ataques ${typeBadge(t)} causam</div>${atk || '<div class="tmr"><i>dano normal em todos</i></div>'}</div>`
     + `<div class="tmg"><div class="tmh">🛡 Ataques em você causam</div>${def || '<div class="tmr"><i>dano normal de todos</i></div>'}</div></div>`;
@@ -2855,7 +2855,7 @@ function teleHits(o, x, y) {
 function teleDamage(o, P) {
   let eff = typeEff(o.ty, [pType(P)]);
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return false; }
-  eff = eff > 1 ? 1 + (eff - 1) * 0.5 : 1 - (1 - eff) * 0.75; // tipos pesam menos (igual aos tiros)
+  eff = eff > 1 ? 1 + (eff - 1) * 0.3 : 1 - (1 - eff) * 0.46; // tipos pesam menos (igual aos tiros)
   if (race(P).resist.includes(o.ty) || MA(P, 'resist').includes(o.ty) || (P.lin && LIN[P.lin].resist.includes(o.ty))) eff *= 0.5;
   eff *= linTaken(P, o.ty) * guardK(P) * (P.seloT > 0 ? 0.6 : 1) * (P.graceT > 0 ? 0.9 : 1) * (P.race === 'draconato' ? 0.9 : 1);
   let dmg = Math.max(1, Math.round(maxHP(P) * o.pct * Math.min(eff, 1.5) * rand(0.9, 1.1)));
