@@ -168,7 +168,7 @@ if (TESTE) {
     for (const a of G.allies) { a.x = P.x; a.y = P.y; }
     ids.slice(1).forEach((pid, i) => { for (let k = 0; k < (TESTE === 'zoroark' ? 2 : 1); k++) { const a = i * 0.9 + k * 0.25; hostSpawn(pid, 4, 0, P.x + Math.cos(a) * (340 + k * 60), P.y + Math.sin(a) * (340 + k * 60)); } });
     G.dirty = true;
-    G.toasts.push({ text: TESTE === 'zoroark' ? '🧪 Teste do Zoroark (o teste não salva; morrer apaga o save como no jogo normal): [Espaço] vira Zoroark; mire num Pokémon e aperte [Espaço] para se disfarçar dele (os iguais não te atacam por 4s); aperte de novo para soltar a Explosão Noturna.' : '🧪 Teste do Ditto (o teste não salva; morrer apaga o save como no jogo normal): [Espaço] vira Ditto; mire num Pokémon e aperte [Espaço] para virar ele; aperte de novo para usar o golpe dele.', color: '#d8b4fe', t: 12, big: 1 });
+    G.toasts.push({ text: TESTE === 'zoroark' ? '🧪 Teste do Zoroark (o teste não salva nem apaga o seu save): [Espaço] vira Zoroark; mire num Pokémon e aperte [Espaço] para se disfarçar dele (os iguais não te atacam por 4s); aperte de novo para soltar a Explosão Noturna.' : '🧪 Teste do Ditto (o teste não salva nem apaga o seu save): [Espaço] vira Ditto; mire num Pokémon e aperte [Espaço] para virar ele; aperte de novo para usar o golpe dele.', color: '#d8b4fe', t: 12, big: 1 });
   }, 500);
 }
 
@@ -177,6 +177,12 @@ if (TESTE) {
  * equipamento esperados para aquele capítulo (classe do herói escolhido) e 5 poções. Não salva e morrer NÃO apaga o save:
  * você volta na entrada da sala e a morte é contada. Recarregue a página para tentar de novo. */
 const TESTE_CHEFE = /[?&]teste=chefe/.test(location.search) ? ((location.search.match(/[?&]g=(\d|final|lenda)/) || [])[1] || '8') : null;
+// nos links de teste nada é gravado, desde o início (o jogo grava o herói novo ao começar: apagaria o save de verdade)
+// e morrer num teste não apaga o save de verdade
+if (TESTE || TESTE_CHEFE) addEventListener('load', () => {
+  saveGame = () => {};
+  try { const rm = localStorage.removeItem.bind(localStorage); localStorage.removeItem = k => { if (k !== SAVE_KEY) rm(k); }; } catch (e) { /* ignora */ }
+});
 if (TESTE_CHEFE) {
   const iv = setInterval(async () => {
     if (!G || !G.P || state !== 'play') return;
