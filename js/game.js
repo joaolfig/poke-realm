@@ -1150,6 +1150,7 @@ function enemyAttack(b) {
   if (P.race === 'draconato') eff *= 0.9; // escamas
   if (P.graceT > 0) eff *= 0.9; // Graça Salvadora
   let dmg = Math.max(1, Math.round((roll(b.dice[0] * (crit ? 2 : 1), b.dice[1]) + b.dice[2]) * eff));
+  dmg = Math.min(dmg, Math.round(maxHP(P) * 0.4)); // um tiro sozinho nunca tira mais de 40% da vida: o que mata é acumular (no começo, um tiro de chefe matava de primeira)
   if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; P.sinceHit = 0; if (P.shield <= 0) shieldBreak(P); if (!dmg) { text(P.x, P.y - 34, 'Escudo!', '#93c5fd', 12); return; } }
   P.hp -= dmg; P.sinceHit = 0;
   if (b.stc && P.hp > 0 && PST_BY_TYPE[b.type] && Math.random() < PLAYER_ST_CH) playerStatus(P, stPick(PST_BY_TYPE[b.type]), b.type);
@@ -2821,7 +2822,7 @@ function bossSig(e, t) {
   const list = S.f(e, t, a), wk = sigWarn(e);
   for (const o of list) { o.d = +Math.max(0.95, o.d * wk).toFixed(2); o.fx = S.fx; }
   if (S.dash) e.dash = { a, wait: 0.75 * wk, t: 0.4, spd: 1300 };
-  emitEvent({ t: 'tele', l: list, nm: S.nome, bx: Math.round(e.x), by: Math.round(e.y), src: e.name, sid: e.id, ty: e.type, pct: +sigPct(e).toFixed(3), st: S.st || 0 });
+  emitEvent({ t: 'tele', l: list, nm: S.nome, bx: Math.round(e.x), by: Math.round(e.y), src: e.name, sid: e.id, ty: e.type, pct: +(sigPct(e) * (S.dash ? 1.4 : 1)).toFixed(3), st: S.st || 0 }); // investidas: o chefe vem junto, doem mais
 }
 // host: investida (o chefe espera o aviso encher e então dispara na linha)
 function bossDash(e, dt) {
