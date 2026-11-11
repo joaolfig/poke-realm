@@ -1138,6 +1138,7 @@ function enemyAttack(b) {
   let eff = typeEff(b.type, [pType(P)]);
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
   if (eff > 1) eff = 1 + (eff - 1) * 0.6; // super efetivo no herói: ×1,6 (duplo ×2,8), para o tipo não decidir sozinho quem sobrevive
+  const capK = Math.max(1, eff) * (crit ? 1.5 : 1); // vantagem de tipo e crítico passam do teto de 40%
   { const gd = inDungeonArea(P.x) && dungeonAt(P.x); eff *= (gd && gymStage(gd.theme) ? ZONE_DMG_GYM : ZONE_DMG)[b.zone || 1]; } // ginásios: sem os +25% (os especiais dos líderes já pesam)
   if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type) || (P.lin && LIN[P.lin].resist.includes(b.type))) eff *= 0.5;
   eff *= linTaken(P, b.type); // linhagem
@@ -1150,7 +1151,7 @@ function enemyAttack(b) {
   if (P.race === 'draconato') eff *= 0.9; // escamas
   if (P.graceT > 0) eff *= 0.9; // Graça Salvadora
   let dmg = Math.max(1, Math.round((roll(b.dice[0] * (crit ? 2 : 1), b.dice[1]) + b.dice[2]) * eff));
-  dmg = Math.min(dmg, Math.round(maxHP(P) * 0.4)); // um tiro sozinho nunca tira mais de 40% da vida: o que mata é acumular (no começo, um tiro de chefe matava de primeira)
+  dmg = Math.min(dmg, Math.round(maxHP(P) * 0.4 * capK)); // um tiro comum tira no máximo 40% da vida (no começo, um tiro de chefe matava de primeira); super efetivo (×1,6) e crítico (×1,5) passam disso
   if (P.shield > 0) { const ab = Math.min(P.shield, dmg); P.shield -= ab; dmg -= ab; P.sinceHit = 0; if (P.shield <= 0) shieldBreak(P); if (!dmg) { text(P.x, P.y - 34, 'Escudo!', '#93c5fd', 12); return; } }
   P.hp -= dmg; P.sinceHit = 0;
   if (b.stc && P.hp > 0 && PST_BY_TYPE[b.type] && Math.random() < PLAYER_ST_CH) playerStatus(P, stPick(PST_BY_TYPE[b.type]), b.type);
