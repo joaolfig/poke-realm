@@ -1138,7 +1138,7 @@ function enemyAttack(b) {
   let eff = typeEff(b.type, [pType(P)]);
   if (eff === 0) { text(P.x, P.y - 34, 'Imune!', '#93c5fd', 12); return; }
   if (eff > 1) eff = 1 + (eff - 1) * 0.6; // super efetivo no herói: ×1,6 (duplo ×2,8), para o tipo não decidir sozinho quem sobrevive
-  eff *= ZONE_DMG[b.zone || 1];
+  { const gd = inDungeonArea(P.x) && dungeonAt(P.x); eff *= (gd && gymStage(gd.theme) ? ZONE_DMG_GYM : ZONE_DMG)[b.zone || 1]; } // ginásios: sem os +25% (os especiais dos líderes já pesam)
   if (race(P).resist.includes(b.type) || MA(P, 'resist').includes(b.type) || (P.lin && LIN[P.lin].resist.includes(b.type))) eff *= 0.5;
   eff *= linTaken(P, b.type); // linhagem
   eff *= wxBoost(P.x, P.y, b.type); // clima
@@ -2959,6 +2959,7 @@ const grpN = () => 1 + 0.4 * (nPlayers() - 1);
 // dificuldade média do começo ao fim (medido com uma IA que desvia das balas): o começo era fácil demais
 // e o fim perigoso demais, então o dano dos tiros inimigos varia por zona
 // zonas 3 a 5 com +25%: desviando, morrer passa a ser raro mas possível. Zonas 1 e 2 ficam como estavam (já no ponto)
+const ZONE_DMG_GYM = [1, 2.0, 1.3, 0.95, 0.38, 0.3]; // dentro dos ginásios e do confronto final: os valores antigos
 const ZONE_DMG = [1, 2.0, 1.3, 1.19, 0.48, 0.38]; // calibrado para ~1/3 de chance de morrer por nível na simulação em cada zona (com o número de Pokémon por perto de cada zona)
 
 // Clérigo em grupo: cada outro jogador perto dele na hora da cura aumenta a cura em 10% (até +30%)
