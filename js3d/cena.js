@@ -175,52 +175,14 @@ sombraFake.rotation.x = -Math.PI / 2;
 sombraFake.position.y = 0.03;
 raiz.add(sombraFake);
 
-// ---------- criaturas originais ----------
-// cada espécie tem corpo próprio, tiro com cor própria e um padrão diferente de bullet-hell
+// ---------- padrões de tiro por tipo ----------
 const ESPECIES = {
   brasa: { nome: 'Brasa', hp: 60, vel: 3.4, bala: 0xff8a3d },  // leque mirado em você
   gota: { nome: 'Gota', hp: 80, vel: 2.4, bala: 0x6cc8ff },    // anel em volta dela
   broto: { nome: 'Broto', hp: 70, vel: 2.8, bala: 0xa6f06b },  // espiral girando
 };
-function montaCriatura(tipo) {
-  const g = new THREE.Group(), partes = {};
-  if (tipo === 'brasa') {
-    const c = peca(new THREE.SphereGeometry(0.8, 10, 8), mat(0xe2553a), 0, 0.85, 0, g);
-    c.scale.set(1, 0.85, 1.2);
-    peca(new THREE.SphereGeometry(0.45, 10, 8), mat(0xf6d9a8), 0, 0.7, 0.55, g).scale.set(1, 0.8, 0.6);
-    for (const s of [-1, 1]) {
-      peca(new THREE.ConeGeometry(0.18, 0.5, 4), mat(0xb83a26), s * 0.4, 1.55, 0.2, g).rotation.z = -s * 0.4;
-      peca(new THREE.SphereGeometry(0.1, 6, 6), mat(0x1a1a1a), s * 0.3, 1.05, 0.88, g);
-      peca(new THREE.CylinderGeometry(0.14, 0.18, 0.45, 6), mat(0xb83a26), s * 0.45, 0.22, 0.2, g);
-    }
-    partes.chama = peca(new THREE.ConeGeometry(0.35, 0.9, 6), mat(0xffb03b, { emissive: 0xff6a00, emissiveIntensity: 1 }), 0, 1.1, -1.1, g);
-    partes.chama.rotation.x = -0.6;
-  } else if (tipo === 'gota') {
-    const c = peca(new THREE.SphereGeometry(0.85, 12, 10), mat(0x3a8ee2, { transparent: true, opacity: 0.9, roughness: 0.3 }), 0, 0.85, 0, g);
-    partes.corpo = c;
-    peca(new THREE.ConeGeometry(0.5, 1, 8), mat(0x3a8ee2, { transparent: true, opacity: 0.9, roughness: 0.3 }), 0, 1.9, 0, g);
-    peca(new THREE.ConeGeometry(0.3, 0.7, 3), mat(0x1f5f9e), 0, 1.0, -0.85, g).rotation.x = -1.2;
-    for (const s of [-1, 1]) peca(new THREE.SphereGeometry(0.12, 6, 6), mat(0xffffff), s * 0.3, 1.05, 0.75, g);
-  } else {
-    const c = peca(new THREE.SphereGeometry(0.75, 10, 8), mat(0x4cb85a), 0, 0.8, 0, g);
-    c.scale.y = 0.9;
-    partes.folhas = new THREE.Group();
-    partes.folhas.position.y = 1.45;
-    g.add(partes.folhas);
-    for (const s of [-1, 1]) {
-      const f = peca(new THREE.SphereGeometry(0.4, 8, 6), mat(0x8fe06a), s * 0.35, 0.25, 0, partes.folhas);
-      f.scale.set(0.5, 0.15, 1.1);
-      f.rotation.z = s * 0.7;
-      peca(new THREE.SphereGeometry(0.1, 6, 6), mat(0x1a1a1a), s * 0.28, 0.95, 0.68, g);
-      peca(new THREE.CylinderGeometry(0.15, 0.2, 0.35, 6), mat(0x3a8a45), s * 0.4, 0.17, 0, g);
-    }
-    peca(new THREE.SphereGeometry(0.16, 8, 6), mat(0xf28cb1), 0, 1.4, 0, g);
-  }
-  return { g, partes };
-}
-
 // ---------- Pokémon 3D (modelos .glb da Pokemon-3D-api, com Draco e texturas WebP) ----------
-// cada padrão de tiro ganha Pokémon do tipo certo; se um modelo não carregar, entra a criatura original
+// cada padrão de tiro ganha Pokémon do tipo certo; só aparecem Pokémon cujo modelo carregou
 const POKES = {
   brasa: [[4, 'Charmander'], [37, 'Vulpix'], [58, 'Growlithe'], [77, 'Ponyta'], [155, 'Cyndaquil']],
   gota: [[7, 'Squirtle'], [54, 'Psyduck'], [60, 'Poliwag'], [116, 'Horsea'], [79, 'Slowpoke']],
@@ -250,7 +212,7 @@ function montaPokemon(id) {
   copia.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
   g.add(copia);
   // animações do próprio modelo, quando tem: parado e andando
-  const r = { g, partes: {} };
+  const r = { g };
   if (base.clipes.length) {
     r.mixer = new THREE.AnimationMixer(copia);
     const acha = re => base.clipes.find(c => re.test(c.name));
@@ -290,18 +252,20 @@ function etiqueta(pai, texto, y) {
 
 const inimigos = [];
 function novoInimigo() {
-  const tipo = ['brasa', 'gota', 'broto'][Math.floor(rand(0, 3))], esp = ESPECIES[tipo];
+  const tipos = Object.keys(POKES).filter(t => POKES[t].some(([id]) => MODELOS[id]));
+  if (!tipos.length) return;
+  const tipo = tipos[Math.floor(rand(0, tipos.length))], esp = ESPECIES[tipo];
   const opcoes = POKES[tipo].filter(([id]) => MODELOS[id]), poke = opcoes[Math.floor(rand(0, opcoes.length))];
   let x, z;
   do { x = rand(-60, 60); z = rand(-60, 60); } while (!livre(x, z, 1) || Math.hypot(x - heroi.pos.x, z - heroi.pos.z) < 25);
   const raizI = new THREE.Group();
   raizI.position.set(x, 0, z);
   scene.add(raizI);
-  const m = poke ? montaPokemon(poke[0]) : montaCriatura(tipo);
+  const m = montaPokemon(poke[0]);
   raizI.add(m.g);
-  const e = { tipo, esp, raiz: raizI, modelo: m.g, partes: m.partes, mixer: m.mixer, acoes: m.acoes, atual: m.atual, hp: esp.hp, max: esp.hp, cd: rand(1, 2), ang: 0, fase: 0, vagar: new THREE.Vector3(x, 0, z), flash: 0, t: rand(0, 6), lado: Math.random() < 0.5 ? 1 : -1 };
+  const e = { tipo, esp, raiz: raizI, modelo: m.g, mixer: m.mixer, acoes: m.acoes, atual: m.atual, hp: esp.hp, max: esp.hp, cd: rand(1, 2), ang: 0, fase: 0, vagar: new THREE.Vector3(x, 0, z), flash: 0, t: rand(0, 6), lado: Math.random() < 0.5 ? 1 : -1 };
   e.barra = barra(raizI, 2.6);
-  etiqueta(raizI, poke ? poke[1] : esp.nome, 3);
+  etiqueta(raizI, poke[1], 3);
   inimigos.push(e);
 }
 
@@ -323,7 +287,7 @@ carregando.then(res => {
   falhas.forEach(f => console.warn('modelo 3D não carregou:', f.reason));
   for (let i = 0; i < 9; i++) novoInimigo();
   criaCompanheiro();
-  aviso(falhas.length ? `Pokémon 3D (${falhas.length} sem modelo)` : 'Pokémon 3D!');
+  aviso(falhas.length === res.length ? 'Os modelos 3D não carregaram' : 'Pokémon 3D!');
 });
 
 // ---------- tiros e partículas ----------
@@ -512,12 +476,9 @@ function quadro() {
     }
     p.addScaledVector(vel, e.esp.vel * dt);
     colide(p, 0.9);
-    // animação: a do próprio modelo quando tem; senão pulinho ao andar, chama tremendo, gota amassando, folhas balançando
+    // animação: a do próprio modelo quando tem; senão um pulinho ao andar
     const pulo = Math.abs(Math.sin(e.t * (vel.lengthSq() > 0.01 ? 9 : 2)));
     if (!animaPokemon(e, vel.lengthSq() > 0.01, dt)) e.modelo.position.y = pulo * (vel.lengthSq() > 0.01 ? 0.25 : 0.05);
-    if (e.partes.chama) e.partes.chama.scale.set(1 + Math.sin(e.t * 20) * 0.15, 1 + Math.sin(e.t * 17) * 0.25, 1);
-    if (e.partes.corpo) e.partes.corpo.scale.set(1 + pulo * 0.12, 1 - pulo * 0.12, 1 + pulo * 0.12);
-    if (e.partes.folhas) e.partes.folhas.rotation.z = Math.sin(e.t * 4) * 0.25;
     e.flash -= dt;
     e.modelo.traverse(o => { if (o.isMesh) o.material = o.userData.m0 ||= o.material; });
     if (e.flash > 0) e.modelo.traverse(o => { if (o.isMesh) o.material = mat(0xffffff, { emissive: 0xffffff, emissiveIntensity: 0.8 }); });
