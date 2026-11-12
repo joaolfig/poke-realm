@@ -86,9 +86,10 @@ function pmdTrack(pid, wx, wy) {
   const L = PMD_TRACK.get(pid) || [];
   PMD_TRACK.set(pid, L);
   let best = null, bd = 90;
-  for (const s of L) { const d = Math.hypot(s.px - wx, s.py - wy); if (G.time - s.seen < 0.5 && d < bd) { bd = d; best = s; } }
+  // (posição e hora ficam no _pk que o pmdFrame preenche; quem ainda não tem _pk é descartado)
+  for (const s of L) { const k = s._pk; if (!k) continue; const d = Math.hypot(k.px - wx, k.py - wy); if (G.time - k.seen < 0.5 && d < bd) { bd = d; best = s; } }
+  for (let i = L.length - 1; i >= 0; i--) if (L[i] !== best && (!L[i]._pk || G.time - L[i]._pk.seen > 3)) L.splice(i, 1);
   if (!best) { best = {}; L.push(best); }
-  for (let i = L.length - 1; i >= 0; i--) if (L[i] !== best && G.time - L[i].seen > 3) L.splice(i, 1);
   return best;
 }
 
@@ -98,26 +99,31 @@ function pmdFrame(pid, st, wx, wy, moving, face, ev) {
   if (!PMD.on) return null;
   const D = PMD.data[pid];
   if (!D) { pmdEnsure(pid); return null; }
-  const s = st._pk || (st._pk = { px: wx, py: wy, dx: face > 0 ? 1 : -1, dy: 0.4, papel: 'idle', t0: G.time, until: 0, hurtT: -9, lastFlash: 0, shotSeen: ev && ev.shotT || 0 });
-  s.seen = G.time;
+  const s = st._pk || (st._pk = { px: wx, py: wy, dx: face > 0 ? 1 : -1, dy: 0.4, papel: 'idle', t0: G.time, until: 0, hurtT: -9, lastFlash: 0, shotSeen: ev && ev.shotT || 0, lt: G.time, walkT: -9 });
+  const now = G.time, dt = Math.max(1e-3, now - s.lt);
+  s.seen = now; s.lt = now;
+  // andando: pela velocidade de verdade (em qualquer direção) e com uma folga de 0,2 s, para não ficar trocando
+  // entre parado e andar a cada quadro (voltando sempre ao 1º quadro) quando o companheiro só ajeita a posição
+  const mx = wx - s.px, my = wy - s.py, vel = Math.hypot(mx, my) / dt;
+  if (moving || (vel > 25 && vel < 3000)) s.walkT = now;
+  const andando = now - s.walkT < 0.2;
   // direção: para onde anda; ao atirar, para onde atirou
-  const mx = wx - s.px, my = wy - s.py;
-  if (Math.hypot(mx, my) > 0.6) { s.dx += (mx - s.dx) * 0.35; s.dy += (my - s.dy) * 0.35; }
+  if (vel > 25 && vel < 3000) { s.dx += (mx / dt - s.dx) * 0.2; s.dy += (my / dt - s.dy) * 0.2; }
   s.px = wx; s.py = wy;
   ev = ev || {};
-  const now = G.time;
   if (ev.shotT && now - ev.shotT < 0.5) { s.dx = Math.cos(ev.shotA); s.dy = Math.sin(ev.shotA); }
   // animação: dano (no máximo 1 vez por segundo) > tiro > andar > parado
+  // (ev.anda: quem atira andando, como o Druida e os companheiros, só vira para o alvo e segue no passo)
   const flashUp = (ev.flash || 0) > 0 && !(s.lastFlash > 0);
   s.lastFlash = ev.flash || 0;
-  let quer = moving ? 'walk' : 'idle', solta = false;
+  let quer = andando ? 'walk' : 'idle', solta = false;
   if (flashUp && now - s.hurtT > 1 && D.anims.hurt) { s.hurtT = now; s.papel = 'hurt'; s.t0 = now; s.until = now + Math.min(0.45, D.anims.hurt.total); }
-  else if (ev.shotT && ev.shotT > s.shotSeen && D.anims.shoot && s.papel !== 'hurt') {
+  else if (ev.shotT && ev.shotT > s.shotSeen && D.anims.shoot && s.papel !== 'hurt' && !(ev.anda && andando) && !(s.papel === 'shoot' && now < s.until)) {
     s.papel = 'shoot'; s.t0 = now; s.until = now + Math.min(0.6, D.anims.shoot.total);
   }
   if (ev.shotT) s.shotSeen = ev.shotT;
-  if (now < s.until) { quer = s.papel; solta = true; }
-  if (quer !== s.papel) { s.papel = quer; s.t0 = now; }
+  if (now < s.until && !(s.papel === 'shoot' && ev.anda && andando)) { quer = s.papel; solta = true; }
+  if (quer !== s.papel) { s.papel = quer; s.t0 = now; s.until = 0; }
   const a = D.anims[s.papel] || D.anims.idle;
   // quadro: golpes param no último, andar e parado em laço
   let tt = now - s.t0;

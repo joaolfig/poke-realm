@@ -407,7 +407,7 @@ function wildSigHit(o, e) {
 }
 
 // desenha o Druida transformado: o Pokémon no lugar do herói, com os pés no mesmo ponto
-function drawWildForm(pid, wx, wy, x, y, face, moving, alpha, ptype, sk, mul = 1) {
+function drawWildForm(pid, wx, wy, x, y, face, moving, alpha, ptype, sk, mul = 1, ev) {
   const p = POKE[pid];
   if (!p || !p.img) { ensurePoke(pid); return false; }
   const ih = p.img.height, k = clamp(1.9, 44 / ih, 92 / ih) * WILD_SIZE[sk || 0] * mul, w = p.img.width * k, h = ih * k;
@@ -415,7 +415,7 @@ function drawWildForm(pid, wx, wy, x, y, face, moving, alpha, ptype, sk, mul = 1
     ctx.strokeStyle = TYPE_COLORS[ptype]; ctx.lineWidth = 2; ctx.globalAlpha = (0.6 + Math.sin(G.time * 6) * 0.2) * alpha;
     ctx.beginPath(); ctx.ellipse(x, y + 16, Math.max(20, w * 0.36), 7, 0, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
   }
-  const img = pmdFrame(pid, pmdTrack(pid, wx, wy), wx, wy, moving, face) || p.img;
+  const img = pmdFrame(pid, pmdTrack(pid, wx, wy), wx, wy, moving, face, ev) || p.img;
   drawMon(img, p, x, y + 17 - h * 0.42, w, h, face, G.time, moving, wx, wy + 17 - h * 0.42, petIsFlyer(pid), alpha);
   return true;
 }
@@ -480,6 +480,7 @@ function updateAllies(dt) {
     }
     if (!best) { a.cd = 0.3; return; }
     const shotAng = Math.atan2(best.y - a.y, best.x - a.x);
+    a.shotT = G.time; a.shotA = shotAng; // sprite animado: vira e ataca
     a.face = Math.cos(shotAng) >= 0 ? 1 : -1;
     const col = TYPE_COLORS[a.type];
     const far = tr && tr.k === 'atirador';
@@ -728,13 +729,13 @@ function ensurePoke(id) {
   loadPokedex([id]).finally(() => { pokeLoading.delete(id); if (G) G.dirty = true; });
 }
 
-function drawAlly(pid, wx, wy, ox, oy, ghost, t, face, moving, evolving, lvl) {
+function drawAlly(pid, wx, wy, ox, oy, ghost, t, face, moving, evolving, lvl, ev) {
   const p = POKE[pid];
   if (!p || !p.img) { ensurePoke(pid); return; }
   const x = wx + ox, y = wy + oy;
   const k = evolving ? 1 + Math.sin(G.time * 18) * 0.15 : 1;
   const w = p.img.width * 1.6 * k, h = p.img.height * 1.6 * k;
-  const fr = ghost ? null : pmdFrame(pid, pmdTrack(pid, wx, wy), wx, wy, moving, face);
+  const fr = ghost ? null : pmdFrame(pid, pmdTrack(pid, wx, wy), wx, wy, moving, face, ev);
   const pisca = evolving && Math.floor(G.time * 8) % 2;
   const img = ghost ? ghostImg(p) : fr ? (pisca ? pmdTint(fr, '#fff', 1) : fr) : pisca ? whiteImg(p) : p.img;
   drawMon(img, p, x, y, w, h, face, t, moving, wx, wy, ghost || petIsFlyer(pid), ghost ? 0.55 : 1);

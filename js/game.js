@@ -1699,7 +1699,7 @@ function render() {
       if (a.pet && (a.slot === carrySlot(G.P) || hmAnimHides(a.slot))) continue; // virou montaria (desenhada embaixo do jogador) ou está usando uma HM
       const sc = allyScale(a);
       if (sc !== 1) { ctx.save(); ctx.translate(a.x + ox, a.y + oy + 12); ctx.scale(sc, sc); ctx.translate(-(a.x + ox), -(a.y + oy + 12)); if (G.P.dynaT > 0) { ctx.fillStyle = 'rgba(239,68,68,.18)'; ctx.beginPath(); ctx.arc(a.x + ox, a.y + oy, 26 + Math.sin(G.time * 6) * 3, 0, 7); ctx.fill(); } }
-      drawAlly(a.look || a.pid, a.x, a.y, ox, oy, a.ghost, a.t, a.face, a.moving, a.pet && G.evo && G.P && G.evo.pt === G.P.pets[a.slot], a.pet ? a.lvl : 0);
+      drawAlly(a.look || a.pid, a.x, a.y, ox, oy, a.ghost, a.t, a.face, a.moving, a.pet && G.evo && G.P && G.evo.pt === G.P.pets[a.slot], a.pet ? a.lvl : 0, { shotT: a.shotT, shotA: a.shotA, anda: 1 });
       if (sc !== 1) ctx.restore();
       grassOver(a.x, a.y + 10, a.x + ox, a.y + oy + 14, 26);
     } else if (it.ra) { const sc = it.ra[4] || 1; if (sc !== 1) { ctx.save(); ctx.translate(it.ra[1] + ox, it.ra[2] + oy + 12); ctx.scale(sc, sc); ctx.translate(-(it.ra[1] + ox), -(it.ra[2] + oy + 12)); } drawAlly(it.ra[0], it.ra[1], it.ra[2], ox, oy, it.ra[3], G.time, 1, false); if (sc !== 1) ctx.restore(); }
@@ -1746,7 +1746,7 @@ function render() {
       if (P.pstT > 0) drawStatusAura(P.pst, x, y);
       if (tint) ctx.filter = tint;
       const lin = P.lin && (P.lform || P.wildT <= 0 || !P.wildT) && drawLinHero(P, x, y - lift, P.invis > 0 ? 0.4 : 1);
-      if (!lin && !(P.wildT > 0 && drawWildForm(wildLook(P), P.x, P.y, x, y, P.face, P.moving, P.invis > 0 ? 0.4 : 1, pType(P), wildSizeK(P)))) drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
+      if (!lin && !(P.wildT > 0 && drawWildForm(wildLook(P), P.x, P.y, x, y, P.face, P.moving, P.invis > 0 ? 0.4 : 1, pType(P), wildSizeK(P), 1, { shotT: P.shotT, shotA: P.aim, anda: 1 }))) drawPlayerSprite(P.cls, x, y - lift, P.face, mpid ? 0 : P.moving ? Math.floor(P.walk * 8) % 2 : 0, P.invis > 0 ? 0.4 : 1, P.aim, pType(P));
       ctx.filter = 'none';
       if (pst(P, 2) && P.pstShock) drawShock(x, y - lift - 4, 30, 40);
       if (!mpid) grassOver(P.x, P.y + 14, x, y + 18, 28);
