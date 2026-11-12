@@ -20,7 +20,7 @@
   body.touch #dashbtn { display: flex; }
   body.touch #ajuda { display: none; }
 </style>
-<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
 </head>
 <body>
 <div id="hud">
@@ -28,7 +28,7 @@
   <div id="info"></div>
 </div>
 <div id="ajuda">
-  <b>Teste 3D</b> — só uma cena para ver como fica.<br>
+  <b>Teste 3D</b> — Pokémon 3D da Pokemon-3D-api.<br>
   <b>WASD</b> andar · <b>mouse</b> mirar · <b>clique</b> atirar<br>
   <b>Espaço</b> esquiva · <b>Q/E</b> girar câmera · <b>roda</b> zoom<br>
   Controle: analógicos, <b>RT</b> atira, <b>A</b> esquiva, <b>LB/RB</b> câmera
@@ -37,6 +37,6 @@
 <div id="msg"></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="dashbtn">Esquiva</div>
-<script type="module" src="js3d/cena.js?v=1"></script>
+<script type="module" src="js3d/cena.js?v=2"></script>
 </body>
 </html>

@@ -1,6 +1,9 @@
 // Cena de teste em 3D (Three.js): herói andando num campo, câmera de cima inclinada, criaturas originais
 // que atiram padrões de bullet-hell, colisão com o cenário. Funciona com teclado/mouse, controle e toque.
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -216,21 +219,112 @@ function montaCriatura(tipo) {
   return { g, partes };
 }
 
+// ---------- Pokémon 3D (modelos .glb da Pokemon-3D-api, com Draco e texturas WebP) ----------
+// cada padrão de tiro ganha Pokémon do tipo certo; se um modelo não carregar, entra a criatura original
+const POKES = {
+  brasa: [[4, 'Charmander'], [37, 'Vulpix'], [58, 'Growlithe'], [77, 'Ponyta'], [155, 'Cyndaquil']],
+  gota: [[7, 'Squirtle'], [54, 'Psyduck'], [60, 'Poliwag'], [116, 'Horsea'], [79, 'Slowpoke']],
+  broto: [[1, 'Bulbasaur'], [43, 'Oddish'], [69, 'Bellsprout'], [152, 'Chikorita'], [252, 'Treecko']],
+};
+const COMPANHEIRO = [133, 'Eevee'];
+const URL_MODELO = id => `https://raw.githubusercontent.com/Pokemon-3D-api/assets/main/models/opt/regular/${id}.glb`;
+const draco = new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/');
+const carregador = new GLTFLoader().setDRACOLoader(draco);
+const MODELOS = {}; // id -> { cena, clipes, escala, desloc }
+
+async function carregaModelo(id) {
+  const gltf = await carregador.loadAsync(URL_MODELO(id));
+  const cena = gltf.scene;
+  cena.updateMatrixWorld(true);
+  // cada modelo vem num tamanho; normaliza para ~1,9 de altura e no máximo 2,4 de largura, pés no chão
+  const caixa = new THREE.Box3().setFromObject(cena, true), tam = caixa.getSize(new THREE.Vector3());
+  const escala = Math.min(1.9 / Math.max(tam.y, 1e-4), 2.4 / Math.max(tam.x, tam.z, 1e-4));
+  const desloc = new THREE.Vector3(-(caixa.min.x + caixa.max.x) / 2, -caixa.min.y, -(caixa.min.z + caixa.max.z) / 2).multiplyScalar(escala);
+  MODELOS[id] = { cena, clipes: gltf.animations, escala, desloc };
+}
+
+function montaPokemon(id) {
+  const base = MODELOS[id], g = new THREE.Group(), copia = SkeletonUtils.clone(base.cena);
+  copia.scale.setScalar(base.escala);
+  copia.position.copy(base.desloc);
+  copia.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  g.add(copia);
+  // animações do próprio modelo, quando tem: parado e andando
+  const r = { g, partes: {} };
+  if (base.clipes.length) {
+    r.mixer = new THREE.AnimationMixer(copia);
+    const acha = re => base.clipes.find(c => re.test(c.name));
+    const parado = acha(/idle|wait|stand/i) || base.clipes[0], anda = acha(/walk|run/i) || parado;
+    r.acoes = { parado: r.mixer.clipAction(parado), anda: r.mixer.clipAction(anda) };
+    r.acoes.parado.play();
+    r.atual = r.acoes.parado;
+  }
+  return r;
+}
+function animaPokemon(e, andando, dt) {
+  if (!e.mixer) return false;
+  const quer = andando ? e.acoes.anda : e.acoes.parado;
+  if (quer !== e.atual) { quer.reset().play(); e.atual.crossFadeTo(quer, 0.2, false); e.atual = quer; }
+  e.mixer.update(dt);
+  return true;
+}
+
+// nome flutuando em cima do Pokémon
+function etiqueta(pai, texto, y) {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.font = 'bold 34px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = '#000a';
+  ctx.strokeText(texto, 128, 44);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(texto, 128, 44);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false }));
+  s.scale.set(2.4, 0.6, 1);
+  s.position.y = y;
+  s.renderOrder = 12;
+  pai.add(s);
+}
+
 const inimigos = [];
 function novoInimigo() {
   const tipo = ['brasa', 'gota', 'broto'][Math.floor(rand(0, 3))], esp = ESPECIES[tipo];
+  const opcoes = POKES[tipo].filter(([id]) => MODELOS[id]), poke = opcoes[Math.floor(rand(0, opcoes.length))];
   let x, z;
   do { x = rand(-60, 60); z = rand(-60, 60); } while (!livre(x, z, 1) || Math.hypot(x - heroi.pos.x, z - heroi.pos.z) < 25);
   const raizI = new THREE.Group();
   raizI.position.set(x, 0, z);
   scene.add(raizI);
-  const { g, partes } = montaCriatura(tipo);
-  raizI.add(g);
-  const e = { tipo, esp, raiz: raizI, modelo: g, partes, hp: esp.hp, max: esp.hp, cd: rand(1, 2), ang: 0, fase: 0, vagar: new THREE.Vector3(x, 0, z), flash: 0, t: rand(0, 6), lado: Math.random() < 0.5 ? 1 : -1 };
+  const m = poke ? montaPokemon(poke[0]) : montaCriatura(tipo);
+  raizI.add(m.g);
+  const e = { tipo, esp, raiz: raizI, modelo: m.g, partes: m.partes, mixer: m.mixer, acoes: m.acoes, atual: m.atual, hp: esp.hp, max: esp.hp, cd: rand(1, 2), ang: 0, fase: 0, vagar: new THREE.Vector3(x, 0, z), flash: 0, t: rand(0, 6), lado: Math.random() < 0.5 ? 1 : -1 };
   e.barra = barra(raizI, 2.6);
+  etiqueta(raizI, poke ? poke[1] : esp.nome, 3);
   inimigos.push(e);
 }
-for (let i = 0; i < 9; i++) novoInimigo();
+
+// companheiro: segue o herói e atira no inimigo mais perto
+let comp = null;
+function criaCompanheiro() {
+  if (!MODELOS[COMPANHEIRO[0]]) return;
+  const m = montaPokemon(COMPANHEIRO[0]), r = new THREE.Group();
+  r.position.set(-2, 0, -2);
+  r.add(m.g);
+  scene.add(r);
+  etiqueta(r, COMPANHEIRO[1], 2.5);
+  comp = { raiz: r, modelo: m.g, mixer: m.mixer, acoes: m.acoes, atual: m.atual, cd: 0, t: 0 };
+}
+
+const carregando = Promise.allSettled([...Object.values(POKES).flat(), COMPANHEIRO].map(([id]) => carregaModelo(id)));
+carregando.then(res => {
+  const falhas = res.filter(r => r.status === 'rejected');
+  falhas.forEach(f => console.warn('modelo 3D não carregou:', f.reason));
+  for (let i = 0; i < 9; i++) novoInimigo();
+  criaCompanheiro();
+  aviso(falhas.length ? `Pokémon 3D (${falhas.length} sem modelo)` : 'Pokémon 3D!');
+});
 
 // ---------- tiros e partículas ----------
 const GEO_BALA = new THREE.SphereGeometry(0.28, 8, 6), GEO_MEU = new THREE.SphereGeometry(0.2, 6, 4), GEO_FAISCA = new THREE.BoxGeometry(0.15, 0.15, 0.15);
@@ -418,9 +512,9 @@ function quadro() {
     }
     p.addScaledVector(vel, e.esp.vel * dt);
     colide(p, 0.9);
-    // animação: pulinho ao andar, chama tremendo, gota amassando, folhas balançando
+    // animação: a do próprio modelo quando tem; senão pulinho ao andar, chama tremendo, gota amassando, folhas balançando
     const pulo = Math.abs(Math.sin(e.t * (vel.lengthSq() > 0.01 ? 9 : 2)));
-    e.modelo.position.y = pulo * (vel.lengthSq() > 0.01 ? 0.25 : 0.05);
+    if (!animaPokemon(e, vel.lengthSq() > 0.01, dt)) e.modelo.position.y = pulo * (vel.lengthSq() > 0.01 ? 0.25 : 0.05);
     if (e.partes.chama) e.partes.chama.scale.set(1 + Math.sin(e.t * 20) * 0.15, 1 + Math.sin(e.t * 17) * 0.25, 1);
     if (e.partes.corpo) e.partes.corpo.scale.set(1 + pulo * 0.12, 1 - pulo * 0.12, 1 + pulo * 0.12);
     if (e.partes.folhas) e.partes.folhas.rotation.z = Math.sin(e.t * 4) * 0.25;
@@ -428,6 +522,29 @@ function quadro() {
     e.modelo.traverse(o => { if (o.isMesh) o.material = o.userData.m0 ||= o.material; });
     if (e.flash > 0) e.modelo.traverse(o => { if (o.isMesh) o.material = mat(0xffffff, { emissive: 0xffffff, emissiveIntensity: 0.8 }); });
     e.barra(e.hp / e.max);
+  }
+
+  // --- companheiro: fica atrás do herói e atira no inimigo mais perto ---
+  if (comp) {
+    comp.t += dt;
+    const alvo = heroi.pos.clone().addScaledVector(heroi.mira, -2.2).add(new THREE.Vector3(heroi.mira.z, 0, -heroi.mira.x).multiplyScalar(1.4));
+    const p = comp.raiz.position, falta = alvo.sub(p).setY(0), anda = falta.length() > 0.6;
+    if (falta.length() > 25) p.copy(heroi.pos);
+    else if (anda) p.addScaledVector(falta.normalize(), Math.min(falta.length() * 4, 11) * dt);
+    colide(p, 0.5);
+    let perto = null, dm = 14;
+    for (const e of inimigos) { const d = e.raiz.position.distanceTo(p); if (d < dm) { dm = d; perto = e; } }
+    const olha = perto ? perto.raiz.position.clone().sub(p) : anda ? falta : heroi.mira;
+    comp.modelo.rotation.y = Math.atan2(olha.x, olha.z);
+    comp.cd -= dt;
+    if (perto && heroi.hp > 0 && comp.cd <= 0) {
+      comp.cd = 0.55;
+      const m = new THREE.Mesh(GEO_MEU, mat(0xffe08a, { emissive: 0xffa53d, emissiveIntensity: 1 }));
+      m.position.copy(p).setY(1);
+      scene.add(m);
+      meus.push({ m, v: olha.setY(0).normalize().multiplyScalar(20), vida: 0.9, dano: 6 });
+    }
+    if (!animaPokemon(comp, anda, dt)) comp.modelo.position.y = Math.abs(Math.sin(comp.t * (anda ? 10 : 2))) * (anda ? 0.2 : 0.04);
   }
 
   // --- meus tiros ---
@@ -440,7 +557,7 @@ function quadro() {
       if (fim) break;
       const p = e.raiz.position;
       if (Math.hypot(p.x - t.m.position.x, p.z - t.m.position.z) < 1.1) {
-        e.hp -= 10;
+        e.hp -= t.dano || 10;
         e.flash = 0.08;
         fim = true;
         if (e.hp <= 0) {
@@ -507,6 +624,6 @@ function quadro() {
   renderer.render(scene, camera);
   requestAnimationFrame(quadro);
 }
-aviso('Teste 3D');
+aviso('Carregando Pokémon 3D...');
 requestAnimationFrame(quadro);
-window.__cena = { heroi, inimigos, balas }; // para os testes automáticos
+window.__cena = { heroi, inimigos, balas, MODELOS, get comp() { return comp; } }; // para os testes automáticos
