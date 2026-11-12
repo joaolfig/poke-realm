@@ -10,12 +10,17 @@
 // Pokémon com sprite que tem pelo menos a animação de andar (conferido em nov/2026: 974 de 1025)
 const PMD_IDS = new Set('1-513,515,517-519,521,524-537,539-557,559-563,566-590,593-615,617,619-625,627-667,669-682,684-731,734,736-755,757-764,766-837,840-865,867-869,871-892,894-928,930,932-941,946,948,951-953,955,957-972,974-985,987-989,991-992,994-998,1000,1004-1007,1009-1013,1015-1019,1024-1025'
   .split(',').flatMap(f => { const [a, b = a] = f.split('-').map(Number); return Array.from({ length: b - a + 1 }, (_, i) => a + i); }));
+// formas Mega (id da PokeAPI -> pasta da forma no PMDCollab): só as que já têm sprite lá (28 de 46; as outras ficam com o ícone)
+const PMD_FORMS = { 10034: '0006/0001', 10037: '0065/0001', 10071: '0080/0002', 10038: '0094/0001', 10039: '0115/0001', 10042: '0142/0001', 10072: '0208/0001',
+  10048: '0229/0001', 10049: '0248/0001', 10065: '0254/0001', 10051: '0282/0001', 10066: '0302/0001', 10052: '0303/0001', 10054: '0308/0001', 10055: '0310/0001',
+  10070: '0319/0001', 10087: '0323/0001', 10067: '0334/0001', 10056: '0354/0001', 10057: '0359/0001', 10074: '0362/0001', 10062: '0380/0001', 10063: '0381/0001',
+  10079: '0384/0001', 10088: '0428/0001', 10059: '0448/0001', 10068: '0475/0001', 10075: '0719/0001' };
 const PMD = { on: false, data: {}, loading: new Set() };
 const PMD_KEY = 'pkr_pmd_v1';
-const PMD_URL = (id, arq) => `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite/${String(id).padStart(4, '0')}/${arq}`;
+const PMD_URL = (id, arq) => `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite/${PMD_FORMS[id] || String(id).padStart(4, '0')}/${arq}`;
 // papel -> animações do PMDCollab, em ordem de preferência
 const PMD_PAPEL = { idle: ['Idle', 'Walk'], walk: ['Walk'], shoot: ['Shoot', 'Charge', 'Attack'], hurt: ['Hurt'] };
-const pmdHas = id => PMD_IDS.has(id);
+const pmdHas = id => PMD_IDS.has(id) || !!PMD_FORMS[id];
 
 // sorteios sem quem não tem sprite (se um sorteio ficaria vazio, fica como estava)
 function pmdFilterPools() {
