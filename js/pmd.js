@@ -146,9 +146,11 @@ function pmdTint(f, cor, alpha) {
   return Object.assign({}, f, { im: f.im[k] });
 }
 
-// desenha o recorte no lugar do ícone: o corpo com a mesma área do ícone (w x h), centrado no mesmo ponto
+// desenha o recorte no lugar do ícone: o corpo com a área do ícone (w x h) e 35% maior, centrado no mesmo ponto
+// (com a mesma área, o sprite visto de cima e de lado parecia menor que o ícone de frente; só o desenho cresce, o acerto não)
+const PMD_ESCALA = 1.35;
 function pmdDraw(f, w, h) {
-  const k = Math.sqrt((w * h) / f.refA);
+  const k = Math.sqrt((w * h) / f.refA) * PMD_ESCALA;
   const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
   ctx.drawImage(f.im, f.sx, f.sy, f.sw, f.sh, f.ox * k, f.oy * k, f.sw * k, f.sh * k);
   ctx.imageSmoothingEnabled = sm;
