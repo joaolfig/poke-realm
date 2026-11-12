@@ -48,24 +48,30 @@ async function pmdLoadData(id) {
       im.src = PMD_URL(id, nome + '-Anim.png');
     });
     const im = await folhas[nome], d = defs[nome], cols = Math.max(1, Math.round(im.width / d.w)), rows = Math.max(1, Math.round(im.height / d.h));
-    // caixa do desenho (todas as direções e quadros), relativa ao centro do quadro
+    // caixa do desenho (todas as direções e quadros), relativa ao centro do quadro, e a área média do corpo
+    // num quadro só (a caixa de todos junta chega a 2x essa área e deixava os pequenos, como Ralts, miúdos)
     const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
     const x = c.getContext('2d'); x.drawImage(im, 0, 0);
     const px = x.getImageData(0, 0, c.width, c.height).data;
-    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    for (let yy = 0; yy < c.height; yy++) for (let xx = 0; xx < c.width; xx++) {
-      if (px[(yy * c.width + xx) * 4 + 3] < 20) continue;
-      const lx = (xx % d.w) - d.w / 2, ly = (yy % d.h) - d.h / 2;
-      if (lx < x0) x0 = lx; if (lx > x1) x1 = lx; if (ly < y0) y0 = ly; if (ly > y1) y1 = ly;
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, soma = 0, n = 0;
+    for (let rr = 0; rr < rows; rr++) for (let cc = 0; cc < cols; cc++) {
+      let a0 = 1e9, b0 = 1e9, a1 = -1e9, b1 = -1e9;
+      for (let ly = 0; ly < d.h; ly++) for (let lx = 0; lx < d.w; lx++) {
+        if (px[((rr * d.h + ly) * c.width + cc * d.w + lx) * 4 + 3] < 20) continue;
+        if (lx < a0) a0 = lx; if (lx > a1) a1 = lx; if (ly < b0) b0 = ly; if (ly > b1) b1 = ly;
+      }
+      if (a1 < a0) continue;
+      soma += (a1 - a0 + 1) * (b1 - b0 + 1); n++;
+      x0 = Math.min(x0, a0 - d.w / 2); x1 = Math.max(x1, a1 - d.w / 2); y0 = Math.min(y0, b0 - d.h / 2); y1 = Math.max(y1, b1 - d.h / 2);
     }
     if (x1 < x0) { x0 = -d.w / 2; y0 = -d.h / 2; x1 = d.w / 2 - 1; y1 = d.h / 2 - 1; }
-    anims[papel] = { im, w: d.w, h: d.h, dur: d.dur, total: d.dur.reduce((a, b) => a + b, 0), cols, rows, x0, y0, bw: x1 - x0 + 1, bh: y1 - y0 + 1 };
+    anims[papel] = { im, w: d.w, h: d.h, dur: d.dur, total: d.dur.reduce((a, b) => a + b, 0), cols, rows, x0, y0, bw: x1 - x0 + 1, bh: y1 - y0 + 1, area: n ? soma / n : (x1 - x0 + 1) * (y1 - y0 + 1) };
   }
   if (!anims.walk) throw new Error('sem Walk');
   if (!anims.idle) anims.idle = anims.walk;
-  // referência de tamanho: o corpo parado (o resto se alinha pelo centro dele)
+  // referência de tamanho: a área média do corpo parado (o resto se alinha pelo centro dele)
   const r = anims.idle;
-  PMD.data[id] = { anims, refW: r.bw, refH: r.bh, refX: r.x0 + r.bw / 2, refY: r.y0 + r.bh / 2 };
+  PMD.data[id] = { anims, refA: r.area, refX: r.x0 + r.bw / 2, refY: r.y0 + r.bh / 2 };
 }
 function pmdEnsure(id) {
   if (PMD.data[id] || PMD.loading.has(id) || !pmdHas(id)) return;
@@ -124,7 +130,7 @@ function pmdFrame(pid, st, wx, wy, moving, face, ev) {
   if (row >= a.rows) row = 0;
   return {
     pk: 1, im: a.im, sx: q * a.w + a.w / 2 + a.x0, sy: row * a.h + a.h / 2 + a.y0, sw: a.bw, sh: a.bh,
-    ox: a.x0 - D.refX, oy: a.y0 - D.refY, refW: D.refW, refH: D.refH,
+    ox: a.x0 - D.refX, oy: a.y0 - D.refY, refA: D.refA,
   };
 }
 
@@ -140,9 +146,9 @@ function pmdTint(f, cor, alpha) {
   return Object.assign({}, f, { im: f.im[k] });
 }
 
-// desenha o recorte no lugar do ícone: mesma área do ícone (w x h), corpo centrado no mesmo ponto
+// desenha o recorte no lugar do ícone: o corpo com a mesma área do ícone (w x h), centrado no mesmo ponto
 function pmdDraw(f, w, h) {
-  const k = Math.sqrt((w * h) / (f.refW * f.refH));
+  const k = Math.sqrt((w * h) / f.refA);
   const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
   ctx.drawImage(f.im, f.sx, f.sy, f.sw, f.sh, f.ox * k, f.oy * k, f.sw * k, f.sh * k);
   ctx.imageSmoothingEnabled = sm;
