@@ -476,6 +476,7 @@ function eShot(e, a, spd, o = {}) {
   if (NET.mode === 'host' && NET.conns.size) NET.outB.push(b);
 }
 function spawnEB(e, b) {
+  if (e) { e.shotT = G.time; e.shotA = b[3]; } // para o sprite animado virar e atirar
   G.eb.push({
     x: b[1], y: b[2], a0: b[3], a: b[3], spd: b[4], r: b[5], life: b[6], wave: b[7], home: b[8], t: 0,
     stc: e && (e.alfa || e.boss) ? 1 : 0,
@@ -1824,8 +1825,9 @@ function drawEnemy(e, ox, oy) {
     ctx.beginPath(); ctx.arc(x, y, e.r * 1.4 + Math.sin(e.t * 4) * 3, 0, 7); ctx.fill();
   }
   if (e.rare && Math.random() < 0.3) G.parts.push({ x: e.x + rand(-e.r, e.r), y: e.y + rand(-e.r, e.r), vx: 0, vy: -30, life: 0.6, color: '#a5f3fc', size: 3 });
-  const img = e.flash > 0 ? whiteImg(e.p) : e.alfa ? alfaImg(e.p) : e.p.img;
   const asleep = e.st === 1 || e.st === 5;
+  const fr = pmdFrame(e.pid, e, e.x, e.y, e.moving && !asleep, e.face, e);
+  const img = fr ? (e.flash > 0 ? pmdTint(fr, '#fff', 1) : e.alfa ? pmdTint(fr, '#facc15', 0.45) : fr) : e.flash > 0 ? whiteImg(e.p) : e.alfa ? alfaImg(e.p) : e.p.img;
   if (img) drawMon(img, e.p, x + (e.st === 2 ? rand(-1, 1) : 0), y, e.w, e.h, e.face, asleep ? 0 : e.t, e.moving && !asleep, e.dg ? DG_BASE : e.x, e.y, e.fly, e.hp <= 0 ? 0.4 : 1);
   else { ctx.fillStyle = e.color; ctx.beginPath(); ctx.arc(x, y, e.r, 0, 7); ctx.fill(); }
   ctx.globalAlpha = 1;
@@ -2419,6 +2421,7 @@ async function prepRegion(id) {
   if (id !== REGION_ID || LAYOUT.seed !== LAYOUT.built) setRegion(id);
   const ids = regionIds(REGION).filter(i => !POKE[i]);
   if (ids.length) await loadPokedex(ids, (n, t) => { $('menu-err').textContent = `Carregando os Pokémon de ${REGION.nome}... ${n}/${t}`; });
+  pmdFilterPools();
 }
 
 function renderHero() {
@@ -2478,10 +2481,13 @@ $('file-import').onchange = async ev => {
 document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', () => {
   menuSel.mode = r.value;
   $('map-box').classList.toggle('hidden', r.value === 'join');
+  $('pmd-opt').classList.toggle('hidden', r.value === 'join'); // na sala de outro, vale a escolha do anfitrião
   $('join-code').disabled = r.value !== 'join';
   if (r.value === 'join') $('join-code').focus();
 }));
 $('btn-start').onclick = () => startGame(null);
+$('pmd-chk').checked = PMD.pref;
+$('pmd-chk').onchange = () => { try { localStorage.setItem(PMD_KEY, $('pmd-chk').checked ? '1' : '0'); } catch (e) { /* ignora */ } };
 $('btn-again').onclick = () => {
   $('death').classList.add('hidden');
   menuSel.hero = rollHero();
@@ -2500,12 +2506,13 @@ async function startGame(saved) {
     const btns = [$('btn-start'), $('btn-cont')].filter(Boolean);
     btns.forEach(b => { b.disabled = true; });
     try {
-      if (menuSel.mode !== 'join') { LAYOUT.seed = pickLayout(saved, menuSel.region); await prepRegion(menuSel.region); }
+      if (menuSel.mode !== 'join') { PMD.on = $('pmd-chk').checked; LAYOUT.seed = pickLayout(saved, menuSel.region); await prepRegion(menuSel.region); }
       if (menuSel.mode === 'host') { $('menu-err').textContent = 'Criando sala...'; await netHost(); }
       else if (menuSel.mode === 'join') {
         $('menu-err').textContent = 'Conectando...';
         await netJoin($('join-code').value);
         LAYOUT.seed = NET.layout || 0; // o mapa é o do anfitrião
+        PMD.on = !!NET.pmd; // e os sprites também
         await prepRegion(REGIONS[NET.region] ? NET.region : menuSel.region);
       }
     } catch (e) {

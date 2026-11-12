@@ -13,6 +13,7 @@ Jogo de tiro frenético no estilo Realm of the Mad God, com regras inspiradas em
 - **Companheiros**: capture com a Poké Ball. Eles lutam ao seu lado, sobem de nível com 80% do seu XP, evoluem, servem de montaria e usam HMs (Cut, Rock Smash, Surf, Flash, Fly).
 - **Chefes com golpes de assinatura**: líderes de ginásio, chefes de masmorra e lendários usam golpes do próprio repertório, sempre avisados no chão. O Druida transformado também usa os golpes do Pokémon em que virou.
 - **Pós-história**: Megaevolução (Kanto, Hoenn e Kalos), Dynamax (Galar), fósseis (cientista na 2ª cidade), lendários e míticos soltos, masmorras com andares.
+- **Sprites animados (opção)**: no menu, quem joga sozinho ou cria a sala pode ligar os sprites do PMDCollab. Os Pokémon andam, atiram e levam dano animados em 8 direções; os que não têm sprite lá (51 de 1025) saem dos sorteios. Os convidados seguem a escolha do anfitrião.
 - **Multiplayer**: um jogador escolhe o mapa e "Criar sala" e passa o código de 5 letras; os amigos escolhem "Entrar". XP dividido (70% igual, 30% pelo dano), efeitos de grupo e PvP opcional.
 
 ## Controles (PC)
@@ -47,6 +48,7 @@ Sem build e sem dependências: `index.html` carrega os scripts de `js/` em ordem
 | `dungeon.js` | masmorras e ginásios por salas |
 | `allies.js` | companheiros, montarias e a Forma Selvagem do Druida |
 | `sigs.js` | golpes de assinatura dos chefes (por espécie e por tipo) |
+| `pmd.js` | opção de sprites animados do PMDCollab (lista de quem tem sprite, animação e direção) |
 | `extras.js` | fósseis, Megaevolução e Dynamax |
 | `net.js`, `pvp.js` | multiplayer (PeerJS/WebRTC; o host repassa os eventos) e PvP |
 | `game.js` | laço principal, combate, desenho e interface |
@@ -54,4 +56,4 @@ Sem build e sem dependências: `index.html` carrega os scripts de `js/` em ordem
 
 Saves ficam no `localStorage` (`pkr_save_v2`) e podem ser exportados com Ctrl+S.
 
-Projeto de fã, sem fins comerciais. Pokémon © Nintendo/Game Freak. Dados e sprites: [PokeAPI](https://pokeapi.co) e ícones do [Pokémon Showdown](https://play.pokemonshowdown.com).
+Projeto de fã, sem fins comerciais. Pokémon © Nintendo/Game Freak. Dados e sprites: [PokeAPI](https://pokeapi.co), ícones do [Pokémon Showdown](https://play.pokemonshowdown.com) e sprites animados do [PMDCollab](https://github.com/PMDCollab/SpriteCollab).

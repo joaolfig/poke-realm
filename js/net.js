@@ -45,7 +45,7 @@ function netHost() {
     });
     peer.on('connection', c => {
       if (!G) { c.close(); return; }
-      c.on('open', () => { NET.conns.set(c.peer, c); c.send({ t: 'region', id: REGION_ID, lay: LAYOUT.seed }); G.dirty = true; });
+      c.on('open', () => { NET.conns.set(c.peer, c); c.send({ t: 'region', id: REGION_ID, lay: LAYOUT.seed, pmd: PMD.on ? 1 : 0 }); G.dirty = true; });
       c.on('data', m => hostOnData(c.peer, m));
       c.on('close', () => dropConn(c.peer));
       c.on('error', () => dropConn(c.peer));
@@ -75,7 +75,7 @@ function netJoin(code) {
         Object.assign(NET, { peer, host: c, mode: 'client', room: code });
         setTimeout(fin, 5000);
       });
-      c.on('data', m => { if (m && m.t === 'region') { NET.region = m.id; NET.layout = m.lay || 0; fin(); } else clientOnData(m); });
+      c.on('data', m => { if (m && m.t === 'region') { NET.region = m.id; NET.layout = m.lay || 0; NET.pmd = !!m.pmd; fin(); } else clientOnData(m); });
       c.on('close', hostLost);
       c.on('error', hostLost);
     });

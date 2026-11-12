@@ -261,13 +261,14 @@ function drawMount(pid, wx, wy, x, y, face, moving, t) {
   const p = POKE[pid];
   if (!p || !p.img) { ensurePoke(pid); return 0; }
   const w = p.img.width * 1.9, h = p.img.height * 1.9, fl = rideFlies(pid) && !(G.P && G.P.surfing && !G.P.riding);
+  const img = pmdFrame(pid, pmdTrack(pid, wx, wy), wx, wy, moving, face) || p.img;
   if (fl) {
     ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, y + 26, w * 0.3, 6, 0, 0, 7); ctx.fill();
     const bob = Math.sin(t * 3) * 3;
-    drawMon(p.img, p, x, y - 4 + bob, w, h, face, t, false, DG_BASE, wy, true, 1);
+    drawMon(img, p, x, y - 4 + bob, w, h, face, t, false, DG_BASE, wy, true, 1);
     return h * 0.35 + 10 - bob;
   }
-  drawMon(p.img, p, x, y + 12, w, h, face, t, moving, wx, wy + 8, false, 1);
+  drawMon(img, p, x, y + 12, w, h, face, t, moving, wx, wy + 8, false, 1);
   return h * 0.3;
 }
 
@@ -414,7 +415,8 @@ function drawWildForm(pid, wx, wy, x, y, face, moving, alpha, ptype, sk, mul = 1
     ctx.strokeStyle = TYPE_COLORS[ptype]; ctx.lineWidth = 2; ctx.globalAlpha = (0.6 + Math.sin(G.time * 6) * 0.2) * alpha;
     ctx.beginPath(); ctx.ellipse(x, y + 16, Math.max(20, w * 0.36), 7, 0, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
   }
-  drawMon(p.img, p, x, y + 17 - h * 0.42, w, h, face, G.time, moving, wx, wy + 17 - h * 0.42, petIsFlyer(pid), alpha);
+  const img = pmdFrame(pid, pmdTrack(pid, wx, wy), wx, wy, moving, face) || p.img;
+  drawMon(img, p, x, y + 17 - h * 0.42, w, h, face, G.time, moving, wx, wy + 17 - h * 0.42, petIsFlyer(pid), alpha);
   return true;
 }
 
@@ -732,7 +734,9 @@ function drawAlly(pid, wx, wy, ox, oy, ghost, t, face, moving, evolving, lvl) {
   const x = wx + ox, y = wy + oy;
   const k = evolving ? 1 + Math.sin(G.time * 18) * 0.15 : 1;
   const w = p.img.width * 1.6 * k, h = p.img.height * 1.6 * k;
-  const img = ghost ? ghostImg(p) : evolving && Math.floor(G.time * 8) % 2 ? whiteImg(p) : p.img;
+  const fr = ghost ? null : pmdFrame(pid, pmdTrack(pid, wx, wy), wx, wy, moving, face);
+  const pisca = evolving && Math.floor(G.time * 8) % 2;
+  const img = ghost ? ghostImg(p) : fr ? (pisca ? pmdTint(fr, '#fff', 1) : fr) : pisca ? whiteImg(p) : p.img;
   drawMon(img, p, x, y, w, h, face, t, moving, wx, wy, ghost || petIsFlyer(pid), ghost ? 0.55 : 1);
   if (!ghost) {
     ctx.font = 'bold 10px Barlow Semi Condensed, system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#f87171';

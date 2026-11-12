@@ -210,6 +210,9 @@
   .modes label:hover { color: var(--text); }
   .modes label:has(input:checked) { background: var(--gold); color: #1a1205; }
   .modes input { position: absolute; opacity: 0; pointer-events: none; }
+  #pmd-opt { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; font-size: 13px; color: var(--dim); cursor: pointer; line-height: 1.3; }
+  #pmd-opt input { margin-top: 2px; }
+  #pmd-opt b { color: var(--text); }
   .big { display: block; width: 100%; margin-top: 18px; padding: 12px 12px 14px; font: 700 20px var(--px); letter-spacing: .06em; text-transform: uppercase; color: #1a1205; background: var(--gold);
     box-shadow: inset 0 3px 0 rgba(255,255,255,.35), inset 0 -4px 0 rgba(0,0,0,.3), 0 0 0 1px #000, 0 4px 0 #000; }
   .big:hover:not(:disabled) { background: #f1c060; }
@@ -465,6 +468,7 @@
               <label><input type="radio" name="mode" value="join">Entrar</label>
             </div>
             <input id="join-code" maxlength="5" placeholder="CÓDIGO" disabled autocomplete="off">
+            <label id="pmd-opt" title="Sprites do PMDCollab: os Pokémon andam, atiram e levam dano animados, virados para 8 direções. Na sala, vale a escolha de quem criou."><input type="checkbox" id="pmd-chk"><span><b>Sprites animados</b> (PMDCollab) — os Pokémon sem sprite lá não aparecem</span></label>
           </div>
           <div id="continue-box" class="field"></div>
           <div id="menu-err"></div>
@@ -475,7 +479,7 @@
         </div>
       </div>
     </div>
-    <div class="credit">Sprites e dados: PokeAPI (pokeapi.co). Pokémon © Nintendo/Game Freak — projeto de fã, sem fins comerciais. · [N] liga/desliga música</div>
+    <div class="credit">Sprites e dados: PokeAPI (pokeapi.co); sprites animados: PMDCollab. Pokémon © Nintendo/Game Freak — projeto de fã, sem fins comerciais. · [N] liga/desliga música</div>
   </div>
 </div>
 
@@ -497,26 +501,27 @@
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- ?v=N: aumente a cada atualização para o navegador não misturar arquivos novos com antigos do cache -->
-<script src="js/pokedex.js?v=381"></script>
-<script src="js/data.js?v=381"></script>
-<script src="js/rules.js?v=381"></script>
-<script src="js/items.js?v=381"></script>
-<script src="js/dungeon.js?v=381"></script>
-<script src="js/net.js?v=381"></script>
-<script src="js/map.js?v=381"></script>
-<script src="js/world.js?v=381"></script>
-<script src="js/story.js?v=381"></script>
-<script src="js/hm.js?v=381"></script>
-<script src="js/allies.js?v=381"></script>
-<script src="js/extras.js?v=381"></script>
-<script src="js/town.js?v=381"></script>
-<script src="js/geo.js?v=381"></script>
-<script src="js/regions.js?v=381"></script>
-<script src="js/audio.js?v=381"></script>
-<script src="js/pad.js?v=381"></script>
-<script src="js/pvp.js?v=381"></script>
-<script src="js/sigs.js?v=381"></script>
-<script src="js/game.js?v=381"></script>
-<script src="js/touch.js?v=381"></script>
+<script src="js/pokedex.js?v=382"></script>
+<script src="js/data.js?v=382"></script>
+<script src="js/rules.js?v=382"></script>
+<script src="js/items.js?v=382"></script>
+<script src="js/dungeon.js?v=382"></script>
+<script src="js/net.js?v=382"></script>
+<script src="js/map.js?v=382"></script>
+<script src="js/world.js?v=382"></script>
+<script src="js/story.js?v=382"></script>
+<script src="js/hm.js?v=382"></script>
+<script src="js/allies.js?v=382"></script>
+<script src="js/extras.js?v=382"></script>
+<script src="js/town.js?v=382"></script>
+<script src="js/geo.js?v=382"></script>
+<script src="js/regions.js?v=382"></script>
+<script src="js/audio.js?v=382"></script>
+<script src="js/pad.js?v=382"></script>
+<script src="js/pvp.js?v=382"></script>
+<script src="js/sigs.js?v=382"></script>
+<script src="js/pmd.js?v=382"></script>
+<script src="js/game.js?v=382"></script>
+<script src="js/touch.js?v=382"></script>
 </body>
 </html>

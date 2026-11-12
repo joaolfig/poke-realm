@@ -752,7 +752,8 @@ const waterImg = p => variantImg(p, 'imgU', (x, im, c) => {
 function drawMon(img, p, x, y, w, h, face, t, moving, wx, wy, flyer, alpha) {
   const foot = wy + h * 0.35, water = wx < DG_BASE - 5000 && isWater(wx, foot);
   const deep = water && isDeep(wx, foot), sub = water && !flyer ? (deep ? 0.42 : 0.16) : 0;
-  let hop = sub ? Math.sin(t * 2.2) * 2 : moving ? Math.abs(Math.sin(t * 9)) * 5 : Math.sin(t * 2) * 1;
+  // sprite animado (PMDCollab): o passo já vem no desenho, sem o pulinho
+  let hop = sub ? Math.sin(t * 2.2) * 2 : moving && !img.pk ? Math.abs(Math.sin(t * 9)) * 5 : img && img.pk ? 0 : Math.sin(t * 2) * 1;
   if (flyer && water) hop = 10 + Math.sin(t * 3) * 3;
   if (!sub) {
     ctx.fillStyle = water ? 'rgba(0,25,60,.35)' : 'rgba(0,0,0,.28)';
@@ -764,12 +765,14 @@ function drawMon(img, p, x, y, w, h, face, t, moving, wx, wy, flyer, alpha) {
   ctx.globalAlpha = alpha;
   ctx.translate(x, y - hop + h * sub * 0.55);
   if (sub) { ctx.save(); ctx.beginPath(); ctx.rect(-w, -h * 2, w * 2, h * 2 + yl); ctx.clip(); }
-  ctx.save(); if (face > 0) ctx.scale(-1, 1); ctx.drawImage(img, -w / 2, -h / 2, w, h); ctx.restore();
+  if (img.pk) pmdDraw(img, w, h);
+  else { ctx.save(); if (face > 0) ctx.scale(-1, 1); ctx.drawImage(img, -w / 2, -h / 2, w, h); ctx.restore(); }
   if (sub) {
     ctx.restore();
     ctx.save(); ctx.beginPath(); ctx.rect(-w, yl, w * 2, h); ctx.clip();
-    ctx.globalAlpha = alpha * 0.3; if (face > 0) ctx.scale(-1, 1);
-    ctx.drawImage(waterImg(p) || img, -w / 2, -h / 2, w, h);
+    ctx.globalAlpha = alpha * 0.3;
+    if (img.pk) pmdDraw(img, w, h);
+    else { if (face > 0) ctx.scale(-1, 1); ctx.drawImage(waterImg(p) || img, -w / 2, -h / 2, w, h); }
     ctx.restore();
     const k = (t * 1.1) % 1;
     ctx.globalAlpha = 0.85 * alpha; ctx.strokeStyle = '#e0f2fe'; ctx.lineWidth = 2;
