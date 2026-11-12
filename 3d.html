@@ -13,6 +13,7 @@
   #ajuda { position: fixed; right: 12px; top: 12px; background: #0007; color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 13px; line-height: 1.5; max-width: 260px; }
   #ajuda b { color: #fde68a; }
   #voltar { position: fixed; left: 12px; bottom: 12px; background: #0008; color: #fff; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 14px; }
+  #trocaModo { position: fixed; left: 160px; bottom: 12px; background: #1d4ed8cc; color: #fff; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 14px; }
   #msg { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); color: #fff; font-size: 28px; font-weight: 700; text-shadow: 0 2px 6px #000; pointer-events: none; opacity: 0; transition: opacity .3s; }
   #stick { position: fixed; width: 120px; height: 120px; border-radius: 50%; background: #fff2; border: 2px solid #fff6; display: none; pointer-events: none; }
   #knob { position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; border-radius: 50%; background: #fff8; }
@@ -28,15 +29,16 @@
   <div id="info"></div>
 </div>
 <div id="ajuda">
-  <b>Teste 3D</b> — Pokémon 3D da Pokemon-3D-api.<br>
+  <b>Teste 3D</b> — <span id="fonte">modelos 3D da Pokemon-3D-api</span>.<br>
   <b>WASD</b> andar · <b>mouse</b> mirar · <b>clique</b> atirar<br>
   <b>Espaço</b> esquiva · <b>Q/E</b> girar câmera · <b>roda</b> zoom<br>
   Controle: analógicos, <b>RT</b> atira, <b>A</b> esquiva, <b>LB/RB</b> câmera
 </div>
 <a id="voltar" href="index.html">← Voltar ao jogo</a>
+<a id="trocaModo" href="3d.html?modo=sprites&v=5">Ver com sprites 2D</a>
 <div id="msg"></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="dashbtn">Esquiva</div>
-<script type="module" src="js3d/cena.js?v=3"></script>
+<script type="module" src="js3d/cena.js?v=5"></script>
 </body>
 </html>

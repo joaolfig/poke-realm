@@ -181,55 +181,166 @@ const ESPECIES = {
   gota: { nome: 'Gota', hp: 80, vel: 2.4, bala: 0x6cc8ff },    // anel em volta dela
   broto: { nome: 'Broto', hp: 70, vel: 2.8, bala: 0xa6f06b },  // espiral girando
 };
-// ---------- Pokémon 3D (modelos .glb da Pokemon-3D-api, com Draco e texturas WebP) ----------
-// cada padrão de tiro ganha Pokémon do tipo certo; só aparecem Pokémon cujo modelo carregou
-const POKES = {
+// ---------- Pokémon: dois modos para comparar ----------
+// ?modo=sprites -> sprites 2D animados do PMDCollab (8 direções) em pé no cenário 3D
+// padrão         -> modelos 3D da Pokemon-3D-api, só os que têm animação completa (parado, andar, ataque, dano, queda)
+const SPRITES = /[?&]modo=sprites/.test(location.search);
+const POKES = SPRITES ? {
   brasa: [[4, 'Charmander'], [37, 'Vulpix'], [58, 'Growlithe'], [77, 'Ponyta'], [155, 'Cyndaquil']],
   gota: [[7, 'Squirtle'], [54, 'Psyduck'], [60, 'Poliwag'], [116, 'Horsea'], [79, 'Slowpoke']],
-  broto: [[1, 'Bulbasaur'], [43, 'Oddish'], [69, 'Bellsprout'], [152, 'Chikorita'], [252, 'Treecko']],
+  broto: [[43, 'Oddish'], [69, 'Bellsprout'], [152, 'Chikorita'], [252, 'Treecko'], [1, 'Bulbasaur']],
+} : {
+  // [id, nome, altura real em metros]: os modelos vêm cada um numa escala, então o tamanho sai da altura da Pokédex
+  brasa: [[994, 'Iron Moth', 1.2], [839, 'Coalossal', 2.8]],
+  gota: [[846, 'Arrokuda', 0.5], [341, 'Corphish', 0.6], [932, 'Nacli', 0.4], [933, 'Naclstack', 0.6]],
+  broto: [[253, 'Grovyle', 0.9], [947, 'Brambleghast', 1.2]],
 };
-const COMPANHEIRO = [133, 'Eevee'];
-const URL_MODELO = id => `https://raw.githubusercontent.com/Pokemon-3D-api/assets/main/models/opt/regular/${id}.glb`;
-const draco = new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/');
-const carregador = new GLTFLoader().setDRACOLoader(draco);
-const MODELOS = {}; // id -> { cena, clipes, escala, desloc }
+const COMPANHEIRO = SPRITES ? [133, 'Eevee'] : [1, 'Bulbasaur', 0.7];
+const BASES = {}; // id -> dados carregados (modelo ou folhas de sprite)
+if (SPRITES) {
+  document.getElementById('fonte').textContent = 'sprites animados do PMDCollab';
+  Object.assign(document.getElementById('trocaModo'), { textContent: 'Ver com modelos 3D', href: '3d.html?v=5' });
+}
 
-async function carregaModelo(id) {
+// --- modo 3D: modelos .glb (Draco + WebP) ---
+const URL_MODELO = id => `https://raw.githubusercontent.com/Pokemon-3D-api/assets/main/models/opt/regular/${id}.glb`;
+const carregador = new GLTFLoader().setDRACOLoader(new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/'));
+// clipes por papel, em ordem de preferência (os nomes variam entre modelos)
+const CLIPES = {
+  parado: [/battlewait01_loop/, /defaultwait01_loop/, /wait00/, /aidle/, /idle|wait/i],
+  anda: [/walk01_loop/, /walk/i, /run/i],
+  tiro: [/rangeattack01/, /attack01/, /bd_attack$/, /fight_b/, /attack|fight/i],
+  dor: [/damage01/, /bd_damage/, /damage|hurt/i],
+  cai: [/down01_start/, /ko$/i, /down|faint/i],
+};
+async function carregaModelo(id, metros = 1) {
   const gltf = await carregador.loadAsync(URL_MODELO(id));
   const cena = gltf.scene;
   cena.updateMatrixWorld(true);
-  // cada modelo vem num tamanho; normaliza para ~1,9 de altura e no máximo 2,4 de largura, pés no chão
+  // altura no jogo pela altura real, um pouco suavizada para os pequenos não sumirem nem os grandes taparem a tela:
+  // 0,4 m -> 1,0 · 0,7 m -> 1,4 · 0,9 m -> 1,7 · 1,2 m -> 2,2 · 2,8 m -> 4; os compridos (peixes, cobras) têm o comprimento limitado
   const caixa = new THREE.Box3().setFromObject(cena, true), tam = caixa.getSize(new THREE.Vector3());
-  const escala = Math.min(1.9 / Math.max(tam.y, 1e-4), 2.4 / Math.max(tam.x, tam.z, 1e-4));
+  const alvo = clamp(1.9 * metros ** 0.75, 0.9, 4);
+  const escala = Math.min(alvo / Math.max(tam.y, 1e-4), (alvo * 1.8) / Math.max(tam.x, tam.z, 1e-4));
   const desloc = new THREE.Vector3(-(caixa.min.x + caixa.max.x) / 2, -caixa.min.y, -(caixa.min.z + caixa.max.z) / 2).multiplyScalar(escala);
-  MODELOS[id] = { cena, clipes: gltf.animations, escala, desloc };
+  const clipes = {};
+  for (const [papel, lista] of Object.entries(CLIPES)) {
+    for (const re of lista) { const c = gltf.animations.find(c => re.test(c.name)); if (c) { clipes[papel] = c; break; } }
+  }
+  BASES[id] = { cena, clipes, escala, desloc, alto: tam.y * escala };
 }
-
-function montaPokemon(id) {
-  const base = MODELOS[id], g = new THREE.Group(), copia = SkeletonUtils.clone(base.cena);
+function visualModelo(id) {
+  const base = BASES[id], g = new THREE.Group(), copia = SkeletonUtils.clone(base.cena);
   copia.scale.setScalar(base.escala);
   copia.position.copy(base.desloc);
-  copia.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  copia.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; o.userData.m0 = o.material; } });
   g.add(copia);
-  // animações do próprio modelo, quando tem: parado e andando
-  const r = { g };
-  if (base.clipes.length) {
-    r.mixer = new THREE.AnimationMixer(copia);
-    const acha = re => base.clipes.find(c => re.test(c.name));
-    const parado = acha(/idle|wait|stand/i) || base.clipes[0], anda = acha(/walk|run/i) || parado;
-    r.acoes = { parado: r.mixer.clipAction(parado), anda: r.mixer.clipAction(anda) };
-    r.acoes.parado.play();
-    r.atual = r.acoes.parado;
+  const mixer = new THREE.AnimationMixer(copia), acoes = {};
+  for (const [papel, clip] of Object.entries(base.clipes)) acoes[papel] = mixer.clipAction(clip);
+  for (const papel of ['tiro', 'dor', 'cai']) if (acoes[papel]) { acoes[papel].setLoop(THREE.LoopOnce); acoes[papel].clampWhenFinished = true; }
+  let atual = acoes.parado || acoes.anda, umaVez = 0;
+  atual?.play();
+  const troca = (nova, fade) => { if (!nova || nova === atual) return; nova.reset().play(); atual?.crossFadeTo(nova, fade, false); atual = nova; };
+  // golpes: o clipe é acelerado para caber no tempo do jogo
+  const MAX = { tiro: 0.7, dor: 0.45, cai: 1.2 };
+  return {
+    g,
+    olhar(d) { g.rotation.y = Math.atan2(d.x, d.z); },
+    acao(papel) {
+      const a = acoes[papel];
+      if (!a) return papel === 'cai' ? 0.3 : 0;
+      if (papel === 'tiro' && atual === a && umaVez > 0) return umaVez;
+      const dur = Math.min(a.getClip().duration, MAX[papel]);
+      a.timeScale = a.getClip().duration / dur;
+      if (atual === a) atual = null; // permite repetir o mesmo golpe
+      troca(a, 0.08);
+      umaVez = dur;
+      return dur;
+    },
+    update(dt, andando, morto) {
+      umaVez -= dt;
+      if (umaVez <= 0 && !morto) troca(andando ? acoes.anda || acoes.parado : acoes.parado || acoes.anda, 0.2);
+      mixer.update(dt);
+    },
+    flash(on) { copia.traverse(o => { if (o.isMesh) o.material = on ? mat(0xffffff, { emissive: 0xffffff, emissiveIntensity: 0.8 }) : o.userData.m0; }); },
+  };
+}
+
+// --- modo sprites: folhas do PMDCollab (linhas = 8 direções, colunas = quadros; durações em 1/60 s) ---
+const URL_SPR = (id, arq) => `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite/${String(id).padStart(4, '0')}/${arq}`;
+const PX = 0.075; // tamanho de um pixel do sprite no mundo
+const SPR_PAPEL = { parado: ['Idle', 'Walk'], anda: ['Walk'], tiro: ['Shoot', 'Charge', 'Attack'], dor: ['Hurt'], cai: ['Faint', 'Hurt'] };
+async function carregaSprite(id) {
+  const xml = new DOMParser().parseFromString(await (await fetch(URL_SPR(id, 'AnimData.xml'))).text(), 'text/xml');
+  const defs = {};
+  for (const an of xml.querySelectorAll('Anim')) {
+    const t = q => an.querySelector(q)?.textContent;
+    defs[t('Name')] = { copia: t('CopyOf'), w: +t('FrameWidth'), h: +t('FrameHeight'), dur: [...an.querySelectorAll('Duration')].map(d => +d.textContent / 60) };
   }
-  return r;
+  const real = nome => (defs[nome]?.copia || nome);
+  const anims = {}, imgs = {};
+  for (const [papel, nomes] of Object.entries(SPR_PAPEL)) {
+    const nome = nomes.map(real).find(n => defs[n] && !defs[n].copia);
+    if (!nome) continue;
+    imgs[nome] ||= new THREE.TextureLoader().loadAsync(URL_SPR(id, nome + '-Anim.png'));
+    const tex = await imgs[nome];
+    tex.magFilter = tex.minFilter = THREE.NearestFilter;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const d = defs[nome];
+    anims[papel] = { tex, ...d, cols: Math.round(tex.image.width / d.w), total: d.dur.reduce((x, y) => x + y, 0) };
+  }
+  if (!anims.anda) throw new Error('sprite sem Walk: ' + id);
+  BASES[id] = { anims, alto: anims.anda.h * PX * 0.7 };
 }
-function animaPokemon(e, andando, dt) {
-  if (!e.mixer) return false;
-  const quer = andando ? e.acoes.anda : e.acoes.parado;
-  if (quer !== e.atual) { quer.reset().play(); e.atual.crossFadeTo(quer, 0.2, false); e.atual = quer; }
-  e.mixer.update(dt);
-  return true;
+function visualSprite(id) {
+  const base = BASES[id], g = new THREE.Group();
+  const m = new THREE.SpriteMaterial({ alphaTest: 0.5 }), s = new THREE.Sprite(m);
+  g.add(s);
+  const sombra = new THREE.Mesh(new THREE.CircleGeometry(0.75, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
+  sombra.rotation.x = -Math.PI / 2;
+  sombra.position.y = 0.03;
+  sombra.scale.y = 0.7;
+  g.add(sombra);
+  const texs = {}; // cada Pokémon tem a própria cópia da textura (o quadro muda o offset)
+  const dir = new THREE.Vector3(0, 0, 1);
+  let papel = 'parado', t = 0, umaVez = 0;
+  const usar = (p, denovo) => { if (!base.anims[p]) p = p === 'parado' ? 'anda' : 'parado'; if (p !== papel || denovo) { papel = p; t = 0; } };
+  return {
+    g,
+    olhar(d) { if (d.lengthSq() > 1e-4) dir.copy(d).setY(0).normalize(); },
+    acao(p) {
+      const a = base.anims[p];
+      if (!a) return p === 'cai' ? 0.3 : 0;
+      if (p === 'tiro' && papel === 'tiro' && umaVez > 0) return umaVez;
+      usar(p, true);
+      umaVez = a.total;
+      return a.total;
+    },
+    update(dt, andando, morto) {
+      umaVez -= dt;
+      if (umaVez <= 0 && !morto) usar(andando ? 'anda' : 'parado');
+      const a = base.anims[papel];
+      t += dt;
+      // quadro: parado e andar em laço; golpes param no último quadro
+      let q = 0, tt = umaVez > 0 || morto ? Math.min(t, a.total - 1e-3) : t % a.total;
+      while (q < a.dur.length - 1 && tt >= a.dur[q]) { tt -= a.dur[q]; q++; }
+      // direção vista da câmera: 0 baixo, 1 baixo-dir, 2 dir, 3 cima-dir, 4 cima, 5 cima-esq, 6 esq, 7 baixo-esq
+      const cx = Math.cos(yaw), sx = Math.sin(yaw);
+      const dx = dir.x * cx - dir.z * sx, dy = -dir.x * sx - dir.z * cx;
+      const linha = ((Math.round((Math.atan2(dy, dx) * 180 / Math.PI + 90) / 45) % 8) + 8) % 8;
+      const tex = (texs[papel] ||= a.tex.clone());
+      tex.repeat.set(1 / a.cols, 1 / 8);
+      tex.offset.set(q / a.cols, 1 - (linha + 1) / 8);
+      if (m.map !== tex) { m.map = tex; m.needsUpdate = true; }
+      s.scale.set(a.w * PX, a.h * PX, 1);
+      s.center.set(0.5, 0.5 - 7 / a.h); // os pés ficam ~7 px abaixo do centro do quadro
+    },
+    flash(on) { m.color.setRGB(1, on ? 0.45 : 1, on ? 0.45 : 1); },
+  };
 }
+
+const carregaBase = SPRITES ? carregaSprite : carregaModelo;
+const visual = id => (SPRITES ? visualSprite(id) : visualModelo(id));
 
 // nome flutuando em cima do Pokémon
 function etiqueta(pai, texto, y) {
@@ -250,44 +361,44 @@ function etiqueta(pai, texto, y) {
   pai.add(s);
 }
 
-const inimigos = [];
+const inimigos = [], caindo = [];
 function novoInimigo() {
-  const tipos = Object.keys(POKES).filter(t => POKES[t].some(([id]) => MODELOS[id]));
+  const tipos = Object.keys(POKES).filter(t => POKES[t].some(([id]) => BASES[id]));
   if (!tipos.length) return;
   const tipo = tipos[Math.floor(rand(0, tipos.length))], esp = ESPECIES[tipo];
-  const opcoes = POKES[tipo].filter(([id]) => MODELOS[id]), poke = opcoes[Math.floor(rand(0, opcoes.length))];
+  const opcoes = POKES[tipo].filter(([id]) => BASES[id]), poke = opcoes[Math.floor(rand(0, opcoes.length))];
   let x, z;
   do { x = rand(-60, 60); z = rand(-60, 60); } while (!livre(x, z, 1) || Math.hypot(x - heroi.pos.x, z - heroi.pos.z) < 25);
   const raizI = new THREE.Group();
   raizI.position.set(x, 0, z);
   scene.add(raizI);
-  const m = montaPokemon(poke[0]);
-  raizI.add(m.g);
-  const e = { tipo, esp, raiz: raizI, modelo: m.g, mixer: m.mixer, acoes: m.acoes, atual: m.atual, hp: esp.hp, max: esp.hp, cd: rand(1, 2), ang: 0, fase: 0, vagar: new THREE.Vector3(x, 0, z), flash: 0, t: rand(0, 6), lado: Math.random() < 0.5 ? 1 : -1 };
-  e.barra = barra(raizI, 2.6);
-  etiqueta(raizI, poke[1], 3);
+  const vis = visual(poke[0]);
+  raizI.add(vis.g);
+  const e = { tipo, esp, raiz: raizI, vis, hp: esp.hp, max: esp.hp, cd: rand(1, 2), ang: 0, fase: 0, vagar: new THREE.Vector3(x, 0, z), flash: 0, t: rand(0, 6), lado: Math.random() < 0.5 ? 1 : -1 };
+  const y = Math.max(2.6, BASES[poke[0]].alto + 0.5);
+  e.barra = barra(raizI, y);
+  etiqueta(raizI, poke[1], y + 0.4);
   inimigos.push(e);
 }
 
 // companheiro: segue o herói e atira no inimigo mais perto
 let comp = null;
 function criaCompanheiro() {
-  if (!MODELOS[COMPANHEIRO[0]]) return;
-  const m = montaPokemon(COMPANHEIRO[0]), r = new THREE.Group();
+  if (!BASES[COMPANHEIRO[0]]) return;
+  const vis = visual(COMPANHEIRO[0]), r = new THREE.Group();
   r.position.set(-2, 0, -2);
-  r.add(m.g);
+  r.add(vis.g);
   scene.add(r);
-  etiqueta(r, COMPANHEIRO[1], 2.5);
-  comp = { raiz: r, modelo: m.g, mixer: m.mixer, acoes: m.acoes, atual: m.atual, cd: 0, t: 0 };
+  etiqueta(r, COMPANHEIRO[1], Math.max(2.5, BASES[COMPANHEIRO[0]].alto + 0.5));
+  comp = { raiz: r, vis, cd: 0 };
 }
 
-const carregando = Promise.allSettled([...Object.values(POKES).flat(), COMPANHEIRO].map(([id]) => carregaModelo(id)));
-carregando.then(res => {
-  const falhas = res.filter(r => r.status === 'rejected');
-  falhas.forEach(f => console.warn('modelo 3D não carregou:', f.reason));
+const todos = [...Object.values(POKES).flat(), COMPANHEIRO];
+Promise.allSettled(todos.map(([id, , metros]) => carregaBase(id, metros))).then(res => {
+  res.forEach((r, i) => r.status === 'rejected' && console.warn('Pokémon não carregou:', todos[i][1], r.reason));
   for (let i = 0; i < 9; i++) novoInimigo();
   criaCompanheiro();
-  aviso(falhas.length === res.length ? 'Os modelos 3D não carregaram' : 'Pokémon 3D!');
+  aviso(inimigos.length ? (SPRITES ? 'Sprites animados!' : 'Pokémon 3D animados!') : 'Os Pokémon não carregaram');
 });
 
 // ---------- tiros e partículas ----------
@@ -450,19 +561,22 @@ function quadro() {
       // chega até ~9 de distância e fica rodeando você
       const dir = para.clone().normalize(), lado = new THREE.Vector3(dir.z, 0, -dir.x).multiplyScalar(e.lado);
       vel.addScaledVector(dir, dist > 10 ? 1 : dist < 7 ? -1 : 0).addScaledVector(lado, 0.6);
-      e.modelo.rotation.y = Math.atan2(dir.x, dir.z);
+      e.vis.olhar(dir);
       e.cd -= dt;
       const ang = Math.atan2(dir.x, dir.z);
       if (e.tipo === 'brasa' && e.cd <= 0) {
         e.cd = 1.1;
+        e.vis.acao('tiro');
         for (let k = -2; k <= 2; k++) bala(p.x, p.z, ang + k * 0.22, 11, e.esp.bala);
       } else if (e.tipo === 'gota' && e.cd <= 0) {
         e.cd = 2;
         e.fase = (e.fase + 1) % 2;
+        e.vis.acao('tiro');
         for (let k = 0; k < 14; k++) bala(p.x, p.z, (k + e.fase * 0.5) * (Math.PI * 2 / 14), 7, e.esp.bala);
       } else if (e.tipo === 'broto' && e.cd <= 0) {
         // rajada em espiral por 2 s, depois 1,5 s de descanso
         e.fase += 0.12;
+        e.vis.acao('tiro');
         e.ang += 0.45;
         bala(p.x, p.z, e.ang, 8, e.esp.bala);
         bala(p.x, p.z, e.ang + Math.PI, 8, e.esp.bala);
@@ -472,22 +586,26 @@ function quadro() {
     } else {
       if (p.distanceTo(e.vagar) < 1 || Math.random() < 0.002) e.vagar.set(clamp(p.x + rand(-12, 12), -60, 60), 0, clamp(p.z + rand(-12, 12), -60, 60));
       const d = e.vagar.clone().sub(p);
-      if (d.length() > 1) { vel.copy(d.normalize()).multiplyScalar(0.5); e.modelo.rotation.y = Math.atan2(d.x, d.z); }
+      if (d.length() > 1) { vel.copy(d.normalize()).multiplyScalar(0.5); e.vis.olhar(d); }
     }
     p.addScaledVector(vel, e.esp.vel * dt);
     colide(p, 0.9);
-    // animação: a do próprio modelo quando tem; senão um pulinho ao andar
-    const pulo = Math.abs(Math.sin(e.t * (vel.lengthSq() > 0.01 ? 9 : 2)));
-    if (!animaPokemon(e, vel.lengthSq() > 0.01, dt)) e.modelo.position.y = pulo * (vel.lengthSq() > 0.01 ? 0.25 : 0.05);
+    e.vis.update(dt, vel.lengthSq() > 0.01, false);
     e.flash -= dt;
-    e.modelo.traverse(o => { if (o.isMesh) o.material = o.userData.m0 ||= o.material; });
-    if (e.flash > 0) e.modelo.traverse(o => { if (o.isMesh) o.material = mat(0xffffff, { emissive: 0xffffff, emissiveIntensity: 0.8 }); });
+    e.dorCd = (e.dorCd || 0) - dt;
+    e.vis.flash(e.flash > 0);
     e.barra(e.hp / e.max);
+  }
+  // quem desmaiou toca a animação de queda e some
+  for (let i = caindo.length - 1; i >= 0; i--) {
+    const c = caindo[i];
+    c.tempo -= dt;
+    c.vis.update(dt, false, true);
+    if (c.tempo <= 0) { explode(c.raiz.position, c.esp.bala, 22); scene.remove(c.raiz); caindo.splice(i, 1); }
   }
 
   // --- companheiro: fica atrás do herói e atira no inimigo mais perto ---
   if (comp) {
-    comp.t += dt;
     const alvo = heroi.pos.clone().addScaledVector(heroi.mira, -2.2).add(new THREE.Vector3(heroi.mira.z, 0, -heroi.mira.x).multiplyScalar(1.4));
     const p = comp.raiz.position, falta = alvo.sub(p).setY(0), anda = falta.length() > 0.6;
     if (falta.length() > 25) p.copy(heroi.pos);
@@ -496,16 +614,17 @@ function quadro() {
     let perto = null, dm = 14;
     for (const e of inimigos) { const d = e.raiz.position.distanceTo(p); if (d < dm) { dm = d; perto = e; } }
     const olha = perto ? perto.raiz.position.clone().sub(p) : anda ? falta : heroi.mira;
-    comp.modelo.rotation.y = Math.atan2(olha.x, olha.z);
+    comp.vis.olhar(olha);
     comp.cd -= dt;
     if (perto && heroi.hp > 0 && comp.cd <= 0) {
       comp.cd = 0.55;
+      comp.vis.acao('tiro');
       const m = new THREE.Mesh(GEO_MEU, mat(0xffe08a, { emissive: 0xffa53d, emissiveIntensity: 1 }));
       m.position.copy(p).setY(1);
       scene.add(m);
       meus.push({ m, v: olha.setY(0).normalize().multiplyScalar(20), vida: 0.9, dano: 6 });
     }
-    if (!animaPokemon(comp, anda, dt)) comp.modelo.position.y = Math.abs(Math.sin(comp.t * (anda ? 10 : 2))) * (anda ? 0.2 : 0.04);
+    comp.vis.update(dt, anda, false);
   }
 
   // --- meus tiros ---
@@ -521,9 +640,11 @@ function quadro() {
         e.hp -= t.dano || 10;
         e.flash = 0.08;
         fim = true;
+        if (e.hp > 0 && e.dorCd <= 0) { e.vis.acao('dor'); e.dorCd = 1.2; }
         if (e.hp <= 0) {
-          explode(p, e.esp.bala, 22);
-          scene.remove(e.raiz);
+          e.vis.flash(false);
+          e.barra(0);
+          caindo.push({ raiz: e.raiz, vis: e.vis, esp: e.esp, tempo: e.vis.acao('cai') + 0.15 });
           inimigos.splice(inimigos.indexOf(e), 1);
           heroi.abates++;
           setTimeout(novoInimigo, 5000);
@@ -587,4 +708,4 @@ function quadro() {
 }
 aviso('Carregando Pokémon 3D...');
 requestAnimationFrame(quadro);
-window.__cena = { heroi, inimigos, balas, MODELOS, get comp() { return comp; } }; // para os testes automáticos
+window.__cena = { heroi, inimigos, balas, BASES, SPRITES, get comp() { return comp; } }; // para os testes automáticos
